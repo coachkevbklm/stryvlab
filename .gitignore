@@ -56,5 +56,9 @@ backup/
 *.backup
 *.bak
 
-# claude memory (local only)
-.claude/projects/
+# IDE & AI tooling (local only)
+.claude/
+.agent/
+.agents/
+.continue/
+.mcp.json
