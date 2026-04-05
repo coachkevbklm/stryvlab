@@ -1,32 +1,46 @@
 # CHANGELOG
 
+## 2026-04-05 — Design System Token Compliance + Navigation Architecture Complete
+
+REFACTOR: Unify component colors to semantic design tokens
+
+- ClientPageHeader: Replace hardcoded hex colors (#343434, #FCF76E) with design system tokens (bg-dark, text-accent, text-on-dark)
+- PerformanceDashboard: Extract chart colors to semantic constants (CHART_TEXT_COLOR, METRIC_COLOR with primary/secondary/accent mapping)
+- MetricsSection: Centralize metric chart colors using CHART_COLOR_PRIMARY and CHART_COLOR_ACCENT constants
+- All axis labels and text elements now reference consistent palette instead of arbitrary hex values
+
 ## 2026-04-05 — Navigation Architecture Optimization + UI Polish Complete
 
 REFACTOR: Unify double navigation bars into single ClientPageHeader
+
 - Created ClientPageHeader component combining CoachTopBar + ClientSubHeader
 - Single unified header: back button | client avatar/info | client tabs
 - Eliminated confusing dual-layer navigation in client detail pages
 - Improved visual hierarchy: Sidebar (main app nav) → ClientPageHeader (client context)
 
 FEAT: Multi-series visibility toggle in metrics overlay chart
+
 - Add individual checkboxes for each metric line in legend
 - Toggle series visibility on/off independently
 - Unchecked series fade to 50% opacity
 - Chart updates reactively without affecting global filter
 
 FEAT: Sidebar collapsible mode with compact layout
+
 - Toggle between full width (w-56) and icon-only compact (w-20) mode
 - Logo, section headers, labels hide in compact
 - Smooth 300ms transition + all tooltips active
 - Better screen real estate on smaller displays
 
 FEAT: Move notification bell from Sidebar to CoachTopBar
+
 - NotificationBell repositioned for better visibility
 - Dropdown below (default positioning)
 - Cleaner Sidebar footer without clutter
 - Add topBarMode prop for flexible dropdown positioning
 
 FIX: Sidebar nav active state to STRYVR v2.1 accent yellow
+
 - bg-accent text-[#1A1A1A] font-semibold
 - Hover shadow upgraded to shadow-elevated
 
