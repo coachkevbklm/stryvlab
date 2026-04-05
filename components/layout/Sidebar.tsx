@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
@@ -112,6 +113,7 @@ const NAV_SECTIONS = [
 export default function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -120,27 +122,35 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed top-4 left-4 h-[calc(100vh-32px)] w-56 bg-surface border border-subtle rounded-card shadow-elevated flex flex-col z-50">
+    <aside className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-surface border border-subtle rounded-card shadow-elevated flex flex-col z-50 transition-all duration-300 ${
+      isCollapsed ? 'w-20' : 'w-56'
+    }`}>
 
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-4 py-5 border-b border-subtle cursor-pointer shrink-0"
-        onClick={() => router.push('/dashboard')}
+        className={`flex items-center gap-3 px-4 py-5 border-b border-subtle cursor-pointer shrink-0 ${
+          isCollapsed ? 'justify-center' : ''
+        }`}
+        onClick={() => !isCollapsed && router.push('/dashboard')}
       >
-        <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain" />
-        <span className="font-unbounded font-semibold text-primary tracking-tight text-xs leading-none">
-          STRYV <span className="font-light text-secondary">lab</span><br />
-          <span className="font-normal text-secondary" style={{ fontSize: '10px' }}>Coach</span>
-        </span>
+        <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain shrink-0" />
+        {!isCollapsed && (
+          <span className="font-unbounded font-semibold text-primary tracking-tight text-xs leading-none">
+            STRYV <span className="font-light text-secondary">lab</span><br />
+            <span className="font-normal text-secondary" style={{ fontSize: '10px' }}>Coach</span>
+          </span>
+        )}
       </div>
 
       {/* Nav sections — scroll only here, not the whole sidebar */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
         {NAV_SECTIONS.map(section => (
           <div key={section.label}>
-            <p className="text-[10px] font-bold text-secondary/50 uppercase tracking-widest px-2 mb-1.5">
-              {section.label}
-            </p>
+            {!isCollapsed && (
+              <p className="text-[10px] font-bold text-secondary/50 uppercase tracking-widest px-2 mb-1.5">
+                {section.label}
+              </p>
+            )}
             <div className="flex flex-col gap-0.5">
               {section.items.map(({ icon: Icon, label, href, match }) => {
                 const active = match(pathname)
@@ -150,7 +160,10 @@ export default function Sidebar() {
                     key={label}
                     onClick={() => !disabled && router.push(href)}
                     disabled={disabled}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left w-full transition-all duration-150 group ${
+                    title={isCollapsed ? label : undefined}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-150 group ${
+                      isCollapsed ? 'justify-center px-2' : 'w-full'
+                    } ${
                       active
                         ? 'bg-accent text-[#1A1A1A] shadow-md font-semibold'
                         : disabled
@@ -163,9 +176,13 @@ export default function Sidebar() {
                       strokeWidth={active ? 2.5 : 1.8}
                       className="shrink-0"
                     />
-                    <span className="text-xs font-semibold truncate flex-1">{label}</span>
-                    {active && (
-                      <ChevronRight size={12} className="shrink-0 opacity-60" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="text-xs font-semibold truncate flex-1">{label}</span>
+                        {active && (
+                          <ChevronRight size={12} className="shrink-0 opacity-60" />
+                        )}
+                      </>
                     )}
                     {disabled && (
                       <span className="text-[9px] font-bold text-secondary/40 shrink-0">Bientôt</span>
@@ -180,13 +197,24 @@ export default function Sidebar() {
 
       {/* Footer — outside overflow container so dropdowns render correctly */}
       <div className="px-3 py-3 border-t border-subtle shrink-0 flex flex-col gap-0.5">
-        <NotificationBell sidebarMode />
+        <NotificationBell sidebarMode={!isCollapsed} />
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? 'Développer' : 'Réduire'}
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-primary hover:bg-surface-light"
+        >
+          <ChevronRight size={15} strokeWidth={1.8} className={`shrink-0 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+          {!isCollapsed && <span className="text-xs font-semibold">Réduire</span>}
+        </button>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-secondary hover:text-red-500 hover:bg-red-50 transition-all duration-150"
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-red-500 hover:bg-red-50 ${
+            isCollapsed ? 'justify-center px-2' : 'w-full'
+          }`}
+          title={isCollapsed ? 'Déconnexion' : undefined}
         >
           <LogOut size={15} strokeWidth={1.8} className="shrink-0" />
-          <span className="text-xs font-semibold">Déconnexion</span>
+          {!isCollapsed && <span className="text-xs font-semibold">Déconnexion</span>}
         </button>
       </div>
     </aside>
