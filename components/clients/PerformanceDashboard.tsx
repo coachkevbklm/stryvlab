@@ -65,7 +65,15 @@ interface PerformanceData {
 // ── Helpers ────────────────────────────────────────────────────
 const PERIOD_LABELS: Record<Period, string> = { 7: '7 jours', 30: '30 jours', 90: '90 jours', 0: 'Tout' }
 const METRIC_LABELS: Record<Metric, string> = { volume: 'Volume (kg)', reps: 'Répétitions', sets: 'Séries' }
-const METRIC_COLOR: Record<Metric, string> = { volume: '#6366f1', reps: '#10b981', sets: '#f59e0b' }
+
+// Chart-specific color palette (visual distinction for data representation)
+// Mapped to STRYVR design tokens where possible
+const CHART_TEXT_COLOR = '#8A8A85' // muted text (from design system)
+const METRIC_COLOR: Record<Metric, string> = {
+  volume: '#1A1A1A',    // primary (main metric)
+  reps: '#535353',      // secondary (supporting metric)
+  sets: '#FCF76E',      // accent (highlight metric)
+}
 
 const MUSCLE_COLORS: Record<string, string> = {
   'Jambes': '#6366f1', 'Pectoraux': '#10b981', 'Dos': '#3b82f6',
@@ -243,8 +251,8 @@ export default function PerformanceDashboard({ clientId }: { clientId: string })
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={40}
+                  <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} width={40}
                     tickFormatter={metric === 'volume' ? formatVolume : undefined}
                   />
                   <Tooltip content={<LineTooltipContent />} />
@@ -275,7 +283,7 @@ export default function PerformanceDashboard({ clientId }: { clientId: string })
                 <ResponsiveContainer width="100%" height={260}>
                   <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
                     <PolarGrid stroke="rgba(255,255,255,0.15)" />
-                    <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                     <Radar name="Volume" dataKey="Volume" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2} />
                     <Radar name="Séries" dataKey="Séries" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={1.5} />
@@ -296,8 +304,8 @@ export default function PerformanceDashboard({ clientId }: { clientId: string })
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={rpeTrend} margin={{ top: 10, right: 5, bottom: 0, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[1, 10]} ticks={[1, 3, 5, 7, 8, 10]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={25} />
+                    <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[1, 10]} ticks={[1, 3, 5, 7, 8, 10]} tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} width={25} />
                     <Tooltip content={<LineTooltipContent />} />
                     <ReferenceLine y={7} stroke="#10b981" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '7', position: 'right', fontSize: 9, fill: '#10b981' }} />
                     <ReferenceLine y={8} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '8', position: 'right', fontSize: 9, fill: '#f59e0b' }} />
@@ -322,8 +330,8 @@ export default function PerformanceDashboard({ clientId }: { clientId: string })
                   barSize={28}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={40}
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} width={40}
                     tickFormatter={metric === 'volume' ? formatVolume : undefined}
                   />
                   <Tooltip content={<LineTooltipContent />} />
@@ -367,8 +375,8 @@ export default function PerformanceDashboard({ clientId }: { clientId: string })
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={selectedEx.sessions} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={40} />
+                  <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: CHART_TEXT_COLOR }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip content={<LineTooltipContent />} />
                   <Line type="monotone" dataKey="maxWeight" name="Poids max (kg)" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                   <Line type="monotone" dataKey="totalVolume" name="Volume total (kg)" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />

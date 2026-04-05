@@ -13,6 +13,11 @@ import {
 } from 'recharts'
 import CsvImportButton from './CsvImportButton'
 
+// ─── Chart color palette (semantic mapping to STRYVR design tokens) ────────────
+// Alternating primary ↔ accent for visual distinction in chart series
+const CHART_COLOR_PRIMARY = '#1A1A1A'   // primary (from design system)
+const CHART_COLOR_ACCENT = '#FCF76E'    // accent yellow (from design system)
+
 // ─── Field definitions ────────────────────────────────────────────────────────
 
 interface FieldDef {
@@ -25,26 +30,26 @@ interface FieldDef {
 }
 
 const FIELDS: FieldDef[] = [
-  { key: 'weight_kg',      label: 'Poids',              unit: 'kg',   color: '#1A1A1A', category: 'composition',  step: 0.1 },
-  { key: 'body_fat_pct',   label: '% Masse grasse',     unit: '%',    color: '#FCF76E', category: 'composition',  step: 0.1 },
-  { key: 'fat_mass_kg',    label: 'Masse grasse',        unit: 'kg',   color: '#FCF76E', category: 'composition',  step: 0.1 },
-  { key: 'muscle_mass_kg', label: 'Masse musc.',         unit: 'kg',   color: '#1A1A1A', category: 'composition',  step: 0.1 },
-  { key: 'muscle_pct',     label: '% Musculaire',        unit: '%',    color: '#FCF76E', category: 'composition',  step: 0.1 },
-  { key: 'body_water_pct', label: '% Hydrique',          unit: '%',    color: '#1A1A1A', category: 'composition',  step: 0.1 },
-  { key: 'bone_mass_kg',   label: 'Masse osseuse',       unit: 'kg',   color: '#FCF76E', category: 'composition',  step: 0.01 },
-  { key: 'visceral_fat',   label: 'Graisse viscérale',   unit: '',     color: '#1A1A1A', category: 'composition',  step: 1 },
-  { key: 'bmi',            label: 'IMC',                 unit: '',     color: '#FCF76E', category: 'composition',  step: 0.1 },
-  { key: 'bmr_kcal',       label: 'Métabolisme de base', unit: 'kcal', color: '#1A1A1A', category: 'composition',  step: 1 },
-  { key: 'waist_cm',       label: 'Taille',              unit: 'cm',   color: '#1A1A1A', category: 'measurements', step: 0.5 },
-  { key: 'hips_cm',        label: 'Hanches',             unit: 'cm',   color: '#FCF76E', category: 'measurements', step: 0.5 },
-  { key: 'chest_cm',       label: 'Poitrine',            unit: 'cm',   color: '#1A1A1A', category: 'measurements', step: 0.5 },
-  { key: 'arm_cm',         label: 'Bras',                unit: 'cm',   color: '#FCF76E', category: 'measurements', step: 0.5 },
-  { key: 'thigh_cm',       label: 'Cuisse',              unit: 'cm',   color: '#1A1A1A', category: 'measurements', step: 0.5 },
-  { key: 'calf_cm',        label: 'Mollet',              unit: 'cm',   color: '#FCF76E', category: 'measurements', step: 0.5 },
-  { key: 'neck_cm',        label: 'Cou',                 unit: 'cm',   color: '#1A1A1A', category: 'measurements', step: 0.5 },
-  { key: 'sleep_hours',    label: 'Sommeil',             unit: 'h',    color: '#1A1A1A', category: 'wellness',     step: 0.25 },
-  { key: 'energy_level',   label: 'Énergie',             unit: '/10',  color: '#FCF76E', category: 'wellness',     step: 1 },
-  { key: 'stress_level',   label: 'Stress',              unit: '/10',  color: '#1A1A1A', category: 'wellness',     step: 1 },
+  { key: 'weight_kg',      label: 'Poids',              unit: 'kg',   color: CHART_COLOR_PRIMARY, category: 'composition',  step: 0.1 },
+  { key: 'body_fat_pct',   label: '% Masse grasse',     unit: '%',    color: CHART_COLOR_ACCENT, category: 'composition',  step: 0.1 },
+  { key: 'fat_mass_kg',    label: 'Masse grasse',        unit: 'kg',   color: CHART_COLOR_ACCENT, category: 'composition',  step: 0.1 },
+  { key: 'muscle_mass_kg', label: 'Masse musc.',         unit: 'kg',   color: CHART_COLOR_PRIMARY, category: 'composition',  step: 0.1 },
+  { key: 'muscle_pct',     label: '% Musculaire',        unit: '%',    color: CHART_COLOR_ACCENT, category: 'composition',  step: 0.1 },
+  { key: 'body_water_pct', label: '% Hydrique',          unit: '%',    color: CHART_COLOR_PRIMARY, category: 'composition',  step: 0.1 },
+  { key: 'bone_mass_kg',   label: 'Masse osseuse',       unit: 'kg',   color: CHART_COLOR_ACCENT, category: 'composition',  step: 0.01 },
+  { key: 'visceral_fat',   label: 'Graisse viscérale',   unit: '',     color: CHART_COLOR_PRIMARY, category: 'composition',  step: 1 },
+  { key: 'bmi',            label: 'IMC',                 unit: '',     color: CHART_COLOR_ACCENT, category: 'composition',  step: 0.1 },
+  { key: 'bmr_kcal',       label: 'Métabolisme de base', unit: 'kcal', color: CHART_COLOR_PRIMARY, category: 'composition',  step: 1 },
+  { key: 'waist_cm',       label: 'Taille',              unit: 'cm',   color: CHART_COLOR_PRIMARY, category: 'measurements', step: 0.5 },
+  { key: 'hips_cm',        label: 'Hanches',             unit: 'cm',   color: CHART_COLOR_ACCENT, category: 'measurements', step: 0.5 },
+  { key: 'chest_cm',       label: 'Poitrine',            unit: 'cm',   color: CHART_COLOR_PRIMARY, category: 'measurements', step: 0.5 },
+  { key: 'arm_cm',         label: 'Bras',                unit: 'cm',   color: CHART_COLOR_ACCENT, category: 'measurements', step: 0.5 },
+  { key: 'thigh_cm',       label: 'Cuisse',              unit: 'cm',   color: CHART_COLOR_PRIMARY, category: 'measurements', step: 0.5 },
+  { key: 'calf_cm',        label: 'Mollet',              unit: 'cm',   color: CHART_COLOR_ACCENT, category: 'measurements', step: 0.5 },
+  { key: 'neck_cm',        label: 'Cou',                 unit: 'cm',   color: CHART_COLOR_PRIMARY, category: 'measurements', step: 0.5 },
+  { key: 'sleep_hours',    label: 'Sommeil',             unit: 'h',    color: CHART_COLOR_PRIMARY, category: 'wellness',     step: 0.25 },
+  { key: 'energy_level',   label: 'Énergie',             unit: '/10',  color: CHART_COLOR_ACCENT, category: 'wellness',     step: 1 },
+  { key: 'stress_level',   label: 'Stress',              unit: '/10',  color: CHART_COLOR_PRIMARY, category: 'wellness',     step: 1 },
 ]
 
 const FIELD_MAP = Object.fromEntries(FIELDS.map(f => [f.key, f]))

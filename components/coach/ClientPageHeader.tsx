@@ -25,13 +25,13 @@ export default function ClientPageHeader({
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-40 bg-[#343434] border-b border-white/10">
+    <header className="sticky top-0 z-40 bg-dark border-b border-dark/20">
       {/* Header row — back button, client info, notifications */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-white/10">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-dark/20">
         {/* Back button */}
         <button
           onClick={() => router.push("/coach/clients")}
-          className="flex items-center gap-2 px-2 py-1 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="flex items-center gap-2 px-2 py-1 rounded-lg text-muted hover:text-on-dark hover:bg-white/5 transition-colors"
           title="Retour à la liste"
         >
           <ChevronLeft size={16} />
@@ -45,11 +45,11 @@ export default function ClientPageHeader({
               {lastName[0]}
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-sm font-semibold text-white leading-tight">
+              <h1 className="text-sm font-semibold text-on-dark leading-tight">
                 {firstName} {lastName}
               </h1>
               {email && (
-                <p className="text-[11px] text-white/40 truncate">{email}</p>
+                <p className="text-[11px] text-muted truncate">{email}</p>
               )}
             </div>
           </div>
@@ -67,8 +67,8 @@ export default function ClientPageHeader({
             onClick={() => onTabChange(key)}
             className={`flex items-center gap-2 px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
               activeTab === key
-                ? "text-[#FCF76E] border-[#FCF76E]"
-                : "text-white/50 border-transparent hover:text-white/70 hover:border-white/20"
+                ? "text-accent border-accent"
+                : "text-on-dark/50 border-transparent hover:text-on-dark/70 hover:border-on-dark/20"
             }`}
             title={label}
           >
