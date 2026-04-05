@@ -1,14 +1,211 @@
 # CHANGELOG
 
+## 2026-04-05 — Coach UI Polish Complete: 3 Medium-Effort Enhancements
+
+FEAT: Multi-series visibility toggle in metrics overlay chart
+- Add individual checkboxes for each metric line in legend
+- Toggle series visibility on/off independently
+- Unchecked series fade to 50% opacity
+- Chart updates reactively without affecting global filter
+
+FEAT: Sidebar collapsible mode with compact layout
+- Toggle between full width (w-56) and icon-only compact (w-20) mode
+- Logo, section headers, labels hide in compact
+- Smooth 300ms transition + all tooltips active
+- Better screen real estate on smaller displays
+
+FEAT: Move notification bell from Sidebar to CoachTopBar  
+- NotificationBell repositioned for better visibility
+- Dropdown below (default positioning)
+- Cleaner Sidebar footer without clutter
+- Add topBarMode prop for flexible dropdown positioning
+
+FIX: Sidebar nav active state to STRYVR v2.1 accent yellow
+- bg-accent text-[#1A1A1A] font-semibold
+- Hover shadow upgraded to shadow-elevated
+
+FIX: MetricsSection sparkline height + KPI grid responsive
+- Sparkline: 28px → 48px (readability)
+- KPI grid: 1-col mobile → 2-col tablet → 4-col desktop
+- Delta display: simplified arrow icons + value format
+
+## 2026-04-05 — Phase 2: Zustand Boilerplate + Safety Rules + Feedback System (LUNDI MATIN)
+
+FEATURE: Zustand store with devtools + subscribeWithSelector middleware
+
+- useClientStore as single source of truth for client profile + all 6 calculator results
+- Auto-recalculation middleware: profile change → recalculateAll() → safety rules → feedback
+- Devtools integration for time-travel debugging + action history inspection
+
+FEATURE: 10 metabolic + performance safety rules engine (lib/stores/safety-rules.ts)
+
+- METABOLIC_SAFETY_01 [CRITICAL]: Calories < BMR detection
+- PROTEIN_LEAN_MASS_01 [WARNING]: Protein insufficient for LBM protection
+- CYCLE_LUTEAL_CARBS_01 [ADVICE]: Luteal phase carb optimization
+- PERF_INJURY_OVULATION [WARNING]: Female ovulatory phase injury risk
+- PERF_VOLUME_OVERLOAD [CRITICAL]: High volume + poor recovery detection
+- HYDRATION_PROTEIN_LINK [ADVICE]: Protein-hydration correlation
+- BF_INCOHERENCE [WARNING]: Fast weight loss without BF monitoring
+- SUPP_CREATINE_MISSING [ADVICE]: Hypertrophy goal + creatine check
+- HR_KARVONEN_PRECISION [ADVICE]: Resting HR available → Karvonen switch recommendation
+- RECOVERY_SLEEP_DEBT [WARNING]: High volume + poor sleep → complex carbs priority
+
+FEATURE: Multi-layer feedback system (lib/stores/feedback-emitter.ts)
+
+- Layer 1: Haptic vibration (mobile) — patterns per alert level
+- Layer 2: Web Audio API — frequency-based tones (800Hz/600Hz/400Hz)
+- Layer 3: CSS flash animations (animate-flash-critical/warning/advice)
+- Cooldown system (3s per rule) prevents feedback spam
+
+FEATURE: Integration hooks (lib/stores/useClientStoreMiddleware.ts)
+
+- useClientStoreMiddleware() → Install middleware in root layout
+- useClientProfileUpdate() → Update profile with auto-recalculation
+- useClientStoreAlerts() → Get all active alerts (filtered)
+- useFeedbackListener() → Subscribe to feedback events
+- useCardFlash() → Auto-flash card on alert activation
+
+FEATURE: SafetyAlertsPanel React component
+
+- Displays all active CRITICAL / WARNING / ADVICE alerts grouped by level
+- Shows rule ID, message, action button for each alert
+
+REFACTOR: app/globals.css — Add CSS animation utilities
+
+- @keyframes flash-critical/warning/advice with GPU-accelerated animations
+- .animate-flash-\* utility classes for card elements
+
+DOCS: PHASE_2_ZUSTAND_SPEC.md + LUNDI_MATIN_HARD_SPEC.md
+
+- Full technical specification + integration patterns
+- Monday morning validation gate + quick-start
+
+## 2026-04-05 — Coach UI Polish & Sparkline Visibility Fix
+
+FIX: Sidebar nav active button color alignment to STRYVR v2.1 accent yellow (#FCF76E)
+
+- Active nav now renders with bg-accent text-[#1A1A1A] + font-semibold for professional contrast
+- Hover shadow upgraded to shadow-elevated (was deprecated shadow-soft-out)
+- Aligns left navigation with design system color tokens
+
+FIX: MetricsSection sparkline height increased from 28px to 48px
+
+- Improves chart readability in data table rows
+- Responsive container height adjustment for better visual clarity
+- Maintains consistent spacing and component proportions
+
+REFACTOR: MetricsSection KPI grid responsive design and delta display
+
+- KPI cards now responsive: 1-col mobile → 2-col tablet → 4-col desktop
+- Delta display simplified: arrow icons (↗ ↘ −) + value + unit in single line
+- Reduces visual clutter while improving mobile UX and consistency
+
+## 2026-04-05 — Phase 1 Refonte Data: Architecture Interconnexion
+
+SCHEMA: Add calculator_results table with RLS policies (calc input/output storage)
+
+- Migration: 20260405_calculator_results.sql — table avec indexes client+type+date, RLS coach/client
+- Enables: Queryable calculator history (exit from JSON generic responses)
+- Replaces: Inline JSON storage in assessment_responses with typed table
+
+REFACTOR: Centralize calculator formulas in lib/formulas/ (pure TypeScript functions)
+
+- EXISTING: lib/formulas/{oneRM,bodyFat,hrZones,hydration,macros,carbCycling}.ts already present
+- NEW: types.ts (ConfidenceMargin, FormulaResult interfaces, formula versions map, input ranges)
+- NEW: validators.ts (input validation for all 8 calculators: Brzycki, Karvonen, macros, bodyFat, water, BMI)
+- NEW: lib/db/calculator-results.ts (service layer CRUD: store/get/update/delete results)
+- NEW: app/api/calculator-results/store/route.ts (POST endpoint to persist results)
+- NEW: app/api/calculator-results/query/route.ts (GET endpoint to query results, export CSV)
+- Types: types/calculator.ts (TypeScript interfaces for all 8 calculator outputs)
+- Impact: Zéro logique mathématique en composants; toutes formules centralisées + versionnées
+
+FEATURE: API typing for calculator results
+
+- Result storage now records: input, output, formula_version, metadata (audit trail ready)
+- Query API supports: calculatorType filter, date range filters, CSV export
+- Confidence intervals captured in output (±margin)
+
+FEATURE: Formulas version registry
+
+- FORMULA_VERSIONS map for versioning (enables reproducibility & audit)
+- Each calculator export result includes formulaVersion
+- UPDATE path: modify lib/formulas/[calculator].ts + bump FORMULA_VERSIONS[key]
+
+REFACTOR: Preparation for Zustand store integration (Phase 2)
+
+- Service layer storeCalculatorResult() ready for autoCall from store setClientData()
+- API endpoints accept client_id + calculator_type for targeting
+
 ## 2026-04-05
 
+FIX: MultiSeriesChart — normalisation % variation pour corriger les lignes plates sur métriques multi-échelles
+
+- Mode "% variation" par défaut : chaque série normalisée depuis sa baseline (point 0 = 0%), axe Y symétrique ±X%
+- ReferenceLine y=0 en blanc/20% — repère visuel immédiat de la baseline
+- Toggle "% variation / Valeurs" — passe en valeurs absolues brutes si besoin
+- Légende enrichie : valeur actuelle + delta % total (depuis départ) par série, coloré favorable/attention
+- Tooltip "% variation" : affiche % change + vraie valeur recalculée (baseline × (1 + pct/100))
+- Mode "Valeurs" conservé pour les métriques de même unité (ex: toutes les mensurations en cm)
+- Fill area désactivé en mode % pour lire les croisements de courbes clairement
+
+REFACTOR: MetricsSection — niveau élite rendu graphique
+
+- KPI cards 160px height fixe, valeur 38px letter-spacing -0.02em, delta pill contextuel (jaune/rouge/gris), mini-chart 64px avec hover tooltip, ligne #343434 sur light / #FCF76E sur dark
+- FullChart : zone chart bg-[#F0EFE7] pour contraste, header avec bloc delta carré (icône + valeur + unité), footer 3 colonnes (début / nb points / fin), dot actif #FCF76E stroke #343434, hauteur 200px, axes 10px font-weight 600
+- MultiSeriesChart : fond #343434 entier, légende en grille avec valeur courante colorée par série, areas fill par serie avec gradient, grille rgba(255,255,255,0.06), axes blancs/30
+- Palette SERIES_COLORS corrigée : #FCF76E / blue-400 / emerald-400 / pink-400 / violet-400 (plus jamais #1A1A1A invisible sur dark)
+
+FEATURE: MetricsSection — système de filtres + vues Graphiques / Comparer
+
+- FilterPanel inline : presets période (1m / 3m / 6m / 1y / Tout / Perso.), plage custom date A→B, sélecteur de métriques par catégorie
+- Filtre actif : badge compteur sur bouton Filtrer + pill de résumé avec croix de reset rapide
+- Vue Graphiques : bouton Superposé (overlay) activé si ≥2 métriques sélectionnées → MultiSeriesChart (LineChart multi-séries, tooltip multi-lignes dark)
+- Vue Comparer (SnapshotCompare) : sélection snapshot A + B par dropdown, tableau comparatif groupé par catégorie, Δ coloré (vert/rouge selon sémantique négGood), barre des 5 plus grands écarts sur card dark #343434
+- Toutes les vues (tableau, graphiques, comparer) filtrées sur la même plage de dates
+- ViewMode étendu : 'table' | 'charts' | 'compare'
+
+REFACTOR: MetricsSection charts — qualité rendu premium (AreaChart + tooltip dark + dots animés + KPI mini-chart)
+
+- FullChart : BarChart → AreaChart avec gradient fill, ligne 2px, dots custom (dernier point mis en valeur r=4)
+- Tooltip dark : card #1A1A1A, valeur accent #FCF76E, date formatée long, shadow 24px
+- KPI cards : mini AreaChart intégré en bas de card, gradient jaune/dark selon thème alternance
+- Sparkline table : Area fill avec gradient remplace simple line
+- Domaine Y dynamique avec padding 15-20%, baseline ReferenceLine avec label
+- Footer date range dans chaque FullChart
+- Unification sur AreaChart — suppression BarChart/Bar/Cell/PillBar
+
+REFACTOR: Performance Lab — centralisation formules + store Zustand
+
+- FEATURE: lib/formulas/ — 6 modules TypeScript stricts (oneRM, bodyFat, hrZones, hydration, macros, carbCycling) avec toutes les formules extraites des composants
+- FEATURE: lib/stores/useClientStore.ts — store Zustand (persist) source de vérité unique pour les données biométriques client + résultats calculateurs; recalculateAll() auto-déclenché sur setProfile()
+- REFACTOR: OneRMCalculator — utilise calculateOneRM() + TRAINING_ZONES() de lib/formulas, propage résultat au store
+- REFACTOR: BodyFatCalculator — utilise navyBodyFat/skinfoldBodyFat/getBodyFatCategory de lib/formulas, propage weight+BF% au store
+- REFACTOR: HRZonesCalculator — utilise calculateHRZones() de lib/formulas, propage age+gender au store
+- REFACTOR: HydratationCalculator — utilise calculateHydration() de lib/formulas, propage weight+activity+climate au store
+- REFACTOR: MacroCalculator — utilise calculateMacros() de lib/formulas, propage profil complet au store
+- CHORE: lib/formulas/index.ts — barrel export public API
+
+REFACTOR: MetricsSection — strict refonte design system v2.1 (crème base, dark islands, yellow acid accent)
+
+- KPI cards: alternating #FEFEFE / #343434, correct shadow, text tokens #1A1A1A / #FEFEFE
+- DeltaBadge: extracted as shared component with #FCF76E pill
+- Toolbar: pill toggle on #D8D7CE base, active = bg-[#343434] shadow-sm
+- ModalShell: extracted reusable modal wrapper, border-[#E2E1D9], correct shadow
+- FieldInput: puits pattern — #E2E1D9 inactif → #FEFEFE focus + border-[#111111]
+- Table: hover bg-[#E2E1D9]/40, border-[#E2E1D9], header text-[#8A8A85] uppercase tracking-wide
+- Charts: grid stroke #E2E1D9, bar colors #343434 / #FCF76E alt, tooltip border #BCBCB8
+- Toast: bg-[#343434] text-[#FEFEFE] with #FCF76E check icon
+- Delete modal: bg-[#FEFEFE] with correct shadow, button tokens #D8D7CE / red-500
+
 REFACTOR: Coach layout architecture — implement Option C design with horizontal top nav + full-width content
+
 - Remove Sidebar from coach/layout.tsx (sidebar remains in dashboard/outils)
 - Transform layout from flex row+sidebar to pure flex column: TopBar → SubHeader → Content
 - Update coach layout background to bg-background
 - Prepare architecture for future right-side floating panels/drawers
 
 REFACTOR: Coach sidebar — transform from fixed full-height to floating design with rounded corners and side margins
+
 - Change `fixed top-0 left-0 h-screen` → `fixed top-4 left-4 h-[calc(100vh-32px)]` — floating with 16px margin
 - Add `rounded-card` (16px radius) for modern floating appearance
 - Update border colors to `border-subtle` (#BCBCB8) for consistency with STRYVR v2.1 design system
@@ -201,8 +398,8 @@ FEATURE: Historique performance client — page /client/progress avec KPIs (séa
 FEATURE: PWA — manifest.json (scope /client, standalone, theme #ededed), service worker (cache-first assets, stale-while-revalidate pages, network-first API), ServiceWorkerRegistrar client component, appleWebApp meta tags
 FEATURE: Bouton "Email" sur chaque bilan en attente/en cours — envoie le lien par email au client sans regénérer de token ; feedback "Envoyé !" 2.5s ; masqué si pas d'email client renseigné
 FIX: Envoi email bilan depuis dossier client — toggle "Envoyer par email" dans le modal, label du bouton adaptatif ("Créer le lien" vs "Envoyer + email"), email client affiché sous le toggle, message si pas d'email renseigné
-FIX: Template __csv_import__ exclu du select "Envoyer un bilan" — GET /api/assessments/templates filtre les templates système
-FIX: Submissions import CSV masquées de l'onglet Bilans — GET /api/assessments/submissions filtre les entrées liées au template __csv_import__ ; plus de bouton "Voir" menant en 404
+FIX: Template **csv_import** exclu du select "Envoyer un bilan" — GET /api/assessments/templates filtre les templates système
+FIX: Submissions import CSV masquées de l'onglet Bilans — GET /api/assessments/submissions filtre les entrées liées au template **csv_import** ; plus de bouton "Voir" menant en 404
 FEATURE: Template assign page — client list ranked by scoring v2 (same algorithm as dossier client picker); badge score + label + profil structuré affiché sur chaque client; "Recommandé" pill sur le top match
 SCHEMA: coach_clients — add training_goal, fitness_level, sport_practice, weekly_frequency (structured enum fields for deterministic scoring)
 FEATURE: Template compatibility scoring v2 — 4 clean signals (training_goal 45pts, fitness_level 30pts, weekly_frequency 20pts, sport_practice 5pts); no free-text fuzzy matching; signal count hint in picker
@@ -215,7 +412,7 @@ FEATURE: Template compatibility scoring in client program tab — templates rank
 FIX: Image containers adapt to intrinsic dimensions — replaced fixed-height `h-28`/`h-32` + `fill` + `object-cover` with `width={0} height={0}` + `w-full h-auto` in ProgramTemplateBuilder, ProgramEditor, and program preview page; GIFs are unoptimized
 
 FEATURE: Import CSV mesures corporelles — bouton "Importer un CSV" dans l'onglet Métriques du dossier client, parse le format tableur coach (poids, % MG, masse musculaire, masse osseuse, graisse viscérale, BMR, tour de taille, âge métabolique), insère dans assessment_submissions + assessment_responses, détecte les doublons
-FEATURE: API POST /api/clients/[clientId]/import-csv — parse CSV format spécifique, crée template système __csv_import__ si absent, insère submissions + réponses, idempotent sur (client_id, template_id, submitted_at)
+FEATURE: API POST /api/clients/[clientId]/import-csv — parse CSV format spécifique, crée template système **csv_import** si absent, insère submissions + réponses, idempotent sur (client_id, template_id, submitted_at)
 FIX: Email templates — brand colors (#0e8c5b accent, #1A1A1A header), logo URL dynamique via NEXT_PUBLIC_SITE_URL, shared emailTemplate helper
 FIX: Modal branded sur suppression template — remplacement confirm() natif par modal neumorphique STRYVR sur /coach/programs/templates
 FEATURE: Preview programme coach — page /coach/clients/[id]/programs/[id]/preview, vue identique à la mini-app client, avec images, badge "Vue client", strip jours, bouton retour
@@ -238,7 +435,7 @@ FEATURE: Lien d'accès client — bouton "Envoyer par email" dans ClientAccessTo
 FEATURE: mailer.ts — sendAccessLinkEmail avec nom du coach + template branded
 FIX: Emails — nom du coach affiché ("Jean Dupont vous a envoyé un bilan") via user_metadata + sujet personnalisé
 FIX: Dossier client — alert() natif remplacé par toast branded (bg-primary, accent, slide-in) après copie du lien bilan
-SECURITY: Middleware — /coach/* et /dashboard/* protégés (redirect /auth/login si non authentifié)
+SECURITY: Middleware — /coach/_ et /dashboard/_ protégés (redirect /auth/login si non authentifié)
 SECURITY: .gitignore renforcé — .env*, *.key, credentials, backups, IDE tooling exclus
 CHORE: Git repo initialisé — aucun secret tracké, .env.local exclu
 REFACTOR: Logo logo.png appliqué partout — client login, home, bilans, programme, SessionLogger, AssessmentForm, Sidebar, page d'accueil, emails
@@ -292,14 +489,14 @@ FEATURE: Client PWA Phase 2 — bilans list, bilan detail, profil, bottom nav
 SCHEMA: supabase/migrations/20260403_client_user_link.sql — user_id sur coach_clients + RLS policies client (profil, submissions, responses)
 FEATURE: Client auth Phase 1 — app/client/login (connexion + création compte + liaison userId↔coach_clients)
 FEATURE: app/client/page.tsx — home client protégée (programme/bilans/profil placeholders)
-FEATURE: app/client/layout.tsx — protection SSR de toutes les routes /client/*
+FEATURE: app/client/layout.tsx — protection SSR de toutes les routes /client/_
 FEATURE: app/client/auth/confirm/route.ts — échange PKCE code → session, redirect /client
-FEATURE: Middleware — routes /client/* protégées, /client/login redirige si déjà connecté
+FEATURE: Middleware — routes /client/_ protégées, /client/login redirige si déjà connecté
 
 FEATURE: Upload photo fonctionnel dans les bilans — widget drag & drop + preview + signed URL Supabase Storage (côté client via token public, côté coach via auth)
 FEATURE: API POST /api/assessments/submissions/[id]/upload-url — endpoint upload côté coach
 FIX: Biométrie épurée — plis cutanés (4 champs) et IMC déplacés vers mensurations ; biométrie ne contient plus que données balance/DEXA
-FEATURE: Sidebar persistante sur dashboard, coach/* et outils/* — composant Sidebar partagé via layouts Next.js
+FEATURE: Sidebar persistante sur dashboard, coach/_ et outils/_ — composant Sidebar partagé via layouts Next.js
 REFACTOR: Sidebar extraite du dashboard vers components/layout/Sidebar.tsx — dashboard nettoyé (sidebar inline supprimée)
 FEATURE: Logique conditionnelle sur les champs — show_if (eq, neq, includes, not_empty) avec évaluation runtime dans le formulaire client et le builder coach
 FEATURE: Page templates — bouton envoyer (modal sélection client + lien de remplissage) + bouton dupliquer
