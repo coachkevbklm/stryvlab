@@ -269,7 +269,7 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
     <div className="space-y-6">
 
       {/* ── Subscriptions ───────────────────────────────────────────────────── */}
-      <div className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60">
+      <div className="bg-surface rounded-2xl p-5 border border-white/60">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <CreditCard size={15} className="text-secondary/60" />
@@ -407,7 +407,7 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
 
       {/* ── Payments history ─────────────────────────────────────────────────── */}
       {clientPayments.length > 0 && (
-        <div className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60">
+        <div className="bg-surface rounded-2xl p-5 border border-white/60">
           <div className="flex items-center gap-2 mb-5">
             <Receipt size={15} className="text-secondary/60" />
             <h3 className="text-sm font-bold text-primary">Historique des paiements</h3>
@@ -445,7 +445,7 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
             <FormField label="Formule *">
               <div className="flex gap-2">
                 <select required value={subForm.formula_id} onChange={e => setSubForm(f => ({ ...f, formula_id: e.target.value }))}
-                  className="flex-1 h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                  className="flex-1 h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                   <option value="">— Choisir une formule</option>
                   {allFormulas.filter(f => f.is_active).map(f => (
                     <option key={f.id} value={f.id}>{f.name} — {f.price_eur} €{BILLING_LABELS[f.billing_cycle]}</option>
@@ -460,7 +460,7 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Statut">
                 <select value={subForm.status} onChange={e => setSubForm(f => ({ ...f, status: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                   <option value="active">Actif</option>
                   <option value="trial">Essai</option>
                   <option value="paused">Pausé</option>
@@ -469,21 +469,21 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
               <FormField label="Prix personnalisé (€)">
                 <input type="number" step="0.01" placeholder="Laisser vide = prix formule"
                   value={subForm.price_override_eur} onChange={e => setSubForm(f => ({ ...f, price_override_eur: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
               </FormField>
               <FormField label="Date de début">
                 <input type="date" value={subForm.start_date} onChange={e => setSubForm(f => ({ ...f, start_date: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
               </FormField>
               <FormField label="Prochain paiement">
                 <input type="date" value={subForm.next_billing_date} onChange={e => setSubForm(f => ({ ...f, next_billing_date: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
               </FormField>
             </div>
             <FormField label="Notes">
               <textarea value={subForm.notes} onChange={e => setSubForm(f => ({ ...f, notes: e.target.value }))}
                 rows={2} placeholder="Conditions particulières..."
-                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none resize-none" />
+                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none resize-none" />
             </FormField>
             <button type="submit" disabled={subSaving || !subForm.formula_id}
               className="w-full h-11 flex items-center justify-center gap-2 bg-accent text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-40 transition-opacity">
@@ -502,11 +502,11 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
               <FormField label="Montant (€) *">
                 <input type="number" step="0.01" required placeholder="0.00"
                   value={payForm.amount_eur} onChange={e => setPayForm(f => ({ ...f, amount_eur: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none font-mono" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none font-mono" />
               </FormField>
               <FormField label="Statut">
                 <select value={payForm.status} onChange={e => setPayForm(f => ({ ...f, status: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                   <option value="paid">Payé</option>
                   <option value="pending">En attente</option>
                   <option value="failed">Échoué</option>
@@ -514,7 +514,7 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
               </FormField>
               <FormField label="Méthode">
                 <select value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                   <option value="manual">Manuel</option>
                   <option value="bank_transfer">Virement</option>
                   <option value="card">Carte</option>
@@ -523,18 +523,18 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
               </FormField>
               <FormField label="Date de paiement">
                 <input type="date" value={payForm.payment_date} onChange={e => setPayForm(f => ({ ...f, payment_date: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
               </FormField>
             </div>
             <FormField label="Description">
               <input type="text" placeholder="Ex: Coaching Novembre" value={payForm.description}
                 onChange={e => setPayForm(f => ({ ...f, description: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </FormField>
             <FormField label="Référence">
               <input type="text" placeholder="N° de facture, réf. virement..." value={payForm.reference}
                 onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </FormField>
             <button type="submit" disabled={paySaving || !payForm.amount_eur}
               className="w-full h-11 flex items-center justify-center gap-2 bg-accent text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-40 transition-opacity">
@@ -552,17 +552,17 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
             <FormField label="Nom *">
               <input type="text" required placeholder="Coaching Premium" value={formulaForm.name}
                 onChange={e => setFormulaForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </FormField>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Prix (€)">
                 <input type="number" step="0.01" placeholder="99.00" value={formulaForm.price_eur}
                   onChange={e => setFormulaForm(f => ({ ...f, price_eur: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none font-mono" />
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none font-mono" />
               </FormField>
               <FormField label="Facturation">
                 <select value={formulaForm.billing_cycle} onChange={e => setFormulaForm(f => ({ ...f, billing_cycle: e.target.value }))}
-                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                  className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                   <option value="one_time">Paiement unique</option>
                   <option value="weekly">Hebdo</option>
                   <option value="monthly">Mensuel</option>
@@ -574,12 +574,12 @@ export default function ClientFormulasTab({ clientId }: { clientId: string }) {
             <FormField label="Description">
               <input type="text" placeholder="Coaching personnalisé incluant..." value={formulaForm.description}
                 onChange={e => setFormulaForm(f => ({ ...f, description: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </FormField>
             <FormField label="Inclus (une ligne par item)">
               <textarea value={formulaForm.features} onChange={e => setFormulaForm(f => ({ ...f, features: e.target.value }))}
                 rows={3} placeholder={"Programme personnalisé\nSuivi hebdomadaire\nBilans mensuels"}
-                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none resize-none" />
+                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none resize-none" />
             </FormField>
             <button type="submit" disabled={formulaSaving || !formulaForm.name}
               className="w-full h-11 flex items-center justify-center gap-2 bg-accent text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-40 transition-opacity">

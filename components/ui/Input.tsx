@@ -27,7 +27,6 @@ export const Input = ({
           bg-surface-light 
           text-primary placeholder:text-muted
           rounded-widget
-          shadow-soft-in
           border-none outline-none
           transition-all duration-200
           focus:ring-2 focus:ring-accent/10

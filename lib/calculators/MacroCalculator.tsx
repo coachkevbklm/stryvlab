@@ -333,32 +333,32 @@ export function MacroCalculator({ language: propLanguage }: MacroCalculatorProps
             <Accordion
               items={[
                 {
-                  question: t.macroCalculator.faq.activityLevel.question,
-                  answer: (
+                  title: t.macroCalculator.faq.activityLevel.question,
+                  content: (
                     <div className="whitespace-pre-line">
                       {t.macroCalculator.faq.activityLevel.answer}
                     </div>
                   ),
                 },
                 {
-                  question: t.macroCalculator.faq.macrosCalculation.question,
-                  answer: (
+                  title: t.macroCalculator.faq.macrosCalculation.question,
+                  content: (
                     <div className="whitespace-pre-line">
                       {t.macroCalculator.faq.macrosCalculation.answer}
                     </div>
                   ),
                 },
                 {
-                  question: t.macroCalculator.faq.tdee.question,
-                  answer: (
+                  title: t.macroCalculator.faq.tdee.question,
+                  content: (
                     <div>
                       {t.macroCalculator.faq.tdee.answer}
                     </div>
                   ),
                 },
                 {
-                  question: t.macroCalculator.faq.accuracy.question,
-                  answer: (
+                  title: t.macroCalculator.faq.accuracy.question,
+                  content: (
                     <div>
                       {t.macroCalculator.faq.accuracy.answer}
                     </div>

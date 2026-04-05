@@ -183,7 +183,7 @@ export default function GenesisAssistant({ onStartIPT }: GenesisAssistantProps) 
         <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-4">
           <button
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ease-out shadow-soft-out hover:scale-105 active:scale-95 bg-accent text-white group"
+            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ease-out hover:scale-105 active:scale-95 bg-accent text-white group"
             aria-label="STRYV AI"
           >
             <div className="flex items-start leading-none font-bold font-outfit">
@@ -199,7 +199,7 @@ export default function GenesisAssistant({ onStartIPT }: GenesisAssistantProps) 
         <div className="fixed inset-0 z-[100] md:inset-auto md:bottom-24 md:right-6 md:w-[400px] md:h-[650px] flex flex-col">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm md:hidden" />
 
-          <div className="relative flex flex-col w-full h-full md:rounded-card bg-[#f8f8f8] shadow-2xl md:shadow-soft-out border-none md:border border-white/50 overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+          <div className="relative flex flex-col w-full h-full md:rounded-card bg-[#f8f8f8] shadow-2xl md:border-none md:border border-white/50 overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
             
             {/* HEADER */}
             <div className="px-5 py-4 border-b border-gray-200/50 flex justify-between items-center bg-white/90 backdrop-blur-md z-10">

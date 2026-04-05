@@ -26,7 +26,7 @@ export function IPTFormulaCard({ axes, globalScore }: IPTFormulaCardProps) {
   };
 
   return (
-    <div className="bg-surface border border-white/60 p-6 rounded-2xl shadow-soft-out h-full flex flex-col">
+    <div className="bg-surface border border-white/60 p-6 rounded-2xl h-full flex flex-col">
       
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">

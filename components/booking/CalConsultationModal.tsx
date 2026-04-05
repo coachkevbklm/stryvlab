@@ -62,7 +62,7 @@ export default function CalConsultationModal({ isOpen, onClose }: CalConsultatio
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-surface shadow-soft-out hover:shadow-soft-in active:shadow-soft-in transition-all duration-200 flex items-center justify-center text-secondary hover:text-primary"
+            className="w-10 h-10 rounded-full bg-surface hover:active:transition-all duration-200 flex items-center justify-center text-secondary hover:text-primary"
           >
             <X size={20} />
           </button>

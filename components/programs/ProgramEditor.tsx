@@ -222,7 +222,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
   return (
     <div className="flex flex-col gap-5">
       {/* Programme meta */}
-      <div className="bg-surface rounded-card shadow-soft-out p-5 flex flex-col gap-4">
+      <div className="bg-surface rounded-card p-5 flex flex-col gap-4">
         <h3 className="font-semibold text-primary text-sm">Informations du programme</h3>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
@@ -231,7 +231,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
               value={program.name}
               onChange={e => updateProgram({ name: e.target.value })}
               placeholder="ex: PPL Hypertrophie S1"
-              className="w-full px-3 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
           <div>
@@ -242,7 +242,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
               max={52}
               value={program.weeks}
               onChange={e => updateProgram({ weeks: parseInt(e.target.value) || 4 })}
-              className="w-full px-3 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
           <div>
@@ -251,7 +251,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
               value={program.description}
               onChange={e => updateProgram({ description: e.target.value })}
               placeholder="Optionnel"
-              className="w-full px-3 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
       {/* Sessions */}
       <div className="flex flex-col gap-3">
         {program.sessions.map((session, si) => (
-          <div key={si} className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+          <div key={si} className="bg-surface rounded-card overflow-hidden">
             {/* Session header */}
             <div className="flex items-center gap-2 p-4 border-b border-white/40">
               <GripVertical size={14} className="text-secondary shrink-0" />

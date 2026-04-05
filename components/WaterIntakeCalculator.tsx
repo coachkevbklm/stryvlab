@@ -139,28 +139,28 @@ export function WaterIntakeCalculator({ language: propLanguage }: WaterIntakeCal
                 </label>
                 <Dropdown
                   value={activity}
-                  onChange={(value) => {
+                  onChange={(value: string | number) => {
                     setActivity(value as typeof activity);
                     setShowResults(false);
                   }}
                   options={[
-                    { 
-                      value: 'sedentary', 
+                    {
+                      value: 'sedentary',
                       label: t.waterIntakeCalculator.activity.sedentary,
                       description: 'Peu ou pas d\'exercice, travail de bureau'
                     },
-                    { 
-                      value: 'moderate', 
+                    {
+                      value: 'moderate',
                       label: t.waterIntakeCalculator.activity.moderate,
                       description: '3 à 5 jours d\'exercice modéré par semaine'
                     },
-                    { 
-                      value: 'active', 
+                    {
+                      value: 'active',
                       label: t.waterIntakeCalculator.activity.active,
                       description: '6 à 7 jours d\'exercice intense par semaine'
                     },
-                    { 
-                      value: 'veryActive', 
+                    {
+                      value: 'veryActive',
                       label: t.waterIntakeCalculator.activity.veryActive,
                       description: 'Exercice très intense, travail physique ou entraînement 2x/jour'
                     }
@@ -175,23 +175,23 @@ export function WaterIntakeCalculator({ language: propLanguage }: WaterIntakeCal
                 </label>
                 <Dropdown
                   value={climate}
-                  onChange={(value) => {
+                  onChange={(value: string | number) => {
                     setClimate(value as typeof climate);
                     setShowResults(false);
                   }}
                   options={[
-                    { 
-                      value: 'temperate', 
+                    {
+                      value: 'temperate',
                       label: 'Doux / Froid',
                       description: 'Température modérée, peu de transpiration'
                     },
-                    { 
-                      value: 'hot', 
+                    {
+                      value: 'hot',
                       label: t.waterIntakeCalculator.climate.hot,
                       description: 'Température élevée, transpiration modérée'
                     },
-                    { 
-                      value: 'veryHot', 
+                    {
+                      value: 'veryHot',
                       label: 'Très chaud et humide',
                       description: 'Température très élevée avec forte humidité'
                     }

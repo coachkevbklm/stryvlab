@@ -70,7 +70,7 @@ export default function ClientMetricsDashboard({ clientId, refreshKey = 0 }: Pro
         const data = series[f.key] ?? []
         if (data.length === 0) return null
         return (
-          <div key={f.key} className="bg-surface rounded-card shadow-soft-out p-4">
+          <div key={f.key} className="bg-surface rounded-card p-4">
             <MetricChart data={data} label={f.label} unit={f.unit} color={f.color} />
             <div className="mt-2 flex items-center justify-between text-xs text-secondary">
               <span>Dernière : <strong className="font-mono text-primary">{data[data.length - 1].value}{f.unit ? ` ${f.unit}` : ''}</strong></span>

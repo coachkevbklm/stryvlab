@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/client';
 import { computeIPTScore } from '@/app/lib/genesis/scoring/scoring-engine';
 import rawMapping from '@/app/lib/genesis/mapping/questions_to_axes.json';
 import type { MappingFile } from '@/app/lib/genesis/scoring/scoring-engine';
@@ -7,7 +7,7 @@ import type { MappingFile } from '@/app/lib/genesis/scoring/scoring-engine';
 const mapping = rawMapping as unknown as MappingFile;
 
 
-const supabase = createClient(
+const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );

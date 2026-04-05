@@ -24,61 +24,63 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
 import GenesisAssistant from '@/components/GenesisAssistant';
 
-// --- TYPES ---
-type Protocol = '2/1' | '3/1' | '4/1' | '5/2';
-type Goal = 'aggressive' | 'moderate' | 'recomp' | 'performance' | 'bulk';
-type Sex = 'male' | 'female';
-type ActivityLevel = 'sedentaire' | 'debout' | 'physique';
-type Intensity = 'legere' | 'moderee' | 'intense' | 'tres_intense';
-type Phase = 'hypertrophie' | 'force' | 'endurance' | 'cut';
-type Insulin = 'elevee' | 'normale' | 'reduite';
+// Formulas & Store
+import {
+  calculateCarbCycling,
+  type CarbCyclingResult,
+  type CarbCycleProtocol,
+  type CarbCycleGoal,
+  type CarbCycleSex,
+  type CarbCycleOccupation,
+  type CarbCycleIntensity,
+  type CarbCyclePhase,
+  type CarbCycleInsulin,
+} from '@/lib/formulas';
+import { useClientStore } from '@/lib/stores/useClientStore';
+
+// --- Local type aliases for UI selects ---
+type Protocol = CarbCycleProtocol;
+type Goal = CarbCycleGoal;
+type Sex = CarbCycleSex;
+type ActivityLevel = CarbCycleOccupation;
+type Intensity = CarbCycleIntensity;
+type Phase = CarbCyclePhase;
+type Insulin = CarbCycleInsulin;
 
 export default function CarbCyclingCalculator() {
+  const setProfile = useClientStore((s) => s.setProfile);
+
   // --- STATES ---
-  const [method, setMethod] = useState<Protocol>('3/1');
   const [gender, setGender] = useState<Sex>('male');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
-  
+
   // Body Composition
   const [bodyFat, setBodyFat] = useState('');
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
   const [hips, setHips] = useState('');
-  
+
   // Activity & Training
   const [occupation, setOccupation] = useState<ActivityLevel>('sedentaire');
   const [sessionsPerWeek, setSessionsPerWeek] = useState('');
   const [sessionDuration, setSessionDuration] = useState('');
   const [intensity, setIntensity] = useState<Intensity>('moderee');
-  
+
   // Strategy
   const [goal, setGoal] = useState<Goal>('moderate');
   const [phase, setPhase] = useState<Phase>('hypertrophie');
   const [protocol, setProtocol] = useState<Protocol>('3/1');
   const [insulin, setInsulin] = useState<Insulin>('normale');
-  
+
   const [copied, setCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const [result, setResult] = useState<{
-    bmr: number;
-    pal: number;
-    tdee: number;
-    targetTdee: number;
-    bf: number;
-    lbm: number;
-    low: { p: number; f: number; c: number; kcal: number };
-    high: { p: number; f: number; c: number; kcal: number };
-    days: { low: number; high: number };
-    weeklyAvg: number;
-    deficit: number;
-    warnings: string[];
-  } | null>(null);
+  const [result, setResult] = useState<CarbCyclingResult | null>(null);
 
   // ========================================================================
-  // 🔬 LOGIQUE MATHÉMATIQUE CORRIGÉE (SCIENTIFIQUEMENT VALIDÉE - 95/100)
+  // 🔬 CALCULATION — delegates to lib/formulas/carbCycling.ts (pure function)
   // ========================================================================
   const calculateCycle = () => {
     setCopied(false);
@@ -87,282 +89,21 @@ export default function CarbCyclingCalculator() {
     const a = parseFloat(age);
     if (!w || !h || !a) return;
 
-    // =====================================================================
-    // 1. BMR (Mifflin-St Jeor) ✅ VALIDÉ
-    // Source: Mifflin et al. 1990, Am J Clin Nutr
-    // =====================================================================
-    const bmr = (gender === 'male') 
-      ? (10 * w) + (6.25 * h) - (5 * a) + 5 
-      : (10 * w) + (6.25 * h) - (5 * a) - 161;
-
-    // =====================================================================
-    // 2. PAL (Physical Activity Level) - CORRECTION CRITIQUE ✅
-    // Source: FAO/WHO/UNU 2004 + Ainsworth Compendium 2011
-    // =====================================================================
-    
-    // Facteurs d'occupation (PAL de base selon FAO/WHO/UNU 2004)
-    const occupationPAL: Record<ActivityLevel, number> = { 
-      sedentaire: 1.40,  // Sédentaire (bureau 8h/jour)
-      debout: 1.55,      // Actif (debout fréquent, déplacements)
-      physique: 1.70     // Très actif (travail physique)
-    };
-
-    // METs par intensité (Ainsworth Compendium of Physical Activities 2011)
-    const intensityMET: Record<Intensity, number> = { 
-      legere: 3.5,        // 3.5 METs (marche rapide, yoga)
-      moderee: 6.0,       // 6 METs (musculation modérée, cardio léger)
-      intense: 8.0,       // 8 METs (HIIT, fonte lourde 75-85% 1RM)
-      tres_intense: 10.0  // 10 METs (CrossFit, powerlifting >85% 1RM)
-    };
-
-    // Calcul TEF (Thermic Effect of Training)
     const sessions = parseFloat(sessionsPerWeek) || 0;
     const duration = parseFloat(sessionDuration) || 0;
-    
-    // MET·heures hebdomadaires
-    const weeklyMEThours = (sessions * (duration / 60) * intensityMET[intensity]);
-    const dailyMEThours = weeklyMEThours / 7;
-    
-    // Conversion MET → PAL additionnel
-    // Formule: 1 MET·h/jour ≈ +0.05 PAL (source: Katch-McArdle)
-    const trainingPAL = dailyMEThours * 0.05;
-    
-    // PAL total
-    let pal = occupationPAL[occupation] + trainingPAL;
-    
-    // Cap réaliste: PAL max = 2.4 (athlètes olympiques, Tour de France)
-    // Source: Westerterp 2013, Br J Nutr
-    pal = Math.min(pal, 2.4);
 
-    // =====================================================================
-    // 3. TDEE & Target avec ajustement objectif
-    // =====================================================================
-    const tdee = bmr * pal;
-    
-    const goalAdjustments: Record<Goal, number> = { 
-      aggressive: 0.80,   // -20% (déficit max recommandé ISSN)
-      moderate: 0.85,     // -15% (déficit optimal masse maigre)
-      recomp: 1.00,       // Maintenance
-      performance: 1.10,  // +10% (surplus performance)
-      bulk: 1.15          // +15% (surplus hypertrophie)
-    };
-    const targetTdee = tdee * goalAdjustments[goal];
-
-    // =====================================================================
-    // 4. BODY FAT & LBM (Lean Body Mass) ✅ VALIDÉ
-    // =====================================================================
-    let bf = 0;
-    
-    if (bodyFat && parseFloat(bodyFat) > 0) {
-      bf = parseFloat(bodyFat);
-    } else {
-      // Fallback: US Navy Method (Hodgdon & Beckett 1984)
-      const waistCm = parseFloat(waist) || 0;
-      const neckCm = parseFloat(neck) || 0;
-      const hipsCm = parseFloat(hips) || 0;
-      
-      if (gender === 'male' && waistCm && neckCm && h) {
-        const density = 1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(h);
-        bf = (495 / density) - 450;
-      } else if (gender === 'female' && waistCm && neckCm && hipsCm && h) {
-        const density = 1.29579 - 0.35004 * Math.log10(waistCm + hipsCm - neckCm) + 0.22100 * Math.log10(h);
-        bf = (495 / density) - 450;
-      } else {
-        // Estimation par défaut si données manquantes
-        bf = gender === 'male' ? 15 : 25;
-      }
-    }
-    
-    // Clamp BF% dans des limites réalistes
-    bf = Math.max(gender === 'male' ? 3 : 10, Math.min(bf, 50));
-    
-    const lbm = w * (1 - bf / 100);
-
-    // =====================================================================
-    // 5. PROTOCOLE CYCLIQUE (jours bas/hauts)
-    // =====================================================================
-    let daysLow = 3, daysHigh = 1;
-    if (protocol === '2/1') { daysLow = 2; daysHigh = 1; }
-    if (protocol === '4/1') { daysLow = 4; daysHigh = 1; }
-    if (protocol === '5/2') { daysLow = 5; daysHigh = 2; }
-    const totalCycle = daysLow + daysHigh;
-
-    // =====================================================================
-    // 6. PROTÉINES (basées sur LBM) ✅ VALIDÉ
-    // Source: Morton 2018, ISSN Position Stand; Helms 2014
-    // =====================================================================
-    const proteinRatios = {
-      deficit: { low: 3.0, high: 2.6 },      // Déficit: 2.6-3.0g/kg LBM
-      maintenance: { low: 2.6, high: 2.4 },  // Maintenance: 2.4-2.6g/kg LBM
-      surplus: { low: 2.4, high: 2.6 }       // Surplus: 2.4-2.6g/kg LBM
-    };
-    
-    const proteinCategory = (goal === 'aggressive' || goal === 'moderate') ? 'deficit' 
-                          : (goal === 'recomp' || goal === 'performance') ? 'maintenance' 
-                          : 'surplus';
-    
-    const pLow = Math.round(lbm * proteinRatios[proteinCategory].low);
-    const pHigh = Math.round(lbm * proteinRatios[proteinCategory].high);
-
-    // =====================================================================
-    // 7. LIPIDES MINIMUM (protection hormonale) - CORRECTION CRITIQUE ✅
-    // Source: Helms 2014, Volek 1997 (testostérone), Loucks 2007 (aménorrhée)
-    // =====================================================================
-    
-    // Seuil hormonal: 1.0-1.2g/kg LBM (pas poids total)
-    const minFatRatioLBM = gender === 'male' ? 1.0 : 1.2; // g/kg LBM
-    const absoluteMinFat = gender === 'male' ? 50 : 60;   // Plancher absolu (g/jour)
-    
-    const minFat = Math.max(lbm * minFatRatioLBM, absoluteMinFat);
-
-    // =====================================================================
-    // 8. DISTRIBUTION CALORIQUE JOURS BAS/HAUTS - CORRECTION CRITIQUE ✅
-    // Source: Aragon 2017 (Cyclic Carbohydrate Intake)
-    // =====================================================================
-    
-    // Facteurs de cycle ADAPTATIFS selon l'objectif
-    let cycleFactor: { high: number; low: number };
-    
-    // CORRECTION PRIORITÉ 3: Ajustement spécial pour protocole 2/1 en bulk/performance
-    if (protocol === '2/1' && (goal === 'bulk' || goal === 'performance')) {
-      cycleFactor = { high: 1.15, low: 1.05 }; // Réduire l'écart pour éviter surplus excessif
-    } else if (goal === 'bulk') {
-      cycleFactor = { high: 1.25, low: 0.95 };
-    } else if (goal === 'performance') {
-      cycleFactor = { high: 1.20, low: 0.90 };
-    } else if (goal === 'recomp') {
-      cycleFactor = { high: 1.15, low: 0.85 };
-    } else if (goal === 'moderate') {
-      cycleFactor = { high: 1.10, low: 0.75 };
-    } else { // aggressive
-      cycleFactor = { high: 1.05, low: 0.70 };
-    }
-    
-    // Calcul distribution pour respecter moyenne hebdo = targetTdee
-    let kcalHigh = targetTdee * cycleFactor.high;
-    let kcalLow = (targetTdee * totalCycle - (kcalHigh * daysHigh)) / daysLow;
-    
-    // Garde-fou métabolique: kcalLow minimum = 1200kcal (sauf bulk/performance)
-    const minKcalLow = (goal === 'bulk' || goal === 'performance') ? 1800 : 1200;
-    if (kcalLow < minKcalLow) {
-      kcalLow = minKcalLow;
-      kcalHigh = (targetTdee * totalCycle - (kcalLow * daysLow)) / daysHigh;
-    }
-
-    // =====================================================================
-    // 9. LIPIDES JOURS BAS/HAUTS
-    // =====================================================================
-    
-    // Jours bas: lipides élevés (satiété, hormones)
-    // Formule: max(1.2g/kg poids, minFat)
-    let fLow = Math.round(Math.max(w * 1.2, minFat));
-    
-    // Jours hauts: lipides réduits (place aux glucides)
-    // Formule: max(0.6g/kg poids, minFat * 0.8)
-    let fHigh = Math.round(Math.max(w * 0.6, minFat * 0.8));
-
-    // =====================================================================
-    // 10. GLUCIDES (calculés par soustraction) - CORRECTION CRITIQUE ✅
-    // =====================================================================
-    
-    // Multiplicateurs sensibilité insuline & phase d'entraînement
-    const insulinMultiplier: Record<Insulin, number> = { 
-      elevee: 1.2,     // Ectomorphe: +20% glucides
-      normale: 1.0,    // Standard
-      reduite: 0.75    // Résistant: -25% glucides
-    };
-    
-    // CORRECTION PRIORITÉ 4: Phase endurance 1.2 au lieu de 1.3
-    const phaseMultiplier: Record<Phase, number> = { 
-      hypertrophie: 1.1,  // Hypertrophie: +10% (glycogène élevé)
-      force: 1.0,         // Force: standard
-      endurance: 1.2,     // Endurance: +20% (déplétion glycogène) - CORRIGÉ
-      cut: 0.7            // Cut: -30% (déficit agressif)
-    };
-    
-    const carbMultiplier = insulinMultiplier[insulin] * phaseMultiplier[phase];
-    
-    // JOURS BAS
-    const remainingLow = kcalLow - (pLow * 4) - (fLow * 9);
-    let cLow = Math.round((remainingLow / 4) * carbMultiplier * 0.8); // 80% du potentiel
-    cLow = Math.max(cLow, 50); // CORRECTION PRIORITÉ 2: 50g minimum (éviter cétose)
-    
-    // Si négatif, ajuster lipides
-    if (remainingLow < 0) {
-      fLow = Math.round((kcalLow - (pLow * 4) - 200) / 9); // 200kcal = 50g glucides
-      cLow = 50;
-    }
-    
-    // JOURS HAUTS
-    const remainingHigh = kcalHigh - (pHigh * 4) - (fHigh * 9);
-    let cHigh = Math.round((remainingHigh / 4) * carbMultiplier * 1.2); // 120% du potentiel
-    cHigh = Math.max(cHigh, 100); // Minimum 100g (jour d'entraînement)
-    cHigh = Math.min(cHigh, w * 10); // CORRECTION PRIORITÉ 1: CAP 10g/kg (éviter inconfort digestif)
-    
-    // Si négatif, ajuster lipides
-    if (remainingHigh < 0) {
-      fHigh = Math.round((kcalHigh - (pHigh * 4) - 400) / 9); // 400kcal = 100g glucides
-      cHigh = 100;
-    }
-
-    // Recalcul kcal finales (après ajustements)
-    const finalKcalLow = (pLow * 4) + (fLow * 9) + (cLow * 4);
-    const finalKcalHigh = (pHigh * 4) + (fHigh * 9) + (cHigh * 4);
-
-    // =====================================================================
-    // 11. WARNINGS (alertes qualité)
-    // =====================================================================
-    const warnings: string[] = [];
-    
-    // Warning 1: Glucides jours hauts trop élevés (risque digestif)
-    const carbPerKg = cHigh / w;
-    if (carbPerKg > 10) {
-      warnings.push(`⚠️ Glucides jours hauts = ${Math.round(carbPerKg)}g/kg (>10g/kg). Risque inconfort digestif. Considérez protocole 5/2.`);
-    }
-    
-    // Warning 2: Lipides sous seuil hormonal
-    if (fLow < minFat * 0.95) {
-      warnings.push(`⚠️ Lipides jours bas = ${fLow}g (<${Math.round(minFat)}g recommandé). Risque de perturbation hormonale.`);
-    }
-    
-    // Warning 3: Déficit trop agressif (>25%)
-    const deficitPercent = Math.abs((targetTdee - tdee) / tdee);
-    if (deficitPercent > 0.25) {
-      warnings.push(`⚠️ Déficit calorique = ${Math.round(deficitPercent * 100)}% (>25%). Risque catabolisme musculaire élevé.`);
-    }
-    
-    // Warning 4: Jours bas <1200kcal
-    if (finalKcalLow < 1200) {
-      warnings.push(`⚠️ Jours bas = ${finalKcalLow}kcal (<1200kcal). Sous le seuil métabolique minimal.`);
-    }
-    
-    // Warning 5: PAL >2.0 (athlète de haut niveau)
-    if (pal > 2.0) {
-      warnings.push(`ℹ️ PAL = ${pal.toFixed(2)} (>2.0). Niveau athlète élite. Vérifiez volume d'entraînement.`);
-    }
-
-    // =====================================================================
-    // 12. MÉTRIQUES FINALES
-    // =====================================================================
-    const weeklyAvg = Math.round((finalKcalLow * daysLow + finalKcalHigh * daysHigh) / totalCycle);
-    
-    // CORRECTION FINALE: Déficit par rapport à MAINTENANCE (TDEE), pas target
-    const deficit = Math.round(tdee) - weeklyAvg;
-
-    setResult({
-      bmr: Math.round(bmr),
-      pal: Math.round(pal * 100) / 100,
-      tdee: Math.round(tdee),
-      targetTdee: Math.round(targetTdee),
-      bf: Math.round(bf * 10) / 10,
-      lbm: Math.round(lbm * 10) / 10,
-      low: { p: pLow, f: fLow, c: cLow, kcal: finalKcalLow },
-      high: { p: pHigh, f: fHigh, c: cHigh, kcal: finalKcalHigh },
-      days: { low: daysLow, high: daysHigh },
-      weeklyAvg,
-      deficit,
-      warnings
+    const res = calculateCarbCycling({
+      gender, age: a, weight: w, height: h,
+      bodyFat: bodyFat ? parseFloat(bodyFat) : undefined,
+      waist: waist ? parseFloat(waist) : undefined,
+      neck: neck ? parseFloat(neck) : undefined,
+      hips: hips ? parseFloat(hips) : undefined,
+      occupation, sessionsPerWeek: sessions, sessionDuration: duration,
+      intensity, goal, phase, protocol, insulin,
     });
+
+    setResult(res);
+    setProfile({ weight: w, height: h, age: a, gender, bodyFat: bodyFat ? parseFloat(bodyFat) : null, workouts: sessions });
 
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });

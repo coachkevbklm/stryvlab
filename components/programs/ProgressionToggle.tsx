@@ -33,7 +33,7 @@ export default function ProgressionToggle({ programId, initialEnabled }: Props) 
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-surface rounded-card shadow-soft-out">
+    <div className="flex items-center justify-between px-4 py-3 bg-surface rounded-card">
       <div className="flex items-start gap-3">
         <div className={`mt-0.5 p-1.5 rounded-md ${enabled ? 'bg-accent/10' : 'bg-surface-light'}`}>
           <TrendingUp size={14} className={enabled ? 'text-accent' : 'text-secondary'} />
@@ -53,7 +53,7 @@ export default function ProgressionToggle({ programId, initialEnabled }: Props) 
         disabled={loading}
         aria-label={enabled ? 'Désactiver la double progression' : 'Activer la double progression'}
         className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-60 ${
-          enabled ? 'bg-accent' : 'bg-surface-light shadow-soft-in'
+          enabled ? 'bg-accent' : 'bg-surface-light'
         }`}
       >
         {loading ? (

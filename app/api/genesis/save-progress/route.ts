@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/client";
 
-const supabase = createClient(
+const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function POST(request: NextRequest) {
@@ -13,17 +13,20 @@ export async function POST(request: NextRequest) {
 
     // Upsert submission (create or update)
     const { data, error } = await supabase
-      .from('ipt_submissions')
-      .upsert({
-        session_id: sessionId,
-        current_step: currentModule + 1,
-        total_steps: 9,
-        responses: responses,
-        last_updated_at: new Date().toISOString(),
-        is_completed: false,
-      }, {
-        onConflict: 'session_id'
-      })
+      .from("ipt_submissions")
+      .upsert(
+        {
+          session_id: sessionId,
+          current_step: currentModule + 1,
+          total_steps: 9,
+          responses: responses,
+          last_updated_at: new Date().toISOString(),
+          is_completed: false,
+        },
+        {
+          onConflict: "session_id",
+        },
+      )
       .select()
       .single();
 
@@ -31,10 +34,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, submissionId: data.id });
   } catch (error) {
-    console.error('Save progress error:', error);
+    console.error("Save progress error:", error);
     return NextResponse.json(
-      { error: 'Failed to save progress' },
-      { status: 500 }
+      { error: "Failed to save progress" },
+      { status: 500 },
     );
   }
 }

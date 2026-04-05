@@ -7,14 +7,14 @@ export function Stats() {
   return (
     <section className="py-24 px-6 md:px-12 lg:px-24 relative">
       <div className="container mx-auto max-w-7xl">
-        <div 
+        <div
           className="grid grid-cols-2 md:grid-cols-4 gap-px"
           style={{
             background: 'rgba(255, 255, 255, 0.03)',
             border: '1px solid rgba(255, 255, 255, 0.03)',
           }}
         >
-          {STATS.map((stat, index) => (
+          {STATS.map((stat: { value: string; label: string }, index: number) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
@@ -27,7 +27,7 @@ export function Stats() {
                 borderRight: index < STATS.length - 1 ? '1px solid rgba(255, 255, 255, 0.03)' : 'none',
               }}
             >
-              <div 
+              <div
                 className="text-5xl font-heading font-light mb-2"
                 style={{
                   fontFamily: 'var(--font-deep-tech-functional)',
@@ -37,7 +37,7 @@ export function Stats() {
               >
                 {stat.value}
               </div>
-              <p 
+              <p
                 className="text-sm"
                 style={{
                   fontFamily: 'var(--font-deep-tech-body)',

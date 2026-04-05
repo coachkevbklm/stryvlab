@@ -1,7 +1,7 @@
 # Audit d'Architecture STRYVR — "The Performance Lab"
 
 > **Visibilité technique complète sur les 4 domaines critiques d'interconnectivité des 11 modules**
-> 
+>
 > Audit généré : 5 avril 2026
 > Portée : Database Schema, State Management, Business Logic, Reporting Flow
 
@@ -27,19 +27,19 @@ Client Object (Supabase):
 
 ### Stockage des 7 outils — CRITIQUE : Pattern hybride non optimisé
 
-| Outil | Stockage | Modèle | Problème |
-|-------|----------|--------|---------|
-| **OneRM** | `AssessmentResponse` (JSON) | Générique | Pas de requête typée |
-| **HR Zones** | `AssessmentResponse` (JSON) | Générique | Pas de requête typée |
-| **Water Intake** | État local uniquement | Éphémère | Aucune persistance |
-| **Macros** | `IPTSubmission.responses` (JSON) | Générique | Champ JSON brut |
-| **Body Fat** | `AssessmentResponse` (JSON) | Générique | Pas de requête typée |
-| **Karvonen** | Dérivé de HR Zones | Computed | Pas stocké directement |
-| **BMI** | État local uniquement | Éphémère | Aucune persistance |
+| Outil            | Stockage                         | Modèle    | Problème               |
+| ---------------- | -------------------------------- | --------- | ---------------------- |
+| **OneRM**        | `AssessmentResponse` (JSON)      | Générique | Pas de requête typée   |
+| **HR Zones**     | `AssessmentResponse` (JSON)      | Générique | Pas de requête typée   |
+| **Water Intake** | État local uniquement            | Éphémère  | Aucune persistance     |
+| **Macros**       | `IPTSubmission.responses` (JSON) | Générique | Champ JSON brut        |
+| **Body Fat**     | `AssessmentResponse` (JSON)      | Générique | Pas de requête typée   |
+| **Karvonen**     | Dérivé de HR Zones               | Computed  | Pas stocké directement |
+| **BMI**          | État local uniquement            | Éphémère  | Aucune persistance     |
 
 ### GAP MAJEUR
 
-**Aucune table dédiée `calculator_results`** → les résultats vivent dans des champs JSON génériques `responses[key]`. 
+**Aucune table dédiée `calculator_results`** → les résultats vivent dans des champs JSON génériques `responses[key]`.
 
 Requête pour "tous les OneRM du client" = requête JSON + parsing applicatif (inefficace et non-typée).
 
@@ -110,20 +110,21 @@ Un utilisateur change son poids dans le profil client.
 ### Flux Actuel de Sauvegarde
 
 ```
-User Input 
+User Input
     ↓ (instant)
-setState() 
+setState()
     ↓ (instant)
-Calculate Button 
+Calculate Button
     ↓ (manual click)
-POST /api/assessments 
+POST /api/assessments
     ↓ (async, network latency)
-DB 
+DB
     ↓ (async)
 Manual Page Refresh
 ```
 
 **Manques identifiés :**
+
 - ❌ Optimistic updates (UI ne reflect pas immédiatement)
 - ❌ Debouncing (chaque keystroke relance le calcul)
 - ❌ Persistence de brouillon (refresh = perte de données)
@@ -143,39 +144,41 @@ Manual Page Refresh
 
 ```typescript
 // lib/stores/calculatorStore.ts
-import { create } from 'zustand'
+import { create } from "zustand";
 
 export const useCalculatorStore = create((set) => ({
   // Global client data
   clientData: { age: null, weight: null, height: null, bodyFat: null },
   setClientData: (data) => set({ clientData: data }),
-  
+
   // Cached calculator results
   results: {},
-  setResult: (calculatorType, output) => 
+  setResult: (calculatorType, output) =>
     set((state) => ({
-      results: { ...state.results, [calculatorType]: output }
+      results: { ...state.results, [calculatorType]: output },
     })),
-  
+
   // Trigger recalculation when client data changes
-  recalculateAll: () => set((state) => ({
-    // invalidate all cached results
-    results: {}
-  })),
-}))
+  recalculateAll: () =>
+    set((state) => ({
+      // invalidate all cached results
+      results: {},
+    })),
+}));
 ```
 
 **Utilisation dans calculatrice :**
+
 ```typescript
 // components/OneRMCalculator.tsx
-const { clientData, results, setResult } = useCalculatorStore()
+const { clientData, results, setResult } = useCalculatorStore();
 
 useEffect(() => {
   // Re-run calculation if client data changed
   if (clientData.weight || clientData.age) {
-    handleCalculate()
+    handleCalculate();
   }
-}, [clientData])
+}, [clientData]);
 ```
 
 ---
@@ -184,32 +187,34 @@ useEffect(() => {
 
 ### Localisation des Formules — MIXTE
 
-| Formule | Fichier | Pattern | État |
-|---------|---------|---------|------|
-| **Epley 1RM** | `components/OneRMCalculator.tsx` | Inline dans component | 🔴 Retest difficile |
-| **Karvonen HR** | `components/HRZonesCalculator.tsx` | Inline dans component | 🔴 Retest difficile |
-| **Katch-McArdle BMR** | `utils/macroCalculator.js` | Centralisé (pure function) | 🟢 Bon |
-| **TDEE Forensic** | `utils/macroCalculator.js` | Centralisé | 🟢 Bon |
-| **Boer LBM** | `utils/macroCalculator.js` | Centralisé avec fallback | 🟢 Bon |
-| **Brzycki 1RM** | `components/OneRMCalculator.tsx` | `weightNum / (1.0278 - 0.0278 * repsNum)` | 🟡 Inline |
+| Formule               | Fichier                            | Pattern                                   | État                |
+| --------------------- | ---------------------------------- | ----------------------------------------- | ------------------- |
+| **Epley 1RM**         | `components/OneRMCalculator.tsx`   | Inline dans component                     | 🔴 Retest difficile |
+| **Karvonen HR**       | `components/HRZonesCalculator.tsx` | Inline dans component                     | 🔴 Retest difficile |
+| **Katch-McArdle BMR** | `utils/macroCalculator.js`         | Centralisé (pure function)                | 🟢 Bon              |
+| **TDEE Forensic**     | `utils/macroCalculator.js`         | Centralisé                                | 🟢 Bon              |
+| **Boer LBM**          | `utils/macroCalculator.js`         | Centralisé avec fallback                  | 🟢 Bon              |
+| **Brzycki 1RM**       | `components/OneRMCalculator.tsx`   | `weightNum / (1.0278 - 0.0278 * repsNum)` | 🟡 Inline           |
 
 ### Pattern Recommandé vs Actuel
 
 **✗ ACTUEL (OneRMCalculator.tsx)**
+
 ```typescript
 const handleCalculate = () => {
-  const result = weightNum / (1.0278 - 0.0278 * repsNum)  // ← Hard-codé
-  setResult(result)
-}
+  const result = weightNum / (1.0278 - 0.0278 * repsNum); // ← Hard-codé
+  setResult(result);
+};
 ```
 
 **✓ RECOMMANDÉ (lib/formulas/brzycki.ts)**
+
 ```typescript
 export const calculate1RMBrzycki = (weight: number, reps: number): number => {
-  if (weight <= 0 || reps <= 0) throw new Error("Invalid input")
-  if (reps > 37) throw new Error("Reps must be ≤ 37 for Brzycki accuracy")
-  return weight / (1.0278 - 0.0278 * reps)
-}
+  if (weight <= 0 || reps <= 0) throw new Error("Invalid input");
+  if (reps > 37) throw new Error("Reps must be ≤ 37 for Brzycki accuracy");
+  return weight / (1.0278 - 0.0278 * reps);
+};
 ```
 
 ### Problèmes Identifiés
@@ -239,43 +244,43 @@ Reps > 37 ?          → Brzycki perd précision au-delà de 35-37 reps
 
 ```javascript
 export function calculateOptimalMacros(data) {
-  const { weight, height, age, bodyFat, gender, steps, workouts } = data
+  const { weight, height, age, bodyFat, gender, steps, workouts } = data;
 
   // Step 1: LBM via Katch-McArdle ou Boer
-  let lbm
+  let lbm;
   if (bodyFat) {
-    lbm = weight * (1 - bodyFat / 100)  // Katch-McArdle
+    lbm = weight * (1 - bodyFat / 100); // Katch-McArdle
   } else {
     // Boer fallback
-    if (gender === 'male') {
-      lbm = 0.407 * weight + 0.267 * height - 19.2
+    if (gender === "male") {
+      lbm = 0.407 * weight + 0.267 * height - 19.2;
     } else {
-      lbm = 0.252 * weight + 0.473 * height - 48.8
+      lbm = 0.252 * weight + 0.473 * height - 48.8;
     }
   }
 
   // Step 2: BMR
-  const bmr = 370 + 21.6 * lbm
+  const bmr = 370 + 21.6 * lbm;
 
   // Step 3: Age correction (conservative)
-  let adjustedBMR = bmr
+  let adjustedBMR = bmr;
   if (age > 30) {
-    const ageDecrement = Math.floor((age - 30) / 10) * 0.02
-    adjustedBMR = bmr * (1 - ageDecrement)
+    const ageDecrement = Math.floor((age - 30) / 10) * 0.02;
+    adjustedBMR = bmr * (1 - ageDecrement);
   }
 
   // Step 4: TDEE = BMR + NEAT + EAT + TEF
   // où TEF ≈ 10% du reste (approximation conservative)
-  const tdee = adjustedBMR * 1.1
+  const tdee = adjustedBMR * 1.1;
 
   // Step 5: Macros (PRO-first allocation)
   return {
     bmr: Math.round(adjustedBMR),
     tdee: Math.round(tdee),
-    protein: Math.round(lbm * 2.2),      // 2.2g/kg LBM
-    fat: Math.round(tdee * 0.25 / 9),    // 25% cals
-    carbs: Math.round((tdee - protein*4 - fat*9) / 4)
-  }
+    protein: Math.round(lbm * 2.2), // 2.2g/kg LBM
+    fat: Math.round((tdee * 0.25) / 9), // 25% cals
+    carbs: Math.round((tdee - protein * 4 - fat * 9) / 4),
+  };
 }
 ```
 
@@ -293,11 +298,12 @@ lib/formulas/
 ```
 
 **lib/formulas/index.ts**
+
 ```typescript
-export { calculate1RMBrzycki } from './brzycki'
-export { calculateKarvonenZones } from './karvonen'
-export { calculateOptimalMacros } from './katch-mcardle'
-export { validateBrzycki1RMInput } from './validators'
+export { calculate1RMBrzycki } from "./brzycki";
+export { calculateKarvonenZones } from "./karvonen";
+export { calculateOptimalMacros } from "./katch-mcardle";
+export { validateBrzycki1RMInput } from "./validators";
 ```
 
 ---
@@ -332,13 +338,13 @@ Calculatrice (OneRM)
 [Save Button]
     ↓
 POST /api/assessments/submissions
-    { 
-      clientId, 
-      module: "ipt", 
-      responses: { 
-        oneRM: 142.5, 
-        trainingZones: [...] 
-      } 
+    {
+      clientId,
+      module: "ipt",
+      responses: {
+        oneRM: 142.5,
+        trainingZones: [...]
+      }
     }
     ↓
 Supabase Insert into assessment_submissions
@@ -346,7 +352,7 @@ Supabase Insert into assessment_submissions
     ↓
 Query Historique
     SELECT * FROM assessment_submissions WHERE client_id = X
-    
+
     // ← Manque d'agrégation typée
     // ← Parsing JSON nécessaire côté app
     // ← Requête inefficace sur gros volumes
@@ -362,15 +368,15 @@ Query Historique
 
 ### Gaps Majeurs d'Export
 
-| Capacité | État | Impact |
-|----------|------|--------|
-| Agrégation sur 12 mois | ❌ Manquante | Pas de tendances 1RM |
-| Comparaison cohort | ❌ Manquante | Pas de benchmarking client |
-| Format PDF avec branding | ❌ Manquant | Pas de deliverable pro |
-| Email automatique résultats | ❌ Manquant | Pas d'engagement client |
-| Audit trail (qui a exporté, quand) | ❌ Manquant | Risque de conformité |
-| Templates de rapport | ❌ Manquants | Chaque export = hardcodé |
-| Confidence intervals | ❌ Manquants | Résultats présentés comme exacts |
+| Capacité                           | État         | Impact                           |
+| ---------------------------------- | ------------ | -------------------------------- |
+| Agrégation sur 12 mois             | ❌ Manquante | Pas de tendances 1RM             |
+| Comparaison cohort                 | ❌ Manquante | Pas de benchmarking client       |
+| Format PDF avec branding           | ❌ Manquant  | Pas de deliverable pro           |
+| Email automatique résultats        | ❌ Manquant  | Pas d'engagement client          |
+| Audit trail (qui a exporté, quand) | ❌ Manquant  | Risque de conformité             |
+| Templates de rapport               | ❌ Manquants | Chaque export = hardcodé         |
+| Confidence intervals               | ❌ Manquants | Résultats présentés comme exacts |
 
 ### Solution : API de Reporting Typée
 
@@ -378,29 +384,29 @@ Query Historique
 // app/api/reports/calculator-results/route.ts
 
 export async function GET(req: Request) {
-  const { clientId, calculatorType, startDate, endDate } = req.query
+  const { clientId, calculatorType, startDate, endDate } = req.query;
 
   // Query with proper typing
   const results = await db.calculatorResults.findMany({
     where: {
       clientId,
       calculatorType,
-      createdAt: { gte: new Date(startDate), lte: new Date(endDate) }
+      createdAt: { gte: new Date(startDate), lte: new Date(endDate) },
     },
-    orderBy: { createdAt: 'desc' }
-  })
+    orderBy: { createdAt: "desc" },
+  });
 
   // Format for export
-  const csv = results.map(r => ({
+  const csv = results.map((r) => ({
     date: r.createdAt.toISOString(),
     calculator: r.calculatorType,
     input: JSON.stringify(r.input),
     output: JSON.stringify(r.output),
     confidence: r.output.confidence_margin,
-    formula_version: r.formula_version
-  }))
+    formula_version: r.formula_version,
+  }));
 
-  return Response.json({ csv })
+  return Response.json({ csv });
 }
 ```
 
@@ -417,14 +423,14 @@ Pour aligner les 11 modules + 7 calculatrices sur une architecture commune :
 │                      input, output, formula_version,        │
 │                      created_at)                            │
 └─────────────────────────────────────────────────────────────┘
-         ↓                    ↓                    ↓ 
+         ↓                    ↓                    ↓
 ┌──────────────────┐  ┌────────────────┐  ┌──────────────────┐
 │ Coach Dashboard  │  │ Client App PWA │  │ Reporting Engine │
 │ ├─ Dossier       │  │ ├─ Calculatrices
 │  ├─ Historique   │  │ ├─ Results view │  │ ├─ Export CSV/PDF│
 │ ├─ Analytics     │  │ ├─ Progress     │  │ ├─ Email delivery│
 └──────────────────┘  └────────────────┘  └──────────────────┘
-         ↓                    ↓                    ↓ 
+         ↓                    ↓                    ↓
     [Zustand Store]    [Zustand Store]    [Prisma ORM]
     (Client context)   (Client context)   (Queries typed)
 ```
@@ -531,12 +537,12 @@ Pour aligner les 11 modules + 7 calculatrices sur une architecture commune :
 
 ## 📋 SUMMARY TABLE : Architecture Maturity
 
-| Domain | Technology | Current Pattern | Maturity | Next Priority |
-|--------|-----------|-----------------|----------|---------------|
-| **Database** | Supabase (PostgreSQL) | JSON responses, no calculator table | 🟡 Good | Create result table (CRITICAL) |
-| **State Mgmt** | React hooks + Context | Component-level + Supabase client | 🟠 Fair | Add Zustand store, persistence (HIGH) |
-| **Formulas** | JavaScript utils | Centralized (macros) + inline (OneRM) | 🟡 Good | Migrate all to utils, add versioning (CRITICAL) |
-| **Reporting** | Client-side CSV | Single export view (payments only) | 🔴 Basic | Multi-format export, PDF, email (HIGH) |
+| Domain         | Technology            | Current Pattern                       | Maturity | Next Priority                                   |
+| -------------- | --------------------- | ------------------------------------- | -------- | ----------------------------------------------- |
+| **Database**   | Supabase (PostgreSQL) | JSON responses, no calculator table   | 🟡 Good  | Create result table (CRITICAL)                  |
+| **State Mgmt** | React hooks + Context | Component-level + Supabase client     | 🟠 Fair  | Add Zustand store, persistence (HIGH)           |
+| **Formulas**   | JavaScript utils      | Centralized (macros) + inline (OneRM) | 🟡 Good  | Migrate all to utils, add versioning (CRITICAL) |
+| **Reporting**  | Client-side CSV       | Single export view (payments only)    | 🔴 Basic | Multi-format export, PDF, email (HIGH)          |
 
 ---
 

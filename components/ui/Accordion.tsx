@@ -14,7 +14,7 @@ export function Accordion({ items }: AccordionProps) {
       {items.map((item, index) => (
         <div 
           key={index} 
-          className="bg-surface rounded-btn overflow-hidden shadow-soft-out transition-all"
+          className="bg-surface rounded-btn overflow-hidden transition-all"
         >
           <button
             onClick={() => setOpenIndex(openIndex === index ? null : index)}

@@ -99,7 +99,7 @@ function ToggleGroup({
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               value === o.value
                 ? 'bg-accent text-white shadow-md'
-                : 'bg-surface-light shadow-soft-out text-secondary hover:text-primary'
+                : 'bg-surface-light text-secondary hover:text-primary'
             }`}
           >
             {o.label}

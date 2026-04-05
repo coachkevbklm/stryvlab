@@ -163,8 +163,7 @@ export function QuestionCard({ question, value, onAnswer }: QuestionCardProps) {
               max={question.max}
               className="
                 w-full text-4xl font-semibold text-center tabular-nums
-                bg-surface-light rounded-2xl p-6
-                shadow-soft-in border border-transparent
+                bg-surface-light rounded-2xl p-6 border border-transparent
                 focus:outline-none focus:ring-2 focus:ring-accent/20
                 placeholder:text-gray-300
               "
@@ -194,8 +193,7 @@ export function QuestionCard({ question, value, onAnswer }: QuestionCardProps) {
             className="
               w-full min-h-[140px] resize-none
               bg-surface-light rounded-2xl p-5
-              text-sm font-medium text-primary
-              shadow-soft-in border border-transparent
+              text-sm font-medium text-primary border border-transparent
               focus:outline-none focus:ring-2 focus:ring-accent/20
               placeholder:text-gray-400
             "
@@ -212,7 +210,7 @@ export function QuestionCard({ question, value, onAnswer }: QuestionCardProps) {
   };
 
   return (
-    <div className="bg-surface p-8 md:p-10 rounded-2xl shadow-soft-out">
+    <div className="bg-surface p-8 md:p-10 rounded-2xl">
       
       {/* Question */}
       <div className="mb-10">

@@ -47,7 +47,7 @@ export default function PasswordResetButton({ email }: { email: string }) {
         <button
           onClick={handleReset}
           disabled={state === 'sending'}
-          className="flex items-center gap-1.5 px-3 py-2 bg-surface-light shadow-soft-out rounded-lg text-xs font-semibold text-secondary hover:text-primary transition-colors disabled:opacity-50 shrink-0 ml-3"
+          className="flex items-center gap-1.5 px-3 py-2 bg-surface-light rounded-lg text-xs font-semibold text-secondary hover:text-primary transition-colors disabled:opacity-50 shrink-0 ml-3"
         >
           {state === 'sending'
             ? <Loader2 size={13} className="animate-spin" />

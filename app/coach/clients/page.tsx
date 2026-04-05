@@ -240,29 +240,26 @@ export default function CoachClientsPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-surface font-sans">
+    <main className="min-h-screen bg-background font-sans">
 
       {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-            <p className="text-xs text-secondary font-medium uppercase tracking-widest">Espace Coach</p>
-            <h1 className="text-xl font-bold text-primary tracking-tight">Mes Clients</h1>
-          </div>
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-subtle px-8 py-4 flex items-center justify-between">
+        <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+          <p className="section-header !p-0 !mb-0.5">Espace Coach</p>
+          <h1 className="text-xl font-bold text-primary tracking-tight">Mes Clients</h1>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Comptabilité link */}
           <button
             onClick={() => router.push('/coach/comptabilite')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-surface-light shadow-soft-out rounded-xl text-sm font-semibold text-secondary hover:text-primary transition-colors"
+            className="btn-secondary"
           >
             <Euro size={15} />
             <span className="hidden sm:inline">Comptabilité</span>
           </button>
           <button
             onClick={() => { setShowModal(true); setError(null) }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-accent transition-all duration-200 shadow-lg"
+            className="btn-authority"
           >
             <UserPlus size={16} />
             Nouveau client
@@ -275,17 +272,17 @@ export default function CoachClientsPage() {
         {/* STATS STRIP */}
         <div className={`grid grid-cols-3 gap-4 mb-6 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {[
-            { icon: Users, label: 'Total clients', value: stats.total, color: 'text-primary' },
-            { icon: TrendingUp, label: 'Actifs', value: stats.active, color: 'text-emerald-600' },
-            { icon: CreditCard, label: 'Avec formule', value: stats.withSub, color: 'text-indigo-600' },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="bg-surface rounded-2xl px-5 py-4 shadow-soft-out border border-white/60 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-surface-light shadow-soft-out flex items-center justify-center shrink-0">
-                <Icon size={18} className={color} />
+            { icon: Users, label: 'Total clients', value: stats.total, dark: false },
+            { icon: TrendingUp, label: 'Actifs', value: stats.active, dark: true },
+            { icon: CreditCard, label: 'Avec formule', value: stats.withSub, dark: false },
+          ].map(({ icon: Icon, label, value, dark }) => (
+            <div key={label} className={`rounded-card px-5 py-4 flex items-center gap-4 shadow-card ${dark ? 'bg-dark' : 'bg-surface-raised'}`}>
+              <div className={`w-10 h-10 rounded-btn flex items-center justify-center shrink-0 ${dark ? 'bg-white/10' : 'bg-surface'}`}>
+                <Icon size={18} className={dark ? 'text-accent' : 'text-secondary'} />
               </div>
               <div>
-                <p className="text-2xl font-black text-primary font-mono">{value}</p>
-                <p className="text-[10px] font-bold text-secondary uppercase tracking-widest opacity-60">{label}</p>
+                <p className={`text-2xl font-black tabular ${dark ? 'text-on-dark' : 'text-primary'}`}>{value}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${dark ? 'text-on-dark/50' : 'text-muted'}`}>{label}</p>
               </div>
             </div>
           ))}
@@ -295,55 +292,51 @@ export default function CoachClientsPage() {
         <div className={`flex items-center gap-3 mb-4 transition-all duration-500 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary/40" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
               placeholder="Rechercher un client..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 h-11 bg-surface rounded-xl border border-white/80 shadow-soft-in text-sm text-primary placeholder:text-secondary/40 outline-none focus:border-accent/30 transition-colors"
+              className="input-field pl-9 h-10"
             />
           </div>
 
           {/* Filter toggle */}
           <button
             onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-2 px-4 h-11 rounded-xl text-sm font-semibold transition-all border ${
+            className={`flex items-center gap-2 px-4 h-10 rounded-btn text-xs font-semibold transition-all border ${
               showFilters || activeFiltersCount > 0
-                ? 'bg-accent text-white border-accent shadow-md'
-                : 'bg-surface shadow-soft-out border-white/60 text-secondary hover:text-primary'
+                ? 'bg-dark text-on-dark border-dark'
+                : 'bg-surface-raised border-subtle text-secondary hover:text-primary hover:border-active'
             }`}
           >
-            <Filter size={15} />
+            <Filter size={13} />
             Filtres
             {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-white/30 text-[11px] font-black flex items-center justify-center">
+              <span className="w-4 h-4 rounded-pill bg-accent text-primary text-[10px] font-black flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
           </button>
 
           {/* View mode */}
-          <div className="flex bg-surface rounded-xl shadow-soft-out border border-white/60 p-1 gap-1">
+          <div className="pill-toggle">
             <button
               onClick={() => setViewMode('grid')}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
-                viewMode === 'grid' ? 'bg-primary text-white shadow-md' : 'text-secondary hover:text-primary'
-              }`}
+              className={`pill-toggle-item ${viewMode === 'grid' ? 'active' : ''}`}
             >
-              <LayoutGrid size={15} />
+              <LayoutGrid size={13} />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
-                viewMode === 'list' ? 'bg-primary text-white shadow-md' : 'text-secondary hover:text-primary'
-              }`}
+              className={`pill-toggle-item ${viewMode === 'list' ? 'active' : ''}`}
             >
-              <List size={15} />
+              <List size={13} />
             </button>
           </div>
 
-          <p className="text-xs font-bold text-secondary uppercase tracking-widest ml-auto">
+          <p className="text-xs font-semibold text-muted ml-auto tabular">
             {filtered.length} / {clients.length}
           </p>
         </div>
@@ -357,12 +350,12 @@ export default function CoachClientsPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-4"
             >
-              <div className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="card-surface p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Statut</label>
+                  <label className="field-label">Statut</label>
                   <select
                     value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                    className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none"
+                    className="input-field"
                   >
                     <option value="all">Tous</option>
                     <option value="active">Actif</option>
@@ -371,30 +364,30 @@ export default function CoachClientsPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Objectif</label>
+                  <label className="field-label">Objectif</label>
                   <select
                     value={filterGoal} onChange={e => setFilterGoal(e.target.value)}
-                    className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none"
+                    className="input-field"
                   >
                     <option value="all">Tous</option>
                     {TRAINING_GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Tag</label>
+                  <label className="field-label">Tag</label>
                   <select
                     value={filterTag} onChange={e => setFilterTag(e.target.value)}
-                    className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none"
+                    className="input-field"
                   >
                     <option value="all">Tous</option>
                     {allTags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Formule</label>
+                  <label className="field-label">Formule</label>
                   <select
                     value={filterSub} onChange={e => setFilterSub(e.target.value)}
-                    className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none"
+                    className="input-field"
                   >
                     <option value="all">Tous</option>
                     <option value="with_sub">Avec formule active</option>
@@ -409,28 +402,28 @@ export default function CoachClientsPage() {
         {/* CLIENT LIST */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 size={28} className="animate-spin text-accent" />
+            <Loader2 size={28} className="animate-spin text-muted" />
           </div>
         ) : filtered.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-24 text-center"
           >
-            <div className="w-16 h-16 rounded-2xl bg-surface shadow-soft-out flex items-center justify-center mb-4">
-              <Users size={28} className="text-secondary/40" />
+            <div className="w-14 h-14 rounded-card bg-surface flex items-center justify-center mb-4">
+              <Users size={24} className="text-muted" />
             </div>
-            <p className="text-base font-bold text-primary mb-1">
+            <p className="text-sm font-bold text-primary mb-1">
               {search || activeFiltersCount > 0 ? 'Aucun résultat' : "Aucun client pour l'instant"}
             </p>
-            <p className="text-sm text-secondary opacity-60 mb-6">
+            <p className="text-xs text-muted mb-6">
               {search || activeFiltersCount > 0 ? 'Ajustez vos filtres.' : 'Créez votre premier client pour commencer le suivi.'}
             </p>
             {!search && activeFiltersCount === 0 && (
               <button
                 onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-accent transition-all shadow-lg"
+                className="btn-authority"
               >
-                <UserPlus size={16} />
+                <UserPlus size={14} />
                 Créer un client
               </button>
             )}
@@ -442,16 +435,16 @@ export default function CoachClientsPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-surface rounded-2xl shadow-soft-out border border-white/60 overflow-hidden">
+          <div className="card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/60">
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Client</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60 hidden md:table-cell">Contact</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60 hidden lg:table-cell">Objectif / Niveau</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Formule</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60 hidden md:table-cell">Tags</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Statut</th>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-3 field-label !mb-0">Client</th>
+                  <th className="text-left px-4 py-3 field-label !mb-0 hidden md:table-cell">Contact</th>
+                  <th className="text-left px-4 py-3 field-label !mb-0 hidden lg:table-cell">Objectif / Niveau</th>
+                  <th className="text-left px-4 py-3 field-label !mb-0">Formule</th>
+                  <th className="text-left px-4 py-3 field-label !mb-0 hidden md:table-cell">Tags</th>
+                  <th className="text-left px-4 py-3 field-label !mb-0">Statut</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -482,124 +475,122 @@ export default function CoachClientsPage() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={e => e.stopPropagation()}
             >
-              <div className="bg-white/90 backdrop-blur-xl rounded-[28px] shadow-[0_32px_64px_rgba(0,0,0,0.18),0_8px_24px_rgba(0,0,0,0.10)] border border-white/60 w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
+              <div className="modal-card w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
 
-                <div className="flex items-center justify-between px-8 pt-8 pb-4">
+                <div className="flex items-center justify-between px-7 pt-7 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <User size={18} className="text-accent" strokeWidth={1.5} />
+                    <div className="w-9 h-9 rounded-btn bg-dark flex items-center justify-center">
+                      <User size={16} className="text-accent" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-primary">Nouveau client</h2>
-                      <p className="text-xs text-secondary opacity-60">Remplissez les informations du client</p>
+                      <h2 className="text-sm font-bold text-primary">Nouveau client</h2>
+                      <p className="text-xs text-muted">Remplissez les informations du client</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowModal(false)}
                     disabled={submitting}
-                    className="w-8 h-8 rounded-lg bg-black/5 hover:bg-black/10 flex items-center justify-center text-secondary hover:text-primary transition-colors"
+                    className="w-7 h-7 rounded-btn bg-surface flex items-center justify-center text-muted hover:text-primary transition-colors"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 </div>
 
                 <AnimatePresence>
                   {error && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      className="mx-8 mb-2 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3">
-                      <AlertCircle size={14} className="text-red-500 shrink-0" />
-                      <p className="text-xs text-red-800 font-bold">{error}</p>
+                      className="mx-7 mb-2 p-3 bg-red-50 border border-red-200 rounded-btn flex items-center gap-2">
+                      <AlertCircle size={13} className="text-red-500 shrink-0" />
+                      <p className="text-xs text-red-800 font-semibold">{error}</p>
                     </motion.div>
                   )}
                   {success && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      className="mx-8 mb-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
-                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                      <p className="text-xs text-emerald-800 font-bold">{success}</p>
+                      className="mx-7 mb-2 p-3 bg-green-50 border border-green-200 rounded-btn flex items-center gap-2">
+                      <CheckCircle2 size={13} className="text-green-600 shrink-0" />
+                      <p className="text-xs text-green-800 font-semibold">{success}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
+                <form onSubmit={handleSubmit} className="px-7 pb-7 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Prénom *</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Prénom *</label>
                       <input type="text" required placeholder="Jean" value={form.firstName}
                         onChange={e => setField('firstName', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm" />
+                        className="input-field" />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Nom *</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Nom *</label>
                       <input type="text" required placeholder="Dupont" value={form.lastName}
                         onChange={e => setField('lastName', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm" />
+                        className="input-field" />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Email</label>
+                  <div className="space-y-1">
+                    <label className="field-label">Email</label>
                     <div className="relative">
-                      <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary/30" />
+                      <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                       <input type="email" placeholder="jean@email.com" value={form.email}
                         onChange={e => setField('email', e.target.value)}
-                        className="ui-input-purity pl-10 pr-4 h-12 text-sm" />
+                        className="input-field pl-9" />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Téléphone</label>
+                  <div className="space-y-1">
+                    <label className="field-label">Téléphone</label>
                     <div className="relative">
-                      <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary/30" />
+                      <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                       <input type="tel" placeholder="+33 6 ..." value={form.phone}
                         onChange={e => setField('phone', e.target.value)}
-                        className="ui-input-purity pl-10 pr-4 h-12 text-sm" />
+                        className="input-field pl-9" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Objectif</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Objectif</label>
                       <select value={form.training_goal} onChange={e => setField('training_goal', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm">
+                        className="input-field">
                         <option value="">— Non renseigné</option>
                         {TRAINING_GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Niveau</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Niveau</label>
                       <select value={form.fitness_level} onChange={e => setField('fitness_level', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm">
+                        className="input-field">
                         <option value="">— Non renseigné</option>
                         {FITNESS_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Pratique sportive</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Pratique sportive</label>
                       <select value={form.sport_practice} onChange={e => setField('sport_practice', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm">
+                        className="input-field">
                         <option value="">— Non renseigné</option>
                         {SPORT_PRACTICES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Fréquence souhaitée</label>
+                    <div className="space-y-1">
+                      <label className="field-label">Fréquence</label>
                       <select value={form.weekly_frequency} onChange={e => setField('weekly_frequency', e.target.value)}
-                        className="ui-input-purity px-4 h-12 text-sm font-mono">
+                        className="input-field tabular">
                         <option value="">— Non renseigné</option>
                         {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}j/sem.</option>)}
                       </select>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-secondary uppercase tracking-widest opacity-60">Notes</label>
+                  <div className="space-y-1">
+                    <label className="field-label">Notes</label>
                     <div className="relative">
-                      <FileText size={14} className="absolute left-4 top-3.5 text-secondary/30" />
+                      <FileText size={13} className="absolute left-3 top-3 text-muted" />
                       <textarea placeholder="Contraintes, historique, remarques..." value={form.notes}
                         onChange={e => setField('notes', e.target.value)} rows={3}
-                        className="ui-input-purity pl-10 pr-4 py-3 text-sm resize-none" />
+                        className="input-field pl-9 resize-none" />
                     </div>
                   </div>
-                  <button type="submit" disabled={submitting}
-                    className="w-full h-13 flex items-center justify-center gap-3 bg-primary hover:bg-accent text-white font-bold text-sm rounded-2xl transition-all duration-200 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-                    style={{ height: '52px' }}>
-                    {submitting ? <><Loader2 size={16} className="animate-spin" /> Création en cours...</> : <><UserPlus size={16} /> Créer le client</>}
+                  <button type="submit" disabled={submitting} className="btn-primary w-full justify-center py-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed">
+                    {submitting ? <><Loader2 size={14} className="animate-spin" /> Création en cours...</> : <><UserPlus size={14} /> Créer le client</>}
                   </button>
                 </form>
               </div>

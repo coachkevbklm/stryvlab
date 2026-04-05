@@ -130,7 +130,7 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
           <button
             onClick={() => fileRef.current?.click()}
             disabled={parsing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-btn bg-surface shadow-soft-out text-xs font-bold text-secondary hover:text-primary disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-btn bg-surface text-xs font-bold text-secondary hover:text-primary disabled:opacity-50 transition-colors"
           >
             {parsing ? <><Loader2 size={12} className="animate-spin" />Lecture…</> : <><Upload size={12} />Import CSV</>}
           </button>
@@ -138,9 +138,9 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
       )
     }
     return (
-      <div className="bg-surface rounded-card shadow-soft-out p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-surface rounded-card p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-widget bg-surface-light shadow-soft-out flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-widget bg-surface-light flex items-center justify-center shrink-0">
             <Upload size={15} className="text-secondary" />
           </div>
           <div>
@@ -173,7 +173,7 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
   // ── MAPPING ───────────────────────────────────────────────────────────────
   if (step === 'mapping' && parseResult) {
     return (
-      <div className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+      <div className="bg-surface rounded-card overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-white/40 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -223,7 +223,7 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
                 <select
                   value={m.fieldKey ?? ''}
                   onChange={e => updateMapping(m.csvColumn, e.target.value || null)}
-                  className="flex-1 px-3 py-1.5 bg-surface-light shadow-soft-in rounded-btn text-xs text-primary outline-none focus:ring-2 focus:ring-accent/40"
+                  className="flex-1 px-3 py-1.5 bg-surface-light rounded-btn text-xs text-primary outline-none focus:ring-2 focus:ring-accent/40"
                 >
                   <option value="">— Ignorer cette colonne —</option>
                   {TARGET_FIELDS.map(f => (
@@ -308,7 +308,7 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
   // ── IMPORTING ─────────────────────────────────────────────────────────────
   if (step === 'importing') {
     return (
-      <div className="bg-surface rounded-card shadow-soft-out p-8 flex flex-col items-center gap-3">
+      <div className="bg-surface rounded-card p-8 flex flex-col items-center gap-3">
         <Loader2 size={24} className="text-accent animate-spin" />
         <p className="text-sm font-bold text-primary">Import en cours…</p>
         <p className="text-xs text-secondary">Insertion des mesures dans la base de données</p>
@@ -319,7 +319,7 @@ export default function CsvImportButton({ clientId, onImported, compact = false 
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (step === 'done' && importResult) {
     return (
-      <div className="bg-surface rounded-card shadow-soft-out p-5 flex items-center justify-between gap-4">
+      <div className="bg-surface rounded-card p-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-widget bg-green-50 flex items-center justify-center shrink-0">
             <CheckCircle2 size={16} className="text-green-600" />

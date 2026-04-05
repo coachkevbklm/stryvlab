@@ -13,8 +13,8 @@ export function Card({ className, variant = 'default', children, ...props }: Car
       className={cn(
         "rounded-card p-6 transition-all duration-300",
         variant === 'default' 
-          ? "bg-surface shadow-soft-out" 
-          : "bg-surface border border-white/50 shadow-soft-out hover:shadow-soft-in",
+          ? "bg-surface" 
+          : "bg-surface border border-white/50 hover:",
         className
       )} 
       {...props}

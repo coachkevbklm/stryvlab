@@ -2,10 +2,18 @@
 
 export class NextRequest extends Request {
   public nextUrl: URL
+  public cookies: any
+  public geo: any
+  public ip: string
+  public page: any
 
   constructor(input: string | URL, init?: RequestInit) {
     super(input, init)
     this.nextUrl = new URL(typeof input === 'string' ? input : input.toString())
+    this.cookies = {}
+    this.geo = {}
+    this.ip = '127.0.0.1'
+    this.page = {}
   }
 }
 

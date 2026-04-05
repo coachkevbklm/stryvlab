@@ -44,8 +44,8 @@ export default function BlockPalette({ usedModules, onAdd }: Props) {
             title={MODULE_DESCRIPTIONS[module]}
             className={`flex items-center gap-2.5 px-3 py-2 rounded-btn text-left transition-all ${
               used
-                ? 'bg-surface text-secondary/30 cursor-not-allowed shadow-soft-in'
-                : 'bg-surface shadow-soft-out text-primary hover:text-accent cursor-pointer'
+                ? 'bg-surface text-secondary/30 cursor-not-allowed'
+                : 'bg-surface text-primary hover:text-accent cursor-pointer'
             }`}
           >
             <Icon size={14} className="shrink-0" />

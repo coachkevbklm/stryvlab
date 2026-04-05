@@ -29,7 +29,7 @@ export default function SessionHistory({ clientId }: Props) {
 
   if (logs.length === 0) {
     return (
-      <div className="bg-surface rounded-card shadow-soft-out p-10 text-center">
+      <div className="bg-surface rounded-card p-10 text-center">
         <Dumbbell size={36} className="text-secondary mx-auto mb-3 opacity-30" />
         <p className="text-sm text-secondary">Aucune séance enregistrée.</p>
         <p className="text-xs text-secondary/60 mt-1">Les séances réalisées par le client apparaîtront ici.</p>
@@ -53,7 +53,7 @@ export default function SessionHistory({ clientId }: Props) {
         }
 
         return (
-          <div key={log.id} className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+          <div key={log.id} className="bg-surface rounded-card overflow-hidden">
             <button
               onClick={() => setExpanded(isOpen ? null : log.id)}
               className="w-full flex items-center justify-between p-4 text-left"

@@ -57,7 +57,7 @@ export default function ProgressionHistory({ clientId }: Props) {
 
   if (groups.length === 0) {
     return (
-      <div className="bg-surface rounded-card shadow-soft-out p-8 text-center">
+      <div className="bg-surface rounded-card p-8 text-center">
         <TrendingUp size={32} className="text-secondary mx-auto mb-3 opacity-20" />
         <p className="text-sm text-secondary font-medium">Aucune donnée de progression.</p>
         <p className="text-xs text-secondary/60 mt-1">
@@ -82,7 +82,7 @@ export default function ProgressionHistory({ clientId }: Props) {
         const overloadCount = g.total_overloads
 
         return (
-          <div key={g.exercise_id} className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+          <div key={g.exercise_id} className="bg-surface rounded-card overflow-hidden">
             <button
               onClick={() => setExpanded(isOpen ? null : g.exercise_id)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"

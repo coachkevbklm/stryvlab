@@ -182,7 +182,7 @@ export default function ProfileForm({ clientId, initial }: Props) {
               className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
                 form.weekly_frequency === n
                   ? 'bg-accent text-white shadow-md'
-                  : 'bg-surface-light shadow-soft-out text-secondary hover:text-primary'
+                  : 'bg-surface-light text-secondary hover:text-primary'
               }`}
             >
               {n}
@@ -226,4 +226,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'w-full bg-surface-light shadow-soft-in rounded-lg px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/30 transition-all'
+  'w-full bg-surface-light rounded-lg px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/30 transition-all'

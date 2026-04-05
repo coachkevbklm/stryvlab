@@ -3,91 +3,519 @@
 @tailwind utilities;
 
 /* =====================================================
-   BASE SETUP
+   DESIGN SYSTEM v1.0 — STRYVR
+   Papier chaud (#F0EFE7) + Dark islands (#343434) + Jaune acide (#FCF76E)
+
+   RÈGLE DUALE :
+   Zone crème  → text #242424, muted #535353, border #BCBCB8
+   Zone sombre → text #FFFFFF, muted rgba(255,255,255,0.40), accent #FCF76E
    ===================================================== */
+
+/* ─── CSS VARIABLES (DESIGN SYSTEM v1.0) ──────────────────────────────────── */
 :root {
-  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-glass: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 8px 32px 0 rgba(31, 38, 135, 0.03);
+  /* SURFACES & CONTENEURS (Papier chaud + Dark islands) */
+  --bg-app: #f0efe7;              /* Fond principal */
+  --bg-panel-dark: #343434;       /* Panneaux d'action, barres latérales */
+  --bg-panel-light: #f8f8f8;      /* Cartes de contenu interne */
+  --bg-card-neutral: #d8d7ce;     /* Éléments secondaires */
+  
+  /* Héritage (mapping depuis v2.1) */
+  --color-background: #f0efe7;
+  --color-surface: #d8d7ce;
+  --color-surface-alt: #e2e1d9;
+  --color-surface-raised: #f8f8f8;  /* Aligné avec bg-panel-light (DS v1.0) */
+  --color-dark: #343434;
+
+  /* TYPOGRAPHIE */
+  --text-main: #242424;           /* Titres et corps sur fond clair (DS v1.0) */
+  --text-muted: #535353;          /* Labels, métadonnées */
+  --text-on-dark: #ffffff;        /* Blanc sur fond anthracite */
+  --text-on-dark-muted: rgba(255, 255, 255, 0.40);
+  
+  /* Héritage */
+  --color-primary: #242424;       /* Aligné avec --text-main (DS v1.0) */
+  --color-on-dark: #ffffff;
+  --color-secondary: #535353;
+  --color-muted: #8a8a85;
+
+  /* ACCENTUATION */
+  --accent-primary: #fcf76e;      /* Jaune acide — CTAs uniquement */
+  --accent-success: #4a7b59;      /* Vert — Statuts positifs (DS v1.0) */
+  --color-accent: #fcf76e;
+  --color-accent-hover: #ede45a;
+
+  /* BORDURES (Design System v1.0) */
+  --color-border: #bcbcb8;
+  --color-border-active: #111111;
+  --border-subtle: 1px solid #bcbcb8;  /* Bordures standard, séparateurs */
+
+  /* Ombres */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.07);
+  --shadow-elevated:
+    0 4px 12px rgba(0, 0, 0, 0.08), 0 16px 40px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(252, 247, 110, 0.35);
+
+  /* GÉOMÉTRIE (Design System v1.0) */
+  --radius-pill: 9999px;          /* Boutons, Tags, Avatars, Pills */
+  --radius-card-lg: 24px;         /* Panneaux principaux */
+  --radius-card-sm: 12px;         /* Inputs et cartes internes */
+  
+  /* Héritage pour compatibilité */
+  --radius-card: 16px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
 }
 
+/* ─── BASE ───────────────────────────────────────────────────────────────── */
 @layer base {
   html,
   body {
-    @apply bg-[#F2F2F2] text-primary antialiased;
-    
-    /* Police unique : Lufga */
-    font-family: var(--font-lufga), 'Lufga', sans-serif;
-    
-    /* Tracking technique (-0.01em) pour le texte courant */
+    background-color: var(--color-background);
+    color: var(--color-primary);
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     letter-spacing: -0.01em;
+    @apply antialiased;
   }
 
-  /* Reset des titres pour le tracking spécifique (-0.02em) */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     letter-spacing: -0.02em;
-    @apply font-medium;
+    font-weight: 600;
+  }
+
+  /* Scrollbar subtil — cohérent avec la charte */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-secondary);
+  }
+
+  /* Sélection texte — accent jaune */
+  ::selection {
+    background: rgba(252, 247, 110, 0.35);
+    color: var(--color-primary);
   }
 }
 
-/* =====================================================
-   COMPONENT PRIMITIVES — ELITE LAB REFACTOR
-   ===================================================== */
+/* ─── COMPOSANTS PRIMITIFS ───────────────────────────────────────────────── */
 @layer components {
+  /* ── CARDS ── */
 
-  /* SURFACE PRINCIPALE (CARTE) */
-  .ui-card {
-    @apply bg-white/95 backdrop-blur-xl rounded-[32px] shadow-[var(--shadow-premium)] border border-white/60 relative overflow-hidden;
+  /* Card standard — surface crème, ombre légère */
+  .card {
+    background-color: var(--color-surface-raised);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
   }
 
-  /* GLASS PANEL - NEW */
-  .glass-panel {
-    @apply bg-white/40 backdrop-blur-md border border-white/40 shadow-[var(--shadow-glass)] rounded-2xl;
+  /* Card dark island — autorité, KPI sombre, panels */
+  .card-dark {
+    background-color: var(--color-dark);
+    border-radius: var(--radius-card);
   }
 
-  /* WIDGET / SOUS-CARTE */
-  .ui-widget {
-    @apply bg-white/80 backdrop-blur-sm rounded-widget border border-white/40 shadow-sm transition-all duration-300;
+  /* Card surface — légèrement plus foncée que le fond */
+  .card-surface {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-border);
   }
 
-  /* ZONE INPUT (PURITY STYLE) */
-  .ui-input-purity {
-    @apply w-full bg-[#FDFDFF] rounded-2xl border border-zinc-200/60 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-300 outline-none;
-    @apply focus:border-accent/40 focus:ring-4 focus:ring-accent/5;
-    @apply placeholder:text-secondary/30 text-primary font-medium text-sm;
+  /* ── INPUTS — PATTERN "PUITS" ── */
+  /* Inactif : surface-alt + border subtle → fond monte au focus */
+  .input-field {
+    width: 100%;
+    background-color: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-input);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-primary);
+    outline: none;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  .input-field::placeholder {
+    color: var(--color-border);
+  }
+  .input-field:focus {
+    background-color: var(--color-surface-raised);
+    border-color: var(--color-border-active);
+    box-shadow: var(--shadow-focus);
   }
 
-  /* BOUTON PRIMAIRE - PERFORMANCE STYLE */
-  .ui-btn-primary {
-    @apply bg-primary text-white rounded-btn px-6 py-3.5 text-sm font-black uppercase tracking-widest transition-all active:scale-[0.98] hover:bg-zinc-800 shadow-soft-out;
+  /* ── BOUTONS ── */
+
+  /* Primaire — accent jaune, texte sombre */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-btn);
+    background-color: var(--color-accent);
+    color: var(--color-primary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: opacity 150ms;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    opacity: 0.88;
+  }
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
-  /* BOUTON SECONDAIRE - NAVIGATION STYLE */
-  .ui-btn-secondary {
-    @apply bg-white/80 backdrop-blur-sm text-secondary rounded-btn border border-zinc-200/40 px-6 py-3.5 text-sm font-bold tracking-tight transition-all active:scale-[0.98] hover:bg-zinc-50 shadow-sm;
+  /* Secondaire — surface claire, bordure subtle */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-btn);
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    color: var(--color-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition:
+      color 150ms,
+      border-color 150ms;
+    cursor: pointer;
+  }
+  .btn-secondary:hover {
+    color: var(--color-primary);
+    border-color: var(--color-border-active);
   }
 
-  /* TOOLTIP / FLOATING HINT */
-  .ui-hint {
-    @apply bg-white/95 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl;
+  /* Autorité — fond sombre, texte clair */
+  .btn-authority {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-btn);
+    background-color: var(--color-dark);
+    color: var(--color-on-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: opacity 150ms;
+    cursor: pointer;
+  }
+  .btn-authority:hover {
+    opacity: 0.85;
+  }
+
+  /* Destructif */
+  .btn-destructive {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-btn);
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: opacity 150ms;
+    cursor: pointer;
+  }
+  .btn-destructive:hover {
+    opacity: 0.88;
+  }
+  .btn-destructive:disabled {
+    opacity: 0.45;
+  }
+
+  /* ── LABELS DE CHAMP ── */
+  /* Pattern signature : 11px, uppercase, tracking large, muted */
+  .field-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .badge-accent {
+    background: var(--color-accent);
+    color: var(--color-primary);
+  }
+  .badge-dark {
+    background: var(--color-dark);
+    color: var(--color-on-dark);
+  }
+  .badge-surface {
+    background: var(--color-surface);
+    color: var(--color-secondary);
+    border: 1px solid var(--color-border);
+  }
+  .badge-success {
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .badge-danger {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .badge-warning {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  /* ── SEPARATEURS ── */
+  .divider {
+    height: 1px;
+    background-color: var(--color-surface-alt);
+  }
+  .divider-dark {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-dark);
+    color: var(--color-on-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-card {
+    background-color: var(--color-surface-raised);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-modal);
+    width: 100%;
+    max-width: 28rem;
+  }
+
+  /* ── NAVIGATION TOP BAR ── */
+  /* Dark island fixe — h-11 = 44px */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 2.75rem;
+    background-color: var(--color-dark);
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  /* Tab actif dans top-bar */
+  .top-bar-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition:
+      background 150ms,
+      color 150ms;
+    color: rgba(254, 254, 254, 0.65);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .top-bar-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-on-dark);
+  }
+  .top-bar-tab.active {
+    background: var(--color-accent);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  /* ── SECTION HEADER ── */
+  /* Label de section dans content area */
+  .section-header {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-muted);
+    padding: 0.5rem 0 0.375rem;
+  }
+
+  /* ── PILL TOGGLE (Tableau / Graphiques / etc.) ── */
+  .pill-toggle {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-pill);
+    padding: 3px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .pill-toggle-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-secondary);
+    transition: all 150ms;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .pill-toggle-item:hover {
+    color: var(--color-primary);
+  }
+  .pill-toggle-item.active {
+    background: var(--color-dark);
+    color: var(--color-on-dark);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  .pill-toggle-item.active-accent {
+    background: var(--color-accent);
+    color: var(--color-primary);
   }
 }
 
-/* =====================================================
-   UTILITIES
-   ===================================================== */
+/* ─── UTILITIES ──────────────────────────────────────────────────────────── */
 @layer utilities {
+  /* Scrollbar masquée */
   .no-scrollbar {
     scrollbar-width: none;
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  @keyframes shine {
-    0% { transform: translateX(-100%) skewX(-20deg); }
-    50% { transform: translateX(100%) skewX(-20deg); }
-    100% { transform: translateX(100%) skewX(-20deg); }
+
+  /* Chiffres tabular */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
-  .font-unbounded {
-    font-family: var(--font-unbounded), sans-serif;
+
+  /* Truncate multi-ligne */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── SAFETY RULES: FLASHING ANIMATIONS ── */
+  /* Critical Alert: Bright red flash */
+  @keyframes flash-critical {
+    0%,
+    100% {
+      background-color: inherit;
+    }
+    50% {
+      background-color: rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+  }
+  .animate-flash-critical {
+    animation: flash-critical 600ms cubic-bezier(0.4, 0, 0.6, 1) 1;
+  }
+
+  /* Warning Alert: Amber flash */
+  @keyframes flash-warning {
+    0%,
+    100% {
+      background-color: inherit;
+    }
+    50% {
+      background-color: rgba(217, 119, 6, 0.12);
+      box-shadow: 0 0 8px rgba(217, 119, 6, 0.3);
+    }
+  }
+  .animate-flash-warning {
+    animation: flash-warning 500ms cubic-bezier(0.4, 0, 0.6, 1) 1;
+  }
+
+  /* Advice Alert: Blue flash (subtle) */
+  @keyframes flash-advice {
+    0%,
+    100% {
+      background-color: inherit;
+    }
+    50% {
+      background-color: rgba(59, 130, 246, 0.08);
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.2);
+    }
+  }
+  .animate-flash-advice {
+    animation: flash-advice 400ms cubic-bezier(0.4, 0, 0.6, 1) 1;
+  }
+
+  /* Pulse for UI feedback during calculation */
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }

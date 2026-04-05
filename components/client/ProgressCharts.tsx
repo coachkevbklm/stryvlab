@@ -40,7 +40,7 @@ export default function ProgressCharts({ timeline, exerciseProgression }: Props)
   return (
     <div className="flex flex-col gap-6">
       {/* Volume par séance */}
-      <section className="bg-surface rounded-card shadow-soft-out p-4">
+      <section className="bg-surface rounded-card p-4">
         <h2 className="text-sm font-semibold text-primary mb-4">Volume par séance (kg)</h2>
         <ResponsiveContainer width="100%" height={160}>
           <AreaChart data={timeline} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -83,7 +83,7 @@ export default function ProgressCharts({ timeline, exerciseProgression }: Props)
 
       {/* Progression par exercice */}
       {exerciseProgression.length > 0 && (
-        <section className="bg-surface rounded-card shadow-soft-out p-4">
+        <section className="bg-surface rounded-card p-4">
           <h2 className="text-sm font-semibold text-primary mb-4">Progression — charge max (kg)</h2>
           <div className="flex flex-col gap-6">
             {exerciseProgression.map((ex, i) => (

@@ -143,7 +143,7 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
     <div className="space-y-6">
 
       {/* ── Tags ────────────────────────────────────────────────────────────── */}
-      <div className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60">
+      <div className="bg-surface rounded-2xl p-5 border border-white/60">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Tag size={15} className="text-secondary/60" />
@@ -208,7 +208,7 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
                   value={newTagName}
                   onChange={e => setNewTagName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && createTag()}
-                  className="flex-1 h-9 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-xs text-primary outline-none focus:border-accent/30"
+                  className="flex-1 h-9 px-3 bg-surface-light rounded-xl border border-white/60 text-xs text-primary outline-none focus:border-accent/30"
                 />
                 {/* Color picker */}
                 <div className="flex gap-1">
@@ -233,7 +233,7 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
       </div>
 
       {/* ── Informations CRM ────────────────────────────────────────────────── */}
-      <div className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60">
+      <div className="bg-surface rounded-2xl p-5 border border-white/60">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <User2 size={15} className="text-secondary/60" />
@@ -242,7 +242,7 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
           {editing ? (
             <div className="flex gap-2">
               <button onClick={() => setEditing(false)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-secondary hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-surface-light shadow-soft-out">
+                className="flex items-center gap-1.5 text-xs font-semibold text-secondary hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-surface-light">
                 Annuler
               </button>
               <button onClick={saveCrm} disabled={saving}
@@ -264,11 +264,11 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Date de naissance">
               <input type="date" value={draft.date_of_birth ?? ''} onChange={e => setDraft(d => ({ ...d, date_of_birth: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </Field>
             <Field label="Genre">
               <select value={draft.gender ?? ''} onChange={e => setDraft(d => ({ ...d, gender: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                 <option value="">— Non renseigné</option>
                 <option value="male">Homme</option>
                 <option value="female">Femme</option>
@@ -278,23 +278,23 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
             </Field>
             <Field label="Adresse">
               <input type="text" placeholder="Rue, numéro..." value={draft.address ?? ''} onChange={e => setDraft(d => ({ ...d, address: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </Field>
             <Field label="Ville">
               <input type="text" placeholder="Paris" value={draft.city ?? ''} onChange={e => setDraft(d => ({ ...d, city: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </Field>
             <Field label="Contact urgence — Nom">
               <input type="text" placeholder="Marie Dupont" value={draft.emergency_contact_name ?? ''} onChange={e => setDraft(d => ({ ...d, emergency_contact_name: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </Field>
             <Field label="Contact urgence — Tél.">
               <input type="tel" placeholder="+33 6 ..." value={draft.emergency_contact_phone ?? ''} onChange={e => setDraft(d => ({ ...d, emergency_contact_phone: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none" />
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none" />
             </Field>
             <Field label="Source d'acquisition">
               <select value={draft.acquisition_source ?? ''} onChange={e => setDraft(d => ({ ...d, acquisition_source: e.target.value }))}
-                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none">
+                className="w-full h-10 px-3 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none">
                 <option value="">— Non renseigné</option>
                 <option value="referral">Parrainage</option>
                 <option value="social_media">Réseaux sociaux</option>
@@ -306,7 +306,7 @@ export default function ClientCrmTab({ clientId, initialCrm }: { clientId: strin
             <Field label="Notes internes coach (privées)" className="md:col-span-2">
               <textarea value={draft.internal_notes ?? ''} onChange={e => setDraft(d => ({ ...d, internal_notes: e.target.value }))}
                 rows={3} placeholder="Notes visibles uniquement par vous..."
-                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 shadow-soft-in text-sm text-primary outline-none resize-none" />
+                className="w-full px-3 py-2 bg-surface-light rounded-xl border border-white/60 text-sm text-primary outline-none resize-none" />
             </Field>
           </div>
         ) : (
@@ -354,7 +354,7 @@ function Field({ label, children, className = '' }: { label: string; children: R
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | null | undefined }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-lg bg-surface-light shadow-soft-out flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-lg bg-surface-light flex items-center justify-center shrink-0 mt-0.5">
         <Icon size={12} className="text-secondary/50" />
       </div>
       <div>

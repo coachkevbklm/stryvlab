@@ -135,7 +135,7 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
             const hasLink = s.status === 'pending' || s.status === 'in_progress'
             const isLoadingAction = actionLoading === s.id
             return (
-              <div key={s.id} className="flex items-center gap-3 bg-surface-light shadow-soft-in rounded-widget px-4 py-3">
+              <div key={s.id} className="flex items-center gap-3 bg-surface-light rounded-widget px-4 py-3">
                 <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full shrink-0 ${config.color}`}>
                   <Icon size={12} />
                   {config.label}
@@ -150,7 +150,7 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
                       onBlur={() => saveDate(s.id)}
                       onKeyDown={e => { if (e.key === 'Enter') saveDate(s.id); if (e.key === 'Escape') setEditingDateId(null) }}
                       autoFocus
-                      className="text-xs bg-surface shadow-soft-in rounded px-1.5 py-0.5 outline-none text-primary border border-accent/40"
+                      className="text-xs bg-surface rounded px-1.5 py-0.5 outline-none text-primary border border-accent/40"
                     />
                   ) : (
                     <button
@@ -236,7 +236,7 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
               <select
                 value={selectedTemplate}
                 onChange={e => setSelectedTemplate(e.target.value)}
-                className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary mb-4 outline-none"
+                className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm text-primary mb-4 outline-none"
               >
                 <option value="">Sélectionner un template…</option>
                 {templates.map(t => (
@@ -250,13 +250,13 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
                 type="date"
                 value={bilanDate}
                 onChange={e => setBilanDate(e.target.value)}
-                className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none"
+                className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm text-primary outline-none"
               />
             </div>
             {clientEmail && (
               <label className="flex items-center gap-3 py-2 cursor-pointer group">
                 <div
-                  className={`w-10 h-6 rounded-full transition-colors relative ${sendEmail ? 'bg-accent' : 'bg-surface-light shadow-soft-in'}`}
+                  className={`w-10 h-6 rounded-full transition-colors relative ${sendEmail ? 'bg-accent' : 'bg-surface-light'}`}
                   onClick={() => setSendEmail(v => !v)}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${sendEmail ? 'translate-x-5' : 'translate-x-1'}`} />
@@ -273,7 +273,7 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
             <div className="flex gap-3 mt-2">
               <button
                 onClick={() => setSendModal(false)}
-                className="flex-1 py-2.5 rounded-btn bg-surface-light shadow-soft-out text-sm text-secondary hover:text-primary transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-btn bg-surface-light text-sm text-secondary hover:text-primary transition-colors font-medium"
               >
                 Annuler
               </button>
@@ -300,7 +300,7 @@ export default function SubmissionsList({ submissions, clientId, templates, onSe
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-btn bg-surface-light shadow-soft-out text-sm text-secondary hover:text-primary transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-btn bg-surface-light text-sm text-secondary hover:text-primary transition-colors font-medium"
               >
                 Annuler
               </button>

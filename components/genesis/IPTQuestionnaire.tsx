@@ -197,7 +197,7 @@ export default function IPTQuestionnaire() {
 
   if (submitting) {
     return (
-      <div className="w-full max-w-lg mx-auto bg-surface border border-white/60 p-8 rounded-2xl shadow-soft-out text-center space-y-8">
+      <div className="w-full max-w-lg mx-auto bg-surface border border-white/60 p-8 rounded-2xl text-center space-y-8">
         <div className="relative w-20 h-20 mx-auto">
             <div className="absolute inset-0 rounded-full border-4 border-gray-100"></div>
             <div className="absolute inset-0 rounded-full border-4 border-accent border-t-transparent animate-spin"></div>
@@ -224,7 +224,7 @@ export default function IPTQuestionnaire() {
     <div className="w-full max-w-lg mx-auto flex flex-col gap-6 font-outfit">
         
         {/* Header */}
-        <div className="bg-surface border border-white/60 p-6 rounded-2xl shadow-soft-out">
+        <div className="bg-surface border border-white/60 p-6 rounded-2xl">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shadow-inner">
@@ -250,7 +250,7 @@ export default function IPTQuestionnaire() {
         />
 
         {/* Contrôles */}
-        <div className="bg-surface border border-white/60 p-4 rounded-2xl shadow-soft-out flex justify-between gap-4">
+        <div className="bg-surface border border-white/60 p-4 rounded-2xl flex justify-between gap-4">
             <button
               onClick={handlePrevious}
               disabled={currentIndex === 0}

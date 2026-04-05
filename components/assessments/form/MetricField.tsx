@@ -133,7 +133,7 @@ function PhotoUploadWidget({
         className={`relative rounded-card overflow-hidden border-2 transition-all ${
           uploaded
             ? 'border-green-300/60 bg-green-50/30'
-            : 'border-dashed border-white/80 bg-surface-light shadow-soft-in'
+            : 'border-dashed border-white/80 bg-surface-light'
         }`}
         style={{ minHeight: '140px' }}
         onClick={() => !uploading && !uploaded && inputRef.current?.click()}
@@ -189,7 +189,7 @@ function PhotoUploadWidget({
             tabIndex={0}
             onKeyDown={e => e.key === 'Enter' && inputRef.current?.click()}
           >
-            <div className="w-12 h-12 rounded-xl bg-surface shadow-soft-out flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center">
               <Upload size={20} className="text-secondary/60" />
             </div>
             <div className="text-center">
@@ -244,7 +244,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
           value={value as number ?? ''}
           onChange={e => onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
           placeholder={placeholder ?? (min !== undefined && max !== undefined ? `${min} – ${max}` : '')}
-          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+          className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
         />
       </div>
     )
@@ -260,7 +260,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
           value={value as string ?? ''}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder ?? `Votre ${label.toLowerCase()}…`}
-          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+          className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
         />
       </div>
     )
@@ -276,7 +276,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
           value={value as string ?? ''}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder ?? `Votre ${label.toLowerCase()}…`}
-          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all resize-none"
+          className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all resize-none"
         />
       </div>
     )
@@ -291,7 +291,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
           type="date"
           value={value as string ?? ''}
           onChange={e => onChange(e.target.value)}
-          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+          className="w-full bg-surface-light rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
         />
       </div>
     )
@@ -307,8 +307,8 @@ export default function MetricField({ field, value, onChange, submissionToken, s
           onClick={() => onChange(!checked)}
           className={`flex items-center gap-3 w-full px-4 py-3 rounded-btn transition-all ${
             checked
-              ? 'bg-accent/10 shadow-soft-in text-accent'
-              : 'bg-surface shadow-soft-out text-secondary'
+              ? 'bg-accent/10 text-accent'
+              : 'bg-surface text-secondary'
           }`}
         >
           <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all shrink-0 ${
@@ -337,7 +337,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
               className={`flex-1 py-2.5 rounded-btn text-xs font-bold transition-all ${
                 current === n
                   ? 'bg-accent text-white shadow-lg'
-                  : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                  : 'bg-surface text-secondary hover:text-primary'
               }`}
             >
               {n}
@@ -367,7 +367,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
               className={`px-3 py-1.5 rounded-btn text-sm font-medium transition-all ${
                 current === opt
                   ? 'bg-accent text-white shadow-lg'
-                  : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                  : 'bg-surface text-secondary hover:text-primary'
               }`}
             >
               {opt}
@@ -401,7 +401,7 @@ export default function MetricField({ field, value, onChange, submissionToken, s
                 className={`px-3 py-1.5 rounded-btn text-sm font-medium transition-all ${
                   selected
                     ? 'bg-accent text-white shadow-lg'
-                    : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                    : 'bg-surface text-secondary hover:text-primary'
                 }`}
               >
                 {selected && <span className="mr-1 text-[10px]">✓</span>}

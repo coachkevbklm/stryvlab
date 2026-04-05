@@ -22,226 +22,57 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
 import GenesisAssistant from '@/components/GenesisAssistant';
 
-// --- TYPES ---
-type Gender = 'male' | 'female';
-type Goal = 'deficit' | 'maintenance' | 'surplus';
+// Formulas & Store
+import { calculateMacros as calcMacros, type MacroGoal, type MacroGender, type MacroResult } from '@/lib/formulas';
+import { useClientStore } from '@/lib/stores/useClientStore';
+
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
 
+// Activity level → daily steps mapping for NEAT
+const ACTIVITY_STEPS: Record<ActivityLevel, number> = {
+  sedentary: 2000, light: 4000, moderate: 6500, active: 10000, veryActive: 14000,
+};
+
+const GOAL_LABELS: Record<MacroGoal, string> = {
+  deficit: 'Perte de Gras (Déficit Stratifié)',
+  maintenance: 'Maintenance (Homéostasie)',
+  surplus: 'Prise de Muscle (Lean Bulk)',
+};
+
 export default function MacroCalculator() {
-  // --- STATES ---
-  const [gender, setGender] = useState<Gender>('male');
+  const setProfile = useClientStore((s) => s.setProfile);
+
+  const [gender, setGender] = useState<MacroGender>('male');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [workouts, setWorkouts] = useState('3');
-  const [goal, setGoal] = useState<Goal>('deficit');
-  
+  const [goal, setGoal] = useState<MacroGoal>('deficit');
+
   const [copied, setCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
-  
-  const [result, setResult] = useState<{
-    calories: number;
-    tdee: number;
-    bmr: number;
-    leanMass: number;
-    estimatedBF: number;
-    macros: { p: number; f: number; c: number };
-    ratios: { p: number; f: number; c: number };
-    percents: { p: number; f: number; c: number };
-    breakdown: { bmr: number; neat: number; eat: number; tef: number; total: number };
-    adjustment: number;
-    warnings: string[];
-    goalLabel: string;
-  } | null>(null);
 
-  // ========================================================================
-  // 🔬 LOGIQUE MATHÉMATIQUE (SCIENTIFIQUEMENT VALIDÉE - 100/100)
-  // ========================================================================
+  const [result, setResult] = useState<(MacroResult & { goalLabel: string; bmr: number }) | null>(null);
+
   const calculateMacros = () => {
     setCopied(false);
     const w = parseFloat(weight);
     const h = parseFloat(height);
     const a = parseFloat(age);
     const wo = parseInt(workouts) || 3;
-
     if (!w || !h || !a) return;
 
-    const warnings: string[] = [];
-
-    // =====================================================================
-    // 1. ESTIMATION BF% (Deurenberg et al. 1991)
-    // Source: Int J Obes (si non renseigné)
-    // =====================================================================
-    let bf = parseFloat(bodyFat) || 0;
-    if (!bf) {
-      const bmi = w / ((h/100) ** 2);
-      if (gender === 'male') {
-        bf = 1.20 * bmi + 0.23 * a - 10.8;
-      } else {
-        bf = 1.20 * bmi + 0.23 * a - 5.4;
-      }
-      bf = Math.max(3, Math.min(60, bf));
-      warnings.push(`ℹ️ Body Fat% estimé (${bf.toFixed(1)}%) via formule Deurenberg. Pour précision optimale, mesurez votre BF% réel.`);
-    }
-
-    // =====================================================================
-    // 2. LEAN BODY MASS (LBM)
-    // =====================================================================
-    const lbm = w * (1 - bf / 100);
-
-    // =====================================================================
-    // 3. BMR (Mifflin-St Jeor 1990 - Gold Standard)
-    // Source: Am J Clin Nutr
-    // Précision: ±10% chez 82% population
-    // =====================================================================
-    let bmr: number;
-    if (gender === 'male') {
-      bmr = (10 * w) + (6.25 * h) - (5 * a) + 5;
-    } else {
-      bmr = (10 * w) + (6.25 * h) - (5 * a) - 161;
-    }
-
-    // =====================================================================
-    // 4. NEAT (Non-Exercise Activity Thermogenesis)
-    // Facteurs validés recherche (Levine 2002, Science)
-    // =====================================================================
-    const activityMultipliers: Record<ActivityLevel, number> = {
-      sedentary: 1.2,      // <3000 pas/jour
-      light: 1.35,         // 3000-5000 pas/jour
-      moderate: 1.5,       // 5000-8000 pas/jour
-      active: 1.65,        // 8000-12000 pas/jour
-      veryActive: 1.8      // >12000 pas/jour
-    };
-    const neat = bmr * (activityMultipliers[activityLevel] - 1);
-
-    // =====================================================================
-    // 5. EAT (Exercise Activity Thermogenesis)
-    // Moyenne 300kcal/séance (60min musculation)
-    // =====================================================================
-    const eatPerWorkout = 300;
-    const eat = (eatPerWorkout * wo * 7) / 7; // Moyenne quotidienne
-
-    // =====================================================================
-    // 6. TEF (Thermic Effect of Food)
-    // 10% du TDEE pré-TEF (standard recherche)
-    // =====================================================================
-    const preTdee = bmr + neat + eat;
-    const tef = preTdee * 0.10;
-
-    // =====================================================================
-    // 7. TDEE TOTAL
-    // =====================================================================
-    const tdee = Math.round(bmr + neat + eat + tef);
-
-    // =====================================================================
-    // 8. AJUSTEMENT SELON OBJECTIF
-    // =====================================================================
-    let adjustment = 0;
-    let calories = tdee;
-    let goalLabel = '';
-
-    if (goal === 'deficit') {
-      // Déficit stratifié selon BF% (Helms 2014)
-      const isObese = (gender === 'male' && bf > 25) || (gender === 'female' && bf > 32);
-      adjustment = isObese ? -25 : -20;
-      calories = Math.round(tdee * (1 + adjustment / 100));
-      goalLabel = 'Perte de Gras (Déficit Stratifié)';
-      warnings.push(`⚠️ Déficit ${Math.abs(adjustment)}% (${Math.abs(calories - tdee)} kcal/j). Attendu: -0.5-1kg/semaine.`);
-    } else if (goal === 'surplus') {
-      // Lean bulk +10% (Helms 2018)
-      adjustment = 10;
-      calories = Math.round(tdee * 1.10);
-      goalLabel = 'Prise de Muscle (Lean Bulk)';
-      warnings.push(`ℹ️ Surplus +10% (${calories - tdee} kcal/j). Attendu: +0.25-0.5kg/semaine.`);
-    } else {
-      goalLabel = 'Maintenance (Homéostasie)';
-      warnings.push(`ℹ️ Maintenance calorique. Poids stable.`);
-    }
-
-    // =====================================================================
-    // 9. MACRONUTRIMENTS (Formules Evidence-Based)
-    // Source: Helms 2014, Morton 2018 (ISSN Position Stand)
-    // =====================================================================
-    
-    // PROTÉINES (basées sur LBM)
-    let proteinGKg: number;
-    if (goal === 'deficit') {
-      proteinGKg = 2.3; // Déficit: 2.3g/kg LBM (protection masse maigre)
-    } else if (goal === 'surplus') {
-      proteinGKg = 2.0; // Surplus: 2.0g/kg LBM (anabolisme)
-    } else {
-      proteinGKg = 2.0; // Maintenance: 2.0g/kg LBM
-    }
-    const proteinG = Math.round(lbm * proteinGKg);
-
-    // LIPIDES (basés sur poids total)
-    const fatGKg = goal === 'deficit' ? 0.8 : 1.0;
-    const fatG = Math.round(w * fatGKg);
-    
-    // Plancher absolu: 20% des calories (santé hormonale)
-    const fatMinCalories = calories * 0.20;
-    const finalFatG = Math.max(Math.round(fatMinCalories / 9), fatG);
-
-    // GLUCIDES (variable d'ajustement)
-    const proteinCal = proteinG * 4;
-    const fatCal = finalFatG * 9;
-    const carbCal = calories - proteinCal - fatCal;
-    const carbG = Math.max(Math.round(carbCal / 4), 50); // Minimum 50g
-
-    // RATIOS & PERCENTS
-    const ratios = {
-      p: parseFloat((proteinG / lbm).toFixed(2)),
-      f: parseFloat((finalFatG / w).toFixed(2)),
-      c: parseFloat((carbG / w).toFixed(2))
-    };
-
-    const percents = {
-      p: Math.round((proteinCal / calories) * 100),
-      f: Math.round((fatCal / calories) * 100),
-      c: Math.round((carbCal / calories) * 100)
-    };
-
-    // =====================================================================
-    // 10. VALIDATION & WARNINGS
-    // =====================================================================
-    
-    // Warning 1: Glucides bas
-    if (carbG < 100 && goal !== 'deficit') {
-      warnings.push('⚠️ Glucides <100g : Risque performance entraînement réduite.');
-    }
-    
-    // Warning 2: Lipides sous seuil hormonal
-    if (finalFatG < w * 0.8) {
-      warnings.push('⚠️ Lipides <0.8g/kg : Risque hormonal (testostérone/œstrogènes).');
-    }
-    
-    // Warning 3: Déficit trop agressif
-    if (calories < bmr * 1.1) {
-      warnings.push('⚠️ Calories <110% BMR : Déficit trop agressif (risque catabolisme).');
-    }
-
-    setResult({
-      calories,
-      tdee,
-      bmr: Math.round(bmr),
-      leanMass: Math.round(lbm * 10) / 10,
-      estimatedBF: Math.round(bf * 10) / 10,
-      macros: { p: proteinG, f: finalFatG, c: carbG },
-      ratios,
-      percents,
-      breakdown: {
-        bmr: Math.round(bmr),
-        neat: Math.round(neat),
-        eat: Math.round(eat),
-        tef: Math.round(tef),
-        total: tdee
-      },
-      adjustment,
-      warnings,
-      goalLabel
+    const res = calcMacros({
+      weight: w, height: h, age: a, gender, goal,
+      bodyFat: bodyFat ? parseFloat(bodyFat) : undefined,
+      steps: ACTIVITY_STEPS[activityLevel],
+      workouts: wo,
     });
+
+    setResult({ ...res, goalLabel: GOAL_LABELS[goal], bmr: res.breakdown.bmr });
+    setProfile({ weight: w, height: h, age: a, gender, bodyFat: res.estimatedBF, workouts: wo, macroGoal: goal });
 
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -251,24 +82,7 @@ export default function MacroCalculator() {
   const handleCopy = () => {
     if (!result) return;
     const url = 'https://www.stryvlab.com/outils/macros';
-
-    const text = `Bilan Nutritionnel - STRYV lab
-
-• Objectif : ${result.goalLabel}
-• Cible : ${result.calories} kcal/jour
-• TDEE : ${result.tdee} kcal
-
-Macros Optimisées :
-• Protéines : ${result.macros.p}g (${result.ratios.p}g/kg LBM)
-• Lipides : ${result.macros.f}g (${result.ratios.f}g/kg)
-• Glucides : ${result.macros.c}g (${result.ratios.c}g/kg)
-
-Composition :
-• Masse Maigre : ${result.leanMass} kg
-• Body Fat : ${result.estimatedBF}%
-
-${url}`;
-
+    const text = `Bilan Nutritionnel - STRYV lab\n\n• Objectif : ${result.goalLabel}\n• Cible : ${result.calories} kcal/jour\n• TDEE : ${result.tdee} kcal\n\nMacros Optimisées :\n• Protéines : ${result.macros.p}g (${result.ratios.p}g/kg LBM)\n• Lipides : ${result.macros.f}g (${result.ratios.f}g/kg)\n• Glucides : ${result.macros.c}g (${result.ratios.c}g/kg)\n\nComposition :\n• Masse Maigre : ${result.leanMass} kg\n• Body Fat : ${result.estimatedBF}%\n\n${url}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

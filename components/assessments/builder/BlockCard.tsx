@@ -61,7 +61,7 @@ export default function BlockCard({
       onDragStart={() => onDragStart(index)}
       onDragOver={e => { e.preventDefault(); onDragOver(index) }}
       onDrop={onDrop}
-      className="bg-surface rounded-card shadow-soft-out overflow-hidden select-none"
+      className="bg-surface rounded-card overflow-hidden select-none"
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/60">
@@ -74,7 +74,7 @@ export default function BlockCard({
             onChange={e => setLabelDraft(e.target.value)}
             onBlur={commitLabel}
             onKeyDown={e => e.key === 'Enter' && commitLabel()}
-            className="flex-1 text-sm font-bold text-primary bg-surface-light shadow-soft-in rounded-btn px-2 py-0.5 outline-none"
+            className="flex-1 text-sm font-bold text-primary bg-surface-light rounded-btn px-2 py-0.5 outline-none"
           />
         ) : (
           <button

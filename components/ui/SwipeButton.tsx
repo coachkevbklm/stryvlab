@@ -165,7 +165,7 @@ export default function SwipeButton({
       tabIndex={state === "success" ? -1 : 0}
     >
       {/* 1. TRACK (Fond creusé) */}
-      <div className="absolute inset-0 bg-surface-light shadow-soft-in rounded-full transition-colors duration-300" />
+      <div className="absolute inset-0 bg-surface-light rounded-full transition-colors duration-300" />
 
       {/* 2. TEXTE (Label) */}
       <div
@@ -198,7 +198,7 @@ export default function SwipeButton({
       <div
         className={`
           absolute top-0 z-20 flex items-center justify-center rounded-full
-          bg-surface shadow-soft-out border border-white/10
+          bg-surface border border-white/10
           transition-transform duration-75 ease-linear
           will-change-transform
         `}

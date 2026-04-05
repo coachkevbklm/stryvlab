@@ -102,7 +102,7 @@ export default function TemplateBuilder({ initialTemplate }: Props) {
       <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4 flex items-center gap-4">
         <button
           onClick={() => router.push('/coach/assessments')}
-          className="w-10 h-10 rounded-widget bg-surface-light shadow-soft-out flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          className="w-10 h-10 rounded-widget bg-surface-light flex items-center justify-center text-secondary hover:text-primary transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
@@ -131,7 +131,7 @@ export default function TemplateBuilder({ initialTemplate }: Props) {
         <select
           value={templateType}
           onChange={e => setTemplateType(e.target.value as TemplateType)}
-          className="text-sm bg-surface shadow-soft-in rounded-btn px-3 py-1.5 text-primary outline-none"
+          className="text-sm bg-surface rounded-btn px-3 py-1.5 text-primary outline-none"
         >
           {TEMPLATE_TYPES.map(t => (
             <option key={t.value} value={t.value}>{t.label}</option>
@@ -142,7 +142,7 @@ export default function TemplateBuilder({ initialTemplate }: Props) {
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Description (optionnelle)…"
-          className="flex-1 min-w-[200px] text-sm bg-surface shadow-soft-in rounded-btn px-3 py-1.5 text-primary outline-none placeholder:text-secondary/40"
+          className="flex-1 min-w-[200px] text-sm bg-surface rounded-btn px-3 py-1.5 text-primary outline-none placeholder:text-secondary/40"
         />
 
         <label className="flex items-center gap-2 text-sm text-secondary cursor-pointer">

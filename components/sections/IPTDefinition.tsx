@@ -25,7 +25,7 @@ export function IPTDefinition() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
               <Card>
-                <div 
+                <div
                   className="text-xs font-mono mb-4"
                   style={{
                     fontFamily: 'var(--font-deep-tech-functional)',
@@ -34,7 +34,7 @@ export function IPTDefinition() {
                 >
                   {pillar.number}
                 </div>
-                <h3 
+                <h3
                   className="text-lg font-medium mb-4"
                   style={{
                     fontFamily: 'var(--font-deep-tech-body)',
@@ -44,8 +44,8 @@ export function IPTDefinition() {
                   {pillar.title}
                 </h3>
                 <ul className="space-y-2">
-                  {pillar.items.map((item, itemIndex) => (
-                    <li 
+                  {pillar.items.map((item: string, itemIndex: number) => (
+                    <li
                       key={itemIndex}
                       className="flex items-start gap-2 text-sm"
                       style={{
@@ -53,7 +53,7 @@ export function IPTDefinition() {
                         color: 'var(--gray-400)',
                       }}
                     >
-                      <span 
+                      <span
                         className="mt-1.5 w-1 h-1 rounded-full flex-shrink-0"
                         style={{
                           background: 'var(--electric-emerald)',

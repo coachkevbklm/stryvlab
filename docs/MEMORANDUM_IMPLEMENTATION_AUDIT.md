@@ -1,8 +1,8 @@
 # MÉMORANDUM INTERNE — Validation & Implémentation de l'Audit Technique
 
-**FROM:** Product Leadership  
-**TO:** Development Team  
-**DATE:** 5 avril 2026  
+**FROM:** Product Leadership
+**TO:** Development Team
+**DATE:** 5 avril 2026
 **PRIORITY:** 🔴 CRITICAL — Blocage sur tout développement visuel jusqu'à complétion
 
 ---
@@ -16,6 +16,7 @@ L'audit technique révèle un **problème architectural fondamental** : les comp
 > **VIRTUS n'est pas un agrégateur de widgets. C'est un moteur d'intelligence interconnectée.**
 
 L'isolation actuelle bloque :
+
 - ❌ Synchronisation temps-réel (modification poids → recalcul automatique 1RM, Macros, Body Fat)
 - ❌ Persistance de données inter-modules
 - ❌ Réactivité instantanée
@@ -27,8 +28,8 @@ L'isolation actuelle bloque :
 
 ### ✅ SEMAINE 1 : REFONTE DATA (GO STRICT)
 
-**Responsabilité :** Backend / Data Architecture  
-**Deadline :** Fin semaine 1 (9 avril 2026)  
+**Responsabilité :** Backend / Data Architecture
+**Deadline :** Fin semaine 1 (9 avril 2026)
 **Blocage :** Aucun nouveau composant jusqu'à complétion
 
 #### Phase 1.1 : Table `calculator_results` (Jour 1-2)
@@ -36,6 +37,7 @@ L'isolation actuelle bloque :
 **Objectif :** Sortir du stockage JSON brut. Créer une table typée pour tous les résultats de calcul.
 
 **Action immédiate :**
+
 1. Créer migration Supabase : `supabase/migrations/20260405_calculator_results.sql`
 
 ```sql
@@ -61,10 +63,10 @@ CREATE INDEX idx_calculator_results_created ON calculator_results(created_at DES
 
 ALTER TABLE calculator_results ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY calculator_results_select ON calculator_results 
+CREATE POLICY calculator_results_select ON calculator_results
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM clients WHERE id = client_id));
 
-CREATE POLICY calculator_results_insert ON calculator_results 
+CREATE POLICY calculator_results_insert ON calculator_results
   FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM clients WHERE id = client_id));
 ```
 
@@ -73,6 +75,7 @@ CREATE POLICY calculator_results_insert ON calculator_results
 4. ✅ Point de validation : `npx tsc --noEmit` = 0 erreurs
 
 **Fichiers à créer/modifier :**
+
 - `supabase/migrations/20260405_calculator_results.sql` (NEW)
 - `types/calculator.ts` (NEW) — TypeScript interfaces pour CalculatorResult
 - `lib/db/calculator-results.ts` (NEW) — Service layer CRUD
@@ -84,6 +87,7 @@ CREATE POLICY calculator_results_insert ON calculator_results
 **Objectif :** Toute logique métier mathématique = `lib/formulas/`. Zéro logique métier en composants UI.
 
 **Structure à créer :**
+
 ```
 lib/formulas/
 ├─ index.ts                     (barrel export)
@@ -101,59 +105,59 @@ lib/formulas/
 
 ```typescript
 // lib/formulas/brzycki.ts
-import { CalculationResult, ConfidenceMargin } from './types'
+import { CalculationResult, ConfidenceMargin } from "./types";
 
 export interface Brzycki1RMInput {
-  weight: number      // kg
-  reps: number
-  equipment?: string  // 'barbell' | 'dumbbell'
+  weight: number; // kg
+  reps: number;
+  equipment?: string; // 'barbell' | 'dumbbell'
 }
 
 export interface Brzycki1RMOutput extends CalculationResult {
-  oneRM: number       // kg
+  oneRM: number; // kg
   zones: {
-    zone: string      // 'Zone 1', 'Zone 2', etc
-    percentageOfMax: number
-    repsRange: number[]
-  }[]
-  confidence: ConfidenceMargin
+    zone: string; // 'Zone 1', 'Zone 2', etc
+    percentageOfMax: number;
+    repsRange: number[];
+  }[];
+  confidence: ConfidenceMargin;
 }
 
-export const FORMULA_VERSION = 'v1.0'
+export const FORMULA_VERSION = "v1.0";
 
 export function validateBrzycki1RMInput(input: Brzycki1RMInput): void {
-  if (input.weight <= 0) throw new Error('Weight must be positive')
-  if (input.reps <= 0 || input.reps > 37) throw new Error('Reps must be 1-37')
+  if (input.weight <= 0) throw new Error("Weight must be positive");
+  if (input.reps <= 0 || input.reps > 37) throw new Error("Reps must be 1-37");
   // Brzycki loses accuracy beyond 37 reps
 }
 
 export function calculate1RMBrzycki(input: Brzycki1RMInput): Brzycki1RMOutput {
-  validateBrzycki1RMInput(input)
-  
-  const oneRM = input.weight / (1.0278 - 0.0278 * input.reps)
-  const confidenceMargin = calculateConfidenceMargin(input.reps)
-  
+  validateBrzycki1RMInput(input);
+
+  const oneRM = input.weight / (1.0278 - 0.0278 * input.reps);
+  const confidenceMargin = calculateConfidenceMargin(input.reps);
+
   return {
     oneRM: Math.round(oneRM * 10) / 10,
     zones: [
-      { zone: 'Strength (90%)', percentageOfMax: 90, repsRange: [1, 3] },
-      { zone: 'Hypertrophy (80%)', percentageOfMax: 80, repsRange: [6, 12] },
-      { zone: 'Endurance (60%)', percentageOfMax: 60, repsRange: [15, 20] }
+      { zone: "Strength (90%)", percentageOfMax: 90, repsRange: [1, 3] },
+      { zone: "Hypertrophy (80%)", percentageOfMax: 80, repsRange: [6, 12] },
+      { zone: "Endurance (60%)", percentageOfMax: 60, repsRange: [15, 20] },
     ],
     confidence: confidenceMargin,
-    formula: 'Brzycki',
+    formula: "Brzycki",
     formulaVersion: FORMULA_VERSION,
-    calculatedAt: new Date().toISOString()
-  }
+    calculatedAt: new Date().toISOString(),
+  };
 }
 
 function calculateConfidenceMargin(reps: number): ConfidenceMargin {
   // Brzycki accuracy ±15% for 1-10 reps, degrades beyond
-  const margin = reps <= 10 ? 15 : 15 + (reps - 10) * 1.5
+  const margin = reps <= 10 ? 15 : 15 + (reps - 10) * 1.5;
   return {
     percentageRange: Math.round(margin),
-    absoluteKgRange: 5  // example
-  }
+    absoluteKgRange: 5, // example
+  };
 }
 ```
 
@@ -162,24 +166,25 @@ function calculateConfidenceMargin(reps: number): ConfidenceMargin {
 ```typescript
 // ✗ BEFORE (components/OneRMCalculator.tsx)
 const handleCalculate = () => {
-  const result = weightNum / (1.0278 - 0.0278 * repsNum)
-  setResult(result)
-}
+  const result = weightNum / (1.0278 - 0.0278 * repsNum);
+  setResult(result);
+};
 
 // ✓ AFTER
-import { calculate1RMBrzycki } from '@/lib/formulas/brzycki'
+import { calculate1RMBrzycki } from "@/lib/formulas/brzycki";
 
 const handleCalculate = () => {
   try {
-    const output = calculate1RMBrzycki({ weight: weightNum, reps: repsNum })
-    setResult(output)
+    const output = calculate1RMBrzycki({ weight: weightNum, reps: repsNum });
+    setResult(output);
   } catch (error) {
-    setError(error.message)
+    setError(error.message);
   }
-}
+};
 ```
 
 **Fichiers à créer/modifier :**
+
 - `lib/formulas/index.ts` (NEW)
 - `lib/formulas/types.ts` (NEW)
 - `lib/formulas/validators.ts` (NEW)
@@ -218,8 +223,8 @@ const handleCalculate = () => {
 
 ### ✅ SEMAINE 2 : CERVEAU CENTRAL (GO STRICT)
 
-**Responsabilité :** Frontend / State Architecture  
-**Deadline :** Fin semaine 2 (16 avril 2026)  
+**Responsabilité :** Frontend / State Architecture
+**Deadline :** Fin semaine 2 (16 avril 2026)
 **Vision :** Un client, une source de vérité. Réactivité instantanée inter-modules.
 
 #### Phase 2.1 : Store Zustand Centralisé (Jour 1-2)
@@ -230,52 +235,55 @@ const handleCalculate = () => {
 
 ```typescript
 // lib/stores/useClientStore.ts (NEW)
-import { create } from 'zustand'
-import { devtools, subscribeWithSelector } from 'zustand/middleware'
+import { create } from "zustand";
+import { devtools, subscribeWithSelector } from "zustand/middleware";
 
 interface ClientState {
   // === CLIENT DATA (source of truth) ===
   client: {
-    id: string
-    name: string
-    email: string
-    age: number | null
-    weight: number | null        // kg (DRIVING FIELD)
-    height: number | null         // cm (DRIVING FIELD)
-    gender: 'M' | 'F' | null
-    bodyFat: number | null        // % (DRIVING FIELD)
-    activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | null
-  }
-  
+    id: string;
+    name: string;
+    email: string;
+    age: number | null;
+    weight: number | null; // kg (DRIVING FIELD)
+    height: number | null; // cm (DRIVING FIELD)
+    gender: "M" | "F" | null;
+    bodyFat: number | null; // % (DRIVING FIELD)
+    activityLevel: "sedentary" | "light" | "moderate" | "active" | null;
+  };
+
   // === CALCULATION CACHE (derived from client data) ===
   calculations: {
-    oneRM: Brzycki1RMOutput | null
-    hrZones: KarvonenOutput | null
-    macros: MacrosOutput | null
-    bodyComposition: BodyCompositionOutput | null
-    bmi: BMIOutput | null
-  }
-  
+    oneRM: Brzycki1RMOutput | null;
+    hrZones: KarvonenOutput | null;
+    macros: MacrosOutput | null;
+    bodyComposition: BodyCompositionOutput | null;
+    bmi: BMIOutput | null;
+  };
+
   // === UI STATE ===
-  loading: boolean
-  errors: Record<string, string>
-  
+  loading: boolean;
+  errors: Record<string, string>;
+
   // === ACTIONS ===
-  setClientData: (field: keyof ClientState['client'], value: any) => Promise<void>
-  setClientDataBatch: (data: Partial<ClientState['client']>) => Promise<void>
-  recalculateAll: () => void
-  clearCalculationCache: () => void
-  setError: (calculationType: string, message: string) => void
-  clearError: (calculationType: string) => void
+  setClientData: (
+    field: keyof ClientState["client"],
+    value: any,
+  ) => Promise<void>;
+  setClientDataBatch: (data: Partial<ClientState["client"]>) => Promise<void>;
+  recalculateAll: () => void;
+  clearCalculationCache: () => void;
+  setError: (calculationType: string, message: string) => void;
+  clearError: (calculationType: string) => void;
 }
 
 export const useClientStore = create<ClientState>()(
   devtools(
     subscribeWithSelector((set, get) => ({
       client: {
-        id: '',
-        name: '',
-        email: '',
+        id: "",
+        name: "",
+        email: "",
         age: null,
         weight: null,
         height: null,
@@ -283,7 +291,7 @@ export const useClientStore = create<ClientState>()(
         bodyFat: null,
         activityLevel: null,
       },
-      
+
       calculations: {
         oneRM: null,
         hrZones: null,
@@ -291,92 +299,100 @@ export const useClientStore = create<ClientState>()(
         bodyComposition: null,
         bmi: null,
       },
-      
+
       loading: false,
       errors: {},
-      
+
       // When any client field changes, recalculate dependent calculations
       setClientData: async (field, value) => {
         set((state) => ({
           client: { ...state.client, [field]: value },
           loading: true,
-        }))
-        
+        }));
+
         // Persist to Supabase
         try {
           await fetch(`/api/clients/${get().client.id}`, {
-            method: 'PATCH',
+            method: "PATCH",
             body: JSON.stringify({ [field]: value }),
-          })
-          
+          });
+
           // Auto-recalculate all dependent calculations
-          get().recalculateAll()
-          
-          set({ loading: false })
+          get().recalculateAll();
+
+          set({ loading: false });
         } catch (error) {
-          set({ loading: false })
+          set({ loading: false });
           set((state) => ({
             errors: { ...state.errors, [field]: error.message },
-          }))
+          }));
         }
       },
-      
+
       setClientDataBatch: async (data) => {
         set((state) => ({
           client: { ...state.client, ...data },
           loading: true,
-        }))
-        
+        }));
+
         try {
           await fetch(`/api/clients/${get().client.id}`, {
-            method: 'PATCH',
+            method: "PATCH",
             body: JSON.stringify(data),
-          })
-          
-          get().recalculateAll()
-          set({ loading: false })
+          });
+
+          get().recalculateAll();
+          set({ loading: false });
         } catch (error) {
-          set({ loading: false })
+          set({ loading: false });
           set((state) => ({
             errors: { ...state.errors, batch: error.message },
-          }))
+          }));
         }
       },
-      
+
       recalculateAll: () => {
-        const { client } = get()
-        
+        const { client } = get();
+
         try {
           // Recalculate each based on current client data
-          const oneRM = client.weight && client.age
-            ? calculate1RMBrzycki({ weight: client.weight, reps: 5 })
-            : null
-          
+          const oneRM =
+            client.weight && client.age
+              ? calculate1RMBrzycki({ weight: client.weight, reps: 5 })
+              : null;
+
           const hrZones = client.age
             ? calculateKarvonenZones({ age: client.age, restingHR: 60 })
-            : null
-          
-          const macros = client.weight && client.height
-            ? calculateOptimalMacros({
-                weight: client.weight,
-                height: client.height,
-                age: client.age,
-                bodyFat: client.bodyFat,
-                gender: client.gender,
-              })
-            : null
-          
+            : null;
+
+          const macros =
+            client.weight && client.height
+              ? calculateOptimalMacros({
+                  weight: client.weight,
+                  height: client.height,
+                  age: client.age,
+                  bodyFat: client.bodyFat,
+                  gender: client.gender,
+                })
+              : null;
+
           set({
-            calculations: { oneRM, hrZones, macros, bodyComposition: null, bmi: null },
-            errors: (e) => ({ ...e, calculation: '' }),
-          })
+            calculations: {
+              oneRM,
+              hrZones,
+              macros,
+              bodyComposition: null,
+              bmi: null,
+            },
+            errors: (e) => ({ ...e, calculation: "" }),
+          });
         } catch (error) {
           set((state) => ({
             errors: { ...state.errors, calculation: error.message },
-          }))
+          }));
         }
       },
-      
+
       clearCalculationCache: () => {
         set({
           calculations: {
@@ -386,41 +402,41 @@ export const useClientStore = create<ClientState>()(
             bodyComposition: null,
             bmi: null,
           },
-        })
+        });
       },
-      
+
       setError: (calculationType, message) => {
         set((state) => ({
           errors: { ...state.errors, [calculationType]: message },
-        }))
+        }));
       },
-      
+
       clearError: (calculationType) => {
         set((state) => {
-          const { [calculationType]: _, ...rest } = state.errors
-          return { errors: rest }
-        })
+          const { [calculationType]: _, ...rest } = state.errors;
+          return { errors: rest };
+        });
       },
-    }))
+    })),
   ),
-  { name: 'ClientStore' }
-)
+  { name: "ClientStore" },
+);
 
 // === SUBSCRIBE TO CHANGES (auto-recalculate when key fields change) ===
 useClientStore.subscribe(
   (state) => state.client.weight,
-  (weight) => useClientStore.getState().recalculateAll()
-)
+  (weight) => useClientStore.getState().recalculateAll(),
+);
 
 useClientStore.subscribe(
   (state) => state.client.age,
-  (age) => useClientStore.getState().recalculateAll()
-)
+  (age) => useClientStore.getState().recalculateAll(),
+);
 
 useClientStore.subscribe(
   (state) => state.client.bodyFat,
-  (bodyFat) => useClientStore.getState().recalculateAll()
-)
+  (bodyFat) => useClientStore.getState().recalculateAll(),
+);
 ```
 
 **Utilisation dans les composants :**
@@ -432,7 +448,7 @@ import { useClientStore } from '@/lib/stores/useClientStore'
 export function OneRMCalculator() {
   const { client, calculations: { oneRM }, loading, errors } = useClientStore()
   const setClientData = useClientStore((s) => s.setClientData)
-  
+
   return (
     <div>
       <input
@@ -442,14 +458,14 @@ export function OneRMCalculator() {
         placeholder="Weight (kg)"
         disabled={loading}
       />
-      
+
       {oneRM && (
         <div>
           <strong>Your 1RM: {oneRM.oneRM} kg</strong>
           <p>±{oneRM.confidence.percentageRange}%</p>
         </div>
       )}
-      
+
       {errors.calculation && <p className="error">{errors.calculation}</p>}
     </div>
   )
@@ -474,6 +490,7 @@ All components re-render with new calculations
 ```
 
 **Fichiers à créer/modifier :**
+
 - `lib/stores/useClientStore.ts` (NEW)
 - `lib/hooks/useRecalculateOnClientChange.ts` (NEW) — Custom hook pour subscribe
 - `components/OneRMCalculator.tsx` → REFACTOR to use store
@@ -490,21 +507,24 @@ All components re-render with new calculations
 **Règle absolue :** Aucun `useState` pour des données client ou calculs.
 
 **AVANT :**
+
 ```typescript
 // ✗ FORBIDDEN (isolated state)
-const [weight, setWeight] = useState(null)
-const [reps, setReps] = useState(null)
-const [oneRM, setOneRM] = useState(null)
+const [weight, setWeight] = useState(null);
+const [reps, setReps] = useState(null);
+const [oneRM, setOneRM] = useState(null);
 ```
 
 **APRÈS :**
+
 ```typescript
 // ✓ REQUIRED (read from store)
-const weight = useClientStore((s) => s.client.weight)
-const calculation = useClientStore((s) => s.calculations.oneRM)
+const weight = useClientStore((s) => s.client.weight);
+const calculation = useClientStore((s) => s.calculations.oneRM);
 ```
 
 **Audit requis :**
+
 ```bash
 grep -r "useState.*weight\|useState.*reps\|useState.*bodyFat" components/
 # Should return 0 matches in calculator components
@@ -537,8 +557,8 @@ grep -r "useState.*weight\|useState.*reps\|useState.*bodyFat" components/
 
 ### ✅ SEMAINE 3 : LIVRABLE (GO STRICT)
 
-**Responsabilité :** Backend / Reporting  
-**Deadline :** Fin semaine 3 (23 avril 2026)  
+**Responsabilité :** Backend / Reporting
+**Deadline :** Fin semaine 3 (23 avril 2026)
 **Objectif :** Export professionnel, typé, auditable.
 
 #### Phase 3.1 : API Reporting Typée (Jour 1-2)
@@ -547,100 +567,109 @@ grep -r "useState.*weight\|useState.*reps\|useState.*bodyFat" components/
 
 ```typescript
 // app/api/reports/calculator-results/route.ts (NEW)
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { supabase } from "@/lib/supabase";
 
 const querySchema = z.object({
   clientId: z.string().uuid(),
-  calculatorType: z.enum(['oneRM', 'hrZones', 'macros', 'bodyFat', 'water', 'karvonen', 'bmi']).optional(),
+  calculatorType: z
+    .enum(["oneRM", "hrZones", "macros", "bodyFat", "water", "karvonen", "bmi"])
+    .optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  format: z.enum(['json', 'csv']).default('json'),
-})
+  format: z.enum(["json", "csv"]).default("json"),
+});
 
 export async function GET(req: NextRequest) {
   try {
     // Validate query
-    const query = querySchema.parse(Object.fromEntries(req.nextUrl.searchParams))
-    
+    const query = querySchema.parse(
+      Object.fromEntries(req.nextUrl.searchParams),
+    );
+
     // Build filters
     let dbQuery = supabase
-      .from('calculator_results')
-      .select('*')
-      .eq('client_id', query.clientId)
-      .order('created_at', { ascending: false })
-    
+      .from("calculator_results")
+      .select("*")
+      .eq("client_id", query.clientId)
+      .order("created_at", { ascending: false });
+
     if (query.calculatorType) {
-      dbQuery = dbQuery.eq('calculator_type', query.calculatorType)
+      dbQuery = dbQuery.eq("calculator_type", query.calculatorType);
     }
-    
+
     if (query.startDate) {
-      dbQuery = dbQuery.gte('created_at', query.startDate)
+      dbQuery = dbQuery.gte("created_at", query.startDate);
     }
-    
+
     if (query.endDate) {
-      dbQuery = dbQuery.lte('created_at', query.endDate)
+      dbQuery = dbQuery.lte("created_at", query.endDate);
     }
-    
-    const { data: results, error } = await dbQuery
-    
-    if (error) throw error
-    
+
+    const { data: results, error } = await dbQuery;
+
+    if (error) throw error;
+
     // Format response
-    if (query.format === 'csv') {
-      return formatAsCSV(results)
+    if (query.format === "csv") {
+      return formatAsCSV(results);
     }
-    
+
     return NextResponse.json({
       clientId: query.clientId,
       count: results.length,
       results,
-    })
-    
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: error.errors },
-        { status: 400 }
-      )
+        { error: "Invalid query parameters", details: error.errors },
+        { status: 400 },
+      );
     }
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 function formatAsCSV(results: any[]): Response {
-  const headers = ['Date', 'Calculator', 'Input', 'Output', 'Confidence', 'Formula Version']
+  const headers = [
+    "Date",
+    "Calculator",
+    "Input",
+    "Output",
+    "Confidence",
+    "Formula Version",
+  ];
   const rows = results.map((r) => [
     new Date(r.created_at).toISOString(),
     r.calculator_type,
     JSON.stringify(r.input),
     JSON.stringify(r.output),
-    r.output.confidence?.percentageRange || 'N/A',
+    r.output.confidence?.percentageRange || "N/A",
     r.formula_version,
-  ])
-  
-  const csv = [headers, ...rows].map((row) => row.join(',')).join('\n')
-  
+  ]);
+
+  const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+
   return new Response(csv, {
     headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': `attachment; filename="calculator-results-${new Date().toISOString()}.csv"`,
+      "Content-Type": "text/csv",
+      "Content-Disposition": `attachment; filename="calculator-results-${new Date().toISOString()}.csv"`,
     },
-  })
+  });
 }
 ```
 
 **Usage :**
+
 ```
 GET /api/reports/calculator-results?clientId=xxx&calculatorType=oneRM&format=csv
 → Returns CSV with all 1RM calculations for client
 ```
 
 **Fichiers à créer/modifier :**
+
 - `app/api/reports/calculator-results/route.ts` (NEW)
 - `lib/reports/calculator-formatter.ts` (NEW)
 - `types/report.ts` (NEW)
@@ -653,101 +682,98 @@ GET /api/reports/calculator-results?clientId=xxx&calculatorType=oneRM&format=csv
 
 ```typescript
 // app/api/reports/export-pdf/route.ts (NEW)
-import { NextRequest, NextResponse } from 'next/server'
-import { PDFDocument, rgb } from 'pdf-lib'
-import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from "next/server";
+import { PDFDocument, rgb } from "pdf-lib";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const { clientId, startDate, endDate } = await req.json()
-    
+    const { clientId, startDate, endDate } = await req.json();
+
     // Fetch all calculator results
     const { data: results } = await supabase
-      .from('calculator_results')
-      .select('*')
-      .eq('client_id', clientId)
-      .gte('created_at', startDate)
-      .lte('created_at', endDate)
-      .order('created_at', { ascending: true })
-    
+      .from("calculator_results")
+      .select("*")
+      .eq("client_id", clientId)
+      .gte("created_at", startDate)
+      .lte("created_at", endDate)
+      .order("created_at", { ascending: true });
+
     // Fetch client info
     const { data: client } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('id', clientId)
-      .single()
-    
+      .from("clients")
+      .select("*")
+      .eq("id", clientId)
+      .single();
+
     // Create PDF
-    const pdfDoc = await PDFDocument.create()
-    const page = pdfDoc.addPage([595, 842]) // A4
-    const { height } = page.getSize()
-    
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // A4
+    const { height } = page.getSize();
+
     // Title
-    page.drawText('Performance Assessment Report', {
+    page.drawText("Performance Assessment Report", {
       x: 50,
       y: height - 50,
       size: 24,
       color: rgb(0.2, 0.2, 0.2),
-    })
-    
+    });
+
     // Client info
     page.drawText(`Client: ${client.name}`, {
       x: 50,
       y: height - 100,
       size: 12,
-    })
-    
+    });
+
     page.drawText(`Date Range: ${startDate} to ${endDate}`, {
       x: 50,
       y: height - 130,
       size: 12,
-    })
-    
+    });
+
     // Results section
-    let yOffset = height - 180
-    
+    let yOffset = height - 180;
+
     for (const result of results) {
       page.drawText(`${result.calculator_type}`, {
         x: 50,
         y: yOffset,
         size: 14,
-        color: rgb(1, 0.67, 0),  // STRYVR Yellow
-      })
-      
+        color: rgb(1, 0.67, 0), // STRYVR Yellow
+      });
+
       page.drawText(`Result: ${JSON.stringify(result.output)}`, {
         x: 70,
         y: yOffset - 20,
         size: 10,
-      })
-      
-      yOffset -= 50
-      
+      });
+
+      yOffset -= 50;
+
       if (yOffset < 50) {
         // New page
-        const newPage = pdfDoc.addPage([595, 842])
-        yOffset = 800
+        const newPage = pdfDoc.addPage([595, 842]);
+        yOffset = 800;
       }
     }
-    
-    const pdfBytes = await pdfDoc.save()
-    
+
+    const pdfBytes = await pdfDoc.save();
+
     return new Response(pdfBytes, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="bilan-${client.name}-${new Date().toISOString()}.pdf"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="bilan-${client.name}-${new Date().toISOString()}.pdf"`,
       },
-    })
-    
+    });
   } catch (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 ```
 
 **Fichiers à créer/modifier :**
+
 - `app/api/reports/export-pdf/route.ts` (NEW)
 - `lib/reports/pdf-generator.ts` (NEW)
 - `components/reports/ExportButton.tsx` (NEW)
@@ -827,17 +853,20 @@ export async function POST(req: NextRequest) {
 ## 🎯 DÉFINITION DE "DONE"
 
 **Semaine 1 DONE :**
+
 - Table DB créée, RLS actif
 - Zéro logique métier reste dans composants
 - TypeScript strict sur formules
 
 **Semaine 2 DONE :**
+
 - Zustand store centralise `clientData`
 - Modification champ client → recalcul automatique de TOUS les calculs liés
 - ZÉRO rechargement de page
 - ZÉRO `useState` pour données client/calculs
 
 **Semaine 3 DONE :**
+
 - Export CSV typée retourne résultats queryables
 - PDF généré avec branding
 - Coach peut télécharger bilan complet en < 3 secondes
@@ -858,15 +887,15 @@ export async function POST(req: NextRequest) {
 
 ## SIGNATURE
 
-**Validé par :**  
+**Validé par :**
 Leadership / Product Direction
 
-**Effectif à partir de :**  
+**Effectif à partir de :**
 5 avril 2026
 
-**Statut :**  
+**Statut :**
 🔴 **CRITICAL — EXÉCUTION IMMÉDIATE**
 
 ---
 
-*Ce mémorandum établit le contrat d'exécution pour l'interconnectivité STRYVR. Aucune déviation sans approbation explicite.*
+_Ce mémorandum établit le contrat d'exécution pour l'interconnectivité STRYVR. Aucune déviation sans approbation explicite._

@@ -124,7 +124,7 @@ export default function AssessmentForm({ submissionId, blocks, token, clientName
   if (submitted) {
     return (
       <div className="min-h-screen bg-surface font-sans flex items-center justify-center p-6">
-        <div className="bg-surface rounded-card shadow-soft-out p-10 text-center max-w-sm w-full">
+        <div className="bg-surface rounded-card p-10 text-center max-w-sm w-full">
           <CheckCircle2 size={56} className="text-accent mx-auto mb-4" />
           <h2 className="text-xl font-bold text-primary mb-2">Bilan soumis !</h2>
           <p className="text-sm text-secondary">Merci {clientName}. Votre coach a été notifié.</p>
@@ -150,7 +150,7 @@ export default function AssessmentForm({ submissionId, blocks, token, clientName
               </span>
             </div>
           </div>
-          <div className="w-full h-1.5 bg-surface-light shadow-soft-in rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-surface-light rounded-full overflow-hidden">
             <div
               className="h-full bg-accent rounded-full transition-all duration-500"
               style={{ width: `${((currentBlock + 1) / blocks.length) * 100}%` }}
@@ -161,7 +161,7 @@ export default function AssessmentForm({ submissionId, blocks, token, clientName
 
       {/* Block */}
       <div className="max-w-xl mx-auto px-6 py-8">
-        <div className="bg-surface rounded-card shadow-soft-out p-6">
+        <div className="bg-surface rounded-card p-6">
           <h2 className="text-lg font-bold text-primary mb-6">{block.label}</h2>
           <div className="flex flex-col gap-6">
             {block.fields

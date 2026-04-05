@@ -1,6 +1,5 @@
 // Central export file for UI components
-export { Panel } from './Panel';
-export { PanelWithHeader } from './PanelWithHeader';
 export { Button } from './Button';
 export { Card } from './Card';
+export { GlassCard } from './glass-card';
 // ... autres exports

@@ -163,7 +163,7 @@ function PrefToggle({
       <span className="text-sm text-primary">{label}</span>
       <button
         onClick={onChange}
-        className={`relative w-10 h-6 rounded-full transition-colors ${value ? 'bg-accent' : 'bg-surface-light shadow-soft-in'}`}
+        className={`relative w-10 h-6 rounded-full transition-colors ${value ? 'bg-accent' : 'bg-surface-light'}`}
       >
         <span
           className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${

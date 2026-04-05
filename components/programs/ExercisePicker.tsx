@@ -161,7 +161,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher un exercice…"
-              className="w-full pl-8 pr-3 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40 placeholder-secondary/50"
+              className="w-full pl-8 pr-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40 placeholder-secondary/50"
             />
           </div>
           <button
@@ -170,7 +170,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
             className={`relative flex items-center gap-1.5 px-3 py-2 rounded-btn text-xs font-semibold transition-colors ${
               showFilters || activeFiltersCount > 0
                 ? 'bg-accent text-white'
-                : 'bg-surface-light shadow-soft-out text-secondary hover:text-primary'
+                : 'bg-surface-light text-secondary hover:text-primary'
             }`}
           >
             <SlidersHorizontal size={13} />
@@ -201,7 +201,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   <select
                     value={filterMuscle}
                     onChange={e => setFilterMuscle(e.target.value)}
-                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface shadow-soft-in rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
                   >
                     <option value="">Tous</option>
                     {Object.entries(MUSCLE_LABELS).map(([v, l]) => (
@@ -219,7 +219,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   <select
                     value={filterPattern}
                     onChange={e => setFilterPattern(e.target.value)}
-                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface shadow-soft-in rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
                   >
                     <option value="">Tous</option>
                     {allPatterns.map(p => (
@@ -237,7 +237,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   <select
                     value={filterEquipment}
                     onChange={e => setFilterEquipment(e.target.value)}
-                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface shadow-soft-in rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
                   >
                     <option value="">Tous</option>
                     {allEquipment.map(eq => (
@@ -255,7 +255,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   <select
                     value={filterCompound}
                     onChange={e => setFilterCompound(e.target.value as 'all' | 'compound' | 'isolation')}
-                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface shadow-soft-in rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                    className="w-full appearance-none pl-2 pr-6 py-1.5 bg-surface rounded text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
                   >
                     <option value="all">Tous</option>
                     <option value="compound">Polyarticulaire</option>
@@ -280,7 +280,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
                     filterType === value
                       ? 'bg-accent text-white shadow'
-                      : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                      : 'bg-surface text-secondary hover:text-primary'
                   }`}
                 >
                   {label}
@@ -303,7 +303,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
                     filterMuscle === v
                       ? 'bg-accent text-white shadow'
-                      : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                      : 'bg-surface text-secondary hover:text-primary'
                   }`}
                 >
                   {l}
@@ -347,7 +347,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                   onClick={() => onSelect({ name: exercise.name, gifUrl: exercise.gifUrl, movementPattern: exercise.movementPattern ?? null, equipment: exercise.equipment ?? [] })}
                   onMouseEnter={() => setHoveredId(exercise.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  className="group relative flex flex-col bg-surface-light rounded-card overflow-hidden shadow-soft-out hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-left"
+                  className="group relative flex flex-col bg-surface-light rounded-card overflow-hidden hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-left"
                 >
                   {/* GIF */}
                   <div className="relative w-full aspect-square bg-black/5 overflow-hidden">

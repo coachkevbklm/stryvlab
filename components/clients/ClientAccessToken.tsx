@@ -86,7 +86,7 @@ export default function ClientAccessToken({ clientId }: Props) {
 
   return (
     <>
-    <div className="bg-surface rounded-card shadow-soft-out p-5">
+    <div className="bg-surface rounded-card p-5">
       <div className="flex items-center gap-2 mb-4">
         <Link2 size={15} className="text-accent" />
         <h3 className="font-semibold text-primary text-sm">Lien d'accès client</h3>
@@ -100,7 +100,7 @@ export default function ClientAccessToken({ clientId }: Props) {
       ) : accessUrl && !revoked ? (
         <div className="flex flex-col gap-3">
           {/* URL display */}
-          <div className="flex items-center gap-2 bg-surface-light shadow-soft-in rounded-btn px-3 py-2.5">
+          <div className="flex items-center gap-2 bg-surface-light rounded-btn px-3 py-2.5">
             <span className="flex-1 text-xs text-secondary font-mono truncate">{accessUrl}</span>
           </div>
 
@@ -130,7 +130,7 @@ export default function ClientAccessToken({ clientId }: Props) {
               href={accessUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light shadow-soft-in transition-colors"
+              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light transition-colors"
             >
               <ExternalLink size={12} />
               Tester
@@ -138,7 +138,7 @@ export default function ClientAccessToken({ clientId }: Props) {
             <button
               onClick={() => void generate(false)}
               disabled={generating}
-              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light shadow-soft-in transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light transition-colors disabled:opacity-50"
               title="Renouveler le lien"
             >
               {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
@@ -147,7 +147,7 @@ export default function ClientAccessToken({ clientId }: Props) {
             <button
               onClick={() => setShowRevokeConfirm(true)}
               disabled={revoking}
-              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 px-3 py-2 rounded-btn bg-surface-light shadow-soft-in transition-colors disabled:opacity-50 ml-auto"
+              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 px-3 py-2 rounded-btn bg-surface-light transition-colors disabled:opacity-50 ml-auto"
               title="Révoquer"
             >
               {revoking ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
@@ -185,7 +185,7 @@ export default function ClientAccessToken({ clientId }: Props) {
           <div className="flex gap-3">
             <button
               onClick={() => setShowRevokeConfirm(false)}
-              className="flex-1 py-2.5 rounded-btn bg-surface-light shadow-soft-out text-sm text-secondary hover:text-primary transition-colors font-medium"
+              className="flex-1 py-2.5 rounded-btn bg-surface-light text-sm text-secondary hover:text-primary transition-colors font-medium"
             >
               Annuler
             </button>

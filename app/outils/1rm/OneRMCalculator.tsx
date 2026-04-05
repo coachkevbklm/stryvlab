@@ -2,12 +2,12 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { 
-  Dumbbell, 
-  ArrowLeft, 
-  Copy, 
-  Check, 
-  Settings2, 
+import {
+  Dumbbell,
+  ArrowLeft,
+  Copy,
+  Check,
+  Settings2,
   Info,
   Activity,
   Scale,
@@ -20,92 +20,56 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
 import GenesisAssistant from '@/components/GenesisAssistant';
 
-// --- TYPES ---
-type Formula = 'average' | 'brzycki' | 'epley' | 'lombardi';
+// Formulas & Store
+import { calculateOneRM, TRAINING_ZONES, type OneRMFormula, type OneRMResult } from '@/lib/formulas';
+import { useClientStore } from '@/lib/stores/useClientStore';
+
 type Unit = 'kg' | 'lbs';
 
+const ZONE_COLORS = [
+  { bg: 'bg-red-50',     text: 'text-red-900',     border: 'border-red-100'     },
+  { bg: 'bg-orange-50',  text: 'text-orange-900',  border: 'border-orange-100'  },
+  { bg: 'bg-yellow-50',  text: 'text-yellow-900',  border: 'border-yellow-100'  },
+  { bg: 'bg-emerald-50', text: 'text-emerald-900', border: 'border-emerald-100' },
+  { bg: 'bg-blue-50',    text: 'text-blue-900',    border: 'border-blue-100'    },
+  { bg: 'bg-slate-50',   text: 'text-slate-900',   border: 'border-slate-100'   },
+];
+
 export default function OneRMCalculator() {
-  // --- STATES ---
+  const setOneRMResult = useClientStore((s) => s.setOneRMResult);
+
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
-  const [formula, setFormula] = useState<Formula>('average');
+  const [formula, setFormula] = useState<OneRMFormula>('average');
   const [unit, setUnit] = useState<Unit>('kg');
   const [showSettings, setShowSettings] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+  const [result, setResult] = useState<OneRMResult | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  
-  const [result, setResult] = useState<{
-    oneRM: number;
-    brzycki: number;
-    epley: number;
-    lombardi: number;
-    warnings: string[];
-  } | null>(null);
-
-  // ========================================================================
-  // 🛑 LOGIQUE MATHÉMATIQUE STRICTE
-  // ========================================================================
-  const calculateBrzycki = (w: number, r: number): number => w / (1.0278 - 0.0278 * r);
-  const calculateEpley = (w: number, r: number): number => w * (1 + 0.0333 * r);
-  const calculateLombardi = (w: number, r: number): number => w * Math.pow(r, 0.1);
 
   const calculateRM = () => {
     setCopied(false);
     const w = parseFloat(weight);
     const r = parseFloat(reps);
-    
     if (!w || !r) return;
 
-    const brzycki = calculateBrzycki(w, r);
-    const epley = calculateEpley(w, r);
-    const lombardi = calculateLombardi(w, r);
-    const average = (brzycki + epley + lombardi) / 3;
-
-    let selectedRM: number;
-    if (formula === 'average') selectedRM = average;
-    else if (formula === 'epley') selectedRM = epley;
-    else if (formula === 'lombardi') selectedRM = lombardi;
-    else selectedRM = brzycki;
-
-    const warnings: string[] = [];
-    if (r === 1) warnings.push('1 répétition = 1RM réel (Mesure directe).');
-    if (r > 10) warnings.push('Précision réduite au-delà de 10 reps (±10-15%).');
-    if (r > 15) warnings.push('Estimation très imprécise (>15 reps).');
-    if (r >= 2 && r <= 8) warnings.push('✓ Zone optimale de précision (±2.5%).');
-
-    setResult({ oneRM: selectedRM, brzycki, epley, lombardi, warnings });
+    const res = calculateOneRM({ weight: w, reps: r }, formula);
+    setResult(res);
+    setOneRMResult(res);
 
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
-  // ========================================================================
 
   const displayWeight = (w: number): string => {
     const converted = unit === 'lbs' ? w * 2.20462 : w;
     return unit === 'kg' ? `${Math.round(converted * 2) / 2}` : `${Math.round(converted)}`;
   };
 
-  const handleCopy = () => {
-    if (!result) return;
-    const url = 'https://www.stryvlab.com/outils/1rm';
-    const currentWeight = displayWeight(result.oneRM);
-    const formulaName = formula === 'average' ? 'Moyenne' : formula;
-    const textToCopy = `Bilan Force 1RM : ${currentWeight} ${unit} (${formulaName}) - ${url}`;
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const trainingZones = result ? [
-    { num: 1, intensity: "95-100%", weight: result.oneRM, reps: "1 rep", objective: "Force Max", desc: "Neural", bg: "bg-red-50", text: "text-red-900", border: "border-red-100" },
-    { num: 2, intensity: "85-90%", weight: result.oneRM * 0.875, reps: "3-5 reps", objective: "Force Pure", desc: "Myofibrillaire", bg: "bg-orange-50", text: "text-orange-900", border: "border-orange-100" },
-    { num: 3, intensity: "80-85%", weight: result.oneRM * 0.825, reps: "5-8 reps", objective: "Hypertrophie", desc: "Tension Méca", bg: "bg-yellow-50", text: "text-yellow-900", border: "border-yellow-100" },
-    { num: 4, intensity: "70-80%", weight: result.oneRM * 0.75, reps: "8-12 reps", objective: "Volume", desc: "Métabolique", bg: "bg-emerald-50", text: "text-emerald-900", border: "border-emerald-100" },
-    { num: 5, intensity: "60-70%", weight: result.oneRM * 0.65, reps: "12-15+ reps", objective: "Endurance", desc: "Capilarisation", bg: "bg-blue-50", text: "text-blue-900", border: "border-blue-100" },
-    { num: 6, intensity: "<60%", weight: result.oneRM * 0.50, reps: "20+ reps", objective: "Technique", desc: "Apprentissage", bg: "bg-slate-50", text: "text-slate-900", border: "border-slate-100" },
-  ] : [];
+  const trainingZones = result
+    ? TRAINING_ZONES(result.oneRM).map((z, i) => ({ ...z, ...ZONE_COLORS[i] }))
+    : [];
 
   const faqItems = [
     { title: "Qu'est-ce que le 1RM ?", content: "Le 1RM (One Repetition Maximum) est la charge maximale que vous pouvez soulever pour une seule répétition avec une technique correcte." },
@@ -114,12 +78,10 @@ export default function OneRMCalculator() {
   ];
 
   return (
-    // STRUCTURE FLEX VERTICALE (Footer collé en bas)
     <div className="flex flex-col min-h-screen bg-background text-primary font-outfit">
-      
-      {/* CONTENU PRINCIPAL (Flex Grow) */}
+
       <div className="flex-grow w-full px-6 md:px-12 pb-20">
-        
+
         <header className="max-w-5xl mx-auto py-8">
             <Link href="/outils" className="group inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors mb-8">
               <div className="w-8 h-8 rounded-full bg-surface shadow-soft-out flex items-center justify-center group-hover:shadow-soft-in transition-all">
@@ -139,7 +101,7 @@ export default function OneRMCalculator() {
         </header>
 
         <div className="max-w-5xl mx-auto grid lg:grid-cols-12 gap-8">
-            
+
             {/* COLONNE GAUCHE */}
             <div className="lg:col-span-4 space-y-6">
                 <Card className="space-y-6">
@@ -147,20 +109,19 @@ export default function OneRMCalculator() {
                         <div className="p-2 bg-surface-light rounded-lg text-accent"><Activity size={20} /></div>
                         <h2 className="text-sm font-bold text-primary uppercase tracking-wide">Données Entrée</h2>
                     </div>
-                    
-                    {/* SELECTEUR UNITÉ (SEGMENTED CONTROL) */}
+
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-secondary ml-1 uppercase tracking-wider flex items-center gap-1">
                             <Scale size={10} /> Unité
                         </label>
                         <div className="grid grid-cols-2 p-1 bg-surface-light/50 border border-gray-100 rounded-xl">
                             {(['kg', 'lbs'] as Unit[]).map(u => (
-                                <button 
-                                    key={u} 
+                                <button
+                                    key={u}
                                     onClick={() => setUnit(u)}
                                     className={`py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all duration-300 ${
-                                        unit === u 
-                                        ? 'bg-white text-accent shadow-sm ring-1 ring-black/5' 
+                                        unit === u
+                                        ? 'bg-white text-accent shadow-sm ring-1 ring-black/5'
                                         : 'text-secondary hover:text-primary hover:bg-white/50'
                                     }`}
                                 >
@@ -170,26 +131,20 @@ export default function OneRMCalculator() {
                         </div>
                     </div>
 
-                    {/* INPUTS PRINCIPAUX */}
                     <div className="space-y-4 pt-2">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-secondary ml-1">CHARGE ({unit.toUpperCase()})</label>
-                            <div className="relative">
-                                <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ex: 80" className="w-full bg-surface-light shadow-soft-in rounded-xl py-3 pl-4 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-gray-300" />
-                            </div>
+                            <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ex: 80" className="w-full bg-surface-light shadow-soft-in rounded-xl py-3 pl-4 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-gray-300" />
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-secondary ml-1">RÉPÉTITIONS</label>
-                            <div className="relative">
-                                <input type="number" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="Ex: 6" className="w-full bg-surface-light shadow-soft-in rounded-xl py-3 pl-4 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-gray-300" />
-                            </div>
+                            <input type="number" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="Ex: 6" className="w-full bg-surface-light shadow-soft-in rounded-xl py-3 pl-4 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-gray-300" />
                         </div>
                     </div>
 
-                    {/* SETTINGS TOGGLE */}
                     <div className="pt-2">
-                         <button 
+                         <button
                             onClick={() => setShowSettings(!showSettings)}
                             className="flex items-center gap-2 text-[10px] font-bold text-secondary hover:text-primary uppercase tracking-wide transition-colors"
                         >
@@ -203,13 +158,13 @@ export default function OneRMCalculator() {
                                     <Calculator size={10} /> Algorithme
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {['average', 'brzycki', 'epley', 'lombardi'].map(f => (
-                                        <button 
-                                            key={f} 
-                                            onClick={() => setFormula(f as Formula)} 
+                                    {(['average', 'brzycki', 'epley', 'lombardi'] as OneRMFormula[]).map(f => (
+                                        <button
+                                            key={f}
+                                            onClick={() => setFormula(f)}
                                             className={`py-2 px-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${
-                                                formula === f 
-                                                ? 'bg-white border-accent/20 text-accent shadow-sm' 
+                                                formula === f
+                                                ? 'bg-white border-accent/20 text-accent shadow-sm'
                                                 : 'border-transparent text-secondary bg-surface-light/50 hover:bg-white'
                                             }`}
                                         >
@@ -221,7 +176,7 @@ export default function OneRMCalculator() {
                         )}
                     </div>
 
-                    <button 
+                    <button
                         onClick={calculateRM}
                         disabled={!weight || !reps}
                         className="w-full py-4 bg-accent text-white rounded-xl font-bold text-xs tracking-widest uppercase shadow-lg shadow-accent/20 hover:shadow-accent/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -242,8 +197,7 @@ export default function OneRMCalculator() {
 
             {/* COLONNE DROITE */}
             <div className="lg:col-span-8 flex flex-col min-h-[600px]">
-                
-                {/* ZONE CONTENU (Flex Grow) */}
+
                 <div className="flex-grow space-y-8">
                     {result ? (
                         <div ref={resultsRef} className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-8">
@@ -259,7 +213,12 @@ export default function OneRMCalculator() {
                                         </div>
                                         <p className="text-sm text-secondary font-medium mt-1">One Repetition Max (Théorique)</p>
                                     </div>
-                                    <button onClick={handleCopy} className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs transition-all ${copied ? 'bg-green-100 text-green-700' : 'bg-surface-light text-secondary hover:text-primary hover:bg-white border border-gray-100'}`}>
+                                    <button onClick={() => {
+                                        const url = 'https://www.stryvlab.com/outils/1rm';
+                                        navigator.clipboard.writeText(`Bilan Force 1RM : ${displayWeight(result.oneRM)} ${unit} (${formula}) - ${url}`);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }} className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs transition-all ${copied ? 'bg-green-100 text-green-700' : 'bg-surface-light text-secondary hover:text-primary hover:bg-white border border-gray-100'}`}>
                                         {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'COPIÉ' : 'EXPORTER'}
                                     </button>
                                 </div>
@@ -298,7 +257,6 @@ export default function OneRMCalculator() {
                     )}
                 </div>
 
-                {/* FAQ (Sticky bottom relative to col) */}
                 <div className="pt-8 mt-auto">
                      <SectionHeader title="Base de Connaissance" subtitle="Comprendre la mécanique du 1RM." />
                      <div className="mt-6"><Accordion items={faqItems} /></div>
@@ -308,7 +266,6 @@ export default function OneRMCalculator() {
         </div>
       </div>
 
-      {/* FOOTER */}
       <footer className="w-full py-12 text-center border-t border-gray-200 bg-background z-10 mt-auto">
         <p className="text-[11px] font-medium tracking-wide text-gray-400 uppercase">
             © {new Date().getFullYear()} STRYV lab.

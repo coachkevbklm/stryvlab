@@ -227,7 +227,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Meta ── */}
-      <div className="bg-surface rounded-card shadow-soft-out p-6 flex flex-col gap-5">
+      <div className="bg-surface rounded-card p-6 flex flex-col gap-5">
         <h3 className="font-bold text-primary text-sm flex items-center gap-2"><Tag size={14} className="text-accent" />Informations du template</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -235,25 +235,25 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Nom du template *</label>
             <input value={meta.name} onChange={e => setMeta(m => ({ ...m, name: e.target.value }))}
               placeholder="ex: PPL Hypertrophie 5j/sem"
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
           </div>
           <div className="sm:col-span-2">
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Description</label>
             <textarea value={meta.description} onChange={e => setMeta(m => ({ ...m, description: e.target.value }))}
               placeholder="Décris le programme, pour qui il est adapté…" rows={2}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40 resize-none" />
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40 resize-none" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Objectif</label>
             <select value={meta.goal} onChange={e => setMeta(m => ({ ...m, goal: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
               {GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
             </select>
           </div>
           <div>
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Niveau</label>
             <select value={meta.level} onChange={e => setMeta(m => ({ ...m, level: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
               {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
           </div>
@@ -261,13 +261,13 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Fréquence (jours/sem.)</label>
             <input type="number" min={1} max={7} value={meta.frequency}
               onChange={e => setMeta(m => ({ ...m, frequency: parseInt(e.target.value) || 3 }))}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Durée (semaines)</label>
             <input type="number" min={1} max={52} value={meta.weeks}
               onChange={e => setMeta(m => ({ ...m, weeks: parseInt(e.target.value) || 8 }))}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
           </div>
           <div className="sm:col-span-2">
             <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
@@ -276,7 +276,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
               <span className="text-[9px] font-normal text-secondary/50 normal-case tracking-normal">— utilisé pour le matching client</span>
             </label>
             <select value={meta.equipment_archetype} onChange={e => setMeta(m => ({ ...m, equipment_archetype: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
               {EQUIPMENT_ARCHETYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
           </div>
@@ -291,7 +291,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                   meta.muscle_tags.includes(tag)
                     ? 'bg-accent text-white shadow'
-                    : 'bg-surface-light shadow-soft-in text-secondary hover:text-primary'
+                    : 'bg-surface-light text-secondary hover:text-primary'
                 }`}>
                 {tag}
               </button>
@@ -304,7 +304,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
           <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Notes internes (coach)</label>
           <input value={meta.notes} onChange={e => setMeta(m => ({ ...m, notes: e.target.value }))}
             placeholder="Contexte, précautions, contre-indications…"
-            className="w-full px-3 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+            className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
         </div>
       </div>
 
@@ -313,7 +313,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
         <h3 className="font-bold text-primary text-sm">Séances ({sessions.length})</h3>
 
         {sessions.map((session, si) => (
-          <div key={si} className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+          <div key={si} className="bg-surface rounded-card overflow-hidden">
             {/* Session header */}
             <div className="flex items-center gap-2 p-4 border-b border-white/40">
               <GripVertical size={14} className="text-secondary shrink-0" />
