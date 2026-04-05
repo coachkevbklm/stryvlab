@@ -2,9 +2,9 @@ import Sidebar from '@/components/layout/Sidebar'
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <div className="flex-1 pl-56 min-w-0">
+      <div className="flex-1 min-w-0">
         {children}
       </div>
     </div>

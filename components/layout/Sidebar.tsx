@@ -120,11 +120,11 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-56 bg-surface border-r border-white/60 shadow-soft-out flex flex-col z-50">
+    <aside className="fixed top-4 left-4 h-[calc(100vh-32px)] w-56 bg-surface border border-subtle rounded-card shadow-elevated flex flex-col z-50">
 
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-4 py-5 border-b border-white/60 cursor-pointer shrink-0"
+        className="flex items-center gap-3 px-4 py-5 border-b border-subtle cursor-pointer shrink-0"
         onClick={() => router.push('/dashboard')}
       >
         <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain" />
@@ -179,7 +179,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer — outside overflow container so dropdowns render correctly */}
-      <div className="px-3 py-3 border-t border-white/60 shrink-0 flex flex-col gap-0.5">
+      <div className="px-3 py-3 border-t border-subtle shrink-0 flex flex-col gap-0.5">
         <NotificationBell sidebarMode />
         <button
           onClick={handleLogout}

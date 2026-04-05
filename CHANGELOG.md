@@ -2,6 +2,14 @@
 
 ## 2026-04-05
 
+REFACTOR: Coach sidebar — transform from fixed full-height to floating design with rounded corners and side margins
+- Change `fixed top-0 left-0 h-screen` → `fixed top-4 left-4 h-[calc(100vh-32px)]` — floating with 16px margin
+- Add `rounded-card` (16px radius) for modern floating appearance
+- Update border colors to `border-subtle` (#BCBCB8) for consistency with STRYVR v2.1 design system
+- Update shadow to `shadow-elevated` for proper floating depth
+- Remove `pl-56` padding from coach layout since sidebar no longer occupies static space
+- Change layout bg from `bg-surface` to `bg-background` for entire page
+
 FIX: coach client page — add protective error handling in rankedTemplates calculation to prevent render crashes if rankTemplatesFull fails; console logs for debugging template scoring
 REFACTOR: Coach client page — apply brand design system v2.1 (dark top bar, yellow pills, crème backgrounds) + integrate CoachTopBar and ClientSubHeader components
 FEATURE: Create CoachTopBar component — professional top navigation bar with STRYVR branding (#343434 bg, #FCF76E active tabs)
