@@ -282,21 +282,16 @@ function KpiCard({ fieldKey, series, index }: { fieldKey: string; series: Metric
             {/* Delta pill vertical */}
             {delta !== null && (
               <div className={`flex flex-col items-end gap-0.5 shrink-0`}>
-                <span className={`text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full leading-none ${
+                <span className={`text-[9px] font-bold tabular-nums px-2 py-1 rounded-lg leading-tight flex items-center gap-0.5 ${
                   delta === 0
                     ? (isDark ? 'bg-white/10 text-white/50' : 'bg-[#E2E1D9] text-[#8A8A85]')
                     : deltaGood
                       ? 'bg-[#FCF76E] text-[#1A1A1A]'
-                      : 'bg-red-500/15 text-red-500'
+                      : 'bg-red-100 text-red-600'
                 }`}>
-                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}{field?.unit ? ` ${field.unit}` : ''}
-                </span>
-                <span className={`text-[9px] font-medium ${
-                  delta === 0
-                    ? (isDark ? 'text-white/20' : 'text-[#BCBCB8]')
-                    : deltaGood ? 'text-green-500' : 'text-red-500'
-                }`}>
-                  {delta === 0 ? 'stable' : deltaGood ? 'favorable' : 'attention'}
+                  {delta === 0 ? '─' : delta > 0 ? '↗' : '↘'}
+                  <span className="font-semibold">{Math.abs(delta).toFixed(1)}</span>
+                  {field?.unit && <span className="text-[8px] opacity-75">{field.unit}</span>}
                 </span>
               </div>
             )}
@@ -1591,7 +1586,7 @@ export default function MetricsSection({ clientId }: Props) {
 
       {/* ── KPI strip ── */}
       {hasData && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" style={{ gridAutoRows: '160px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" style={{ gridAutoRows: '160px' }}>
           {KPI_FIELDS.map((k, i) => (
             <KpiCard key={k} fieldKey={k} series={filteredSeries} index={i} />
           ))}
