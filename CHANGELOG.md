@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-04-06 — Design System v1.0 Implementation + Homepage Adaptation
+
+FEAT: Align homepage (authentication page) with Design System v1.0
+
+- Updated tailwind.config.ts: primary #1A1A1A → #242424 (--text-main)
+- Updated tailwind.config.ts: on-dark #FEFEFE → #FFFFFF (--text-on-dark)
+- Updated tailwind.config.ts: added radius tokens card-lg (24px) and card-sm (12px)
+- Migrated app/page.tsx: 83 hardcoded border-white → border-subtle (--border-subtle)
+- Migrated app/page.tsx: bg-surface-light/50 → bg-surface-light (#F8F8F8, DS v1.0)
+- Migrated app/page.tsx: rounded-[32px/40px] → rounded-card-lg (24px)
+- Updated surface-raised from #FEFEFE to #FFFFFF (DS v1.0 compliance)
+
 ## 2026-04-06 — Design System v1.0 Implementation + Cleanup
 
 CHORE: Implement Design System v1.0 and remove legacy conflicting specifications
@@ -19,7 +31,7 @@ Design System v1.0 Specifications:
 - Géométrie: Radius pill (9999px), card-lg (24px), card-sm (12px)
 - Interactions: Micro-animations (hover/active/focus/disabled) avec transitions 0.2s
 
-## 2026-04-05 — Design System Token Compliance + Navigation Architecture Complete
+## 2026-04-05 — Design System v1.0 Implementation + Cleanup
 
 REFACTOR: Unify component colors to semantic design tokens
 
