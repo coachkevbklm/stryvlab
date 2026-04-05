@@ -1,0 +1,119 @@
+{
+  "brand_identity": {
+    "naming": "Genesis",
+    "positioning": "Coaching 3.0 : L'ultra-personnalisation par la science des données.",
+    "core_narrative": "L'évolution de la complexité vers la simplicité. Chaque humain est une signature biologique et environnementale unique.",
+    "mission": "Décoder l'individu dans ses profondeurs pour créer une adhérence parfaite au changement.",
+    "values": ["Unique", "Scientifique", "Immersif", "Simplificateur"]
+  },
+  "visual_system": {
+    "color_palette": {
+      "base": {
+        "obsidian_black": "#050505",
+        "titanium_white": "#FDFDFD"
+      },
+      "accents": {
+        "electric_emerald": "#00FFC3",
+        "deep_cyan": "#008B8B",
+        "synapse_glow": "rgba(0, 255, 195, 0.4)"
+      },
+      "current_implementation": {
+        "obsidian_black": "#050505",
+        "accent_blue": "#8FA6B8",
+        "accent_strong": "#AFC4D6",
+        "text_main": "#F2F2F2",
+        "text_muted": "#9CA3AF"
+      }
+    },
+    "typography": {
+      "titles": "Neue Lexend Pro (Light/Thin) - Pour l'élégance technologique.",
+      "body": "Inter (Regular) - Pour une lisibilité optimale lors de la consultation des données.",
+      "functional": "JetBrains Mono - Pour les chiffres et données scientifiques (aspect code/donnée).",
+      "current_implementation": {
+        "titles": "Michroma (pour COACHING 3.0), Sulphur Point (pour les titres)",
+        "body": "Sulphur Point (Regular/Light)",
+        "logo": "Good Times (STRYV) + Zalando Sans Expanded (era)"
+      }
+    },
+    "graphic_assets": {
+      "symbolism": [
+        "Profils humains filaires intégrant des réseaux neuronaux.",
+        "Micro-données gravitant autour d'un centre de gravité (l'individu).",
+        "Cartes translucides avec flou gaussien (Glassmorphism)."
+      ],
+      "data_visualization": "Utilisation de scores d'activité simplifiés et de jauges circulaires épurées."
+    }
+  },
+  "web_experience_architecture": {
+    "ux_concept": "Le site est le système. L'utilisateur doit se sentir scanné et compris dès le premier scroll.",
+    "experience_steps": [
+      {
+        "card": 1,
+        "title": "La Genèse (L'Individu)",
+        "content": "Définition de l'unicité. Chaque être est une signature biologique irrépétible.",
+        "visual_direction": "Profil 3D sombre avec flux de données émeraudes émanant de l'intérieur.",
+        "copywriting": "Votre génétique est votre code source. Nous l'avons déchiffré."
+      },
+      {
+        "card": 2,
+        "title": "L'Analyse (La Complexité)",
+        "content": "Croisement des données scientifiques : biologie, environnement, psychologie.",
+        "visual_direction": "Chaos ordonné. Des milliers de lignes convergent vers une structure stable.",
+        "copywriting": "La science ne devine pas. Elle mesure."
+      },
+      {
+        "card": 3,
+        "title": "La Méthode (L'Adhérence)",
+        "content": "L'ultra-personnalisation menant à l'adhérence sur la signature unique.",
+        "visual_direction": "Schématisation symbolique montrant l'ajustement parfait entre un individu et son milieu.",
+        "logic": "Calcul d'adhérence : $A = \\int (G \\times E) dt$ (Génétique $\\times$ Environnement sur le temps)."
+      },
+      {
+        "card": 4,
+        "title": "Le Quotidien (Le Coaching 3.0)",
+        "content": "Le système devient une expérience fluide et simple.",
+        "visual_direction": "UI de santé épurée, cartes 'Glass' flottant sur des visuels humains inspirants.",
+        "copywriting": "L'excellence devient votre état naturel."
+      }
+    ]
+  },
+  "technical_specifications": {
+    "animations": {
+      "type": "Scroll-triggered (GSAP / Framer Motion)",
+      "transition_style": "Morphing d'objets (la cellule devient une donnée, la donnée devient une interface).",
+      "parallax_intensity": "Forte sur les particules de background pour créer une immersion 3D."
+    },
+    "interaction": {
+      "magnetic_cursor": "Le curseur attire les points de données proches.",
+      "haptic_feedback": "Simulé par des micro-vibrations visuelles lors du clic sur les données critiques."
+    },
+    "current_implementation": {
+      "hero": "HeroPinned avec lecture progressive contrôlée par scroll",
+      "animations": "Framer Motion avec IntersectionObserver",
+      "particles": "ParticlesEkklo avec particules bleues animées",
+      "background": "Dégradé doré animé avec noise overlay pour réduire le banding"
+    }
+  },
+  "marketing_instructions": {
+    "tone_of_voice": "Expert, avant-gardiste, calme et profondément humain.",
+    "target_emotion": "Le sentiment d'être enfin 'vu' et compris scientifiquement.",
+    "call_to_action": "Démarrer votre séquençage.",
+    "current_cta": "Lancer le diagnostic IPT →"
+  },
+  "design_principles": {
+    "contrast_narrative": "Le passage du noir profond (Séquence 1-2) au blanc translucide/lumineux (Séquence 4-5) doit symboliser l'arrivée à la clarté.",
+    "signature_visuelle": "La ligne de vie (ou flux de données) doit être le 'fil d'Ariane' qui guide l'œil tout au long de l'expérience.",
+    "adherence_graphique": "Les éléments ne doivent pas sembler posés sur le site, mais 'ancrés' dedans, comme une seconde peau technologique."
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

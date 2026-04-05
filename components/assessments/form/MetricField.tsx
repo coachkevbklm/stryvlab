@@ -1,0 +1,434 @@
+'use client'
+
+import { useRef, useState } from 'react'
+import { Camera, Upload, X, Loader2, Check } from 'lucide-react'
+import { FieldConfig } from '@/types/assessment'
+
+interface Props {
+  field: FieldConfig
+  value: string | number | string[] | boolean | undefined
+  onChange: (value: string | number | string[] | boolean) => void
+  // token de la soumission publique — requis pour upload côté client
+  submissionToken?: string
+  // id de la soumission — requis pour upload côté coach
+  submissionId?: string
+  blockId?: string
+}
+
+// Widget photo dédié — gère l'upload vers Supabase Storage via signed URL
+function PhotoUploadWidget({
+  field,
+  value,
+  onChange,
+  submissionToken,
+  submissionId,
+  blockId,
+}: Props) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState('')
+
+  // value = storage_path une fois uploadé
+  const uploaded = typeof value === 'string' && value.length > 0
+
+  async function handleFile(file: File) {
+    setUploadError('')
+
+    // Validation locale
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Format non supporté — JPG, PNG ou WEBP uniquement')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('Taille max : 10 Mo')
+      return
+    }
+
+    // Prévisualisation immédiate
+    const reader = new FileReader()
+    reader.onload = e => setPreview(e.target?.result as string)
+    reader.readAsDataURL(file)
+
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+
+      // Obtenir la signed upload URL
+      const urlEndpoint = submissionToken
+        ? `/api/assessments/public/${submissionToken}/upload-url`
+        : `/api/assessments/submissions/${submissionId}/upload-url`
+
+      const urlRes = await fetch(urlEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          field_key: field.key,
+          block_id: blockId,
+          file_extension: ext,
+        }),
+      })
+
+      if (!urlRes.ok) {
+        const d = await urlRes.json()
+        setUploadError(d.error || 'Impossible d\'obtenir l\'URL d\'upload')
+        setPreview(null)
+        return
+      }
+
+      const { upload_url, storage_path } = await urlRes.json()
+
+      // Upload direct vers Supabase Storage
+      const uploadRes = await fetch(upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+
+      if (!uploadRes.ok) {
+        setUploadError('Échec de l\'upload — réessayez')
+        setPreview(null)
+        return
+      }
+
+      // Communiquer le storage_path au parent (sera enregistré dans les réponses)
+      onChange(storage_path)
+    } catch {
+      setUploadError('Erreur réseau — réessayez')
+      setPreview(null)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleRemove() {
+    setPreview(null)
+    setUploadError('')
+    onChange('')
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const { label, required, helper } = field
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <label className="text-sm font-bold text-primary flex items-center gap-1.5">
+          <Camera size={14} className="text-secondary/60 shrink-0" />
+          {label}
+          {required && <span className="text-red-500">*</span>}
+        </label>
+        {uploaded && !uploading && (
+          <span className="flex items-center gap-1 text-xs font-bold text-green-600 shrink-0">
+            <Check size={12} />
+            Uploadée
+          </span>
+        )}
+      </div>
+
+      {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+
+      {/* Zone de drop / preview */}
+      <div
+        className={`relative rounded-card overflow-hidden border-2 transition-all ${
+          uploaded
+            ? 'border-green-300/60 bg-green-50/30'
+            : 'border-dashed border-white/80 bg-surface-light shadow-soft-in'
+        }`}
+        style={{ minHeight: '140px' }}
+        onClick={() => !uploading && !uploaded && inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault() }}
+        onDrop={e => {
+          e.preventDefault()
+          const file = e.dataTransfer.files?.[0]
+          if (file) handleFile(file)
+        }}
+      >
+        {preview || uploaded ? (
+          /* État : photo présente */
+          <div className="flex flex-col items-center justify-center p-4 gap-2">
+            {preview && (
+              <img
+                src={preview}
+                alt={label}
+                className="max-h-40 rounded-lg object-cover shadow-md"
+              />
+            )}
+            {uploading && (
+              <div className="flex items-center gap-2 text-sm text-secondary">
+                <Loader2 size={16} className="animate-spin" />
+                Upload en cours…
+              </div>
+            )}
+            {uploaded && !uploading && (
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-xs text-secondary/60">Photo enregistrée</span>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); handleRemove() }}
+                  className="flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
+                >
+                  <X size={12} />
+                  Supprimer
+                </button>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); inputRef.current?.click() }}
+                  className="text-xs font-bold text-accent hover:opacity-80 transition-opacity"
+                >
+                  Remplacer
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* État : vide */
+          <div
+            className="flex flex-col items-center justify-center gap-3 p-6 cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && inputRef.current?.click()}
+          >
+            <div className="w-12 h-12 rounded-xl bg-surface shadow-soft-out flex items-center justify-center">
+              <Upload size={20} className="text-secondary/60" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-primary">Cliquez ou glissez une photo</p>
+              <p className="text-xs text-secondary/60 mt-0.5">JPG, PNG, WEBP · max 10 Mo</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {uploadError && (
+        <p className="mt-1.5 text-xs font-medium text-red-500">{uploadError}</p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0]
+          if (file) handleFile(file)
+        }}
+      />
+    </div>
+  )
+}
+
+export default function MetricField({ field, value, onChange, submissionToken, submissionId, blockId }: Props) {
+  const { input_type, label, unit, min, max, step, options, required, placeholder, helper } = field
+
+  const labelEl = (
+    <div className="flex items-start justify-between gap-2 mb-1.5">
+      <label className="text-sm font-bold text-primary">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+        {unit && <span className="text-secondary font-normal ml-1">({unit})</span>}
+      </label>
+    </div>
+  )
+
+  if (input_type === 'number') {
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step ?? 0.1}
+          value={value as number ?? ''}
+          onChange={e => onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
+          placeholder={placeholder ?? (min !== undefined && max !== undefined ? `${min} – ${max}` : '')}
+          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+        />
+      </div>
+    )
+  }
+
+  if (input_type === 'text') {
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <input
+          type="text"
+          value={value as string ?? ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder ?? `Votre ${label.toLowerCase()}…`}
+          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+        />
+      </div>
+    )
+  }
+
+  if (input_type === 'textarea') {
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <textarea
+          rows={3}
+          value={value as string ?? ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder ?? `Votre ${label.toLowerCase()}…`}
+          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all resize-none"
+        />
+      </div>
+    )
+  }
+
+  if (input_type === 'date') {
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <input
+          type="date"
+          value={value as string ?? ''}
+          onChange={e => onChange(e.target.value)}
+          className="w-full bg-surface-light shadow-soft-in rounded-btn px-4 py-3 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+        />
+      </div>
+    )
+  }
+
+  if (input_type === 'boolean') {
+    const checked = value === true || value === 'true'
+    return (
+      <div>
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          className={`flex items-center gap-3 w-full px-4 py-3 rounded-btn transition-all ${
+            checked
+              ? 'bg-accent/10 shadow-soft-in text-accent'
+              : 'bg-surface shadow-soft-out text-secondary'
+          }`}
+        >
+          <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all shrink-0 ${
+            checked ? 'bg-accent border-accent text-white' : 'border-secondary/30'
+          }`}>
+            {checked && <span className="text-[10px] font-bold">✓</span>}
+          </div>
+          <span className="text-sm font-semibold">{label}{required && <span className="text-red-500 ml-1">*</span>}</span>
+        </button>
+      </div>
+    )
+  }
+
+  if (input_type === 'scale_1_10') {
+    const current = value as number | undefined
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <div className="flex gap-1">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              className={`flex-1 py-2.5 rounded-btn text-xs font-bold transition-all ${
+                current === n
+                  ? 'bg-accent text-white shadow-lg'
+                  : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between text-[10px] text-secondary/50 mt-1.5 px-1">
+          <span>Faible</span>
+          <span>Élevé</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (input_type === 'single_choice') {
+    const current = value as string ?? ''
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <div className="flex flex-wrap gap-2">
+          {(options ?? []).map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(current === opt ? '' : opt)}
+              className={`px-3 py-1.5 rounded-btn text-sm font-medium transition-all ${
+                current === opt
+                  ? 'bg-accent text-white shadow-lg'
+                  : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (input_type === 'multiple_choice') {
+    const current: string[] = Array.isArray(value) ? value as string[] : []
+    const toggle = (opt: string) => {
+      const next = current.includes(opt)
+        ? current.filter(v => v !== opt)
+        : [...current, opt]
+      onChange(next)
+    }
+    return (
+      <div>
+        {labelEl}
+        {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+        <div className="flex flex-wrap gap-2">
+          {(options ?? []).map(opt => {
+            const selected = current.includes(opt)
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggle(opt)}
+                className={`px-3 py-1.5 rounded-btn text-sm font-medium transition-all ${
+                  selected
+                    ? 'bg-accent text-white shadow-lg'
+                    : 'bg-surface shadow-soft-out text-secondary hover:text-primary'
+                }`}
+              >
+                {selected && <span className="mr-1 text-[10px]">✓</span>}
+                {opt}
+              </button>
+            )
+          })}
+        </div>
+        {current.length > 0 && (
+          <p className="text-[10px] text-secondary/60 mt-1.5">{current.length} sélectionné{current.length > 1 ? 's' : ''}</p>
+        )}
+      </div>
+    )
+  }
+
+  if (input_type === 'photo_upload') {
+    return (
+      <PhotoUploadWidget
+        field={field}
+        value={value}
+        onChange={onChange}
+        submissionToken={submissionToken}
+        submissionId={submissionId}
+        blockId={blockId}
+      />
+    )
+  }
+
+  return null
+}

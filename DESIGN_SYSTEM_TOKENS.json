@@ -1,0 +1,109 @@
+{
+    "color": {
+      "bg": {
+        "0": "#050708",
+        "1": "#070A0C",
+        "2": "#0A0F12"
+      },
+      "surface": {
+        "0": "rgba(255,255,255,0.03)",
+        "1": "rgba(255,255,255,0.05)",
+        "2": "rgba(255,255,255,0.08)",
+        "3": "rgba(255,255,255,0.12)"
+      },
+      "stroke": {
+        "0": "rgba(255,255,255,0.10)",
+        "1": "rgba(255,255,255,0.14)",
+        "2": "rgba(255,255,255,0.18)"
+      },
+      "text": {
+        "primary": "#E6EDF0",
+        "secondary": "rgba(230,237,240,0.70)",
+        "muted": "rgba(230,237,240,0.50)",
+        "disabled": "rgba(230,237,240,0.35)"
+      },
+      "brand": {
+        "teal": "#3FE3C2",
+        "tealSoft": "rgba(63,227,194,0.14)",
+        "tealStroke": "rgba(63,227,194,0.35)"
+      },
+      "data": {
+        "good": "#3FE3C2",
+        "warn": "#D6FF6B",
+        "bad": "#FF5C7A"
+      }
+    },
+    "type": {
+      "font": {
+        "display": "var(--font-display)",
+        "body": "var(--font-body)",
+        "mono": "var(--font-mono)"
+      },
+      "size": {
+        "h1": "clamp(2.5rem, 3.4vw, 4rem)",
+        "h2": "clamp(1.9rem, 2.3vw, 2.6rem)",
+        "h3": "1.25rem",
+        "body": "1rem",
+        "small": "0.875rem",
+        "micro": "0.75rem"
+      },
+      "tracking": {
+        "tight": "-0.02em",
+        "normal": "0em",
+        "wide": "0.06em",
+        "wider": "0.12em"
+      },
+      "leading": {
+        "display": "1.05",
+        "title": "1.2",
+        "body": "1.55"
+      }
+    },
+    "space": {
+      "xs": "0.5rem",
+      "sm": "0.75rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "xl": "2rem",
+      "2xl": "3rem",
+      "3xl": "4rem",
+      "4xl": "6rem",
+      "5xl": "8rem"
+    },
+    "radius": {
+      "sm": "10px",
+      "md": "14px",
+      "lg": "18px",
+      "xl": "24px",
+      "pill": "999px"
+    },
+    "shadow": {
+      "soft": "0 12px 40px rgba(0,0,0,0.55)",
+      "lift": "0 18px 60px rgba(0,0,0,0.65)"
+    },
+    "blur": {
+      "glass": "14px",
+      "hud": "10px"
+    },
+    "strokeWidth": {
+      "hairline": "1px",
+      "thin": "1.5px",
+      "normal": "2px"
+    },
+    "motion": {
+      "duration": {
+        "fast": "160ms",
+        "base": "240ms",
+        "slow": "420ms"
+      },
+      "easing": {
+        "standard": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "out": "cubic-bezier(0.16, 1, 0.3, 1)"
+      }
+    },
+    "grid": {
+      "maxWidth": "1200px",
+      "gutter": "24px"
+    }
+  }
+  

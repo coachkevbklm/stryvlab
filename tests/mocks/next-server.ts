@@ -1,0 +1,22 @@
+// Minimal next/server stubs for Vitest (Node environment)
+
+export class NextRequest extends Request {
+  public nextUrl: URL
+
+  constructor(input: string | URL, init?: RequestInit) {
+    super(input, init)
+    this.nextUrl = new URL(typeof input === 'string' ? input : input.toString())
+  }
+}
+
+export class NextResponse extends Response {
+  static json(body: unknown, init?: ResponseInit): NextResponse {
+    return new NextResponse(JSON.stringify(body), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
+    })
+  }
+}
