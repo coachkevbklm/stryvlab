@@ -152,10 +152,10 @@ export default function Sidebar() {
                     disabled={disabled}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left w-full transition-all duration-150 group ${
                       active
-                        ? 'bg-primary text-white shadow-md'
+                        ? 'bg-accent text-[#1A1A1A] shadow-md font-semibold'
                         : disabled
                         ? 'text-secondary/30 cursor-not-allowed'
-                        : 'text-secondary hover:bg-surface-light hover:text-primary hover:shadow-soft-out'
+                        : 'text-secondary hover:bg-surface-light hover:text-primary hover:shadow-elevated'
                     }`}
                   >
                     <Icon
