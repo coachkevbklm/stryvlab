@@ -32,9 +32,11 @@ function timeAgo(iso: string) {
 interface Props {
   /** When true, the dropdown opens to the right (for sidebar use) */
   sidebarMode?: boolean
+  /** When true, the dropdown opens downward (for top bar use) */
+  topBarMode?: boolean
 }
 
-export default function NotificationBell({ sidebarMode = false }: Props) {
+export default function NotificationBell({ sidebarMode = false, topBarMode = false }: Props) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -86,7 +88,7 @@ export default function NotificationBell({ sidebarMode = false }: Props) {
     })
   }
 
-  if (sidebarMode) {
+  if (sidebarMode && !topBarMode) {
     return (
       <div className="relative w-full" ref={containerRef}>
         {/* Sidebar bell button — full width row */}

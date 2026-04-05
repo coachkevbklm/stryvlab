@@ -1,14 +1,15 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { Menu, Bell } from 'lucide-react'
+import React from "react";
+import { Menu } from "lucide-react";
+import NotificationBell from "@/components/layout/NotificationBell";
 
 interface CoachTopBarProps {
-  tabs: Array<{ key: string; label: string; Icon: React.ElementType }>
-  activeTab: string
-  onTabChange: (key: string) => void
-  clientName?: string
-  clientInitial?: string
+  tabs: Array<{ key: string; label: string; Icon: React.ElementType }>;
+  activeTab: string;
+  onTabChange: (key: string) => void;
+  clientName?: string;
+  clientInitial?: string;
 }
 
 export default function CoachTopBar({
@@ -16,27 +17,23 @@ export default function CoachTopBar({
   activeTab,
   onTabChange,
   clientName,
-  clientInitial = 'S',
+  clientInitial = "S",
 }: CoachTopBarProps) {
   return (
-    <header className="sticky top-0 z-50 h-11 bg-[#343434] flex items-center px-3 gap-1 shrink-0">
+    <header className="top-bar">
       {/* Logo pill */}
-      <div className="w-7 h-7 rounded-full bg-[#FEFEFE] flex items-center justify-center mr-2">
-        <span className="text-xs font-bold text-[#1A1A1A]">S</span>
+      <div className="w-7 h-7 rounded-pill bg-surface-raised flex items-center justify-center mr-2 shrink-0">
+        <span className="text-xs font-bold text-primary">S</span>
       </div>
-      <div className="w-px h-4 bg-white/10 mx-2" />
+      <div className="w-px h-4 bg-white/10 mx-2 shrink-0" />
 
       {/* Nav items — tabs horizontales */}
-      <nav className="flex items-center gap-0.5 flex-1">
+      <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto no-scrollbar">
         {tabs.map(({ key, label, Icon }) => (
           <button
             key={key}
             onClick={() => onTabChange(key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all font-medium ${
-              activeTab === key
-                ? 'bg-[#FCF76E] text-[#1A1A1A] font-semibold'
-                : 'text-[#FEFEFE] hover:bg-white/10'
-            }`}
+            className={`top-bar-tab ${activeTab === key ? "active" : ""}`}
             title={label}
           >
             <Icon size={12} />
@@ -46,19 +43,15 @@ export default function CoachTopBar({
       </nav>
 
       {/* Actions droite */}
-      <div className="flex items-center gap-2 ml-auto">
-        <button className="text-white/60 hover:text-white transition-colors p-1">
+      <div className="flex items-center gap-2 ml-auto shrink-0">
+        <button className="text-on-dark/60 hover:text-on-dark transition-colors p-1">
           <Menu size={16} />
         </button>
-        <button className="text-white/60 hover:text-white transition-colors p-1">
-          <Bell size={16} />
-        </button>
-        <div className="w-7 h-7 rounded-full bg-[#D8D7CE] overflow-hidden shrink-0">
-          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xs font-bold text-white">
-            {clientInitial}
-          </div>
+        <NotificationBell topBarMode />
+        <div className="w-7 h-7 rounded-pill bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+          {clientInitial}
         </div>
       </div>
     </header>
-  )
+  );
 }
