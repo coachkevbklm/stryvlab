@@ -2,6 +2,12 @@
 
 ## 2026-04-05
 
+REFACTOR: Coach layout architecture — implement Option C design with horizontal top nav + full-width content
+- Remove Sidebar from coach/layout.tsx (sidebar remains in dashboard/outils)
+- Transform layout from flex row+sidebar to pure flex column: TopBar → SubHeader → Content
+- Update coach layout background to bg-background
+- Prepare architecture for future right-side floating panels/drawers
+
 REFACTOR: Coach sidebar — transform from fixed full-height to floating design with rounded corners and side margins
 - Change `fixed top-0 left-0 h-screen` → `fixed top-4 left-4 h-[calc(100vh-32px)]` — floating with 16px margin
 - Add `rounded-card` (16px radius) for modern floating appearance
