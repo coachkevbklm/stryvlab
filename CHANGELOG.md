@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 2026-04-06 — Design System v1.0 Implementation + Cleanup
+
+CHORE: Implement Design System v1.0 and remove legacy conflicting specifications
+
+- Created docs/DESIGN_SYSTEM_V1.0_REFERENCE.md — canonical implementation guide
+- Added DS v1.0 CSS variables to app/globals.css (--text-main, --text-muted, --text-on-dark, --border-subtle, --radius-pill, --radius-card-lg, --radius-card-sm)
+- Migrated 83 hardcoded color values in app/coach/clients/[clientId]/page.tsx to semantic tokens
+- Removed brand-design-system.md (conflicting pre-v1.0 specifications)
+- Deleted backup and legacy design system JSON files
+- Updated tailwind.config.ts to align color tokens with DS v1.0 canonical values
+
+Design System v1.0 Specifications:
+
+- Soft-Brutalisme: Rigueur mathématique, contrastes forts, typographie architecturale
+- Surfaces: Papier chaud (#F0EFE7) + Dark islands (#343434) + Jaune acide (#FCF76E)
+- Typographie: SP Pro Display, hiérarchie par taille/graisse (jamais couleur)
+- Géométrie: Radius pill (9999px), card-lg (24px), card-sm (12px)
+- Interactions: Micro-animations (hover/active/focus/disabled) avec transitions 0.2s
+
 ## 2026-04-05 — Design System Token Compliance + Navigation Architecture Complete
 
 REFACTOR: Unify component colors to semantic design tokens

@@ -1,5 +1,6 @@
 # STRYVR — Design System v1.0 Reference
-> **Document canonique d'implémentation Front-End.**  
+
+> **Document canonique d'implémentation Front-End.**
 > Soft-Brutalisme : Rigueur mathématique, contrastes forts, typographie architecturale.
 
 ---
@@ -13,44 +14,44 @@ Toute couleur utilisée doit référencer les variables CSS ci-dessous. **Les va
 ```css
 :root {
   /* Surfaces & Conteneurs */
-  --bg-app: #F0EFE7;              /* Fond principal — papier chaud */
-  --bg-panel-dark: #343434;       /* Panneaux d'action / Barre latérale */
-  --bg-panel-light: #F8F8F8;      /* Cartes de contenu interne */
-  --bg-card-neutral: #D8D7CE;     /* Éléments secondaires */
+  --bg-app: #f0efe7; /* Fond principal — papier chaud */
+  --bg-panel-dark: #343434; /* Panneaux d'action / Barre latérale */
+  --bg-panel-light: #f8f8f8; /* Cartes de contenu interne */
+  --bg-card-neutral: #d8d7ce; /* Éléments secondaires */
 
   /* Typographie */
-  --text-main: #242424;           /* Titres et corps sur fond clair */
-  --text-muted: #535353;          /* Labels, métadonnées, légendes */
-  --text-on-dark: #FFFFFF;        /* Texte blanc sur fond anthracite */
-  --text-on-dark-muted: rgba(255, 255, 255, 0.40);
+  --text-main: #242424; /* Titres et corps sur fond clair */
+  --text-muted: #535353; /* Labels, métadonnées, légendes */
+  --text-on-dark: #ffffff; /* Texte blanc sur fond anthracite */
+  --text-on-dark-muted: rgba(255, 255, 255, 0.4);
 
   /* Accentuation */
-  --accent-primary: #FCF76E;      /* Jaune acide — CTAs uniquement */
-  --accent-success: #4A7B59;      /* Vert — Statuts positifs (rare) */
+  --accent-primary: #fcf76e; /* Jaune acide — CTAs uniquement */
+  --accent-success: #4a7b59; /* Vert — Statuts positifs (rare) */
 
   /* Bordures */
-  --border-subtle: 1px solid #BCBCB8;
+  --border-subtle: 1px solid #bcbcb8;
 
   /* Géométrie */
-  --radius-pill: 9999px;          /* Boutons, Tags, Avatars */
-  --radius-card-lg: 24px;         /* Panneaux principaux */
-  --radius-card-sm: 12px;         /* Inputs et cartes internes */
+  --radius-pill: 9999px; /* Boutons, Tags, Avatars */
+  --radius-card-lg: 24px; /* Panneaux principaux */
+  --radius-card-sm: 12px; /* Inputs et cartes internes */
 }
 ```
 
 ### Mapping Tailwind CSS (Rapide)
 
-| Utilisation | CSS Var | Tailwind | Hex |
-|---|---|---|---|
-| Fond app | `--bg-app` | `bg-background` | #F0EFE7 |
-| Panel sombre | `--bg-panel-dark` | `bg-dark` | #343434 |
-| Panel léger | `--bg-panel-light` | `bg-surface-raised` | #F8F8F8 |
-| Card neutre | `--bg-card-neutral` | `bg-surface` | #D8D7CE |
-| Texte principal | `--text-main` | `text-primary` | #242424 |
-| Texte muted | `--text-muted` | `text-muted-foreground` | #535353 |
-| Texte sur dark | `--text-on-dark` | `text-white` | #FFFFFF |
-| Accent jaune | `--accent-primary` | `bg-accent` | #FCF76E |
-| Accent vert | `--accent-success` | `text-green-700` | #4A7B59 |
+| Utilisation     | CSS Var             | Tailwind                | Hex     |
+| --------------- | ------------------- | ----------------------- | ------- |
+| Fond app        | `--bg-app`          | `bg-background`         | #F0EFE7 |
+| Panel sombre    | `--bg-panel-dark`   | `bg-dark`               | #343434 |
+| Panel léger     | `--bg-panel-light`  | `bg-surface-raised`     | #F8F8F8 |
+| Card neutre     | `--bg-card-neutral` | `bg-surface`            | #D8D7CE |
+| Texte principal | `--text-main`       | `text-primary`          | #242424 |
+| Texte muted     | `--text-muted`      | `text-muted-foreground` | #535353 |
+| Texte sur dark  | `--text-on-dark`    | `text-white`            | #FFFFFF |
+| Accent jaune    | `--accent-primary`  | `bg-accent`             | #FCF76E |
+| Accent vert     | `--accent-success`  | `text-green-700`        | #4A7B59 |
 
 ---
 
@@ -58,13 +59,13 @@ Toute couleur utilisée doit référencer les variables CSS ci-dessous. **Les va
 
 **Tous les multiples de 8px. Aucune exception.**
 
-| Token | Valeur | Usage |
-|---|---|---|
-| `--space-xs` | 8px | Écart icône/texte |
-| `--space-sm` | 16px | Padding boutons, petit composants |
-| `--space-md` | 24px | Gouttière (cartes, champs) |
-| `--space-lg` | 32px | Padding panneaux sombres |
-| `--space-xl` | 48px | Espacement sections majeures |
+| Token        | Valeur | Usage                             |
+| ------------ | ------ | --------------------------------- |
+| `--space-xs` | 8px    | Écart icône/texte                 |
+| `--space-sm` | 16px   | Padding boutons, petit composants |
+| `--space-md` | 24px   | Gouttière (cartes, champs)        |
+| `--space-lg` | 32px   | Padding panneaux sombres          |
+| `--space-xl` | 48px   | Espacement sections majeures      |
 
 ### Implémentation Tailwind
 
@@ -82,13 +83,13 @@ Toute couleur utilisée doit référencer les variables CSS ci-dessous. **Les va
 
 Police : **SP Pro Display** (ou fallback Inter). La hiérarchie est créée par taille + graisse, **jamais par couleur seule.**
 
-| Niveau | Taille | Weight | Letter Spacing | Usage | Classe Tailwind |
-|---|---|---|---|---|---|
-| **H1 Display** | 32px | 600 | -0.02em | Titres majeurs | `text-2xl font-semibold` |
-| **H2 Section** | 20px | 600 | -0.01em | Sous-titres section | `text-xl font-semibold` |
-| **Body Main** | 14px | 500 | 0 | Corps standard | `text-base font-medium` |
-| **Label / Meta** | 12px | 400 | 0 | Métadonnées | `text-xs font-regular` |
-| **Small Caps** | 11px | 700 | 0.05em | Mini-données (UPPER) | `text-2xs font-bold` |
+| Niveau           | Taille | Weight | Letter Spacing | Usage                | Classe Tailwind          |
+| ---------------- | ------ | ------ | -------------- | -------------------- | ------------------------ |
+| **H1 Display**   | 32px   | 600    | -0.02em        | Titres majeurs       | `text-2xl font-semibold` |
+| **H2 Section**   | 20px   | 600    | -0.01em        | Sous-titres section  | `text-xl font-semibold`  |
+| **Body Main**    | 14px   | 500    | 0              | Corps standard       | `text-base font-medium`  |
+| **Label / Meta** | 12px   | 400    | 0              | Métadonnées          | `text-xs font-regular`   |
+| **Small Caps**   | 11px   | 700    | 0.05em         | Mini-données (UPPER) | `text-2xs font-bold`     |
 
 ### Accessibilité typographique
 
@@ -100,11 +101,11 @@ Police : **SP Pro Display** (ou fallback Inter). La hiérarchie est créée par 
 
 ## 4. Géométrie (Border Radius)
 
-| Token | Valeur | Usage |
-|---|---|---|
-| `--radius-pill` | 9999px | Boutons, Tags, Avatars, Pills |
-| `--radius-card-lg` | 24px | Panneaux principaux, conteneurs de section |
-| `--radius-card-sm` | 12px | Inputs, sous-cartes |
+| Token              | Valeur | Usage                                      |
+| ------------------ | ------ | ------------------------------------------ |
+| `--radius-pill`    | 9999px | Boutons, Tags, Avatars, Pills              |
+| `--radius-card-lg` | 24px   | Panneaux principaux, conteneurs de section |
+| `--radius-card-sm` | 12px   | Inputs, sous-cartes                        |
 
 ### Implémentation
 
@@ -232,6 +233,6 @@ Tout élément interactif sur `--bg-panel-dark` doit avoir un fond blanc pur (`#
 
 ---
 
-**Dernière mise à jour :** 2026-04-06  
-**Version :** 1.0  
+**Dernière mise à jour :** 2026-04-06
+**Version :** 1.0
 **Créé pour :** STRYVR Design System Alignment

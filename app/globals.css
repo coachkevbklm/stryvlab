@@ -14,40 +14,40 @@
 /* ─── CSS VARIABLES (DESIGN SYSTEM v1.0) ──────────────────────────────────── */
 :root {
   /* SURFACES & CONTENEURS (Papier chaud + Dark islands) */
-  --bg-app: #f0efe7;              /* Fond principal */
-  --bg-panel-dark: #343434;       /* Panneaux d'action, barres latérales */
-  --bg-panel-light: #f8f8f8;      /* Cartes de contenu interne */
-  --bg-card-neutral: #d8d7ce;     /* Éléments secondaires */
-  
+  --bg-app: #f0efe7; /* Fond principal */
+  --bg-panel-dark: #343434; /* Panneaux d'action, barres latérales */
+  --bg-panel-light: #f8f8f8; /* Cartes de contenu interne */
+  --bg-card-neutral: #d8d7ce; /* Éléments secondaires */
+
   /* Héritage (mapping depuis v2.1) */
   --color-background: #f0efe7;
   --color-surface: #d8d7ce;
   --color-surface-alt: #e2e1d9;
-  --color-surface-raised: #f8f8f8;  /* Aligné avec bg-panel-light (DS v1.0) */
+  --color-surface-raised: #f8f8f8; /* Aligné avec bg-panel-light (DS v1.0) */
   --color-dark: #343434;
 
   /* TYPOGRAPHIE */
-  --text-main: #242424;           /* Titres et corps sur fond clair (DS v1.0) */
-  --text-muted: #535353;          /* Labels, métadonnées */
-  --text-on-dark: #ffffff;        /* Blanc sur fond anthracite */
-  --text-on-dark-muted: rgba(255, 255, 255, 0.40);
-  
+  --text-main: #242424; /* Titres et corps sur fond clair (DS v1.0) */
+  --text-muted: #535353; /* Labels, métadonnées */
+  --text-on-dark: #ffffff; /* Blanc sur fond anthracite */
+  --text-on-dark-muted: rgba(255, 255, 255, 0.4);
+
   /* Héritage */
-  --color-primary: #242424;       /* Aligné avec --text-main (DS v1.0) */
+  --color-primary: #242424; /* Aligné avec --text-main (DS v1.0) */
   --color-on-dark: #ffffff;
   --color-secondary: #535353;
   --color-muted: #8a8a85;
 
   /* ACCENTUATION */
-  --accent-primary: #fcf76e;      /* Jaune acide — CTAs uniquement */
-  --accent-success: #4a7b59;      /* Vert — Statuts positifs (DS v1.0) */
+  --accent-primary: #fcf76e; /* Jaune acide — CTAs uniquement */
+  --accent-success: #4a7b59; /* Vert — Statuts positifs (DS v1.0) */
   --color-accent: #fcf76e;
   --color-accent-hover: #ede45a;
 
   /* BORDURES (Design System v1.0) */
   --color-border: #bcbcb8;
   --color-border-active: #111111;
-  --border-subtle: 1px solid #bcbcb8;  /* Bordures standard, séparateurs */
+  --border-subtle: 1px solid #bcbcb8; /* Bordures standard, séparateurs */
 
   /* Ombres */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.07);
@@ -57,10 +57,10 @@
   --shadow-focus: 0 0 0 3px rgba(252, 247, 110, 0.35);
 
   /* GÉOMÉTRIE (Design System v1.0) */
-  --radius-pill: 9999px;          /* Boutons, Tags, Avatars, Pills */
-  --radius-card-lg: 24px;         /* Panneaux principaux */
-  --radius-card-sm: 12px;         /* Inputs et cartes internes */
-  
+  --radius-pill: 9999px; /* Boutons, Tags, Avatars, Pills */
+  --radius-card-lg: 24px; /* Panneaux principaux */
+  --radius-card-sm: 12px; /* Inputs et cartes internes */
+
   /* Héritage pour compatibilité */
   --radius-card: 16px;
   --radius-btn: 8px;

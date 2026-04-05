@@ -135,7 +135,7 @@ function AuthFormCard({
   };
 
   return (
-    <div className="bg-surface rounded-[32px] shadow-soft-out border border-white text-center relative group flex flex-col h-[calc(100vh-64px)]">
+    <div className="bg-surface rounded-card-lg shadow-soft-out border border-white text-center relative group flex flex-col h-[calc(100vh-64px)]">
 
       {/* Header — shrink-0, ne scrolle pas */}
       <div className="shrink-0 px-10 md:px-14 pt-10 md:pt-12 pb-6">
@@ -152,7 +152,7 @@ function AuthFormCard({
           </div>
         )}
         {isLogin && <div className="h-[3px] mb-6" />}
-        <div className="w-14 h-14 mx-auto bg-surface-light rounded-2xl shadow-soft-in flex items-center justify-center border border-white/60 mb-6">
+        <div className="w-14 h-14 mx-auto bg-surface-light rounded-2xl shadow-soft-in flex items-center justify-center border border-subtle mb-6">
           {stepIcon()}
         </div>
         <h2 className="text-3xl font-extrabold tracking-tight text-primary mb-3 leading-tight mx-auto max-w-[280px]">
@@ -310,7 +310,7 @@ function AuthFormCard({
                           className={`py-2.5 px-2 rounded-xl text-[10px] font-semibold transition-all duration-200 border text-center leading-tight ${
                             selectedTools.includes(tool)
                               ? 'bg-accent/10 text-accent border-accent/30 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.06)]'
-                              : 'bg-surface text-secondary/70 border-white/80 shadow-[3px_3px_8px_rgba(0,0,0,0.06),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:text-accent/70 hover:border-accent/20'
+                              : 'bg-surface text-secondary/70 border-subtle shadow-[3px_3px_8px_rgba(0,0,0,0.06),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:text-accent/70 hover:border-accent/20'
                           }`}
                         >
                           {tool}
@@ -330,7 +330,7 @@ function AuthFormCard({
                           className={`py-2.5 px-4 rounded-xl text-[11px] font-medium text-left transition-all duration-200 border ${
                             selectedChallenges.includes(challenge)
                               ? 'bg-accent/10 text-accent border-accent/30 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.06)]'
-                              : 'bg-surface text-secondary/70 border-white/80 shadow-[3px_3px_8px_rgba(0,0,0,0.06),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:text-primary hover:border-accent/20'
+                              : 'bg-surface text-secondary/70 border-subtle shadow-[3px_3px_8px_rgba(0,0,0,0.06),-2px_-2px_6px_rgba(255,255,255,0.8)] hover:text-primary hover:border-accent/20'
                           }`}
                         >
                           {challenge}
@@ -412,7 +412,7 @@ function AuthFormCard({
       </form>
 
       {/* Toggle login / signup */}
-      <div className="mt-6 pt-6 border-t border-white/20 pb-10 md:pb-12">
+      <div className="mt-6 pt-6 border-t border-subtle/[0.5] pb-10 md:pb-12">
         <button
           onClick={() => setIsLogin(!isLogin)}
           className="text-[12px] font-bold text-secondary tracking-tight hover:text-accent transition-all group"
@@ -541,7 +541,7 @@ export default function ConnectionPage() {
       <div className="w-full max-w-[1240px] flex flex-col lg:flex-row items-stretch gap-12 lg:gap-20 xl:gap-32 relative z-10 px-4 pt-12 lg:pt-20">
 
         {/* LEFT COLUMN — brand + tools, scrollable */}
-        <div className={`w-full lg:w-[55%] bg-surface rounded-[40px] shadow-soft-out p-12 lg:p-16 xl:p-20 relative flex flex-col justify-center border border-white/60 transition-all duration-1000 ease-out transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+        <div className={`w-full lg:w-[55%] bg-surface rounded-card-lg shadow-soft-out p-12 lg:p-16 xl:p-20 relative flex flex-col justify-center border border-subtle transition-all duration-1000 ease-out transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <div className="max-w-lg">
             <div className="mb-8 lg:mb-12 z-20 cursor-pointer group inline-flex items-center gap-3" onClick={() => router.push('/')}>
               <Image
@@ -579,12 +579,12 @@ export default function ConnectionPage() {
                 {TOOLS.map((tool) => (
                   <div key={tool.id} className="relative group">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-xl bg-surface border border-white/80 shadow-soft-out flex items-center justify-center transition-all duration-300 group-hover:scale-100 group-hover:shadow-soft-in group-hover:border-accent/10 cursor-default">
+                      <div className="w-12 h-12 rounded-xl bg-surface border border-subtle shadow-soft-out flex items-center justify-center transition-all duration-300 group-hover:scale-100 group-hover:shadow-soft-in group-hover:border-accent/10 cursor-default">
                         <tool.icon size={20} className="text-accent/80 group-hover:text-accent group-hover:scale-95 transition-all duration-300" />
                       </div>
                       <span className="text-[9px] font-semibold text-secondary text-center leading-tight w-full opacity-60 group-hover:opacity-100 group-hover:text-primary transition-all">{tool.title}</span>
                     </div>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 p-4 bg-surface/95 backdrop-blur-md border border-white/60 rounded-2xl shadow-2xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-50">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 p-4 bg-surface/95 backdrop-blur-md border border-subtle rounded-2xl shadow-2xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-50">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-1 h-3 bg-accent rounded-full"></div>
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{tool.title}</span>
@@ -602,7 +602,7 @@ export default function ConnectionPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-surface-light/50 border border-white/60 rounded-3xl shadow-soft-in mb-6 group hover:translate-y-[-2px] transition-all duration-500">
+              <div className="p-6 bg-surface-light border border-subtle rounded-3xl shadow-soft-in mb-6 group hover:translate-y-[-2px] transition-all duration-500">
                 <div className="flex items-center gap-6">
                   <div className="w-14 h-14 rounded-2xl bg-surface shadow-soft-out flex items-center justify-center text-accent ring-1 ring-accent/5 group-hover:scale-110 transition-transform duration-500 shrink-0">
                     <Database size={24} strokeWidth={1.5} />
@@ -619,7 +619,7 @@ export default function ConnectionPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-surface-light/50 border border-white/60 rounded-3xl shadow-soft-in mb-6 group hover:translate-y-[-2px] transition-all duration-500">
+              <div className="p-6 bg-surface-light border border-subtle rounded-3xl shadow-soft-in mb-6 group hover:translate-y-[-2px] transition-all duration-500">
                 <div className="flex items-center gap-6">
                   <div className="w-14 h-14 rounded-2xl bg-surface shadow-soft-out flex items-center justify-center text-accent ring-1 ring-accent/5 group-hover:scale-110 transition-transform duration-500 shrink-0">
                     <FileText size={24} strokeWidth={1.5} />
