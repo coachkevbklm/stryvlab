@@ -630,6 +630,7 @@ function MultiSeriesChart({
   series: MetricSeries
 }) {
   const [mode, setMode] = useState<OverlayMode>('pct')
+  const [visibleSeries, setVisibleSeries] = useState<Set<string>>(() => new Set(selectedMetrics))
 
   // Baseline = first value of each series (used for % normalization)
   const baselineValues = useMemo(() => {
@@ -756,12 +757,24 @@ function MultiSeriesChart({
             const isNegGood = NEG_GOOD_FIELDS.includes(k)
             const deltaGood = delta === null ? null : delta === 0 ? null : isNegGood ? delta < 0 : delta > 0
             return (
-              <div key={k} className="flex items-center gap-2">
+              <div key={k} className="flex items-center gap-2 cursor-pointer group">
+                {/* Toggle checkbox */}
+                <input
+                  type="checkbox"
+                  checked={visibleSeries.has(k)}
+                  onChange={(e) => {
+                    const newSet = new Set(visibleSeries)
+                    if (e.target.checked) newSet.add(k)
+                    else newSet.delete(k)
+                    setVisibleSeries(newSet)
+                  }}
+                  className="w-3.5 h-3.5 rounded shrink-0 cursor-pointer accent-[#FCF76E]"
+                />
                 {/* Colored line sample */}
-                <div className="flex flex-col items-center gap-0.5 shrink-0">
+                <div className="flex flex-col items-center gap-0.5 shrink-0" style={{ opacity: visibleSeries.has(k) ? 1 : 0.35 }}>
                   <div className="w-5 h-0.5 rounded-full" style={{ background: color }} />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1" style={{ opacity: visibleSeries.has(k) ? 1 : 0.35 }}>
                   <p className="text-[9px] text-white/35 font-medium truncate">{f.label}</p>
                   <div className="flex items-baseline gap-1.5">
                     {val !== undefined && (
@@ -841,6 +854,7 @@ function MultiSeriesChart({
             />
 
             {selectedMetrics.map((k, i) => {
+              if (!visibleSeries.has(k)) return null
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
               const dataKey = mode === 'pct' ? `__pct_${k}` : k
               return (
