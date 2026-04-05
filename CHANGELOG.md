@@ -1,6 +1,12 @@
 # CHANGELOG
 
-## 2026-04-05 — Coach UI Polish Complete: 3 Medium-Effort Enhancements
+## 2026-04-05 — Navigation Architecture Optimization + UI Polish Complete
+
+REFACTOR: Unify double navigation bars into single ClientPageHeader
+- Created ClientPageHeader component combining CoachTopBar + ClientSubHeader
+- Single unified header: back button | client avatar/info | client tabs
+- Eliminated confusing dual-layer navigation in client detail pages
+- Improved visual hierarchy: Sidebar (main app nav) → ClientPageHeader (client context)
 
 FEAT: Multi-series visibility toggle in metrics overlay chart
 - Add individual checkboxes for each metric line in legend
@@ -14,7 +20,7 @@ FEAT: Sidebar collapsible mode with compact layout
 - Smooth 300ms transition + all tooltips active
 - Better screen real estate on smaller displays
 
-FEAT: Move notification bell from Sidebar to CoachTopBar  
+FEAT: Move notification bell from Sidebar to CoachTopBar
 - NotificationBell repositioned for better visibility
 - Dropdown below (default positioning)
 - Cleaner Sidebar footer without clutter
@@ -25,6 +31,7 @@ FIX: Sidebar nav active state to STRYVR v2.1 accent yellow
 - Hover shadow upgraded to shadow-elevated
 
 FIX: MetricsSection sparkline height + KPI grid responsive
+
 - Sparkline: 28px → 48px (readability)
 - KPI grid: 1-col mobile → 2-col tablet → 4-col desktop
 - Delta display: simplified arrow icons + value format
@@ -411,7 +418,7 @@ FEATURE: Template compatibility scoring in client program tab — templates rank
 
 FIX: Image containers adapt to intrinsic dimensions — replaced fixed-height `h-28`/`h-32` + `fill` + `object-cover` with `width={0} height={0}` + `w-full h-auto` in ProgramTemplateBuilder, ProgramEditor, and program preview page; GIFs are unoptimized
 
-FEATURE: Import CSV mesures corporelles — bouton "Importer un CSV" dans l'onglet Métriques du dossier client, parse le format tableur coach (poids, % MG, masse musculaire, masse osseuse, graisse viscérale, BMR, tour de taille, âge métabolique), insère dans assessment_submissions + assessment_responses, détecte les doublons
+FEATURE: Import CSV mesures corporelles — bouton "Importer un CSV" dans l'onglet Métriques du dossier client, parse le format tableur coach (poids, % MG, masse musculaire, masse osseuse, graisse viscérale, BMR, tour de taille, âge métabolique), insère dans assessment*submissions + assessment_responses, détecte les doublons
 FEATURE: API POST /api/clients/[clientId]/import-csv — parse CSV format spécifique, crée template système **csv_import** si absent, insère submissions + réponses, idempotent sur (client_id, template_id, submitted_at)
 FIX: Email templates — brand colors (#0e8c5b accent, #1A1A1A header), logo URL dynamique via NEXT_PUBLIC_SITE_URL, shared emailTemplate helper
 FIX: Modal branded sur suppression template — remplacement confirm() natif par modal neumorphique STRYVR sur /coach/programs/templates
@@ -435,7 +442,7 @@ FEATURE: Lien d'accès client — bouton "Envoyer par email" dans ClientAccessTo
 FEATURE: mailer.ts — sendAccessLinkEmail avec nom du coach + template branded
 FIX: Emails — nom du coach affiché ("Jean Dupont vous a envoyé un bilan") via user_metadata + sujet personnalisé
 FIX: Dossier client — alert() natif remplacé par toast branded (bg-primary, accent, slide-in) après copie du lien bilan
-SECURITY: Middleware — /coach/_ et /dashboard/_ protégés (redirect /auth/login si non authentifié)
+SECURITY: Middleware — /coach/* et /dashboard/\_ protégés (redirect /auth/login si non authentifié)
 SECURITY: .gitignore renforcé — .env*, *.key, credentials, backups, IDE tooling exclus
 CHORE: Git repo initialisé — aucun secret tracké, .env.local exclu
 REFACTOR: Logo logo.png appliqué partout — client login, home, bilans, programme, SessionLogger, AssessmentForm, Sidebar, page d'accueil, emails
@@ -462,7 +469,7 @@ FEATURE: PATCH /api/assessments/submissions/[id] — option renew_token pour ré
 FEATURE: Templates d'entraînement — catalogue filtrable (objectif/niveau/fréquence/muscle), builder, édition, duplication, suppression
 FEATURE: Assignation template → programme client avec matching score heuristique + nom personnalisable
 FEATURE: API CRUD /api/program-templates + /api/program-templates/[id]/assign
-SCHEMA: supabase/migrations/20260403_program_templates.sql — coach_program_templates + sessions + exercises + RLS
+SCHEMA: supabase/migrations/20260403*program_templates.sql — coach_program_templates + sessions + exercises + RLS
 FEATURE: Sidebar — ajout entrée "Programmes" → /coach/programs/templates
 FEATURE: Dashboard Performance — onglet "Performance" dans le dossier client coach
 FEATURE: KPIs (séances, volume, sets, reps, durée, RPE moyen), filtres période (7/30/90j/tout), filtres métrique (volume/reps/séries)
@@ -489,9 +496,9 @@ FEATURE: Client PWA Phase 2 — bilans list, bilan detail, profil, bottom nav
 SCHEMA: supabase/migrations/20260403_client_user_link.sql — user_id sur coach_clients + RLS policies client (profil, submissions, responses)
 FEATURE: Client auth Phase 1 — app/client/login (connexion + création compte + liaison userId↔coach_clients)
 FEATURE: app/client/page.tsx — home client protégée (programme/bilans/profil placeholders)
-FEATURE: app/client/layout.tsx — protection SSR de toutes les routes /client/_
+FEATURE: app/client/layout.tsx — protection SSR de toutes les routes /client/*
 FEATURE: app/client/auth/confirm/route.ts — échange PKCE code → session, redirect /client
-FEATURE: Middleware — routes /client/_ protégées, /client/login redirige si déjà connecté
+FEATURE: Middleware — routes /client/\_ protégées, /client/login redirige si déjà connecté
 
 FEATURE: Upload photo fonctionnel dans les bilans — widget drag & drop + preview + signed URL Supabase Storage (côté client via token public, côté coach via auth)
 FEATURE: API POST /api/assessments/submissions/[id]/upload-url — endpoint upload côté coach
