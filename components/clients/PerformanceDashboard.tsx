@@ -104,7 +104,7 @@ const CHART_TEXT_COLOR = "#8A8A85"; // muted text (from design system)
 const METRIC_COLOR: Record<Metric, string> = {
   volume: "#1A1A1A", // primary (main metric)
   reps: "#535353", // secondary (supporting metric)
-  sets: "#FCF76E", // accent (highlight metric)
+  sets: "#2DB470", // Cursor accent (heatmap / métriques)
 };
 
 const MUSCLE_COLORS: Record<string, string> = {

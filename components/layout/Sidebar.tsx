@@ -123,7 +123,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-surface border border-subtle rounded-card shadow-elevated flex flex-col z-50 transition-all duration-300 ${
+      className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-surface border border-subtle rounded-xl shadow-elevated flex flex-col z-50 transition-all duration-300 ${
         isCollapsed ? "w-20" : "w-56"
       }`}
     >
@@ -160,7 +160,7 @@ export default function Sidebar() {
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             {!isCollapsed && (
-              <p className="text-[10px] font-bold text-secondary/50 uppercase tracking-widest px-2 mb-1.5">
+              <p className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 mb-1.5">
                 {section.label}
               </p>
             )}
@@ -178,10 +178,10 @@ export default function Sidebar() {
                       isCollapsed ? "justify-center px-2" : "w-full"
                     } ${
                       active
-                        ? "bg-accent text-[#1A1A1A] shadow-md font-semibold"
+                        ? "bg-white/10 text-primary font-semibold"
                         : disabled
                           ? "text-secondary/30 cursor-not-allowed"
-                          : "text-secondary hover:bg-surface-light hover:text-primary hover:shadow-elevated"
+                          : "text-secondary hover:bg-surface-light hover:text-primary"
                     }`}
                   >
                     <Icon
@@ -233,7 +233,7 @@ export default function Sidebar() {
         </button>
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-red-500 hover:bg-red-50 ${
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-red-400 hover:bg-red-950/30 ${
             isCollapsed ? "justify-center px-2" : "w-full"
           }`}
           title={isCollapsed ? "Déconnexion" : undefined}

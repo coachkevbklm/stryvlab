@@ -3,6 +3,10 @@ import localFont from 'next/font/local';
 import Script from 'next/script';
 import './globals.css';
 import GenesisAssistant from '@/components/GenesisAssistant';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 
 /* =====================================================
@@ -44,7 +48,7 @@ const unbounded = localFont({
    VIEWPORT
    ===================================================== */
 export const viewport: Viewport = {
-  themeColor: '#ededed',
+  themeColor: '#0e0e0e',
   width: 'device-width',
   initialScale: 1,
 };
@@ -58,7 +62,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'STRYV',
   },
 
@@ -199,7 +203,7 @@ export default function RootLayout({
 }) {
   return (
     // Injection des 3 variables de police pour utilisation CSS globale
-    <html lang="fr" className={`${lufga.variable} ${azonix.variable} ${onest.variable} ${unbounded.variable}`}>
+    <html lang="fr" className={cn(lufga.variable, azonix.variable, onest.variable, unbounded.variable, "font-sans", geist.variable)}>
       <body className="antialiased min-h-screen bg-background text-primary">
         {children}
 

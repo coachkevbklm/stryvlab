@@ -39,8 +39,8 @@ import CsvImportButton from "./CsvImportButton";
 
 // ─── Chart color palette (semantic mapping to STRYVR design tokens) ────────────
 // Alternating primary ↔ accent for visual distinction in chart series
-const CHART_COLOR_PRIMARY = "#1A1A1A"; // primary (from design system)
-const CHART_COLOR_ACCENT = "#FCF76E"; // accent yellow (from design system)
+const CHART_COLOR_PRIMARY = "#EDEDED"; // primary line on dark
+const CHART_COLOR_ACCENT = "#2DB470"; // Cursor-style accent green
 
 // ─── Field definitions ────────────────────────────────────────────────────────
 
@@ -229,7 +229,7 @@ const NEG_GOOD_FIELDS = [
 // Multi-series palette — visible on both light and dark backgrounds
 // Never use #1A1A1A (invisible on dark) or pure yellow alone
 const SERIES_COLORS = [
-  "#FCF76E", // acid yellow — primary
+  "#2DB470", // accent Cursor — série 1
   "#60a5fa", // blue-400
   "#34d399", // emerald-400
   "#f472b6", // pink-400
@@ -349,7 +349,7 @@ function DeltaBadge({
   const Icon = delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FCF76E] text-[#1A1A1A] text-[10px] font-bold leading-none">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#2DB470] text-[#1A1A1A] text-[10px] font-bold leading-none">
       <Icon size={9} />
       {label}
       {isGood !== null && (
@@ -450,7 +450,7 @@ function CustomTooltip({
       <div className="flex items-baseline gap-1.5">
         <span
           className="text-xl font-bold tabular-nums"
-          style={{ color: accentColor ?? "#FCF76E" }}
+          style={{ color: accentColor ?? "#2DB470" }}
         >
           {Number.isInteger(val) ? val : val.toFixed(1)}
         </span>
@@ -481,7 +481,7 @@ function KpiCard({
   const isDark = index % 2 === 1;
   const isNegGood = NEG_GOOD_FIELDS.includes(fieldKey);
 
-  const lineColor = isDark ? "#FCF76E" : "#343434";
+  const lineColor = isDark ? "#2DB470" : "#343434";
   const gradId = `kpiGrad_${fieldKey}`;
 
   const min = data.length > 0 ? Math.min(...data.map((d) => d.value)) : 0;
@@ -542,7 +542,7 @@ function KpiCard({
                         ? "bg-white/10 text-white/50"
                         : "bg-[#E2E1D9] text-[#8A8A85]"
                       : deltaGood
-                        ? "bg-[#FCF76E] text-[#1A1A1A]"
+                        ? "bg-[#2DB470] text-[#1A1A1A]"
                         : "bg-red-100 text-red-600"
                   }`}
                 >
@@ -594,7 +594,7 @@ function KpiCard({
                     <CustomTooltip
                       unit={field?.unit ?? ""}
                       fieldLabel={field?.label ?? ""}
-                      accentColor={isDark ? "#FCF76E" : "#1A1A1A"}
+                      accentColor={isDark ? "#2DB470" : "#1A1A1A"}
                     />
                   }
                   cursor={{
@@ -737,9 +737,9 @@ function FullChart({
           <div
             className={`flex flex-col items-center px-3 py-2.5 rounded-xl shrink-0 ${
               delta === 0
-                ? "bg-[#F0EFE7]"
+                ? "bg-[#161616]"
                 : deltaGood
-                  ? "bg-[#FCF76E]"
+                  ? "bg-[#2DB470]"
                   : "bg-red-50"
             }`}
           >
@@ -790,7 +790,7 @@ function FullChart({
       </div>
 
       {/* Chart area — darker background for contrast */}
-      <div className="bg-[#F0EFE7] pt-2 pb-1 mx-0">
+      <div className="bg-[#161616] pt-2 pb-1 mx-0">
         <svg width={0} height={0} style={{ position: "absolute" }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -838,7 +838,7 @@ function FullChart({
                 <CustomTooltip
                   unit={field.unit}
                   fieldLabel={field.label}
-                  accentColor="#FCF76E"
+                  accentColor="#2DB470"
                 />
               }
               cursor={{
@@ -880,7 +880,7 @@ function FullChart({
               }}
               activeDot={{
                 r: 6,
-                fill: "#FCF76E",
+                fill: "#2DB470",
                 stroke: "#343434",
                 strokeWidth: 2,
               }}
@@ -893,7 +893,7 @@ function FullChart({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 flex items-center justify-between border-t border-[#F0EFE7]">
+      <div className="px-5 py-3 flex items-center justify-between border-t border-[#161616]">
         <p className="text-[9px] font-medium text-[#BCBCB8]">
           {new Date(data[0].date).toLocaleDateString("fr-FR", {
             day: "2-digit",
@@ -968,7 +968,7 @@ function MultiTooltip({
           typeof p.dataKey === "string" ? p.dataKey.replace("__pct_", "") : "";
         const f = FIELD_MAP[fieldKey];
         if (!f) return null;
-        const color = p.color ?? "#FCF76E";
+        const color = p.color ?? "#2DB470";
 
         if (mode === "pct") {
           const pctVal = p.value;
@@ -999,7 +999,7 @@ function MultiTooltip({
                     pctVal === 0
                       ? "text-white/50"
                       : isGood
-                        ? "text-[#FCF76E]"
+                        ? "text-[#2DB470]"
                         : "text-red-400"
                   }`}
                 >
@@ -1178,7 +1178,7 @@ function MultiSeriesChart({
               onClick={() => setMode("pct")}
               className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
                 mode === "pct"
-                  ? "bg-[#FCF76E] text-[#1A1A1A]"
+                  ? "bg-[#2DB470] text-[#1A1A1A]"
                   : "text-white/40 hover:text-white/70"
               }`}
             >
@@ -1188,7 +1188,7 @@ function MultiSeriesChart({
               onClick={() => setMode("abs")}
               className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
                 mode === "abs"
-                  ? "bg-[#FCF76E] text-[#1A1A1A]"
+                  ? "bg-[#2DB470] text-[#1A1A1A]"
                   : "text-white/40 hover:text-white/70"
               }`}
             >
@@ -1235,7 +1235,7 @@ function MultiSeriesChart({
                     else newSet.delete(k);
                     setVisibleSeries(newSet);
                   }}
-                  className="w-3.5 h-3.5 rounded shrink-0 cursor-pointer accent-[#FCF76E]"
+                  className="w-3.5 h-3.5 rounded shrink-0 cursor-pointer accent-[#2DB470]"
                 />
                 {/* Colored line sample */}
                 <div
@@ -1272,7 +1272,7 @@ function MultiSeriesChart({
                           delta === 0
                             ? "text-white/25"
                             : deltaGood
-                              ? "text-[#FCF76E]"
+                              ? "text-[#2DB470]"
                               : "text-red-400"
                         }`}
                       >
@@ -1508,7 +1508,7 @@ function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
         </div>
 
         <div className="flex items-center gap-2 flex-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#FCF76E] border border-[#D4CE00] shrink-0" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#2DB470] border border-[#1a5c3a] shrink-0" />
           <div className="flex flex-col gap-0.5 flex-1">
             <label className="text-[10px] font-semibold text-[#8A8A85] uppercase tracking-wide">
               Mesure B
@@ -1550,7 +1550,7 @@ function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
           </div>
           <div className="text-right">
             <div className="inline-flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#D4CE00] border border-[#D4CE00]" />
+              <div className="w-2 h-2 rounded-full bg-[#60a5fa] border border-[#2563eb]/50" />
               <p className="text-[10px] font-semibold text-[#1A1A1A]">
                 {rowB ? formatDate(rowB.date) : "—"}
               </p>
@@ -1572,7 +1572,7 @@ function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
           };
           return (
             <div key={cat}>
-              <div className="px-4 py-2 bg-[#F0EFE7]">
+              <div className="px-4 py-2 bg-[#161616]">
                 <p className="text-[10px] font-bold text-[#8A8A85] uppercase tracking-widest">
                   {catLabels[cat]}
                 </p>
@@ -1595,7 +1595,7 @@ function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
                 return (
                   <div
                     key={f.key}
-                    className="grid grid-cols-[1fr_100px_100px_80px] px-4 py-2.5 border-b border-[#F0EFE7] last:border-0 hover:bg-[#F0EFE7]/50 transition-colors"
+                    className="grid grid-cols-[1fr_100px_100px_80px] px-4 py-2.5 border-b border-[#161616] last:border-0 hover:bg-[#161616]/50 transition-colors"
                   >
                     <div>
                       <p className="text-xs font-medium text-[#1A1A1A]">
@@ -1684,14 +1684,14 @@ function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
                       </p>
                       <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${d.good === true ? "bg-[#FCF76E]" : d.good === false ? "bg-red-400" : "bg-white/30"}`}
+                          className={`h-full rounded-full transition-all ${d.good === true ? "bg-[#2DB470]" : d.good === false ? "bg-red-400" : "bg-white/30"}`}
                           style={{ width: `${barWidth}%` }}
                         />
                       </div>
                       <p
                         className={`text-[10px] font-bold tabular-nums w-16 text-right ${
                           d.good === true
-                            ? "text-[#FCF76E]"
+                            ? "text-[#2DB470]"
                             : d.good === false
                               ? "text-red-400"
                               : "text-white/50"
@@ -1882,14 +1882,14 @@ function FilterPanel({
                             onClick={() => toggleMetric(f.key)}
                             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
                               active
-                                ? "bg-[#1A1A1A] text-[#FCF76E]"
+                                ? "bg-[#1A1A1A] text-[#2DB470]"
                                 : "bg-[#E2E1D9] text-[#535353] hover:text-[#1A1A1A]"
                             }`}
                           >
                             {f.label}
                             {f.unit && (
                               <span
-                                className={`${active ? "text-[#FCF76E]/60" : "text-[#BCBCB8]"} text-[9px]`}
+                                className={`${active ? "text-[#2DB470]/60" : "text-[#BCBCB8]"} text-[9px]`}
                               >
                                 {f.unit}
                               </span>
@@ -1916,7 +1916,7 @@ function FilterPanel({
         </button>
         <button
           onClick={apply}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#FCF76E] text-[#1A1A1A] text-xs font-bold hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#2DB470] text-[#1A1A1A] text-xs font-bold hover:opacity-90 transition-opacity"
         >
           <CheckCircle2 size={12} />
           Appliquer
@@ -2087,7 +2087,7 @@ function EditRowModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FCF76E] text-[#1A1A1A] text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2DB470] text-[#1A1A1A] text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {saving ? (
               <>
@@ -2208,7 +2208,7 @@ function ManualEntryForm({
           <button
             onClick={handleSave}
             disabled={saving || filledCount === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FCF76E] text-[#1A1A1A] text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2DB470] text-[#1A1A1A] text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {saving ? (
               <>
@@ -2442,7 +2442,7 @@ export default function MetricsSection({ clientId }: Props) {
             <Filter size={12} />
             Filtrer
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FCF76E] text-[#1A1A1A] text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#2DB470] text-[#1A1A1A] text-[9px] font-bold flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -2481,7 +2481,7 @@ export default function MetricsSection({ clientId }: Props) {
       {/* ── Active filter summary pill ── */}
       {!showFilters && filter.preset !== "all" && (
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#343434] text-[#FCF76E] text-[10px] font-semibold">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#343434] text-[#2DB470] text-[10px] font-semibold">
             <Calendar size={10} />
             {filter.preset === "custom"
               ? `${filter.dateFrom ? formatDate(filter.dateFrom) : "…"} → ${filter.dateTo ? formatDate(filter.dateTo) : "…"}`
@@ -2532,7 +2532,7 @@ export default function MetricsSection({ clientId }: Props) {
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
         >
           <div className="w-12 h-12 rounded-full bg-[#343434] flex items-center justify-center">
-            <BarChart2 size={20} className="text-[#FCF76E]" />
+            <BarChart2 size={20} className="text-[#2DB470]" />
           </div>
           <div>
             <p className="font-bold text-[#1A1A1A]">Aucune donnée</p>
@@ -2544,7 +2544,7 @@ export default function MetricsSection({ clientId }: Props) {
           <div className="flex items-center gap-2 mt-2">
             <button
               onClick={() => setShowManualEntry(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#343434] text-[#FCF76E] text-xs font-bold hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#343434] text-[#2DB470] text-xs font-bold hover:opacity-90 transition-opacity"
             >
               <PenLine size={13} />
               Saisie manuelle
@@ -2610,7 +2610,7 @@ export default function MetricsSection({ clientId }: Props) {
                     <>
                       <tr
                         key={row.submissionId}
-                        className={`border-b border-[#F0EFE7] transition-colors hover:bg-[#E2E1D9]/40 ${idx % 2 === 0 ? "" : "bg-[#F0EFE7]/60"}`}
+                        className={`border-b border-[#161616] transition-colors hover:bg-[#E2E1D9]/40 ${idx % 2 === 0 ? "" : "bg-[#161616]/60"}`}
                       >
                         <td className="px-3 py-2.5">
                           {hiddenFields.length > 0 && (
@@ -2764,7 +2764,7 @@ export default function MetricsSection({ clientId }: Props) {
                 onClick={() => setChartCategory("overlay" as ChartCategory)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                   chartCategory === ("overlay" as ChartCategory)
-                    ? "bg-[#343434] text-[#FCF76E] border-[#343434]"
+                    ? "bg-[#343434] text-[#2DB470] border-[#343434]"
                     : "bg-[#FEFEFE] border-[#BCBCB8] text-[#535353] hover:text-[#1A1A1A]"
                 }`}
               >
@@ -2868,7 +2868,7 @@ export default function MetricsSection({ clientId }: Props) {
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#343434] text-[#FEFEFE] text-xs font-bold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
-          <CheckCircle2 size={13} className="text-[#FCF76E]" />
+          <CheckCircle2 size={13} className="text-[#2DB470]" />
           {toast}
         </div>
       )}

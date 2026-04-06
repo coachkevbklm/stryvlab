@@ -26,7 +26,6 @@ export default function DashboardPage() {
       setUser(user)
       setLoading(false)
 
-      // Fetch stats en parallèle
       Promise.all([
         fetch('/api/clients').then(r => r.json()),
         fetch('/api/assessments/submissions').then(r => r.json()),
@@ -98,53 +97,50 @@ export default function DashboardPage() {
   ]
 
   const QUICK_ACTIONS = [
-    { icon: UserPlus,     label: 'Nouveau client',  desc: 'Ajouter un profil',    href: '/coach/clients',      color: 'bg-accent/10 text-accent'         },
-    { icon: ClipboardList,label: 'Envoyer un bilan',desc: 'Choisir un template',  href: '/coach/assessments',  color: 'bg-primary/10 text-primary'        },
-    { icon: Calculator,   label: 'Calculer',        desc: 'Ouvrir un outil',      href: '/outils?from=dashboard', color: 'bg-primary/5 text-secondary'    },
-    { icon: Settings,     label: 'Mon profil',      desc: 'Paramètres coach',     href: '#',                   color: 'bg-primary/5 text-secondary'       },
+    { icon: UserPlus,     label: 'Nouveau client',  desc: 'Ajouter un profil',    href: '/coach/clients',      color: 'bg-accent/15 text-accent'         },
+    { icon: ClipboardList,label: 'Envoyer un bilan',desc: 'Choisir un template',  href: '/coach/assessments',  color: 'bg-white/10 text-primary'        },
+    { icon: Calculator,   label: 'Calculer',        desc: 'Ouvrir un outil',      href: '/outils?from=dashboard', color: 'bg-white/5 text-secondary'    },
+    { icon: Settings,     label: 'Mon profil',      desc: 'Paramètres coach',     href: '#',                   color: 'bg-white/5 text-secondary'       },
   ]
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-surface flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="text-accent animate-spin" size={32} />
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-surface font-sans">
+    <main className="min-h-screen bg-background font-sans">
 
-        {/* TOP BAR */}
-        <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-8 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-subtle px-8 py-4 flex items-center justify-between">
           <div className={`transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-            <p className="text-xs text-secondary font-medium uppercase tracking-widest">Dashboard</p>
+            <p className="text-[11px] text-secondary font-semibold uppercase tracking-wider">Dashboard</p>
             <h1 className="text-xl font-bold text-primary tracking-tight">
               Bonjour, {firstName || coachName} 👋
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-sm shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-black font-bold text-sm border border-white/10">
               {initials}
             </div>
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
         <div className="p-8 max-w-[1300px] mx-auto">
 
-          {/* ===== WELCOME BANNER — affiché seulement si 0 client ===== */}
           {!hasClients && (
-            <div className={`mb-8 bg-primary rounded-2xl p-6 flex items-center justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`mb-8 rounded-xl border border-subtle bg-surface p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <div>
-                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Bienvenue dans l'Espace Coach</p>
-                <h3 className="text-white text-xl font-bold tracking-tight">Tu viens d'entrer dans la <span className="text-accent">nouvelle ère</span> du coaching.</h3>
-                <p className="text-white/60 text-sm mt-1">Commence par créer ton premier client pour démarrer le suivi.</p>
+                <p className="text-[11px] text-secondary font-semibold uppercase tracking-wider mb-1">Bienvenue dans l&apos;Espace Coach</p>
+                <h3 className="text-white text-xl font-bold tracking-tight">Tu viens d&apos;entrer dans la <span className="text-accent">nouvelle ère</span> du coaching.</h3>
+                <p className="text-secondary text-sm mt-1">Commence par créer ton premier client pour démarrer le suivi.</p>
               </div>
               <button
                 onClick={() => router.push('/coach/clients')}
-                className="ml-8 flex-shrink-0 flex items-center gap-2 px-5 py-3 bg-white text-primary rounded-xl font-bold text-sm hover:bg-accent hover:text-white transition-all duration-200 shadow-lg"
+                className="flex-shrink-0 flex items-center justify-center gap-2 px-5 py-3 bg-white text-black rounded-xl font-bold text-sm border border-white/10 hover:bg-gray-200 transition-all duration-200"
               >
                 <UserPlus size={16} />
                 Créer un client
@@ -152,7 +148,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ===== STATS STRIP ===== */}
           <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 transition-all duration-700 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {[
               {
@@ -187,11 +182,11 @@ export default function DashboardPage() {
               <div
                 key={label}
                 onClick={() => href !== '#' && router.push(href)}
-                className={`bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60 ${href !== '#' ? 'cursor-pointer hover:-translate-y-0.5 transition-transform duration-200' : ''}`}
+                className={`bg-surface rounded-xl p-5 border border-subtle ${href !== '#' ? 'cursor-pointer hover:border-white/15 transition-colors duration-200' : ''}`}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-bold text-secondary uppercase tracking-widest">{label}</p>
-                  <div className="w-8 h-8 rounded-lg bg-surface-light shadow-soft-in flex items-center justify-center">
+                  <p className="text-[11px] font-semibold text-secondary uppercase tracking-wider">{label}</p>
+                  <div className="w-8 h-8 rounded-lg bg-surface-alt border border-subtle flex items-center justify-center">
                     <Icon size={16} className={color} />
                   </div>
                 </div>
@@ -200,25 +195,24 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* ===== MODULES GRID ===== */}
           <div className={`mb-10 transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <h2 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4">Tes Outils</h2>
+            <h2 className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-4">Tes Outils</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {MODULES.map(({ id, icon: Icon, title, description, badge, badgeColor, href, cta, available }) => (
                 <div
                   key={id}
                   onClick={() => available && router.push(href)}
-                  className={`bg-surface rounded-2xl p-6 shadow-soft-out border border-white/60 group transition-all duration-300 ${
+                  className={`bg-surface rounded-xl p-6 border border-subtle group transition-all duration-300 ${
                     available
-                      ? 'cursor-pointer hover:shadow-[8px_8px_24px_#d1d9e6,-4px_-4px_12px_#ffffff] hover:-translate-y-0.5'
+                      ? 'cursor-pointer hover:border-white/15'
                       : 'opacity-60 cursor-not-allowed'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-surface-light shadow-soft-in flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-surface-alt border border-subtle flex items-center justify-center">
                       <Icon size={22} className={available ? 'text-primary' : 'text-secondary'} strokeWidth={1.5} />
                     </div>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${badgeColor}`}>{badge}</span>
+                    <span className={`text-[11px] font-semibold uppercase tracking-wider ${badgeColor}`}>{badge}</span>
                   </div>
                   <h3 className="text-lg font-bold text-primary mb-2 tracking-tight">{title}</h3>
                   <p className="text-sm text-secondary leading-relaxed mb-4">{description}</p>
@@ -231,16 +225,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ===== QUICK ACTIONS ===== */}
           <div className={`transition-all duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <h2 className="text-xs font-bold text-secondary uppercase tracking-widest mb-4">Actions Rapides</h2>
+            <h2 className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-4">Actions Rapides</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {QUICK_ACTIONS.map(({ icon: Icon, label, desc, href, color }) => (
                 <button
                   key={label}
                   onClick={() => href !== '#' && router.push(href)}
                   disabled={href === '#'}
-                  className="bg-surface rounded-2xl p-5 shadow-soft-out border border-white/60 text-left group hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  className="bg-surface rounded-xl p-5 border border-subtle text-left group hover:border-white/15 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-subtle"
                 >
                   <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center mb-3`}>
                     <Icon size={18} />

@@ -11,6 +11,9 @@ FEAT: Align homepage (authentication page) with Design System v1.0
 - Migrated app/page.tsx: bg-surface-light/50 → bg-surface-light (#F8F8F8, DS v1.0)
 - Migrated app/page.tsx: rounded-[32px/40px] → rounded-card-lg (24px)
 - Updated surface-raised from #FEFEFE to #FFFFFF (DS v1.0 compliance)
+- Updated accent palette to #1f8a65 with secondary #217356 and tertiary #1f4637
+
+FEAT: Rebuild homepage with coach-first landing experience and clearer product positioning
 
 ## 2026-04-06 — Design System v1.0 Implementation + Cleanup
 

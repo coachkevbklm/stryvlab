@@ -296,15 +296,15 @@ export default function ClientDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F0EFE7] font-sans flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FCF76E] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background font-sans flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-[#F0EFE7] font-sans flex items-center justify-center text-[var(--text-muted)]">
+      <div className="min-h-screen bg-background font-sans flex items-center justify-center text-[var(--text-muted)]">
         {error || "Client introuvable"}
       </div>
     );
@@ -467,10 +467,10 @@ export default function ClientDetailPage() {
   }
 
   function scoreColor(score: number, hardStop?: boolean): string {
-    if (hardStop) return "bg-red-100 text-red-600";
-    if (score >= 70) return "bg-green-100 text-green-700";
-    if (score >= 40) return "bg-amber-100 text-amber-700";
-    return "bg-[#E2E1D9] text-[var(--text-muted)]";
+    if (hardStop) return "bg-red-950/40 text-red-400 border border-red-900/40";
+    if (score >= 70) return "bg-emerald-950/50 text-emerald-400 border border-emerald-800/40";
+    if (score >= 40) return "bg-amber-950/40 text-amber-400 border border-amber-800/30";
+    return "bg-surface-alt border border-subtle text-secondary";
   }
 
   function scoreLabel(score: number, hardStop?: boolean): string {
@@ -493,11 +493,11 @@ export default function ClientDetailPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#F0EFE7] font-sans flex flex-col">
+    <main className="min-h-screen bg-background font-sans flex flex-col">
       {/* Delete program confirmation modal */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--text-on-dark)] rounded-card shadow-[12px_12px_32px_#c8c8c8,-12px_-12px_32px_#ffffff] p-6 w-full max-w-sm">
+          <div className="bg-surface border border-subtle rounded-xl shadow-elevated p-6 w-full max-w-sm">
             <h3 className="font-bold text-[var(--text-main)] mb-2">
               Supprimer le programme ?
             </h3>
@@ -512,14 +512,14 @@ export default function ClientDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-btn bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-btn bg-surface-alt border border-subtle text-sm text-secondary hover:text-primary transition-colors font-medium"
               >
                 Annuler
               </button>
               <button
                 onClick={handleDeleteProgram}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-btn bg-red-500 text-[var(--text-on-dark)] text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
+                className="flex-1 py-2.5 rounded-btn bg-red-600 text-white text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
               >
                 {deleting ? "Suppression…" : "Supprimer"}
               </button>
@@ -530,8 +530,8 @@ export default function ClientDetailPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2.5 bg-[var(--text-main)] text-[var(--text-on-dark)] text-sm font-semibold px-5 py-3 rounded-xl shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <CheckCircle2 size={15} className="text-[#FCF76E] shrink-0" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2.5 bg-surface border border-subtle text-primary text-sm font-semibold px-5 py-3 rounded-xl shadow-elevated animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 size={15} className="text-accent shrink-0" />
           {toast}
         </div>
       )}
@@ -547,17 +547,17 @@ export default function ClientDetailPage() {
       />
 
       {/* CONTENT AREA — Layer 3 */}
-      <div className="flex-1 overflow-auto bg-[#F0EFE7]">
+      <div className="flex-1 overflow-auto bg-background">
         <div className="max-w-4xl mx-auto px-6 py-8">
           {tab === "profil" && (
             <div className="flex flex-col gap-4">
-              <div className="bg-[var(--text-on-dark)] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-6">
+              <div className="bg-surface border border-subtle rounded-xl p-6">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-bold text-[var(--text-main)]">Informations</h2>
                   {!editingProfile ? (
                     <button
                       onClick={openProfileEdit}
-                      className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[#FCF76E] transition-colors font-medium"
+                      className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-accent transition-colors font-medium"
                     >
                       <Edit2 size={13} />
                       Modifier
@@ -573,7 +573,7 @@ export default function ClientDetailPage() {
                       <button
                         onClick={saveProfile}
                         disabled={savingProfile}
-                        className="flex items-center gap-1.5 bg-[#FCF76E] text-[var(--text-on-dark)] text-xs font-bold px-3 py-1.5 rounded-btn hover:opacity-90 disabled:opacity-50 transition-opacity"
+                        className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-3 py-1.5 rounded-btn disabled:opacity-50 transition-opacity"
                       >
                         {savingProfile ? (
                           <Loader2 size={12} className="animate-spin" />
@@ -590,7 +590,7 @@ export default function ClientDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {client.email && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
                         <Mail size={14} className="text-[var(--text-muted)]" />
                       </div>
                       <div>
@@ -605,7 +605,7 @@ export default function ClientDetailPage() {
                   )}
                   {client.phone && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
                         <Phone size={14} className="text-[var(--text-muted)]" />
                       </div>
                       <div>
@@ -620,7 +620,7 @@ export default function ClientDetailPage() {
                   )}
                   {client.date_of_birth && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
                         <Calendar size={14} className="text-[var(--text-muted)]" />
                       </div>
                       <div>
@@ -636,7 +636,7 @@ export default function ClientDetailPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-widget bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
                       <Calendar size={14} className="text-[var(--text-muted)]" />
                     </div>
                     <div>
@@ -736,7 +736,7 @@ export default function ClientDetailPage() {
                               training_goal: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
                         >
                           <option value="">— Non renseigné</option>
                           {TRAINING_GOALS.map((g) => (
@@ -758,7 +758,7 @@ export default function ClientDetailPage() {
                               fitness_level: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
                         >
                           <option value="">— Non renseigné</option>
                           {FITNESS_LEVELS.map((l) => (
@@ -780,7 +780,7 @@ export default function ClientDetailPage() {
                               sport_practice: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
                         >
                           <option value="">— Non renseigné</option>
                           {SPORT_PRACTICES.map((s) => (
@@ -802,7 +802,7 @@ export default function ClientDetailPage() {
                               weekly_frequency: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs font-mono text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs font-mono text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
                         >
                           <option value="">— Non renseigné</option>
                           {[1, 2, 3, 4, 5, 6, 7].map((n) => (
@@ -824,7 +824,7 @@ export default function ClientDetailPage() {
                               equipment_category: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
                         >
                           <option value="">— Non renseigné</option>
                           {EQUIPMENT_CATEGORIES.map((e) => (
@@ -849,7 +849,7 @@ export default function ClientDetailPage() {
                         }
                         rows={3}
                         placeholder="Observations, contexte, contre-indications…"
-                        className="w-full px-3 py-2 bg-[#E2E1D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40 resize-none"
+                        className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40 resize-none"
                       />
                     </div>
                   </div>
@@ -872,7 +872,7 @@ export default function ClientDetailPage() {
           )}
 
           {tab === "bilans" && (
-            <div className="bg-[var(--text-on-dark)] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-6">
+            <div className="bg-surface border border-subtle rounded-xl p-6">
               <SubmissionsList
                 submissions={submissions}
                 clientId={clientId}
@@ -951,7 +951,7 @@ export default function ClientDetailPage() {
                     </button>
                   </div>
                   {rankedTemplates.length === 0 ? (
-                    <div className="bg-[var(--text-on-dark)] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-10 text-center">
+                    <div className="bg-surface border border-subtle rounded-xl p-10 text-center">
                       <LayoutTemplate
                         size={32}
                         className="text-[var(--text-muted)] mx-auto mb-3 opacity-30"
@@ -961,7 +961,7 @@ export default function ClientDetailPage() {
                       </p>
                       <p className="text-xs text-[var(--text-muted)]/60">
                         Crée des templates depuis la section{" "}
-                        <span className="font-semibold text-[#FCF76E]">
+                        <span className="font-semibold text-accent">
                           Templates
                         </span>
                         .
@@ -1007,7 +1007,7 @@ export default function ClientDetailPage() {
                         return (
                           <div
                             key={t.id}
-                            className={`bg-[#F0EFE7] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-4 flex items-center justify-between gap-4 ${isTop ? "ring-1 ring-accent/30" : ""} ${match.hardStop ? "opacity-40" : ""}`}
+                            className={`bg-background rounded-card  p-4 flex items-center justify-between gap-4 ${isTop ? "ring-1 ring-accent/30" : ""} ${match.hardStop ? "opacity-40" : ""}`}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -1015,7 +1015,7 @@ export default function ClientDetailPage() {
                                   {t.name}
                                 </p>
                                 {isTop && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#FCF76E]/10 text-[#FCF76E] shrink-0">
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25 shrink-0">
                                     Recommandé
                                   </span>
                                 )}
@@ -1040,7 +1040,7 @@ export default function ClientDetailPage() {
                                   {t.muscle_tags.map((tag: string) => (
                                     <span
                                       key={tag}
-                                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#E2E1D9] text-[var(--text-muted)]"
+                                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-surface-alt border border-subtle text-[var(--text-muted)]"
                                     >
                                       {tag}
                                     </span>
@@ -1063,7 +1063,7 @@ export default function ClientDetailPage() {
                               <button
                                 disabled={assignLoading || match.hardStop}
                                 onClick={() => handleAssignTemplate(t.id)}
-                                className="flex items-center gap-1.5 bg-[#FCF76E] text-[var(--text-on-dark)] text-xs font-bold px-4 py-2 rounded-btn hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-4 py-2 rounded-btn transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {assignLoading ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -1086,14 +1086,14 @@ export default function ClientDetailPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setAssigningTemplate(true)}
-                        className="flex items-center gap-1.5 bg-[#E2E1D9] shadow-[0_4px_12px_rgba(0,0,0,0.08)] text-[var(--text-main)] text-xs font-bold px-4 py-2 rounded-btn hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-1.5 bg-surface-alt border border-subtle  text-[var(--text-main)] text-xs font-bold px-4 py-2 rounded-btn hover:opacity-80 transition-opacity"
                       >
                         <LayoutTemplate size={13} />
                         Depuis un template
                       </button>
                       <button
                         onClick={() => setCreatingProgram(true)}
-                        className="flex items-center gap-1.5 bg-[#FCF76E] text-[var(--text-on-dark)] text-xs font-bold px-4 py-2 rounded-btn hover:opacity-90 transition-opacity shadow-lg"
+                        className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-4 py-2 rounded-btn transition-opacity shadow-lg"
                       >
                         <Plus size={13} />
                         Nouveau programme
@@ -1102,7 +1102,7 @@ export default function ClientDetailPage() {
                   </div>
 
                   {programs.length === 0 ? (
-                    <div className="bg-[var(--text-on-dark)] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-10 text-center">
+                    <div className="bg-surface border border-subtle rounded-xl p-10 text-center">
                       <Dumbbell
                         size={36}
                         className="text-[var(--text-muted)] mx-auto mb-3 opacity-30"
@@ -1118,7 +1118,7 @@ export default function ClientDetailPage() {
                     programs.map((prog: any) => (
                       <div
                         key={prog.id}
-                        className="bg-[#F0EFE7] rounded-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-5"
+                        className="bg-background rounded-card  p-5"
                       >
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div>
@@ -1127,7 +1127,7 @@ export default function ClientDetailPage() {
                                 {prog.name}
                               </p>
                               {prog.status !== "active" && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#E2E1D9] text-[var(--text-muted)] border border-white/40">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-surface-alt border border-subtle text-secondary">
                                   Masqué
                                 </span>
                               )}
@@ -1154,7 +1154,7 @@ export default function ClientDetailPage() {
                                   ? "Masquer au client"
                                   : "Rendre visible au client"
                               }
-                              className={`p-1 transition-colors ${prog.status === "active" ? "text-[#FCF76E] hover:text-[var(--text-muted)]" : "text-[var(--text-muted)] hover:text-[#FCF76E]"}`}
+                              className={`p-1 transition-colors ${prog.status === "active" ? "text-accent hover:text-[var(--text-muted)]" : "text-[var(--text-muted)] hover:text-accent"}`}
                             >
                               {prog.status === "active" ? (
                                 <Eye size={14} />
@@ -1165,13 +1165,13 @@ export default function ClientDetailPage() {
                             <Link
                               href={`/coach/clients/${clientId}/programs/${prog.id}/preview`}
                               title="Visualiser comme le client"
-                              className="p-1 text-[var(--text-muted)] hover:text-[#FCF76E] transition-colors"
+                              className="p-1 text-[var(--text-muted)] hover:text-accent transition-colors"
                             >
                               <ExternalLink size={14} />
                             </Link>
                             <button
                               onClick={() => setEditingProgram(prog)}
-                              className="text-xs text-[var(--text-muted)] hover:text-[#FCF76E] font-medium transition-colors"
+                              className="text-xs text-[var(--text-muted)] hover:text-accent font-medium transition-colors"
                             >
                               Modifier
                             </button>
@@ -1205,13 +1205,13 @@ export default function ClientDetailPage() {
                               return (
                                 <div
                                   key={s.id}
-                                  className="bg-[#E2E1D9] rounded-btn px-3 py-2"
+                                  className="bg-surface-alt border border-subtle rounded-btn px-3 py-2"
                                 >
                                   <p className="text-xs font-semibold text-[var(--text-main)]">
                                     {s.name}
                                   </p>
                                   {s.day_of_week && (
-                                    <p className="text-[10px] text-[#FCF76E] font-bold">
+                                    <p className="text-[10px] text-accent font-bold">
                                       {days[s.day_of_week - 1]}
                                     </p>
                                   )}

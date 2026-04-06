@@ -1,16 +1,6 @@
-// =====================================================
-// UTILS — CLASSNAME MERGE
-// File: lib/utils.ts
-// =====================================================
-// Purpose:
-// - Fusionner des className conditionnelles proprement
-// - Alternative minimaliste à clsx / classnames
-// - Sans dépendance externe
-// - Utilisé par les composants UI
-// =====================================================
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-export function cn(
-  ...classes: Array<string | undefined | null | false>
-): string {
-  return classes.filter(Boolean).join(' ');
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 }
