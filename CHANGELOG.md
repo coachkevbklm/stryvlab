@@ -1,5 +1,354 @@
 # CHANGELOG
 
+## 2026-04-07 — Subscription lifecycle: show cancelled clients as inactive
+
+FEATURE: Top clients now includes cancelled/paused subscriptions (shows in greyed out opacity-50)
+REFACTOR: API /api/comptabilite fetches ALL subscriptions (active + paused + cancelled) instead of only active
+REFACTOR: TopClient type updated to include isActive: boolean flag
+REFACTOR: MRR calculation now filters to active/trial subscriptions only (cancelled/paused excluded from revenue)
+REFACTOR: UI displays cancelled/paused clients with reduced opacity for historical visibility
+
+## 2026-04-07 — Design System v2: coach comptabilite migration complete
+
+REFACTOR: app/coach/comptabilite/page.tsx — complete DS v2 dark palette migration (bg-[#121212], surface [#181818], inputs [#0a0a0a], accent [#1f8a65])
+REFACTOR: Top bar pattern implemented on comptabilite page using useSetTopBar with "Espace Coach" label + "Comptabilité" title
+REFACTOR: All legacy tokens removed (bg-surface, text-primary, text-secondary, bg-surface-light, border-white/60, shadow-soft-out)
+REFACTOR: KPI cards, revenue chart, top clients/formulas cards, payments table migrated to DS v2 flat design
+REFACTOR: Modal styling updated to DS v2 dark theme (bg-[#181818] with white text hierarchy)
+REFACTOR: Form inputs migrated to DS v2 dark pattern with bg-[#0a0a0a] rounded-xl
+REFACTOR: Loading skeletons added for all sections (KPI cards, chart, tables, cards)
+REFACTOR: Chart tooltip styling updated for dark theme with bg-[#0f0f0f] and white text
+
+## 2026-04-07 — DS v2: Suppression bordures décoratives formules
+
+REFACTOR: app/coach/formules/page.tsx — removed all decorative borders on cards, blocks, and modals per DS v2 flat design rules
+REFACTOR: Cards and blocks now use nuance separation only (background color differences) instead of borders
+REFACTOR: Kept functional borders (border-t for section separators, error borders, color picker borders)
+
+## 2026-04-07 — Fix pré-remplissage profil coach
+
+FIX: app/api/coach/profile/route.ts — profil existant avec champs null désormais fusionné avec auth metadata (full_name, brand_name, pro_email, phone) — couvre les coaches ayant déjà un row DB vide
+
+## 2026-04-07 — Design System v2: coach formules migration complete
+
+REFACTOR: app/coach/formules/page.tsx — complete DS v2 dark palette migration (bg-[#121212], surface [#181818], inputs [#0a0a0a], accent [#1f8a65])
+REFACTOR: Top bar pattern implemented on formules page using useSetTopBar with "Espace Coach" label + "Mes Formules" title
+REFACTOR: All legacy tokens removed (bg-surface, text-primary, text-secondary, bg-surface-light, border-white/60, shadow-soft-out, rounded-btn, etc.)
+REFACTOR: Modal styling updated to DS v2 dark theme (was white bg-white/95, now bg-[#181818])
+REFACTOR: Form inputs migrated to DS v2 dark pattern with bg-[#0a0a0a] rounded-lg
+REFACTOR: All text hierarchy updated using explicit DS v2 color scale (text-white, text-white/60, text-white/40, etc.)
+
+## 2026-04-07 — Recadrage image identité visuelle (crop carré)
+
+FEATURE: components/ui/ImageCropModal.tsx — modal recadrage carré (react-image-crop), canvas 512×512 JPEG, crop centré par défaut
+REFACTOR: app/coach/settings/page.tsx — upload logo ouvre crop modal avant envoi, label "Logo" → "Identité visuelle", photo de profil supportée
+CHORE: package.json — ajout react-image-crop@11.0.10
+
+## 2026-04-07 — Pré-remplissage profil coach depuis données inscription
+
+FIX: app/api/coach/profile/route.ts — GET retourne les données auth metadata (first_name, last_name, coach_name, phone_number, email) pré-remplies quand aucun profil n'existe encore en DB
+
+## 2026-04-07 — Design System v2: coach formules migration complete
+
+REFACTOR: app/coach/formules/page.tsx — complete DS v2 dark palette migration (bg-[#121212], surface [#181818], inputs [#0a0a0a], accent [#1f8a65])
+REFACTOR: Top bar pattern implemented on formules page using useSetTopBar with "Espace Coach" label + "Mes Formules" title
+REFACTOR: All legacy tokens removed (bg-surface, text-primary, text-secondary, bg-surface-light, border-white/60, shadow-soft-out, rounded-btn, etc.)
+REFACTOR: Modal styling updated to DS v2 dark theme (was white bg-white/95, now bg-[#181818])
+REFACTOR: Form inputs migrated to DS v2 dark pattern with bg-[#0a0a0a] rounded-lg
+REFACTOR: All text hierarchy updated using explicit DS v2 color scale (text-white, text-white/60, text-white/40, etc.)
+
+## 2026-04-07 — Branchement coach_profiles sur PDF + cron + sidebar fix
+
+FIX: components/layout/CoachShell.tsx — "Paramètres" → "Mon compte" branché sur /coach/settings (c'est CoachShell qui est utilisé, pas Sidebar.tsx)
+FIX: components/layout/CoachShell.tsx — defaultLabel topbar ajouté pour /coach/settings
+REFACTOR: app/api/payments/[paymentId]/invoice/route.ts — nom/email/logo coach récupérés depuis coach_profiles (brand_name > full_name > auth metadata)
+REFACTOR: lib/pdf/receipt.tsx — logo coach affiché dans le PDF si coach_profiles.logo_url défini
+REFACTOR: app/api/cron/payment-reminders/route.ts — délai rappel dynamique par coach via notif_payment_reminder_days (fallback J-3 si pas de profil)
+
+## 2026-04-07 — Page Mon compte (coach settings)
+
+FEATURE: supabase/migrations/20260407_coach_profiles.sql — table coach_profiles (profil, facturation, notifs) + RLS + bucket storage coach-assets (30 Mo max)
+FEATURE: app/api/coach/profile/route.ts — GET/PATCH profil coach (upsert idempotent)
+FEATURE: app/api/coach/profile/logo/route.ts — POST upload logo (Supabase Storage) + DELETE
+FEATURE: app/coach/settings/page.tsx — page Mon compte 4 sections (Profil, Facturation, Notifications, Compte) avec suppression compte 2 étapes friction
+REFACTOR: components/layout/Sidebar.tsx — renommage "Paramètres" → "Mon compte" + route /coach/settings branchée
+
+## 2026-04-07 — Payment invoicing & reminders
+
+FEATURE: supabase/migrations/20260407_payment_invoicing.sql — 3 nouveaux champs subscription_payments (invoice_number, invoice_sent_at, reminder_sent_at) + index cron pending
+FEATURE: lib/pdf/receipt.tsx — génération PDF reçu de paiement (@react-pdf/renderer) avec branding coach en avant, STRYVR en bas
+FEATURE: app/api/payments/[paymentId]/invoice/route.ts — génération + téléchargement PDF et envoi email reçu avec pièce jointe
+FEATURE: app/api/payments/[paymentId]/remind/route.ts — envoi rappel email manuel paiement en attente
+FEATURE: app/api/cron/payment-reminders/route.ts — cron J-3 pour rappels automatiques (déclenché par n8n), protégé CRON_SECRET
+FEATURE: components/crm/ClientFormulasTab.tsx — stepper 2 étapes modal assignation formule (step 1 formule, step 2 premier paiement)
+FEATURE: components/crm/ClientFormulasTab.tsx — boutons Télécharger reçu + Envoyer reçu + Envoyer rappel dans l'historique paiements
+FIX: Increase image upload limits to 30 Mo for profile photos, assessment uploads, and program template exercise images
+REFACTOR: app/coach/programs/templates — finish DS v2 dark palette cleanup on template assign and template view pages
+REFACTOR: app/coach/programs/templates/[templateId]/view — use coach top bar pattern and move template metadata into page content
+CHORE: package.json — ajout @react-pdf/renderer@4.4.0
+
+## 2026-04-07 — Skeleton loading animations — assessment pages + documentation
+
+FEATURE: Implemented shadcn Skeleton loading states across all assessment loading states with exact shape matching:
+
+- app/coach/assessments/page.tsx: Replaced "Chargement…" text with skeleton template cards (icon, name, type badge, action buttons)
+- app/coach/assessments/templates/[templateId]/edit/page.tsx: Added comprehensive skeleton layout with header + 4 module skeletons
+- components/assessments/dashboard/ClientMetricsDashboard.tsx: Replaced metrics loading text with 6-card grid skeleton matching chart layout
+
+DOCS: docs/DESIGN_SYSTEM_V2.0_REFERENCE.md — added comprehensive "États de chargement — Skeleton Animations" section:
+
+- Skeleton component definition (@/components/ui/skeleton.tsx: animate-pulse + bg-white/[0.06])
+- Philosophy: Every loading state MUST use skeleton layout, never bare "Chargement…" text
+- Four detailed examples: card list, chart grid, template edit form, with side-by-side skeleton/final comparison
+- Checklist for skeleton implementation: dimensions, colors, layout consistency
+- Reference files implementing the pattern documented
+
+## 2026-04-07 — DS v2.0 documentation sync — topbar & background rules
+
+REFACTOR: docs/DESIGN_SYSTEM_V2.0_REFERENCE.md — added comprehensive sections:
+
+- Architecture Globale: Explicit rules for topbar pattern (useSetTopBar hook, never duplicate header, strict useMemo pattern)
+- App Background Rule: ALWAYS #121212, never intermediate #181818, modals exception only
+- Added checklist for verification: main bg-[#121212], headers with border-b, cards bg-white/[0.02], inputs bg-[#0a0a0a]
+  REFACTOR: .claude/CLAUDE.md — added DS v2.0 section with two non-negotiable rules: TopBar = Unique Header, App Background = #121212 always
+  REFACTOR: .claude/rules/ui-design-system.md — marked as DEPRECATED, redirects to DESIGN_SYSTEM_V2.0_REFERENCE.md, corrected values (#141414 → #121212)
+
+## 2026-04-07 — DS v2.0 coach/assessments — Single background rule + top bar injection
+
+REFACTOR: app/coach/assessments/page.tsx — removed sticky #181818 header, implemented useSetTopBar pattern with topBarLeft (Espace Coach + Bilans & Templates) and topBarRight (Nouveau button), removed all intermediate #181818 backgrounds, cards now use bg-white/[0.02], app background corrected to #121212 (not #141414)
+REFACTOR: components/assessments/builder/TemplateBuilder.tsx — changed sticky header and toolbar bg-[#141414] → bg-[#121212], added subtle border-b border-white/[0.07] for visual separation
+REFACTOR: components/assessments/builder/BlockCard.tsx — changed bg-[#181818] → bg-white/[0.02] with hover transition
+REFACTOR: components/assessments/form/AssessmentForm.tsx — changed sticky header bg-[#141414] → bg-[#121212] with border-b, changed block container bg-[#181818] → bg-white/[0.02]
+REFACTOR: components/assessments/dashboard/ClientMetricsDashboard.tsx — changed chart cards bg-[#181818] → bg-white/[0.02] with hover transition
+
+## 2026-04-07 — Fix filtre métriques masquait toutes les données
+
+FIX: components/clients/MetricsSection.tsx — slider timeRangeDays initialisé à [0, 28] (28 derniers jours) au lieu de [0, 730] → toutes les mesures saisies manuellement étaient filtrées et invisibles
+
+## 2026-04-07 — Resizable chart vue superposée (drag natif)
+
+REFACTOR: components/clients/MetricsSection.tsx — suppression react-resizable-panels, drag handle natif mousedown/mousemove centré en bas du chart, hauteur min 120px max 600px
+
+## 2026-04-07 — Resizable chart vue superposée (lib)
+
+FEATURE: components/ui/resizable.tsx — nouveau composant ResizablePanelGroup/Panel/Handle (react-resizable-panels v4)
+FEATURE: components/clients/MetricsSection.tsx — chart vue superposée redimensionnable verticalement via poignée en bas
+
+## 2026-04-07 — Fix vue superposée — empty state groupe sans données
+
+FIX: components/clients/MetricsSection.tsx — message explicite quand un groupe est sélectionné mais sans données en base (ex: ratios %, bien-être non importés)
+
+## 2026-04-07 — Fix vue superposée — groupes sans données
+
+FIX: components/clients/MetricsSection.tsx — DEFAULT_OVERLAY_METRICS inclut désormais toutes les métriques de tous les groupes (pas seulement 3), visibilité initiale = groupe composition corporelle
+
+## 2026-04-07 — Vue superposée — descriptions coach
+
+FEATURE: components/clients/MetricsSection.tsx — description globale (explication du % relatif), description par groupe active (interprétation clinique par groupe : composition, ratios, mensurations, bien-être)
+
+## 2026-04-07 — Vue superposée — refonte UX complète
+
+REFACTOR: components/clients/MetricsSection.tsx — domaine Y basé sur les données réelles visibles (plus de symétrie arbitraire), chart hauteur fixe 200px
+REFACTOR: components/clients/MetricsSection.tsx — groupes : boutons pill avec état actif #1f8a65 détecté automatiquement, suppression bordures
+REFACTOR: components/clients/MetricsSection.tsx — métriques : boutons avec fond coloré (couleur de la série) en actif, suppression pastille + checkbox
+
+## 2026-04-07 — Couleur barres graphiques — gris neutre DS v2.0
+
+FIX: app/globals.css — --chart-1/2/3/4 remplacés par gris neutres (#3d3d3d, #525252, #6a6a6a, #282828), suppression teinte bleutée Tailwind gray-\*
+FIX: components/clients/MetricsSection.tsx — CHART_COLOR_PRIMARY/ACCENT alignés sur DS v2.0
+
+## 2026-04-07 — Fix YAxis collé au bord dans FullChart
+
+FIX: components/clients/MetricsSection.tsx — margin left -8 → 8, YAxis width 36 → 48 pour éviter la coupure des valeurs Y
+
+## 2026-04-07 — Labels métriques complets
+
+REFACTOR: components/clients/MetricsSection.tsx — labels écrits en toutes lettres : "Masse musc." → "Masse musculaire", "Masse musc. squelettique" → "Masse musculaire squelettique", "% Masse grasse" → "Masse grasse %", "% Musculaire" → "Musculaire %", "% Hydrique" → "Hydrique %", "Taille" → "Tour de taille"
+
+## 2026-04-07 — Vue Métriques premium — layout étendu
+
+REFACTOR: app/coach/clients/[clientId]/page.tsx — max-w-7xl dynamique sur l'onglet métriques (max-w-4xl sur les autres)
+REFACTOR: components/clients/MetricsSection.tsx — grille FullChart 3 colonnes (xl), padding px-6/pt-6, valeurs 42px, delta block plus grand, chart min-h-220px
+
+## 2026-04-07 — Slider temporel pleine largeur vue graphique
+
+REFACTOR: components/clients/MetricsSection.tsx — slider temporel déplacé sur sa propre ligne (pleine largeur) dans la vue graphique, séparé des onglets de catégorie
+
+## 2026-04-06 — Fix slider temporel invisible
+
+FIX: components/ui/slider.tsx — remplacement des classes Tailwind data-\* par styles inline directs pour garantir la visibilité de la track (rgba(255,255,255,0.15)) et de l'indicator (#1f8a65)
+
+## 2026-04-06 — Suppression des 4 top charts KPI
+
+REFACTOR: components/clients/MetricsSection.tsx — suppression complète de la section des 4 KPI cards en haut (poids, masse grasse, muscle, métabolisme)
+
+## 2026-04-06 — Top charts principaux : remplacement IMC par métabolisme de base et barres vers lignes
+
+REFACTOR: components/clients/MetricsSection.tsx — modification des 4 KPI principaux : remplacement "bmi" par "bmr_kcal" (métabolisme de base), conversion des barres en courbes de ligne pour meilleure lisibilité des tendances
+
+## 2026-04-06 — Optimisation layout MetricsSection
+
+REFACTOR: components/clients/MetricsSection.tsx — correction grille charts pour agrandir les graphiques : grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2 (2 colonnes max sur écrans larges avec gap réduit pour maximiser l'espace des charts)
+
+## 2026-04-06 — Slider période de temps pour graphiques
+
+FEATURE: components/clients/MetricsSection.tsx — ajout slider période de temps range à deux poignées (min / max configurable) dans vues "Graphiques" et "Superposé", filtrage instantané des données, format lisible ("1 semaine", "3 mois", "Tout"), icône calendrier, positionné à droite des onglets de catégorie
+FIX: app/globals.css — update global app background from #131313 to #121212 and align documentation
+FIX: components/ui/slider.tsx — amélioration de la visibilité du slider sur fond sombre (piste plus claire, pouce plus large, meilleur contraste)
+
+REFACTOR: components/clients/MetricsSection.tsx — MultiSeriesChart simplifié (suppression mode comparaison, focus vue temporelle uniquement, defaults poids+masse grasse+masse musculaire, code couleur sémantique par métrique dans sélecteur et légendes, deltas toujours en %, MultiTooltip simplifié pour mode % uniquement)
+
+## 2026-04-06 — DS v2.0 révision complète MetricsSection
+
+REFACTOR: components/clients/MetricsSection.tsx — révision DS v2.0 complète (suppression toutes bordures, bg-[#141414] surfaces → bg-[#181818]/bg-white, séparateurs h-px bg-white/[0.07], loading Loader2 → Skeleton structuré, metric selector cards sans bordure, toolbar boutons sans bordure, charts dots corrigés)
+
+## 2026-04-06 — DS v2.0 section Programme coach client
+
+REFACTOR: app/coach/clients/[clientId]/page.tsx — section Programme alignée DS v2.0 (cards bg-[#181818], suppression ring-1/bordures, fix text-white/45/60→text-white/40, top template via bg accent tint sans ring)
+
+## 2026-04-06 — Skeleton loading states DS v2.0
+
+FEATURE: components/ui/skeleton.tsx — composant Skeleton DS v2.0 (animate-pulse bg-white/[0.06] rounded-xl)
+REFACTOR: app/coach/clients/[clientId]/page.tsx — skeleton loading structuré (profil + tags + infos + accès)
+REFACTOR: components/clients/ClientAccessToken.tsx — skeleton loading (URL + expiry + boutons)
+REFACTOR: components/crm/ClientCrmTab.tsx — skeleton tags (3 pills rounded-full)
+REFACTOR: components/crm/ClientFormulasTab.tsx — skeleton loading (2 blocs structurés)
+REFACTOR: components/clients/SessionHistory.tsx — skeleton loading (3 rows card simulées)
+REFACTOR: components/clients/ProgressionHistory.tsx — skeleton loading (bloc + 3 rows)
+REFACTOR: components/clients/PerformanceDashboard.tsx — skeleton loading (KPI grid + charts)
+CHORE: .claude/rules/ui-design-system.md — règle Skeleton par défaut documentée (patterns liste, dashboard, formulaire, pills)
+REFACTOR: app/dashboard/page.tsx — skeleton loading (KPI grid 4 cards + modules grid 2×2 + actions rapides 4 cards)
+FEATURE: components/layout/NotificationBell.tsx — restauration depuis git + migration DS v2.0 (dropdown bg-[#181818], badge rouge, point vert non-lu, polling 30s, markRead/markAllRead)
+REFACTOR: components/layout/CoachShell.tsx — branchement NotificationBell fonctionnel en remplacement du bouton Bell statique
+FEATURE: app/dashboard/page.tsx — message personnalisé topbar via useSetTopBar ("Espace Coach" + "Bonjour, {prénom}")
+REFACTOR: app/coach/clients/page.tsx — skeleton loading (grille 6 cards simulées avec avatar + nom + stats + tags)
+
+## 2026-04-06 — Comprehensive UX redesign: Metrics page refonte professionnelle
+
+FEATURE: components/clients/MetricsSection.tsx — Ajout section header professionnelle avec titre, description, et compteur de mesures
+REFACTOR: components/clients/MetricsSection.tsx — Restructuration complète du layout avec wrapper principal `gap-6` (espacement amélioré de gap-5 → gap-6)
+REFACTOR: components/clients/MetricsSection.tsx — KPI cards agrandies de 160px à 220px hauteur (gridAutoRows), pour meilleure hiérarchie visuelle
+REFACTOR: components/clients/MetricsSection.tsx — Toolbar reorganisée avec conteneur semi-transparent `bg-[#181818]/40` et layout flexible (sm:flex-row)
+REFACTOR: components/clients/MetricsSection.tsx — Actions toolbar séparées dans div dédiée avec bordures subtiles et espacements cohérents
+REFACTOR: components/clients/MetricsSection.tsx — Filtrage et actions (Filtrer, Saisie, Import) regroupés avec styling unifié `rounded-lg` et `border border-white/10`
+REFACTOR: components/clients/MetricsSection.tsx — Structure de conteneurs optimisée avec gap-6 tout au long pour cohérence d'espacement
+REFACTOR: components/clients/MetricsSection.tsx — Indentation et nesting corrects : main wrapper gap-6 → sections (KPI, toolbar, filter, content views, modals)
+FIX: components/assessments/dashboard/SubmissionsList.tsx — retirer les ombres et corriger la classe Tailwind invalide dans la section Bilans
+
+## 2026-04-06 — Suppression complète orange + palette gris uniquement
+
+REFACTOR: app/globals.css — variables --chart-1 à --chart-5 remplacées par tons de gris uniquement (suppression complète orange et couleurs vives)
+REFACTOR: components/clients/MetricsSection.tsx — constantes CHART_COLOR_PRIMARY/ACCENT remplacées par tons de gris
+REFACTOR: components/clients/MetricsSection.tsx — SERIES_COLORS limité à 5 tons de gris (suppression vert accent)
+REFACTOR: components/clients/MetricsSection.tsx — cercles indicateurs métriques : gris par défaut, vert au survol/clic uniquement
+
+## 2026-04-06 — Optimisation affichage comparatif + ajustements métriques
+
+FIX: components/clients/MetricsSection.tsx — échantillonnage des dates en mode comparaison (20 points max) pour éviter les lignes "tendues" et améliorer la lisibilité
+FIX: components/clients/MetricsSection.tsx — configuration XAxis adaptée en mode comparaison (moins de ticks, format date court) pour une meilleure lisibilité
+REFACTOR: components/clients/MetricsSection.tsx — métriques disponibles ajustées : suppression BMI, ajout masse musculaire squelettique (skeletal_muscle_mass_kg)
+
+## 2026-04-06 — UI réorganisation graphiques + couleurs simplifiées
+
+REFACTOR: components/clients/MetricsSection.tsx — bouton "Superposé" déplacé au niveau principal des vues (Tableau/Graphiques/Superposé/Comparer), affiché seulement si plusieurs métriques sélectionnées
+REFACTOR: components/clients/MetricsSection.tsx — vue superposée limitée à variation % uniquement (suppression toggle Valeurs/%)REFACTOR: components/clients/MetricsSection.tsx — section Superposé améliorée avec toggle vue temporelle/comparaison, sélecteur de plage temporelle, et interface de sélection de métriques améliorée avec grille interactiveFIX: components/clients/MetricsSection.tsx — ajout d’un bouton d’inversion A/B dans la section Comparer et légendes explicites pour les écarts A/B
+REFACTOR: components/clients/MetricsSection.tsx — graphique superposé changé en `LineChart` linéaire shadcn pour respecter le style d’origine
+REFACTOR: components/clients/MetricsSection.tsx — graphiques en barres seulement pour catégorie "composition", linéaires pour les autres (mensurations, bien-être)
+REFACTOR: components/clients/MetricsSection.tsx — palette couleurs simplifiée : vert accent + tons de gris (suppression orange et autres couleurs vives)
+
+## 2026-04-06 — Charts bar style + tooltip positioning fix
+
+REFACTOR: components/clients/MetricsSection.tsx — changement AreaChart → BarChart pour tous les graphiques principaux (FullChart, MultiSeriesChart, KpiCard), ajout radius arrondi sur barres
+REFACTOR: components/clients/MetricsSection.tsx — correction tooltips bloquées dans conteneur graphique, remplacement ChartTooltipContent par fonctions content personnalisées avec positionnement absolu
+
+## 2026-04-06 — Charts shadcn integration + DS v2.0 theming
+
+REFACTOR: components/ui/chart.tsx — installation composant shadcn chart avec Recharts v3
+REFACTOR: app/globals.css — ajout variables CSS --chart-1 à --chart-5 pour thème light/dark
+REFACTOR: components/clients/MetricsSection.tsx — migration charts vers shadcn (ChartContainer, ChartTooltip, ChartTooltipContent), theming CSS variables, suppression ResponsiveContainer
+
+## 2026-04-06 — DS v2.0 section Métriques complétée
+
+REFACTOR: components/clients/MetricsSection.tsx — application stricte DS v2.0 (suppression toutes bordures rgba, correction accent #2DB470→#1f8a65, suppression boxShadow, fond inputs #0a0a0a sans border, boutons overlay sans border)
+FIX: components/clients/MetricsSection.tsx — corrige contraste et couleurs chart dans la section Métriques, supprime les text-[#141414] illisibles sur fond sombre
+
+## 2026-04-06 — DS v2.0 composants page client detail
+
+REFACTOR: app/coach/clients/[clientId]/page.tsx — section Profil DS v2.0 (séparateurs h-px, boutons accent vert, suppression borders/shadows, score badges sans border)
+REFACTOR: components/crm/ClientCrmTab.tsx — DS v2.0 complet (suppression border/shadow sur blocs, inputs bg-[#0a0a0a] sans border, boutons accent vert, séparateurs h-px, labels uppercase tracking, notes internes bg-white/[0.03])
+REFACTOR: components/clients/ClientAccessToken.tsx — DS v2.0 (suppression shadow-lg/shadow-md/border sur boutons, modale sans ombre, boutons accent vert, "Envoyer email" neutre bg-white/[0.04])
+REFACTOR: components/crm/ClientFormulasTab.tsx — DS v2.0 complet (blocs rounded-xl sans border/shadow, badges statut monochromes, inputs bg-[#0a0a0a] sans border, boutons accent vert, "Résilier" neutre, modale flat bg-[#181818], séparateur h-px)
+
+REFACTOR: components/assessments/dashboard/SubmissionsList.tsx — migration DS v2.0
+REFACTOR: components/programs/ProgramEditor.tsx — migration DS v2.0
+REFACTOR: components/clients/ClientAccessToken.tsx — migration DS v2.0
+REFACTOR: components/clients/SessionHistory.tsx — migration DS v2.0
+REFACTOR: components/clients/PerformanceDashboard.tsx — migration DS v2.0
+REFACTOR: components/clients/ProgressionHistory.tsx — migration DS v2.0
+REFACTOR: components/crm/ClientCrmTab.tsx — migration DS v2.0
+REFACTOR: components/crm/ClientFormulasTab.tsx — migration DS v2.0
+REFACTOR: components/clients/MetricsSection.tsx — migration DS v2.0 + hex colors
+
+## 2026-04-06 — DS v2.0 page client detail
+
+REFACTOR: app/coach/clients/[clientId]/page.tsx — migration complète DS v2.0 (bg-[#141414] fond, bg-[#181818] cards, bg-[#0a0a0a] inputs, suppression toutes classes DS v1.0)
+
+## 2026-04-06 — Fix double fond définitif
+
+FIX: tailwind.config.ts — surface/surface-alt/surface-light/surface-raised/dark tous alignés sur #141414
+
+## 2026-04-06 — Fix double fond gris CoachShell
+
+FIX: tailwind.config.ts — background token aligné sur #141414 (était #0E0E0E)
+FIX: components/layout/CoachShell.tsx — bg-[#141414] sur le wrapper racine et le content div
+
+## 2026-04-06 — DS v2.0 page clients coach
+
+REFACTOR: app/coach/clients/page.tsx — migration complète DS v2.0 (bg-[#181818], inputs bg-[#0a0a0a], suppression toutes classes DS v1.0)
+
+## 2026-04-06 — Fix hooks order page client detail
+
+FIX: app/coach/clients/[clientId]/page.tsx — useMemo/useSetTopBar déplacés avant les early returns (loading/error) pour respecter la règle des hooks React
+
+## 2026-04-06 — Fix boucle infinie useSetTopBar
+
+FIX: components/layout/useSetTopBar.tsx — nouvelle signature (left, right) avec dépendances correctes dans useEffect
+FIX: app/coach/clients/page.tsx — topBarLeft/topBarRight wrappés dans useMemo pour stabiliser les références
+FIX: app/coach/clients/[clientId]/page.tsx — topBarLeft wrappé dans useMemo avec dépendances [tab, client, initials]
+
+## 2026-04-06 — Fix navigation auth/login doublon
+
+FIX: app/auth/login/page.tsx — remplacée par un redirect vers / (suppression page doublon)
+FIX: utils/supabase/middleware.ts — redirection coach non-auth vers / au lieu de /auth/login
+FIX: app/dashboard/page.tsx — guard client-side redirige vers / au lieu de /auth/login
+FIX: app/coach/clients/page.tsx — guard client-side redirige vers / au lieu de /auth/login
+
+## 2026-04-06 — DS v2.0 appliqué Sidebar + Dashboard
+
+REFACTOR: components/layout/Sidebar.tsx — DS v2.0 (bg-[#181818], pas de bordures, pas d'ombres, rounded-2xl)
+REFACTOR: app/dashboard/page.tsx — DS v2.0 (bg-[#141414] fond, blocs bg-[#181818], typography tokens, icones accent)
+
+## 2026-04-06 — Design System v2.0 Flat Dark
+
+REFACTOR: app/page.tsx — suppression de toutes les bordures et ombres (DS v2.0 flat)
+REFACTOR: app/page.tsx — fond app #141414, blocs #181818 identiques, inputs #0a0a0a
+REFACTOR: app/page.tsx — FeatureRow Cursor-style flat (hover bg-white/[0.04], pas de bordure)
+REFACTOR: app/page.tsx — ToolsGrid icones monochromes, tooltips sans titre redondant
+REFACTOR: app/page.tsx — séparateurs h-px entre sections (outils→coach, client→stats)
+REFACTOR: globals.css — réécriture complète avec palette DS v2.0 et classes utilitaires
+FEAT: docs/DESIGN_SYSTEM_V2.0_REFERENCE.md — référence canonique design créée
+REFACTOR: .claude/rules/ui-design-system.md — réécriture complète sur base DS v2.0
+CHORE: CLAUDE.md — import DESIGN_SYSTEM_V2.0_REFERENCE.md ajouté
+
+## 2026-04-06 — Homepage Refonte shadcn/ui
+
+FEAT: Refonte complète homepage avec shadcn/ui — structure modulaire, tokens STRYVR, accents #1f8a65
+CHORE: shadcn/ui init — composants Input, Label, Badge, Progress, Tooltip installés
+REFACTOR: app/page.tsx — décomposé en LandingColumn, ToolsGrid, FeatureCard, AuthFormCard
+REFACTOR: globals.css — ajout tokens shadcn/ui mappés au dark theme STRYVR
+REFACTOR: layout.tsx — ajout TooltipProvider (base-ui)
+CHORE: components.json — configuré avec css pointer vers app/globals.css
+
 ## 2026-04-06 — Design System v1.0 Implementation + Homepage Adaptation
 
 FEAT: Align homepage (authentication page) with Design System v1.0
