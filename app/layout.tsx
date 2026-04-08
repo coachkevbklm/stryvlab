@@ -3,10 +3,8 @@ import localFont from 'next/font/local';
 import Script from 'next/script';
 import './globals.css';
 import GenesisAssistant from '@/components/GenesisAssistant';
-import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 
 /* =====================================================
@@ -203,9 +201,9 @@ export default function RootLayout({
 }) {
   return (
     // Injection des 3 variables de police pour utilisation CSS globale
-    <html lang="fr" className={cn(lufga.variable, azonix.variable, onest.variable, unbounded.variable, "font-sans", geist.variable)}>
+    <html lang="fr" className={cn(lufga.variable, azonix.variable, onest.variable, unbounded.variable, "font-sans")}>
       <body className="antialiased min-h-screen bg-background text-primary">
-        {children}
+        <TooltipProvider delay={300}>{children}</TooltipProvider>
 
         {/* SCHEMA.ORG */}
         <Script

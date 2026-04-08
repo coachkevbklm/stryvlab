@@ -134,14 +134,7 @@ export default function ComptabilitePage() {
 
   // ── Top bar setup ──────────────────────────────────────────────────────────
   const topBarLeft = useMemo(
-    () => (
-      <>
-        <p className="text-[9px] text-white/30 uppercase tracking-widest">
-          Espace Coach
-        </p>
-        <p className="text-[13px] text-white font-medium">Comptabilité</p>
-      </>
-    ),
+    () => <p className="text-[13px] text-white font-medium">Comptabilité</p>,
     [],
   );
 
@@ -373,7 +366,7 @@ export default function ComptabilitePage() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="bg-[#181818] rounded-2xl p-5 flex items-center gap-4"
+                  className="bg-[#181818] border-subtle rounded-2xl p-5 flex items-center gap-4"
                 >
                   <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
                   <div className="space-y-1">
@@ -386,7 +379,7 @@ export default function ComptabilitePage() {
             </div>
 
             {/* Chart Skeleton */}
-            <div className="bg-[#181818] rounded-2xl p-6">
+            <div className="bg-[#181818] border-subtle rounded-2xl p-6">
               <Skeleton className="h-4 w-48 mb-5" />
               <Skeleton className="h-[220px] w-full rounded-xl" />
             </div>
@@ -394,7 +387,7 @@ export default function ComptabilitePage() {
             {/* Two Columns Skeleton */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Top clients skeleton */}
-              <div className="bg-[#181818] rounded-2xl p-5">
+              <div className="bg-[#181818] border-subtle rounded-2xl p-5">
                 <Skeleton className="h-4 w-32 mb-4" />
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -411,7 +404,7 @@ export default function ComptabilitePage() {
               </div>
 
               {/* Formulas skeleton */}
-              <div className="bg-[#181818] rounded-2xl p-5">
+              <div className="bg-[#181818] border-subtle rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-6 w-16 rounded-full" />
@@ -435,7 +428,7 @@ export default function ComptabilitePage() {
             </div>
 
             {/* Payments Table Skeleton */}
-            <div className="bg-[#181818] rounded-2xl overflow-hidden">
+            <div className="bg-[#181818] border-subtle rounded-2xl overflow-hidden">
               <div className="flex items-center justify-between p-5 border-b border-white/[0.07]">
                 <Skeleton className="h-4 w-36" />
                 <div className="flex gap-2">
@@ -497,7 +490,7 @@ export default function ComptabilitePage() {
             </div>
 
             {/* ── REVENUE CHART ───────────────────────────────────────────────── */}
-            <div className="bg-[#181818] rounded-2xl p-6">
+            <div className="bg-[#181818] border-subtle rounded-2xl p-6">
               <h3 className="text-[13px] font-semibold text-white mb-5">
                 Revenus — 12 derniers mois
               </h3>
@@ -557,7 +550,7 @@ export default function ComptabilitePage() {
             {/* ── TWO COLUMNS: Top clients + Formulas ───────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Top clients */}
-              <div className="bg-[#181818] rounded-2xl p-5">
+              <div className="bg-[#181818] border-subtle rounded-2xl p-5">
                 <h3 className="text-[13px] font-semibold text-white mb-4 flex items-center gap-2">
                   <BarChart3 size={15} className="text-white/40" />
                   Top clients (CA total)
@@ -606,7 +599,7 @@ export default function ComptabilitePage() {
               </div>
 
               {/* Formulas */}
-              <div className="bg-[#181818] rounded-2xl p-5">
+              <div className="bg-[#181818] border-subtle rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[13px] font-semibold text-white flex items-center gap-2">
                     <CreditCard size={15} className="text-white/40" />
@@ -669,7 +662,7 @@ export default function ComptabilitePage() {
             </div>
 
             {/* ── PAYMENTS TABLE ───────────────────────────────────────────────── */}
-            <div className="bg-[#181818] rounded-2xl overflow-hidden">
+            <div className="bg-[#181818] border-subtle rounded-2xl overflow-hidden">
               <div className="flex items-center justify-between p-5 border-b border-white/[0.07]">
                 <h3 className="text-[13px] font-semibold text-white flex items-center gap-2">
                   <Receipt size={15} className="text-white/40" />
@@ -1107,7 +1100,7 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`bg-[#181818] rounded-2xl p-5 flex items-center gap-4 ${alert ? "border border-amber-400/30" : ""}`}
+      className={`bg-[#181818] border-subtle rounded-2xl p-5 flex items-center gap-4 ${alert ? "border border-amber-400/30" : ""}`}
     >
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${alert ? "bg-amber-400/10" : "bg-white/[0.02]"}`}
@@ -1136,7 +1129,7 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#181818] rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#181818] border-subtle rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-white/[0.07]">
           <h3 className="text-[13px] font-semibold text-white">{title}</h3>
           <button

@@ -10,7 +10,7 @@ VALUES (
   'assessment-photos',
   'assessment-photos',
   false,                          -- privé : jamais d'URL publique directe
-  10485760,                       -- 10 Mo max par fichier
+  31457280,                       -- 30 Mo max par fichier (aligne avec CHANGELOG & widget)
   ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO NOTHING;

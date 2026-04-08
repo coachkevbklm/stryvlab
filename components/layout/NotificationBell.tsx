@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, CheckCheck, X } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
 interface Notification {
   id: string;
   type: string;
@@ -10,6 +12,7 @@ interface Notification {
   read: boolean;
   created_at: string;
   client_id: string | null;
+  submission_id?: string | null;
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -29,20 +32,11 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 86400)}j`;
 }
 
-interface Props {
-  /** When true, the dropdown opens to the right (for sidebar use) */
-  sidebarMode?: boolean;
-  /** When true, the dropdown opens downward (for top bar use) */
-  topBarMode?: boolean;
-}
-
-export default function NotificationBell({
-  sidebarMode = false,
-  topBarMode = false,
-}: Props) {
+export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const unread = notifications.filter((n) => !n.read);
 
@@ -50,7 +44,13 @@ export default function NotificationBell({
     const res = await fetch("/api/assessments/notify");
     if (res.ok) {
       const data = await res.json();
-      setNotifications(data.notifications ?? []);
+      // On mappe pour inclure submission_id si présent
+      setNotifications(
+        (data.notifications ?? []).map((n: any) => ({
+          ...n,
+          submission_id: n.submission_id ?? null,
+        })),
+      );
     }
   }
 
@@ -60,7 +60,7 @@ export default function NotificationBell({
     return () => clearInterval(iv);
   }, []);
 
-  // Close on outside click
+  // Fermer au clic extérieur
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -96,133 +96,35 @@ export default function NotificationBell({
     });
   }
 
-  if (sidebarMode && !topBarMode) {
-    return (
-      <div className="relative w-full" ref={containerRef}>
-        {/* Sidebar bell button — full width row */}
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-left transition-all duration-150 group ${
-            open
-              ? "bg-surface-light text-primary"
-              : "text-secondary hover:bg-surface-light hover:text-primary hover:"
-          }`}
-        >
-          <div className="relative shrink-0">
-            <Bell size={15} strokeWidth={1.8} />
-            {unread.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {unread.length > 9 ? "9+" : unread.length}
-              </span>
-            )}
-          </div>
-          <span className="text-xs font-semibold flex-1">Notifications</span>
-          {unread.length > 0 && (
-            <span className="text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full shrink-0">
-              {unread.length}
-            </span>
-          )}
-        </button>
-
-        {/* Dropdown — opens to the right of the sidebar, fixed to avoid overflow clipping */}
-        {open && (
-          <div
-            className="fixed w-80 bg-surface rounded-card shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-white/60 z-[200] overflow-hidden"
-            style={{ left: "232px", bottom: "60px" }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/40">
-              <span className="text-xs font-bold text-primary">
-                Notifications
-                {unread.length > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">
-                    {unread.length}
-                  </span>
-                )}
-              </span>
-              <div className="flex items-center gap-2">
-                {unread.length > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    className="flex items-center gap-1 text-[10px] text-accent font-medium hover:underline"
-                  >
-                    <CheckCheck size={11} />
-                    Tout lire
-                  </button>
-                )}
-                <button
-                  onClick={() => setOpen(false)}
-                  className="text-secondary hover:text-primary"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="max-h-96 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center">
-                  <Bell size={20} className="text-secondary/30 mx-auto mb-2" />
-                  <p className="text-xs text-secondary">Aucune notification</p>
-                </div>
-              ) : (
-                notifications.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => !n.read && markRead(n.id)}
-                    className={`w-full text-left px-4 py-3 border-b border-white/30 last:border-0 flex items-start gap-3 transition-colors ${
-                      n.read ? "opacity-50" : "hover:bg-accent/5"
-                    }`}
-                  >
-                    <span className="text-base shrink-0 mt-0.5">
-                      {TYPE_ICONS[n.type] ?? "🔔"}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-xs leading-snug ${n.read ? "text-secondary" : "text-primary font-medium"}`}
-                      >
-                        {n.message}
-                      </p>
-                      <p className="text-[10px] text-secondary/60 mt-0.5">
-                        {timeAgo(n.created_at)}
-                      </p>
-                    </div>
-                    {!n.read && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Default mode — dropdown below, right-aligned (for page headers)
   return (
     <div className="relative" ref={containerRef}>
+      {/* Bouton cloche */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center justify-center w-8 h-8 rounded-lg text-secondary hover:text-primary hover:bg-surface-light transition-all"
+        className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+          open
+            ? "bg-white/[0.08] text-white/80"
+            : "text-white/35 hover:bg-white/[0.06] hover:text-white/70"
+        }`}
+        title="Notifications"
       >
-        <Bell size={16} strokeWidth={1.8} />
+        <Bell size={15} strokeWidth={1.75} />
         {unread.length > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
             {unread.length > 9 ? "9+" : unread.length}
           </span>
         )}
       </button>
 
+      {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-surface rounded-card shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/60 z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/40">
-            <span className="text-xs font-bold text-primary">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#181818] border-subtle rounded-2xl z-50 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] font-bold text-white">
               Notifications
               {unread.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">
+                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full">
                   {unread.length}
                 </span>
               )}
@@ -231,7 +133,7 @@ export default function NotificationBell({
               {unread.length > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 text-[10px] text-accent font-medium hover:underline"
+                  className="flex items-center gap-1 text-[11px] text-[#1f8a65] font-medium hover:text-white transition-colors"
                 >
                   <CheckCheck size={11} />
                   Tout lire
@@ -239,43 +141,60 @@ export default function NotificationBell({
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="text-secondary hover:text-primary"
+                className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 hover:bg-white/[0.06] hover:text-white/70 transition-all"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
+          <div className="h-px bg-white/[0.07]" />
+
+          {/* Liste */}
+          <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Bell size={20} className="text-secondary/30 mx-auto mb-2" />
-                <p className="text-xs text-secondary">Aucune notification</p>
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <Bell size={18} className="text-white/20" />
+                <p className="text-[12px] text-white/30">Aucune notification</p>
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n, i) => (
                 <button
                   key={n.id}
-                  onClick={() => !n.read && markRead(n.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-white/30 last:border-0 flex items-start gap-3 transition-colors ${
-                    n.read ? "opacity-50" : "hover:bg-accent/5"
-                  }`}
+                  onClick={() => {
+                    if (!n.read) markRead(n.id);
+                    // Redirection selon le type et l’id de ressource
+                    if (n.submission_id) {
+                      if (n.type === "assessment_completed") {
+                        router.push(`/coach/bilans/${n.submission_id}`);
+                      } else if (n.type === "payment_received") {
+                        router.push(`/coach/paiements/${n.submission_id}`);
+                      } else if (n.type === "program_assigned") {
+                        router.push(`/coach/programmes/${n.submission_id}`);
+                      }
+                    }
+                  }}
+                  className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
+                    i < notifications.length - 1
+                      ? "border-b border-white/[0.05]"
+                      : ""
+                  } ${n.read ? "opacity-40" : "hover:bg-white/[0.04]"}`}
                 >
-                  <span className="text-base shrink-0 mt-0.5">
+                  <span className="text-base shrink-0 mt-0.5 leading-none">
                     {TYPE_ICONS[n.type] ?? "🔔"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-xs leading-snug ${n.read ? "text-secondary" : "text-primary font-medium"}`}
+                      className={`text-[12px] leading-snug ${n.read ? "text-white/50" : "text-white/90 font-medium"}`}
                     >
                       {n.message}
                     </p>
-                    <p className="text-[10px] text-secondary/60 mt-0.5">
+                    <p className="text-[10px] text-white/30 mt-0.5">
                       {timeAgo(n.created_at)}
                     </p>
                   </div>
                   {!n.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1f8a65] shrink-0 mt-1.5" />
                   )}
                 </button>
               ))

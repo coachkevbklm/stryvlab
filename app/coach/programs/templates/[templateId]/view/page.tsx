@@ -3,7 +3,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronLeft, Dumbbell, Calendar, Zap, Target, Lock, Copy, Edit2, Tag, BarChart2 } from 'lucide-react'
+import { Dumbbell, Calendar, Zap, Target, Lock, Copy, Edit2, Tag, BarChart2 } from 'lucide-react'
+import ProgramTemplateViewTopBar from '@/components/programs/ProgramTemplateViewTopBar'
 
 const GOALS: Record<string, string> = {
   hypertrophy: 'Hypertrophie', strength: 'Force', endurance: 'Endurance',
@@ -84,85 +85,68 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
   const muscleTags: string[] = (template as any).muscle_tags ?? []
 
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-8 py-5">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <Link href="/coach/programs/templates" className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary mb-2 font-medium transition-colors">
-              <ChevronLeft size={16} />Templates
-            </Link>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-primary">{(template as any).name}</h1>
-              {isSystem && (
-                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                  <Lock size={9} />Système STRYVR
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isSystem && (
-              <Link
-                href={`/coach/programs/templates/${params.templateId}/assign`}
-                className="flex items-center gap-1.5 bg-accent text-white text-xs font-bold px-4 py-2 rounded-btn hover:opacity-90 transition-opacity"
-              >
-                Assigner à un client
-              </Link>
-            )}
-            {isOwner && (
-              <Link
-                href={`/coach/programs/templates/${params.templateId}/edit`}
-                className="flex items-center gap-1.5 bg-surface-light shadow-soft-out text-secondary text-xs font-bold px-4 py-2 rounded-btn hover:text-primary transition-colors"
-              >
-                <Edit2 size={13} />Modifier
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#121212] font-sans">
+      <ProgramTemplateViewTopBar templateName={(template as any).name} />
       <main className="max-w-3xl mx-auto px-8 py-6 flex flex-col gap-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {isSystem && (
+            <Link
+              href={`/coach/programs/templates/${params.templateId}/assign`}
+              className="flex items-center gap-1.5 bg-[#1f8a65] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#217356] transition-colors"
+            >
+              Assigner à un client
+            </Link>
+          )}
+          {isOwner && (
+            <Link
+              href={`/coach/programs/templates/${params.templateId}/edit`}
+              className="flex items-center gap-1.5 bg-[#0a0a0a] text-white/70 text-xs font-bold px-4 py-2 rounded-xl hover:text-white transition-colors"
+            >
+              <Edit2 size={13} />Modifier
+            </Link>
+          )}
+        </div>
 
         {/* Meta card */}
-        <div className="bg-surface rounded-card shadow-soft-out p-6 flex flex-col gap-4">
+        <div className="bg-[#181818] border-subtle rounded-2xl p-6 flex flex-col gap-4">
           {/* Badges */}
           <div className="flex flex-wrap gap-2">
             {(template as any).goal && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-violet-100 text-violet-700">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/[0.04] text-white/70">
                 {GOALS[(template as any).goal] ?? (template as any).goal}
               </span>
             )}
             {(template as any).level && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/[0.04] text-white/70">
                 {LEVELS[(template as any).level] ?? (template as any).level}
               </span>
             )}
             {(template as any).equipment_archetype && (
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/[0.04] text-white/70">
                 {ARCHETYPES[(template as any).equipment_archetype] ?? (template as any).equipment_archetype}
               </span>
             )}
           </div>
 
           {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-6 text-sm text-secondary">
-            <span className="flex items-center gap-1.5"><Calendar size={14} className="text-accent" />{(template as any).frequency} jours/semaine</span>
-            <span className="flex items-center gap-1.5"><Zap size={14} className="text-accent" />{(template as any).weeks} semaines</span>
-            <span className="flex items-center gap-1.5"><Dumbbell size={14} className="text-accent" />{sessions.length} séances</span>
-            <span className="flex items-center gap-1.5"><BarChart2 size={14} className="text-accent" />{totalSets} séries tot. · {totalExercises} exercices</span>
+          <div className="flex flex-wrap items-center gap-6 text-sm text-white/70">
+            <span className="flex items-center gap-1.5 text-[#1f8a65]"><Calendar size={14} />{(template as any).frequency} jours/semaine</span>
+            <span className="flex items-center gap-1.5 text-[#1f8a65]"><Zap size={14} />{(template as any).weeks} semaines</span>
+            <span className="flex items-center gap-1.5 text-[#1f8a65]"><Dumbbell size={14} />{sessions.length} séances</span>
+            <span className="flex items-center gap-1.5 text-[#1f8a65]"><BarChart2 size={14} />{totalSets} séries tot. · {totalExercises} exercices</span>
           </div>
 
           {/* Description */}
           {(template as any).description && (
-            <p className="text-sm text-secondary leading-relaxed">{(template as any).description}</p>
+            <p className="text-sm text-white/70 leading-relaxed">{(template as any).description}</p>
           )}
 
           {/* Muscle tags */}
           {muscleTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-wider mr-1">Muscles :</span>
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider mr-1">Muscles :</span>
               {muscleTags.map((tag: string) => (
-                <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-surface-light text-secondary border border-white/40">
+                <span key={tag} className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0a0a0a] text-white/70">
                   {tag}
                 </span>
               ))}
@@ -172,8 +156,8 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
           {/* Notes coach */}
           {(template as any).notes && (
             <div className="border-t border-white/40 pt-3">
-              <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Notes du programme</p>
-              <p className="text-sm text-secondary/80 italic leading-relaxed">{(template as any).notes}</p>
+              <p className="text-[10px] font-bold text-white/60 uppercase tracking-wider mb-1">Notes du programme</p>
+              <p className="text-sm text-white/70 italic leading-relaxed">{(template as any).notes}</p>
             </div>
           )}
         </div>
@@ -182,26 +166,26 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
         {sessions.map((s: any, si: number) => {
           const sessionSets = s.coach_program_template_exercises.reduce((a: number, e: any) => a + (e.sets ?? 0), 0)
           return (
-            <div key={s.id} className="bg-surface rounded-card shadow-soft-out overflow-hidden">
+            <div key={s.id} className="bg-[#181818] border-subtle rounded-2xl overflow-hidden">
               {/* Session header */}
-              <div className="px-5 py-4 border-b border-white/40 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-white/[0.07] flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-widest">Séance {si + 1}</span>
+                    <span className="text-[10px] font-bold text-[#1f8a65] uppercase tracking-widest">Séance {si + 1}</span>
                     {s.day_of_week != null && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/10 text-accent">{DAYS[s.day_of_week]}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#1f8a65]/10 text-[#1f8a65]">{DAYS[s.day_of_week]}</span>
                     )}
                   </div>
-                  <h3 className="font-bold text-primary mt-0.5">{s.name}</h3>
+                  <h3 className="font-bold text-white mt-0.5">{s.name}</h3>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-secondary">{s.coach_program_template_exercises.length} ex. · {sessionSets} séries</p>
+                  <p className="text-xs text-white/70">{s.coach_program_template_exercises.length} ex. · {sessionSets} séries</p>
                 </div>
               </div>
 
               {s.notes && (
-                <div className="px-5 py-2 bg-surface-light/50 border-b border-white/30">
-                  <p className="text-xs text-secondary/80 italic">{s.notes}</p>
+                <div className="px-5 py-2 bg-[#0a0a0a] border-b border-white/10">
+                  <p className="text-xs text-white/70 italic">{s.notes}</p>
                 </div>
               )}
 
@@ -211,7 +195,7 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
                   <div key={e.id ?? ei} className="px-5 py-4 flex gap-4 items-start">
                     {/* GIF */}
                     {e.image_url ? (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#0a0a0a] flex-shrink-0">
                         <Image
                           src={e.image_url}
                           alt={e.name}
@@ -222,34 +206,34 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
                         />
                       </div>
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-surface-light flex-shrink-0 flex items-center justify-center">
-                        <Dumbbell size={20} className="text-secondary/30" />
+                      <div className="w-16 h-16 rounded-lg bg-[#0a0a0a] flex-shrink-0 flex items-center justify-center">
+                        <Dumbbell size={20} className="text-white/30" />
                       </div>
                     )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-primary text-sm">{e.name}</p>
+                      <p className="font-semibold text-white text-sm">{e.name}</p>
 
                       {/* Prescription */}
-                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-secondary font-mono">
+                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-white/70 font-mono">
                         <span>{e.sets} × {e.reps}</span>
                         {e.rest_sec && <span>{e.rest_sec}s repos</span>}
                         {e.rir != null && <span>RIR {e.rir}</span>}
                         {e.rep_min != null && e.rep_max != null && (
-                          <span className="text-accent font-sans">↑ {e.rep_min}–{e.rep_max} reps · +{e.weight_increment_kg ?? 2.5}kg</span>
+                          <span className="text-[#1f8a65] font-sans">↑ {e.rep_min}–{e.rep_max} reps · +{e.weight_increment_kg ?? 2.5}kg</span>
                         )}
                       </div>
 
                       {/* Pattern + équipement */}
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {e.movement_pattern && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-600">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/[0.04] text-white/70">
                             {MOVEMENT_LABELS[e.movement_pattern] ?? e.movement_pattern}
                           </span>
                         )}
                         {(e.equipment_required ?? []).map((eq: string) => (
-                          <span key={eq} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">
+                          <span key={eq} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/[0.04] text-white/70">
                             {EQUIPMENT_LABELS[eq] ?? eq}
                           </span>
                         ))}
@@ -257,7 +241,7 @@ export default async function ViewProgramTemplatePage({ params }: { params: { te
 
                       {/* Notes exercice */}
                       {e.notes && (
-                        <p className="text-xs text-secondary/70 italic mt-1.5">{e.notes}</p>
+                        <p className="text-xs text-white/60 italic mt-1.5">{e.notes}</p>
                       )}
                     </div>
                   </div>

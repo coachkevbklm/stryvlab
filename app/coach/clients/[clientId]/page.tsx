@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -27,7 +28,8 @@ import {
   Tag,
   CreditCard,
 } from "lucide-react";
-import ClientPageHeader from "@/components/coach/ClientPageHeader";
+import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { ChevronLeft } from "lucide-react";
 import SubmissionsList from "@/components/assessments/dashboard/SubmissionsList";
 import ProgramEditor from "@/components/programs/ProgramEditor";
 import ClientAccessToken from "@/components/clients/ClientAccessToken";
@@ -63,7 +65,6 @@ interface Client {
 
 type Tab =
   | "profil"
-  | "crm"
   | "formules"
   | "bilans"
   | "metriques"
@@ -294,17 +295,137 @@ export default function ClientDetailPage() {
     setDeleteTarget(null);
   }
 
+  // ── TopBar (hooks avant tout early return) ───────────────────────────────
+  const initials = client
+    ? `${client.first_name[0] ?? ""}${client.last_name[0] ?? ""}`.toUpperCase()
+    : "…";
+
+  const TABS: Array<{ key: Tab; label: string; Icon: React.ElementType }> = [
+    { key: "profil", label: "Profil", Icon: User },
+    { key: "formules", label: "Formules", Icon: CreditCard },
+    { key: "bilans", label: "Bilans", Icon: ClipboardList },
+    { key: "metriques", label: "Métriques", Icon: BarChart2 },
+    { key: "programme", label: "Programme", Icon: Dumbbell },
+    { key: "historique", label: "Historique", Icon: History },
+    { key: "performance", label: "Performance", Icon: TrendingUp },
+  ];
+
+  const topBarLeft = useMemo(
+    () => (
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={() => router.push("/coach/clients")}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/70 transition-all"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-[#1f8a65]/20 flex items-center justify-center text-[#1f8a65] font-bold text-[11px]">
+            {initials}
+          </div>
+          {client && (
+            <span className="text-[13px] font-semibold text-white/80 hidden sm:inline">
+              {client.first_name} {client.last_name}
+            </span>
+          )}
+        </div>
+        <div className="h-4 w-px bg-white/[0.10] shrink-0" />
+        <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+          {TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all ${
+                tab === key
+                  ? "bg-white/[0.08] text-white"
+                  : "text-white/40 hover:bg-white/[0.05] hover:text-white/70"
+              }`}
+            >
+              <Icon size={12} strokeWidth={tab === key ? 2.25 : 1.75} />
+              <span className="hidden md:inline">{label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ),
+    [tab, client, initials],
+  );
+
+  useSetTopBar(topBarLeft);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background font-sans flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#121212] font-sans">
+        <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col gap-4">
+          <div className="bg-[#181818] border-subtle rounded-xl p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </div>
+            <div className="h-px bg-white/[0.07]" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[80, 56, 72, 64].map((w, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton className="h-3 w-14" />
+                  <Skeleton className={`h-4 w-${w > 60 ? "20" : "16"}`} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-4">
+            <Skeleton className="h-4 w-20" />
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </div>
+          <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-4">
+            <Skeleton className="h-4 w-48" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="w-7 h-7 rounded-lg shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-28 rounded-lg" />
+              <Skeleton className="h-8 w-32 rounded-lg" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-background font-sans flex items-center justify-center text-[var(--text-muted)]">
+      <div className="min-h-screen bg-[#121212] font-sans flex items-center justify-center text-white/45">
         {error || "Client introuvable"}
       </div>
     );
@@ -467,10 +588,10 @@ export default function ClientDetailPage() {
   }
 
   function scoreColor(score: number, hardStop?: boolean): string {
-    if (hardStop) return "bg-red-950/40 text-red-400 border border-red-900/40";
-    if (score >= 70) return "bg-emerald-950/50 text-emerald-400 border border-emerald-800/40";
-    if (score >= 40) return "bg-amber-950/40 text-amber-400 border border-amber-800/30";
-    return "bg-surface-alt border border-subtle text-secondary";
+    if (hardStop) return "bg-red-950/40 text-red-400";
+    if (score >= 70) return "bg-[#1f8a65]/15 text-[#1f8a65]";
+    if (score >= 40) return "bg-amber-950/40 text-amber-400";
+    return "bg-white/[0.04] text-white/45";
   }
 
   function scoreLabel(score: number, hardStop?: boolean): string {
@@ -481,29 +602,18 @@ export default function ClientDetailPage() {
     return "Faible";
   }
 
-  const TABS: Array<{ key: Tab; label: string; Icon: React.ElementType }> = [
-    { key: "profil", label: "Profil", Icon: User },
-    { key: "crm", label: "CRM", Icon: Tag },
-    { key: "formules", label: "Formules", Icon: CreditCard },
-    { key: "bilans", label: "Bilans", Icon: ClipboardList },
-    { key: "metriques", label: "Métriques", Icon: BarChart2 },
-    { key: "programme", label: "Programme", Icon: Dumbbell },
-    { key: "historique", label: "Historique", Icon: History },
-    { key: "performance", label: "Performance", Icon: TrendingUp },
-  ];
-
   return (
-    <main className="min-h-screen bg-background font-sans flex flex-col">
+    <main className="min-h-screen bg-[#121212] font-sans flex flex-col">
       {/* Delete program confirmation modal */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-subtle rounded-xl shadow-elevated p-6 w-full max-w-sm">
-            <h3 className="font-bold text-[var(--text-main)] mb-2">
+          <div className="bg-[#181818] border-subtle rounded-xl p-6 w-full max-w-sm">
+            <h3 className="font-bold text-white mb-2">
               Supprimer le programme ?
             </h3>
-            <p className="text-sm text-[var(--text-muted)] mb-5">
+            <p className="text-sm text-white/45 mb-5">
               Le programme{" "}
-              <span className="font-medium text-[var(--text-main)]">
+              <span className="font-medium text-white">
                 "{deleteTarget.name}"
               </span>{" "}
               sera supprimé définitivement, ainsi que toutes ses séances et
@@ -512,14 +622,14 @@ export default function ClientDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-btn bg-surface-alt border border-subtle text-sm text-secondary hover:text-primary transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-lg bg-white/[0.04] text-sm text-white/45 hover:text-white transition-colors font-medium"
               >
                 Annuler
               </button>
               <button
                 onClick={handleDeleteProgram}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-btn bg-red-600 text-white text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
+                className="flex-1 py-2.5 rounded-lg bg-red-600/80 text-white text-sm font-bold hover:bg-red-600 disabled:opacity-50 transition-colors"
               >
                 {deleting ? "Suppression…" : "Supprimer"}
               </button>
@@ -530,34 +640,26 @@ export default function ClientDetailPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2.5 bg-surface border border-subtle text-primary text-sm font-semibold px-5 py-3 rounded-xl shadow-elevated animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2.5 bg-[#181818] border-subtle text-white text-sm font-semibold px-5 py-3 rounded-xl  animate-in fade-in slide-in-from-bottom-2 duration-200">
           <CheckCircle2 size={15} className="text-accent shrink-0" />
           {toast}
         </div>
       )}
 
-      {/* UNIFIED CLIENT PAGE HEADER */}
-      <ClientPageHeader
-        firstName={client.first_name}
-        lastName={client.last_name}
-        email={client.email}
-        tabs={TABS}
-        activeTab={tab}
-        onTabChange={(key) => setTab(key as Tab)}
-      />
-
       {/* CONTENT AREA — Layer 3 */}
-      <div className="flex-1 overflow-auto bg-background">
-        <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="flex-1 overflow-auto bg-[#121212]">
+        <div
+          className={`mx-auto px-6 py-8 ${tab === "metriques" ? "max-w-7xl" : "max-w-4xl"}`}
+        >
           {tab === "profil" && (
             <div className="flex flex-col gap-4">
-              <div className="bg-surface border border-subtle rounded-xl p-6">
+              <div className="bg-[#181818] border-subtle rounded-xl p-6">
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="font-bold text-[var(--text-main)]">Informations</h2>
+                  <h2 className="font-bold text-white">Informations</h2>
                   {!editingProfile ? (
                     <button
                       onClick={openProfileEdit}
-                      className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-accent transition-colors font-medium"
+                      className="flex items-center gap-1.5 text-xs text-white/45 hover:text-accent transition-colors font-medium"
                     >
                       <Edit2 size={13} />
                       Modifier
@@ -566,14 +668,14 @@ export default function ClientDetailPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setEditingProfile(false)}
-                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                        className="text-xs text-white/45 hover:text-white transition-colors"
                       >
                         Annuler
                       </button>
                       <button
                         onClick={saveProfile}
                         disabled={savingProfile}
-                        className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-3 py-1.5 rounded-btn disabled:opacity-50 transition-opacity"
+                        className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
                       >
                         {savingProfile ? (
                           <Loader2 size={12} className="animate-spin" />
@@ -590,14 +692,14 @@ export default function ClientDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {client.email && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
-                        <Mail size={14} className="text-[var(--text-muted)]" />
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04]  flex items-center justify-center shrink-0">
+                        <Mail size={14} className="text-white/45" />
                       </div>
                       <div>
-                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium">
+                        <p className="text-xs text-white/45 uppercase tracking-wider font-medium">
                           Email
                         </p>
-                        <p className="text-sm text-[var(--text-main)] font-medium">
+                        <p className="text-sm text-white font-medium">
                           {client.email}
                         </p>
                       </div>
@@ -605,14 +707,14 @@ export default function ClientDetailPage() {
                   )}
                   {client.phone && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
-                        <Phone size={14} className="text-[var(--text-muted)]" />
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04]  flex items-center justify-center shrink-0">
+                        <Phone size={14} className="text-white/45" />
                       </div>
                       <div>
-                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium">
+                        <p className="text-xs text-white/45 uppercase tracking-wider font-medium">
                           Téléphone
                         </p>
-                        <p className="text-sm text-[var(--text-main)] font-medium">
+                        <p className="text-sm text-white font-medium">
                           {client.phone}
                         </p>
                       </div>
@@ -620,14 +722,14 @@ export default function ClientDetailPage() {
                   )}
                   {client.date_of_birth && (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
-                        <Calendar size={14} className="text-[var(--text-muted)]" />
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04]  flex items-center justify-center shrink-0">
+                        <Calendar size={14} className="text-white/45" />
                       </div>
                       <div>
-                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium">
+                        <p className="text-xs text-white/45 uppercase tracking-wider font-medium">
                           Date de naissance
                         </p>
-                        <p className="text-sm text-[var(--text-main)] font-medium">
+                        <p className="text-sm text-white font-medium">
                           {new Date(client.date_of_birth).toLocaleDateString(
                             "fr-FR",
                           )}
@@ -636,14 +738,14 @@ export default function ClientDetailPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-widget bg-surface-alt border border-subtle  flex items-center justify-center shrink-0">
-                      <Calendar size={14} className="text-[var(--text-muted)]" />
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04]  flex items-center justify-center shrink-0">
+                      <Calendar size={14} className="text-white/45" />
                     </div>
                     <div>
-                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium">
+                      <p className="text-xs text-white/45 uppercase tracking-wider font-medium">
                         Client depuis
                       </p>
-                      <p className="text-sm text-[var(--text-main)] font-medium">
+                      <p className="text-sm text-white font-medium">
                         {new Date(client.created_at).toLocaleDateString(
                           "fr-FR",
                         )}
@@ -658,74 +760,78 @@ export default function ClientDetailPage() {
                     client.fitness_level ||
                     client.sport_practice ||
                     client.weekly_frequency != null) && (
-                    <div className="mt-5 pt-5 border-t border-[#BCBCB8] grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {client.training_goal && (
-                        <div>
-                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
-                            Objectif
-                          </p>
-                          <p className="text-sm text-[var(--text-main)] font-semibold">
-                            {TRAINING_GOALS.find(
-                              (g) => g.value === client.training_goal,
-                            )?.label ?? client.training_goal}
-                          </p>
-                        </div>
-                      )}
-                      {client.fitness_level && (
-                        <div>
-                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
-                            Niveau
-                          </p>
-                          <p className="text-sm text-[var(--text-main)] font-semibold">
-                            {FITNESS_LEVELS.find(
-                              (l) => l.value === client.fitness_level,
-                            )?.label ?? client.fitness_level}
-                          </p>
-                        </div>
-                      )}
-                      {client.sport_practice && (
-                        <div>
-                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
-                            Pratique sport
-                          </p>
-                          <p className="text-sm text-[var(--text-main)] font-semibold">
-                            {SPORT_PRACTICES.find(
-                              (s) => s.value === client.sport_practice,
-                            )?.label ?? client.sport_practice}
-                          </p>
-                        </div>
-                      )}
-                      {client.weekly_frequency != null && (
-                        <div>
-                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
-                            Fréquence souhaitée
-                          </p>
-                          <p className="text-sm text-[var(--text-main)] font-semibold font-mono">
-                            {client.weekly_frequency}j/sem.
-                          </p>
-                        </div>
-                      )}
-                      {client.equipment_category && (
-                        <div>
-                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1">
-                            Équipement
-                          </p>
-                          <p className="text-sm text-[var(--text-main)] font-semibold">
-                            {EQUIPMENT_CATEGORIES.find(
-                              (e) => e.value === client.equipment_category,
-                            )?.label ?? client.equipment_category}
-                          </p>
-                        </div>
-                      )}
+                    <div className="mt-5">
+                      <div className="h-px bg-white/[0.07] mb-5" />
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {client.training_goal && (
+                          <div>
+                            <p className="text-[10px] text-white/45 uppercase tracking-wider font-medium mb-1">
+                              Objectif
+                            </p>
+                            <p className="text-sm text-white font-semibold">
+                              {TRAINING_GOALS.find(
+                                (g) => g.value === client.training_goal,
+                              )?.label ?? client.training_goal}
+                            </p>
+                          </div>
+                        )}
+                        {client.fitness_level && (
+                          <div>
+                            <p className="text-[10px] text-white/45 uppercase tracking-wider font-medium mb-1">
+                              Niveau
+                            </p>
+                            <p className="text-sm text-white font-semibold">
+                              {FITNESS_LEVELS.find(
+                                (l) => l.value === client.fitness_level,
+                              )?.label ?? client.fitness_level}
+                            </p>
+                          </div>
+                        )}
+                        {client.sport_practice && (
+                          <div>
+                            <p className="text-[10px] text-white/45 uppercase tracking-wider font-medium mb-1">
+                              Pratique sport
+                            </p>
+                            <p className="text-sm text-white font-semibold">
+                              {SPORT_PRACTICES.find(
+                                (s) => s.value === client.sport_practice,
+                              )?.label ?? client.sport_practice}
+                            </p>
+                          </div>
+                        )}
+                        {client.weekly_frequency != null && (
+                          <div>
+                            <p className="text-[10px] text-white/45 uppercase tracking-wider font-medium mb-1">
+                              Fréquence souhaitée
+                            </p>
+                            <p className="text-sm text-white font-semibold font-mono">
+                              {client.weekly_frequency}j/sem.
+                            </p>
+                          </div>
+                        )}
+                        {client.equipment_category && (
+                          <div>
+                            <p className="text-[10px] text-white/45 uppercase tracking-wider font-medium mb-1">
+                              Équipement
+                            </p>
+                            <p className="text-sm text-white font-semibold">
+                              {EQUIPMENT_CATEGORIES.find(
+                                (e) => e.value === client.equipment_category,
+                              )?.label ?? client.equipment_category}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
                 {/* Scoring fields — edit form */}
                 {editingProfile && (
-                  <div className="mt-5 pt-5 border-t border-[#BCBCB8] flex flex-col gap-4">
+                  <div className="mt-5 flex flex-col gap-4">
+                    <div className="h-px bg-white/[0.07]" />
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                           Objectif
                         </label>
                         <select
@@ -736,7 +842,7 @@ export default function ClientDetailPage() {
                               training_goal: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none"
                         >
                           <option value="">— Non renseigné</option>
                           {TRAINING_GOALS.map((g) => (
@@ -747,7 +853,7 @@ export default function ClientDetailPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                           Niveau
                         </label>
                         <select
@@ -758,7 +864,7 @@ export default function ClientDetailPage() {
                               fitness_level: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none"
                         >
                           <option value="">— Non renseigné</option>
                           {FITNESS_LEVELS.map((l) => (
@@ -769,7 +875,7 @@ export default function ClientDetailPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                           Pratique sport
                         </label>
                         <select
@@ -780,7 +886,7 @@ export default function ClientDetailPage() {
                               sport_practice: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none"
                         >
                           <option value="">— Non renseigné</option>
                           {SPORT_PRACTICES.map((s) => (
@@ -791,7 +897,7 @@ export default function ClientDetailPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                           Fréquence souhaitée
                         </label>
                         <select
@@ -802,7 +908,7 @@ export default function ClientDetailPage() {
                               weekly_frequency: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs font-mono text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs font-mono text-white outline-none"
                         >
                           <option value="">— Non renseigné</option>
                           {[1, 2, 3, 4, 5, 6, 7].map((n) => (
@@ -813,7 +919,7 @@ export default function ClientDetailPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                           Équipement disponible
                         </label>
                         <select
@@ -824,7 +930,7 @@ export default function ClientDetailPage() {
                               equipment_category: e.target.value,
                             }))
                           }
-                          className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-xs text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none"
                         >
                           <option value="">— Non renseigné</option>
                           {EQUIPMENT_CATEGORIES.map((e) => (
@@ -836,7 +942,7 @@ export default function ClientDetailPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                      <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
                         Notes
                       </label>
                       <textarea
@@ -849,7 +955,7 @@ export default function ClientDetailPage() {
                         }
                         rows={3}
                         placeholder="Observations, contexte, contre-indications…"
-                        className="w-full px-3 py-2 bg-surface-alt border border-subtle shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] rounded-btn text-sm text-[var(--text-main)] outline-none focus:ring-2 focus:ring-accent/40 resize-none"
+                        className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-sm text-white outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -857,22 +963,34 @@ export default function ClientDetailPage() {
 
                 {/* Notes — read view */}
                 {!editingProfile && client.notes && (
-                  <div className="mt-5 pt-5 border-t border-[#BCBCB8]">
-                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium mb-2">
+                  <div className="mt-5">
+                    <div className="h-px bg-white/[0.07] mb-5" />
+                    <p className="text-xs text-white/45 uppercase tracking-wider font-medium mb-2">
                       Notes
                     </p>
-                    <p className="text-sm text-[var(--text-main)] whitespace-pre-wrap">
+                    <p className="text-sm text-white whitespace-pre-wrap">
                       {client.notes}
                     </p>
                   </div>
                 )}
               </div>
-              <ClientAccessToken clientId={clientId} />
+              <div className="bg-[#181818] border-subtle rounded-xl p-6">
+                <ClientCrmTab
+                  clientId={clientId}
+                  initialCrm={{
+                    date_of_birth: client.date_of_birth,
+                    gender: client.gender,
+                  }}
+                />
+              </div>
+              <div className="bg-[#181818] border-subtle rounded-xl p-6">
+                <ClientAccessToken clientId={clientId} />
+              </div>
             </div>
           )}
 
           {tab === "bilans" && (
-            <div className="bg-surface border border-subtle rounded-xl p-6">
+            <div className="bg-[#181818] border-subtle rounded-xl p-6">
               <SubmissionsList
                 submissions={submissions}
                 clientId={clientId}
@@ -893,7 +1011,11 @@ export default function ClientDetailPage() {
             </div>
           )}
 
-          {tab === "metriques" && <MetricsSection clientId={clientId} />}
+          {tab === "metriques" && (
+            <div className="bg-[#181818] border-subtle rounded-xl p-6">
+              <MetricsSection clientId={clientId} />
+            </div>
+          )}
 
           {tab === "historique" && <SessionHistory clientId={clientId} />}
 
@@ -904,17 +1026,11 @@ export default function ClientDetailPage() {
             </div>
           )}
 
-          {tab === "crm" && (
-            <ClientCrmTab
-              clientId={clientId}
-              initialCrm={{
-                date_of_birth: client.date_of_birth,
-                gender: client.gender,
-              }}
-            />
+          {tab === "formules" && (
+            <div className="bg-[#181818] border-subtle rounded-xl p-6">
+              <ClientFormulasTab clientId={clientId} />
+            </div>
           )}
-
-          {tab === "formules" && <ClientFormulasTab clientId={clientId} />}
 
           {tab === "programme" && (
             <div>
@@ -940,28 +1056,28 @@ export default function ClientDetailPage() {
                 /* ── Picker template ── */
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-bold text-[var(--text-main)]">
+                    <h2 className="font-bold text-white">
                       Choisir un template
                     </h2>
                     <button
                       onClick={() => setAssigningTemplate(false)}
-                      className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                      className="text-white/45 hover:text-white"
                     >
                       <X size={18} />
                     </button>
                   </div>
                   {rankedTemplates.length === 0 ? (
-                    <div className="bg-surface border border-subtle rounded-xl p-10 text-center">
+                    <div className="bg-[#181818] border-subtle rounded-xl p-10 text-center">
                       <LayoutTemplate
                         size={32}
-                        className="text-[var(--text-muted)] mx-auto mb-3 opacity-30"
+                        className="text-white/45 mx-auto mb-3 opacity-30"
                       />
-                      <p className="text-sm text-[var(--text-muted)] mb-1">
+                      <p className="text-sm text-white/45 mb-1">
                         Aucun template disponible.
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]/60">
+                      <p className="text-xs text-white/40">
                         Crée des templates depuis la section{" "}
-                        <span className="font-semibold text-accent">
+                        <span className="font-semibold text-[#1f8a65]">
                           Templates
                         </span>
                         .
@@ -970,10 +1086,10 @@ export default function ClientDetailPage() {
                   ) : (
                     <div className="flex flex-col gap-2">
                       {/* Hint about sorting */}
-                      <p className="text-[10px] text-[var(--text-muted)]/60 px-1">
+                      <p className="text-[10px] text-white/40 px-1">
                         Triés par compatibilité ·{" "}
                         {scoringSignalCount() === 0 ? (
-                          <span className="text-amber-600">
+                          <span className="text-amber-500">
                             Aucun signal de profil — renseigne objectif, niveau
                             et fréquence dans l'onglet Profil
                           </span>
@@ -1007,31 +1123,31 @@ export default function ClientDetailPage() {
                         return (
                           <div
                             key={t.id}
-                            className={`bg-background rounded-card  p-4 flex items-center justify-between gap-4 ${isTop ? "ring-1 ring-accent/30" : ""} ${match.hardStop ? "opacity-40" : ""}`}
+                            className={`bg-[#181818] border-subtle rounded-xl p-4 flex items-center justify-between gap-4 ${isTop ? "bg-[#1f8a65]/[0.06]" : ""} ${match.hardStop ? "opacity-40" : ""}`}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-semibold text-sm text-[var(--text-main)] truncate">
+                                <p className="font-semibold text-sm text-white truncate">
                                   {t.name}
                                 </p>
                                 {isTop && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25 shrink-0">
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1f8a65]/15 text-[#1f8a65] shrink-0">
                                     Recommandé
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                              <p className="text-xs text-white/45 mt-0.5">
                                 {goalLabels[t.goal] ?? t.goal} ·{" "}
                                 {levelLabels[t.level] ?? t.level} ·{" "}
                                 {t.frequency}j/sem. · {t.weeks} sem.
                               </p>
                               {match.hardStop && match.hardStopReason && (
-                                <p className="text-[9px] text-red-500 mt-1 flex items-center gap-1">
+                                <p className="text-[9px] text-red-400 mt-1 flex items-center gap-1">
                                   ✕ {match.hardStopReason}
                                 </p>
                               )}
                               {!match.hardStop && (match as any).warning && (
-                                <p className="text-[9px] text-amber-600 mt-1 flex items-center gap-1">
+                                <p className="text-[9px] text-amber-500 mt-1 flex items-center gap-1">
                                   ⚠ {(match as any).warning}
                                 </p>
                               )}
@@ -1040,7 +1156,7 @@ export default function ClientDetailPage() {
                                   {t.muscle_tags.map((tag: string) => (
                                     <span
                                       key={tag}
-                                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-surface-alt border border-subtle text-[var(--text-muted)]"
+                                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/[0.04] text-white/45"
                                     >
                                       {tag}
                                     </span>
@@ -1052,18 +1168,18 @@ export default function ClientDetailPage() {
                               {/* Compatibility score */}
                               <div className="flex flex-col items-center gap-0.5">
                                 <span
-                                  className={`text-xs font-bold px-2 py-1 rounded-btn ${scoreColor(match.score, match.hardStop)}`}
+                                  className={`text-xs font-bold px-2 py-1 rounded-lg ${scoreColor(match.score, match.hardStop)}`}
                                 >
                                   {match.hardStop ? "—" : match.score}
                                 </span>
-                                <span className="text-[9px] text-[var(--text-muted)]/70">
+                                <span className="text-[9px] text-white/40">
                                   {scoreLabel(match.score, match.hardStop)}
                                 </span>
                               </div>
                               <button
                                 disabled={assignLoading || match.hardStop}
                                 onClick={() => handleAssignTemplate(t.id)}
-                                className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-4 py-2 rounded-btn transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 {assignLoading ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -1082,18 +1198,18 @@ export default function ClientDetailPage() {
               ) : (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between gap-2">
-                    <h2 className="font-bold text-[var(--text-main)]">Programmes</h2>
+                    <h2 className="font-bold text-white">Programmes</h2>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setAssigningTemplate(true)}
-                        className="flex items-center gap-1.5 bg-surface-alt border border-subtle  text-[var(--text-main)] text-xs font-bold px-4 py-2 rounded-btn hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-1.5 bg-white/[0.04] border-button text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-80 transition-opacity"
                       >
                         <LayoutTemplate size={13} />
                         Depuis un template
                       </button>
                       <button
                         onClick={() => setCreatingProgram(true)}
-                        className="flex items-center gap-1.5 bg-white text-black border border-white/10 hover:bg-gray-200 text-xs font-bold px-4 py-2 rounded-btn transition-opacity shadow-lg"
+                        className="flex items-center gap-1.5 bg-[#1f8a65] border-button hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
                       >
                         <Plus size={13} />
                         Nouveau programme
@@ -1102,15 +1218,15 @@ export default function ClientDetailPage() {
                   </div>
 
                   {programs.length === 0 ? (
-                    <div className="bg-surface border border-subtle rounded-xl p-10 text-center">
+                    <div className="bg-[#181818] border-subtle rounded-xl p-10 text-center">
                       <Dumbbell
                         size={36}
-                        className="text-[var(--text-muted)] mx-auto mb-3 opacity-30"
+                        className="text-white/45 mx-auto mb-3 opacity-30"
                       />
-                      <p className="text-sm text-[var(--text-muted)] mb-1">
+                      <p className="text-sm text-white/45 mb-1">
                         Aucun programme pour ce client.
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]/60">
+                      <p className="text-xs text-white/40">
                         Créez son premier programme d'entraînement.
                       </p>
                     </div>
@@ -1118,21 +1234,21 @@ export default function ClientDetailPage() {
                     programs.map((prog: any) => (
                       <div
                         key={prog.id}
-                        className="bg-background rounded-card  p-5"
+                        className="bg-[#181818] border-subtle rounded-xl p-5"
                       >
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-[var(--text-main)]">
+                              <p className="font-bold text-white">
                                 {prog.name}
                               </p>
                               {prog.status !== "active" && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-surface-alt border border-subtle text-secondary">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-white/45">
                                   Masqué
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                            <p className="text-xs text-white/45 mt-0.5">
                               {prog.weeks} semaine{prog.weeks > 1 ? "s" : ""} ·{" "}
                               {(prog.program_sessions ?? []).length} séance
                               {(prog.program_sessions ?? []).length !== 1
@@ -1154,7 +1270,7 @@ export default function ClientDetailPage() {
                                   ? "Masquer au client"
                                   : "Rendre visible au client"
                               }
-                              className={`p-1 transition-colors ${prog.status === "active" ? "text-accent hover:text-[var(--text-muted)]" : "text-[var(--text-muted)] hover:text-accent"}`}
+                              className={`p-1 transition-colors ${prog.status === "active" ? "text-accent hover:text-white/45" : "text-white/45 hover:text-accent"}`}
                             >
                               {prog.status === "active" ? (
                                 <Eye size={14} />
@@ -1165,13 +1281,13 @@ export default function ClientDetailPage() {
                             <Link
                               href={`/coach/clients/${clientId}/programs/${prog.id}/preview`}
                               title="Visualiser comme le client"
-                              className="p-1 text-[var(--text-muted)] hover:text-accent transition-colors"
+                              className="p-1 text-white/45 hover:text-accent transition-colors"
                             >
                               <ExternalLink size={14} />
                             </Link>
                             <button
                               onClick={() => setEditingProgram(prog)}
-                              className="text-xs text-[var(--text-muted)] hover:text-accent font-medium transition-colors"
+                              className="text-xs text-white/45 hover:text-accent font-medium transition-colors"
                             >
                               Modifier
                             </button>
@@ -1182,7 +1298,7 @@ export default function ClientDetailPage() {
                                   name: prog.name,
                                 })
                               }
-                              className="text-[var(--text-muted)] hover:text-red-500 transition-colors p-1"
+                              className="text-white/45 hover:text-red-500 transition-colors p-1"
                               title="Supprimer"
                             >
                               <Trash2 size={13} />
@@ -1205,9 +1321,9 @@ export default function ClientDetailPage() {
                               return (
                                 <div
                                   key={s.id}
-                                  className="bg-surface-alt border border-subtle rounded-btn px-3 py-2"
+                                  className="bg-white/[0.04] border-subtle rounded-lg px-3 py-2"
                                 >
-                                  <p className="text-xs font-semibold text-[var(--text-main)]">
+                                  <p className="text-xs font-semibold text-white">
                                     {s.name}
                                   </p>
                                   {s.day_of_week && (
@@ -1215,7 +1331,7 @@ export default function ClientDetailPage() {
                                       {days[s.day_of_week - 1]}
                                     </p>
                                   )}
-                                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                  <p className="text-[10px] text-white/45 mt-0.5">
                                     {(s.program_exercises ?? []).length}{" "}
                                     exercice
                                     {(s.program_exercises ?? []).length !== 1

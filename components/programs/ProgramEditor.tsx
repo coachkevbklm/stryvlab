@@ -222,36 +222,36 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
   return (
     <div className="flex flex-col gap-5">
       {/* Programme meta */}
-      <div className="bg-surface rounded-card p-5 flex flex-col gap-4">
-        <h3 className="font-semibold text-primary text-sm">Informations du programme</h3>
+      <div className="bg-[#181818] rounded-xl p-5 flex flex-col gap-4">
+        <h3 className="font-semibold text-white text-sm">Informations du programme</h3>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="text-xs font-semibold text-secondary uppercase tracking-wider block mb-1">Nom du programme *</label>
+            <label className="text-xs font-semibold text-white/45 uppercase tracking-wider block mb-1">Nom du programme *</label>
             <input
               value={program.name}
               onChange={e => updateProgram({ name: e.target.value })}
               placeholder="ex: PPL Hypertrophie S1"
-              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-white/[0.04] rounded-lg text-sm text-white outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-secondary uppercase tracking-wider block mb-1">Durée (semaines)</label>
+            <label className="text-xs font-semibold text-white/45 uppercase tracking-wider block mb-1">Durée (semaines)</label>
             <input
               type="number"
               min={1}
               max={52}
               value={program.weeks}
               onChange={e => updateProgram({ weeks: parseInt(e.target.value) || 4 })}
-              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-white/[0.04] rounded-lg text-sm text-white outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-secondary uppercase tracking-wider block mb-1">Description</label>
+            <label className="text-xs font-semibold text-white/45 uppercase tracking-wider block mb-1">Description</label>
             <input
               value={program.description}
               onChange={e => updateProgram({ description: e.target.value })}
               placeholder="Optionnel"
-              className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full px-3 py-2 bg-white/[0.04] rounded-lg text-sm text-white outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
         </div>
@@ -260,15 +260,15 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
       {/* Sessions */}
       <div className="flex flex-col gap-3">
         {program.sessions.map((session, si) => (
-          <div key={si} className="bg-surface rounded-card overflow-hidden">
+          <div key={si} className="bg-[#181818] rounded-xl overflow-hidden">
             {/* Session header */}
             <div className="flex items-center gap-2 p-4 border-b border-white/40">
-              <GripVertical size={14} className="text-secondary shrink-0" />
+              <GripVertical size={14} className="text-white/45 shrink-0" />
               <input
                 value={session.name}
                 onChange={e => updateSession(si, { name: e.target.value })}
                 placeholder="Nom de la séance (ex: Push A)"
-                className="flex-1 bg-transparent text-sm font-semibold text-primary outline-none placeholder-secondary/40"
+                className="flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder-secondary/40"
               />
               {/* Day picker */}
               <div className="flex gap-1">
@@ -280,7 +280,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                     className={`w-6 h-6 rounded text-[9px] font-bold transition-colors ${
                       session.day_of_week === di + 1
                         ? 'bg-accent text-white'
-                        : 'bg-surface-light text-secondary hover:text-primary'
+                        : 'bg-white/[0.04] text-white/45 hover:text-white'
                     }`}
                   >
                     {d}
@@ -290,14 +290,14 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
               <button
                 type="button"
                 onClick={() => updateSession(si, { open: !session.open })}
-                className="text-secondary hover:text-primary"
+                className="text-white/45 hover:text-white"
               >
                 {session.open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
               </button>
               <button
                 type="button"
                 onClick={() => removeSession(si)}
-                className="text-secondary hover:text-red-500 transition-colors"
+                className="text-white/45 hover:text-red-500 transition-colors"
               >
                 <Trash2 size={14} />
               </button>
@@ -307,58 +307,58 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
             {session.open && (
               <div className="p-4 flex flex-col gap-3">
                 {session.exercises.map((ex, ei) => (
-                  <div key={ei} className="bg-surface-light rounded-btn p-3 flex flex-col gap-2">
+                  <div key={ei} className="bg-white/[0.04] rounded-lg p-3 flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <input
                         value={ex.name}
                         onChange={e => updateExercise(si, ei, { name: e.target.value })}
                         placeholder="Nom de l'exercice *"
-                        className="flex-1 bg-transparent text-sm font-medium text-primary outline-none placeholder-secondary/40"
+                        className="flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder-secondary/40"
                       />
-                      <button type="button" onClick={() => removeExercise(si, ei)} className="text-secondary hover:text-red-500">
+                      <button type="button" onClick={() => removeExercise(si, ei)} className="text-white/45 hover:text-red-500">
                         <Trash2 size={13} />
                       </button>
                     </div>
                     {/* Ligne 1 — prescription de base */}
                     <div className="grid grid-cols-4 gap-2">
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Séries</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">Séries</label>
                         <input
                           type="number"
                           min={1}
                           value={ex.sets}
                           onChange={e => updateExercise(si, ei, { sets: parseInt(e.target.value) || 3 })}
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-accent/40"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Reps</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">Reps</label>
                         <input
                           value={ex.reps}
                           onChange={e => updateExercise(si, ei, { reps: e.target.value })}
                           placeholder="8-12"
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-accent/40"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Repos (s)</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">Repos (s)</label>
                         <input
                           type="number"
                           min={0}
                           value={ex.rest_sec ?? ''}
                           onChange={e => updateExercise(si, ei, { rest_sec: parseInt(e.target.value) || null })}
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-accent/40"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">RIR</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">RIR</label>
                         <input
                           type="number"
                           min={0}
                           max={5}
                           value={ex.rir ?? ''}
                           onChange={e => updateExercise(si, ei, { rir: parseInt(e.target.value) ?? null })}
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-accent/40"
                         />
                       </div>
                     </div>
@@ -371,7 +371,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">RIR Cible</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">RIR Cible</label>
                         <input
                           type="number"
                           min={0}
@@ -379,11 +379,11 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                           value={ex.target_rir ?? ''}
                           onChange={e => updateExercise(si, ei, { target_rir: e.target.value === '' ? null : parseInt(e.target.value) })}
                           placeholder="2"
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-violet-400/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-violet-400/40"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Incrément (kg)</label>
+                        <label className="text-[9px] font-bold text-white/45 uppercase block mb-0.5">Incrément (kg)</label>
                         <input
                           type="number"
                           min={0.5}
@@ -391,7 +391,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                           step={0.5}
                           value={ex.weight_increment_kg}
                           onChange={e => updateExercise(si, ei, { weight_increment_kg: parseFloat(e.target.value) || 2.5 })}
-                          className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-violet-400/40"
+                          className="w-full bg-[#181818] rounded px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-violet-400/40"
                         />
                       </div>
                     </div>
@@ -422,12 +422,12 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                           <button
                             type="button"
                             onClick={() => setPickerTarget({ si, ei })}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:opacity-80 transition-opacity bg-accent/10 px-2.5 py-1.5 rounded-btn"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:opacity-80 transition-opacity bg-accent/10 px-2.5 py-1.5 rounded-lg"
                           >
                             <Library size={12} />
                             Bibliothèque
                           </button>
-                          <span className="text-secondary/40 text-[10px]">ou</span>
+                          <span className="text-white/45/40 text-[10px]">ou</span>
                           <input
                             ref={el => { fileInputRefs.current[`${si}-${ei}`] = el }}
                             type="file"
@@ -443,7 +443,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                             type="button"
                             disabled={uploadingKey === `${si}-${ei}`}
                             onClick={() => fileInputRefs.current[`${si}-${ei}`]?.click()}
-                            className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 text-xs text-white/45 hover:text-white transition-colors disabled:opacity-50"
                           >
                             {uploadingKey === `${si}-${ei}`
                               ? <><Loader2 size={12} className="animate-spin" />Upload…</>
@@ -458,7 +458,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                       value={ex.notes}
                       onChange={e => updateExercise(si, ei, { notes: e.target.value })}
                       placeholder="Notes (optionnel)"
-                      className="bg-transparent text-xs text-secondary outline-none placeholder-secondary/30 border-t border-white/30 pt-2"
+                      className="bg-transparent text-xs text-white/45 outline-none placeholder-secondary/30 border-t border-white/30 pt-2"
                     />
                   </div>
                 ))}
@@ -466,7 +466,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
                 <button
                   type="button"
                   onClick={() => addExercise(si)}
-                  className="flex items-center gap-1.5 text-xs text-secondary hover:text-accent transition-colors py-1"
+                  className="flex items-center gap-1.5 text-xs text-white/45 hover:text-accent transition-colors py-1"
                 >
                   <Plus size={13} />
                   Ajouter un exercice
@@ -479,7 +479,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
         <button
           type="button"
           onClick={addSession}
-          className="flex items-center gap-2 text-sm text-secondary hover:text-accent transition-colors py-2"
+          className="flex items-center gap-2 text-sm text-white/45 hover:text-accent transition-colors py-2"
         >
           <Plus size={15} />
           Ajouter une séance
@@ -487,7 +487,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-50 rounded-btn px-3 py-2">{error}</p>
+        <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
       )}
 
       {/* Exercise picker modal */}
@@ -511,7 +511,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm text-secondary hover:text-primary px-4 py-2"
+            className="text-sm text-white/45 hover:text-white px-4 py-2"
           >
             Annuler
           </button>
@@ -520,7 +520,7 @@ export default function ProgramEditor({ clientId, initial, onSaved, onCancel }: 
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-accent text-white text-sm font-bold px-6 py-2.5 rounded-btn hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg"
+          className="flex items-center gap-2 bg-accent text-white text-sm font-bold px-6 py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Enregistrement…' : 'Enregistrer le programme'}

@@ -1,79 +1,285 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
-  User, Users, Mail, Lock, Loader2, ChevronLeft, ChevronDown,
-  Briefcase, Activity, Phone, ShieldCheck, AlertCircle, CheckCircle2,
-  Utensils, BarChart3, Moon, RefreshCw, Droplet, HeartPulse,
-  Dumbbell, Brain, Layers, Zap, Database, FileText, ArrowRight,
-  MessageCircle, Search
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { login, signup, resendEmail } from '@/app/auth/login/actions';
+  User,
+  Users,
+  Mail,
+  Lock,
+  Loader2,
+  ChevronLeft,
+  ChevronDown,
+  Briefcase,
+  Activity,
+  Phone,
+  ShieldCheck,
+  AlertCircle,
+  CheckCircle2,
+  Utensils,
+  BarChart3,
+  Moon,
+  RefreshCw,
+  Droplet,
+  HeartPulse,
+  Dumbbell,
+  Brain,
+  Layers,
+  Zap,
+  Database,
+  FileText,
+  ArrowRight,
+  Search,
+  MessageCircle,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { login, signup, resendEmail } from "@/app/auth/login/actions";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// --- TOOLS ---
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
 const TOOLS = [
-  { id: 'macros', title: 'Kcal & Macros', icon: Utensils, desc: 'Moteur de calcul des besoins énergétiques et segmentation des nutriments (BMR, NEAT) selon le profil métabolique.' },
-  { id: 'bodyfat', title: 'Body Fat %', icon: BarChart3, desc: 'Calcul précis de la composition corporelle (masse grasse/maigre) via les protocoles Navy et Jackson-Pollock.' },
-  { id: 'cycle', title: 'Cycle Sync', icon: Moon, desc: 'Synchronisation de la nutrition et de l\'entraînement avec les cycles hormonaux pour maximiser la performance féminine.' },
-  { id: 'carb', title: 'Carb Cycling', icon: RefreshCw, desc: 'Stratégie de cyclage des glucides pour optimiser la sensibilité à l\'insuline et relancer le métabolisme.' },
-  { id: 'hydro', title: 'Hydratation', icon: Droplet, desc: 'Suivi hydrique et électrolytique personnalisé selon l\'intensité de l\'effort, le climat et le métabolisme individuel.' },
-  { id: 'hr', title: 'HR Zones', icon: HeartPulse, desc: 'Prescription d\'intensité précise via la méthode Karvonen pour le travail cardiovasculaire et le VO2 Max.' },
-  { id: '1rm', title: '1RM Calc.', icon: Dumbbell, desc: 'Estimation de la force maximale permettant de définir les charges de travail théoriques sans risque de blessure.' },
-  { id: 'neuro', title: 'Neuro Profile', icon: Brain, desc: 'Individualisation de l\'entraînement et de la récupération selon la dominance neurochimique de l\'athlète.' },
-  { id: 'stress', title: 'Charge Allost.', icon: Activity, desc: 'Surveillance nerveuse globale (sommeil, fatigue, cortisol) pour ajuster l\'intensité et éviter le surentraînement.' },
-  { id: 'mrv', title: 'MRV Estim.', icon: Layers, desc: 'Définition du volume maximal récupérable pour saturer l\'hypertrophie musculaire sans saturation systémique.' },
-  { id: 'morpho', title: 'Morpho', icon: Zap, desc: 'Analyse visuelle par IA des leviers articulaires et de la morphologie pour adapter chaque mouvement.', isNew: true },
+  {
+    id: "macros",
+    title: "Kcal & Macros",
+    icon: Utensils,
+    desc: "Besoins énergétiques et segmentation des nutriments (BMR, NEAT) selon le profil métabolique.",
+  },
+  {
+    id: "bodyfat",
+    title: "Body Fat %",
+    icon: BarChart3,
+    desc: "Composition corporelle précise via les protocoles Navy et Jackson-Pollock.",
+  },
+  {
+    id: "cycle",
+    title: "Cycle Sync",
+    icon: Moon,
+    desc: "Synchronisation nutrition/entraînement avec les cycles hormonaux pour la performance féminine.",
+  },
+  {
+    id: "carb",
+    title: "Carb Cycling",
+    icon: RefreshCw,
+    desc: "Cyclage des glucides pour optimiser la sensibilité à l'insuline et relancer le métabolisme.",
+  },
+  {
+    id: "hydro",
+    title: "Hydratation",
+    icon: Droplet,
+    desc: "Suivi hydrique et électrolytique personnalisé selon l'effort, le climat et le métabolisme.",
+  },
+  {
+    id: "hr",
+    title: "HR Zones",
+    icon: HeartPulse,
+    desc: "Prescription d'intensité précise via Karvonen pour le travail cardiovasculaire et VO2 Max.",
+  },
+  {
+    id: "1rm",
+    title: "1RM Calc.",
+    icon: Dumbbell,
+    desc: "Estimation de la force maximale pour définir les charges théoriques sans risque de blessure.",
+  },
+  {
+    id: "neuro",
+    title: "Neuro Profile",
+    icon: Brain,
+    desc: "Individualisation de l'entraînement selon la dominance neurochimique de l'athlète.",
+  },
+  {
+    id: "stress",
+    title: "Charge Allost.",
+    icon: Activity,
+    desc: "Surveillance nerveuse globale (sommeil, fatigue, cortisol) pour ajuster la charge d'entraînement.",
+  },
+  {
+    id: "mrv",
+    title: "MRV Estim.",
+    icon: Layers,
+    desc: "Volume maximal récupérable pour saturer l'hypertrophie sans saturation systémique.",
+  },
+  {
+    id: "morpho",
+    title: "Morpho",
+    icon: Zap,
+    desc: "Analyse visuelle IA des leviers articulaires et de la morphologie pour adapter chaque mouvement.",
+    isNew: true,
+  },
 ];
 
 const SIGNUP_TOOLS = [
-  'Excel / Sheets', 'WhatsApp', 'Email', 'Notion / Docs',
-  'Hevy', 'TrueCoach', 'MyFitnessPal', 'Trainerize',
-  'Cahier / Papier', 'Canva', 'Google Forms', 'Instagram DM',
+  "Excel / Sheets",
+  "WhatsApp",
+  "Email",
+  "Notion / Docs",
+  "Hevy",
+  "TrueCoach",
+  "MyFitnessPal",
+  "Trainerize",
+  "Cahier / Papier",
+  "Canva",
+  "Google Forms",
+  "Instagram DM",
 ];
 
 const SIGNUP_CHALLENGES = [
-  'Trop de temps passé en administration',
-  'Suivi dispersé entre plusieurs outils',
-  'Difficultés à créer des programmes',
-  'Manque de visibilité sur la progression client',
-  'Communication compliquée avec les clients',
-  'Gestion des paiements et factures',
-  'Pas de process de suivi structuré',
+  "Trop de temps passé en administration",
+  "Suivi dispersé entre plusieurs outils",
+  "Difficultés à créer des programmes",
+  "Manque de visibilité sur la progression client",
+  "Communication compliquée avec les clients",
+  "Gestion des paiements et factures",
+  "Pas de process de suivi structuré",
 ];
 
 const SIGNUP_DISCOVERY = [
-  'Instagram / TikTok',
-  'Recommandation d\'un collègue',
-  'Bouche à oreille',
-  'Google',
-  'YouTube / Podcast',
-  'Événement / formation',
+  "Instagram / TikTok",
+  "Recommandation d'un collègue",
+  "Bouche à oreille",
+  "Google",
+  "YouTube / Podcast",
+  "Événement / formation",
 ];
 
-// --- ANIMATION VARIANTS ---
+// ─── PLATEFORME COACH ────────────────────────────────────────────────────────
+
+const COACH_FEATURES = [
+  {
+    icon: Users,
+    label: "Tous vos clients au même endroit",
+    desc: "Fini les fichiers Excel éparpillés. Chaque client a son dossier complet — objectifs, historique, photos, programme et paiements.",
+  },
+  {
+    icon: Layers,
+    label: "Des programmes générés en 1 clic",
+    desc: "Décrivez le profil de votre client, STRYV construit le programme adapté à son niveau, son équipement et ses objectifs.",
+  },
+  {
+    icon: FileText,
+    label: "Vos templates, matchés automatiquement",
+    desc: "Créez vos modèles de programmes une seule fois. STRYV les adapte à chaque client selon son matériel et son niveau réel.",
+  },
+  {
+    icon: BarChart3,
+    label: "Visualisez la progression en un coup d'œil",
+    desc: "Vos clients progressent-ils vraiment ? Des graphiques clairs pour répondre à cette question sans chercher dans vos notes.",
+  },
+  {
+    icon: Database,
+    label: "Gérez vos revenus sans comptable",
+    desc: "Abonnements, paiements, formules — tout est centralisé. Vous savez en temps réel ce que vous gagnez chaque mois.",
+  },
+  {
+    icon: MessageCircle,
+    label: "Des bilans qui se remplissent seuls",
+    desc: "Envoyez un formulaire à votre client en 1 clic. Il le complète depuis son téléphone, vous recevez les résultats directement.",
+  },
+];
+
+// ─── CLIENT APP ──────────────────────────────────────────────────────────────
+
+const CLIENT_FEATURES = [
+  {
+    icon: Dumbbell,
+    label: "Le programme toujours disponible",
+    desc: "Vos clients voient leurs séances, leurs séries et leurs charges depuis leur téléphone, à tout moment.",
+  },
+  {
+    icon: Activity,
+    label: "Log de séance intégré",
+    desc: "Ils notent leurs performances directement dans l'app. Vous les consultez en temps réel depuis votre tableau de bord.",
+  },
+  {
+    icon: Moon,
+    label: "Bilans hebdo sur mobile",
+    desc: "Récupération, nutrition, sommeil — ils répondent en 2 minutes depuis leur téléphone, sans inscription complexe.",
+  },
+  {
+    icon: HeartPulse,
+    label: "Leur progression visible",
+    desc: "Photos, courbes de poids, résultats d'analyse — tout s'accumule automatiquement pour motiver et fidéliser.",
+  },
+];
+
+// ─── ANIMATION VARIANTS ───────────────────────────────────────────────────────
+
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1], staggerChildren: 0.1 }
-  }
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: [0.16, 1, 0.3, 1],
+      staggerChildren: 0.08,
+    },
+  },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
 const formVariants = {
   hidden: { opacity: 0, x: 10 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-  exit: { opacity: 0, x: -10, transition: { duration: 0.3, ease: 'easeIn' } }
+  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  exit: { opacity: 0, x: -10, transition: { duration: 0.3, ease: "easeIn" } },
 };
 
-// --- AUTH FORM CARD ---
+// ─── SHARED PRIMITIVES ────────────────────────────────────────────────────────
+
+// Label natif — pas shadcn (évite le conflit text-sm base)
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">
+      {children}
+    </label>
+  );
+}
+
+// Input natif — pas shadcn (évite les conflits h-8 / bg-transparent)
+function FieldInput({
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className={cn(
+        "w-full rounded-xl bg-[#0a0a0a] border-input px-4 py-0 text-[14px] font-medium text-white placeholder:text-white/20",
+        "outline-none transition-all duration-200",
+        "focus:ring-0 focus:outline-none",
+        "h-[52px]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+// Barre de progression native
+function StepProgress({ step, total }: { step: number; total: number }) {
+  return (
+    <div className="h-[2px] w-full rounded-full bg-white/[0.06] overflow-hidden">
+      <motion.div
+        className="h-full rounded-full bg-[#1f8a65]"
+        initial={{ width: 0 }}
+        animate={{ width: `${(step / total) * 100}%` }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      />
+    </div>
+  );
+}
+
+// ─── TYPES ────────────────────────────────────────────────────────────────────
+
 type FormValues = {
   firstName: string;
   lastName: string;
@@ -94,7 +300,7 @@ type AuthCardProps = {
   isLoading: boolean;
   error: string | null;
   success: string | null;
-  resendStatus: 'idle' | 'loading' | 'success' | 'error';
+  resendStatus: "idle" | "loading" | "success" | "error";
   formValues: FormValues;
   setFormValue: (field: keyof FormValues, value: string) => void;
   selectedTools: string[];
@@ -106,354 +312,830 @@ type AuthCardProps = {
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
+// ─── AUTH CARD ────────────────────────────────────────────────────────────────
+
 function AuthFormCard({
-  isLogin, setIsLogin, step, isLoading, error, success, resendStatus,
-  formValues, setFormValue, selectedTools, setSelectedTools,
-  selectedChallenges, setSelectedChallenges,
-  handleBack, handleResend, handleSubmit,
+  isLogin,
+  setIsLogin,
+  step,
+  isLoading,
+  error,
+  success,
+  resendStatus,
+  formValues,
+  setFormValue,
+  selectedTools,
+  setSelectedTools,
+  selectedChallenges,
+  setSelectedChallenges,
+  handleBack,
+  handleResend,
+  handleSubmit,
 }: AuthCardProps) {
-  const toggleTool = (item: string) => {
-    setSelectedTools(selectedTools.includes(item)
-      ? selectedTools.filter(i => i !== item)
-      : [...selectedTools, item]);
-  };
-  const toggleChallenge = (item: string) => {
-    setSelectedChallenges(selectedChallenges.includes(item)
-      ? selectedChallenges.filter(i => i !== item)
-      : [...selectedChallenges, item]);
-  };
+  const toggleTool = (item: string) =>
+    setSelectedTools(
+      selectedTools.includes(item)
+        ? selectedTools.filter((i) => i !== item)
+        : [...selectedTools, item],
+    );
+
+  const toggleChallenge = (item: string) =>
+    setSelectedChallenges(
+      selectedChallenges.includes(item)
+        ? selectedChallenges.filter((i) => i !== item)
+        : [...selectedChallenges, item],
+    );
+
   const f = (field: keyof FormValues) => ({
     value: formValues[field],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setFormValue(field, e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setFormValue(field, e.target.value),
   });
 
-  const stepIcon = () => {
-    if (isLogin) return <User size={32} className="text-accent opacity-90" strokeWidth={1.5} />;
-    if (step === 1) return <User size={32} className="text-accent opacity-90" strokeWidth={1.5} />;
-    if (step === 2) return <Users size={32} className="text-accent opacity-90" strokeWidth={1.5} />;
-    return <Lock size={32} className="text-accent opacity-90" strokeWidth={1.5} />;
-  };
+  const stepLabel = isLogin
+    ? "Accès Coach"
+    : step === 1
+      ? "Votre profil"
+      : step === 2
+        ? "Votre pratique"
+        : "Votre accès";
+
+  const stepHint = isLogin
+    ? "Identifiez-vous pour accéder à votre espace coach."
+    : step === 1
+      ? "Configurez votre espace en quelques secondes."
+      : step === 2
+        ? "Parlez-nous de votre activité pour personnaliser votre espace."
+        : "Choisissez votre email et mot de passe.";
+
+  const StepIcon = isLogin
+    ? User
+    : step === 1
+      ? User
+      : step === 2
+        ? Users
+        : Lock;
 
   return (
-    <div className="relative flex max-h-[min(100dvh-2rem,920px)] min-h-[520px] flex-col overflow-hidden rounded-xl border border-subtle bg-surface text-center text-on-dark shadow-elevated">
-
-      {/* Header — shrink-0, ne scrolle pas */}
-      <div className="shrink-0 px-8 pt-10 pb-6 md:px-10 md:pt-12">
-
-        {/* Progress bar (signup only) */}
-        {!isLogin && (
-          <div className="mb-6 h-1 w-full overflow-hidden rounded-full bg-white/10">
-            <motion.div
-              className="h-full rounded-full bg-accent"
-              initial={{ width: 0 }}
-              animate={{ width: `${(step / 3) * 100}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
-          </div>
-        )}
-        {isLogin && <div className="mb-6 h-1" />}
-        <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-          {stepIcon()}
+    <div className="relative flex max-h-[calc(100dvh-64px)] xl:max-h-[calc(100dvh-80px)] min-h-[520px] flex-col overflow-hidden rounded-2xl bg-[#181818] border-subtle">
+      {/* Header — shrink-0 */}
+      <div className="shrink-0 px-8 pt-9 pb-5 md:px-10">
+        {/* Progress bar (signup uniquement) */}
+        <div className="mb-7">
+          {!isLogin ? (
+            <StepProgress step={step} total={3} />
+          ) : (
+            <div className="h-[2px]" />
+          )}
         </div>
-        <h2 className="mx-auto mb-3 max-w-[280px] text-2xl font-semibold leading-tight tracking-tight text-white md:text-[1.65rem]">
-          {isLogin ? 'Accès Coach' : (step === 1 ? 'Votre profil' : step === 2 ? 'Votre pratique' : 'Votre accès')}
+
+        {/* Icon */}
+        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.04]">
+          <StepIcon size={22} className="text-[#1f8a65]" strokeWidth={1.5} />
+        </div>
+
+        {/* Title + hint */}
+        <h2 className="mb-1.5 text-center text-xl font-semibold leading-tight tracking-tight text-white">
+          {stepLabel}
         </h2>
-        <p className="mx-auto max-w-[320px] text-[13px] font-medium leading-relaxed text-white/45">
-          {isLogin
-            ? "Identifiez-vous pour accéder à votre espace coach."
-            : (step === 1
-                ? "Configurez votre espace de travail en quelques secondes."
-                : step === 2
-                  ? "Parlez-nous de votre activité pour personnaliser votre espace."
-                  : "Choisissez votre email et mot de passe."
-              )}
+        <p className="mx-auto max-w-[280px] text-center text-[11px] font-medium leading-relaxed text-white/55">
+          {stepHint}
         </p>
       </div>
 
-      {/* Zone scrollable — form + alerts */}
-      <div className="no-scrollbar flex-1 overflow-y-auto px-8 md:px-10">
-
-      {/* Alert erreur */}
-      <AnimatePresence mode="wait">
-        {error && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-6 flex items-start gap-3 rounded-2xl border border-red-400/35 bg-red-950/45 p-4">
-            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-300" />
-            <p className="text-left text-[13px] font-semibold leading-snug text-red-100">{error}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Bannière confirmation e-mail (visible après inscription réussie) */}
-      <AnimatePresence>
-        {isLogin && success && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="mb-6 rounded-2xl border border-emerald-400/30 bg-emerald-950/40 p-5 text-left"
-          >
-            <div className="mb-4 flex items-start gap-3">
-              <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-300" />
-              <p className="text-[13px] font-semibold leading-snug text-emerald-50">{success}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendStatus === 'loading' || resendStatus === 'success'}
-              className="w-full rounded-xl border border-emerald-400/40 bg-emerald-500/15 py-2.5 text-[12px] font-bold text-emerald-100 transition-all duration-200 hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {resendStatus === 'loading' && 'Envoi en cours...'}
-              {resendStatus === 'success' && '✓ E-mail renvoyé'}
-              {resendStatus === 'error' && 'Erreur — réessayer'}
-              {resendStatus === 'idle' && 'Renvoyer l\'e-mail de confirmation'}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="text-left">
+      {/* Scrollable body */}
+      <div className="no-scrollbar flex-1 overflow-y-auto px-8 pb-2 md:px-10">
+        {/* Error */}
         <AnimatePresence mode="wait">
-          {isLogin ? (
-            <motion.div key="login" initial="hidden" animate="visible" exit="exit" variants={formVariants} className="space-y-8">
-              <div className="space-y-3">
-                <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Email Coach</label>
-                <div className="relative group/input">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/25 transition-colors group-focus-within/input:text-accent" size={20} strokeWidth={1.5} />
-                  <input name="email" type="email" required placeholder="nom@stryvlab.com" {...f('email')} className="ui-input-dark pl-16 pr-6 h-16" />
-                </div>
-              </div>
-              <div className="space-y-3 pb-4">
-                <div className="flex items-center justify-between px-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-secondary">Mot de Passe</label>
-                  <a href="#" className="text-[10px] font-bold uppercase tracking-widest text-accent underline decoration-accent/30 underline-offset-4 transition-colors hover:text-accent-hover">Oubliée ?</a>
-                </div>
-                <div className="relative group/input">
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-white/25 transition-colors group-focus-within/input:text-accent" size={20} strokeWidth={1.5} />
-                  <input name="password" type="password" required placeholder="••••••••" {...f('password')} className="ui-input-dark pl-16 pr-6 h-16 tracking-[0.4em]" />
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="signup" initial="hidden" animate="visible" exit="exit" variants={formVariants} className="space-y-8">
-              {step === 1 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Prénom</label>
-                      <input name="firstName" type="text" required placeholder="Jean" {...f('firstName')} className="ui-input-dark px-6 h-14" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Nom</label>
-                      <input name="lastName" type="text" required placeholder="Dupont" {...f('lastName')} className="ui-input-dark px-6 h-14" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Nom Studio / Lab</label>
-                    <div className="relative group/input">
-                      <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 text-white/25 transition-colors group-focus-within/input:text-accent" size={20} strokeWidth={1.5} />
-                      <input name="coachName" type="text" placeholder="STRYV Performance Lab" {...f('coachName')} className="ui-input-dark pl-16 pr-6 h-16" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Téléphone</label>
-                    <div className="relative group/input">
-                      <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-white/25 transition-colors group-focus-within/input:text-accent" size={20} strokeWidth={1.5} />
-                      <input name="phone" type="tel" required placeholder="+33 6 ..." {...f('phone')} className="ui-input-dark pl-16 pr-6 h-16" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-4">
-
-                  {/* Expérience + Clients */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Expérience</label>
-                      <div className="relative">
-                        <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" size={16} strokeWidth={1.5} />
-                        <select name="experienceLevel" required {...f('experienceLevel')} className="ui-input-dark pl-10 pr-8 h-12 appearance-none text-[13px]">
-                          <option value="" disabled>Niveau ?</option>
-                          <option value="debutant">Débutant (- 1 an)</option>
-                          <option value="intermediaire">Intermédiaire (1-3 ans)</option>
-                          <option value="confirme">Confirmé (3-5 ans)</option>
-                          <option value="expert">Expert (5 ans +)</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/35" size={14} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Clients actifs</label>
-                      <div className="relative">
-                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" size={16} strokeWidth={1.5} />
-                        <select name="activeClients" required {...f('activeClients')} className="ui-input-dark pl-10 pr-8 h-12 appearance-none text-[13px]">
-                          <option value="" disabled>Combien ?</option>
-                          <option value="0_5">Moins de 5</option>
-                          <option value="5_15">5 à 15</option>
-                          <option value="15_30">15 à 30</option>
-                          <option value="30_plus">Plus de 30</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/35" size={14} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Outils utilisés */}
-                  <input type="hidden" name="currentTools" value={selectedTools.join(', ')} />
-                  <div className="space-y-3">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Outils utilisés actuellement</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {SIGNUP_TOOLS.map(tool => (
-                        <button
-                          key={tool} type="button" onClick={() => toggleTool(tool)}
-                          className={`rounded-xl border py-2.5 px-2 text-center text-[10px] font-semibold leading-tight transition-colors ${
-                            selectedTools.includes(tool)
-                              ? 'border-accent/50 bg-accent/15 text-accent'
-                              : 'border-white/10 bg-white/5 text-white/55 hover:border-white/20 hover:text-white'
-                          }`}
-                        >
-                          {tool}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Problèmes rencontrés */}
-                  <input type="hidden" name="mainChallenges" value={selectedChallenges.join(', ')} />
-                  <div className="space-y-3">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Ce qui vous pose problème aujourd'hui</label>
-                    <div className="flex flex-col gap-2">
-                      {SIGNUP_CHALLENGES.map(challenge => (
-                        <button
-                          key={challenge} type="button" onClick={() => toggleChallenge(challenge)}
-                          className={`rounded-xl border px-4 py-2.5 text-left text-[11px] font-medium transition-colors ${
-                            selectedChallenges.includes(challenge)
-                              ? 'border-accent/50 bg-accent/15 text-accent'
-                              : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white'
-                          }`}
-                        >
-                          {challenge}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Comment nous avez-vous connu */}
-                  <div className="space-y-2">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Comment nous avez-vous connu ?</label>
-                    <div className="relative">
-                      <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/25" size={18} strokeWidth={1.5} />
-                      <select name="discoverySource" {...f('discoverySource')} className="ui-input-dark pl-14 pr-12 h-14 appearance-none">
-                        <option value="">Sélectionner...</option>
-                        {SIGNUP_DISCOVERY.map(source => (
-                          <option key={source} value={source}>{source}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-white/35" size={16} />
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Email Pro</label>
-                    <div className="relative group/input">
-                      <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-white/25 transition-colors group-focus-within/input:text-accent" size={20} strokeWidth={1.5} />
-                      <input name="email" type="email" required placeholder="nom@stryvlab.com" {...f('email')} className="ui-input-dark pl-16 pr-6 h-16" />
-                    </div>
-                  </div>
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Mot de passe</label>
-                      <input name="password" type="password" required placeholder="••••••••" {...f('password')} className="ui-input-dark px-6 h-16 tracking-[0.4em]" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-secondary">Confirmation</label>
-                      <input name="confirmPassword" type="password" required placeholder="••••••••" {...f('confirmPassword')} className="ui-input-dark px-6 h-16 tracking-[0.4em]" />
-                    </div>
-                  </div>
-                </div>
-              )}
+          {error && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-4 flex items-start gap-2.5 rounded-xl bg-red-950/30 p-3.5"
+            >
+              <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-400" />
+              <p className="text-[12px] font-semibold leading-snug text-red-200">
+                {error}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Submit */}
-        <div className="pt-6 flex gap-4">
-          {!isLogin && (
-            <button type="button" onClick={handleBack} className="group flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-white/65 transition-all hover:border-white/20 hover:text-white active:scale-[0.98]">
-              <ChevronLeft size={22} className="transition-transform group-hover:-translate-x-0.5" />
-            </button>
+        {/* Success + resend */}
+        <AnimatePresence>
+          {isLogin && success && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-4 rounded-xl bg-[#1f4637]/30 p-4"
+            >
+              <div className="mb-3 flex items-start gap-2.5">
+                <CheckCircle2
+                  size={15}
+                  className="mt-0.5 shrink-0 text-[#1f8a65]"
+                />
+                <p className="text-[12px] font-semibold leading-snug text-emerald-100">
+                  {success}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={
+                  resendStatus === "loading" || resendStatus === "success"
+                }
+                className="w-full rounded-lg bg-[#1f8a65]/[0.08] py-2 text-[11px] font-bold text-[#1f8a65] transition-all hover:bg-[#1f8a65]/[0.14] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resendStatus === "loading" && "Envoi en cours..."}
+                {resendStatus === "success" && "✓ E-mail renvoyé"}
+                {resendStatus === "error" && "Erreur — réessayer"}
+                {resendStatus === "idle" && "Renvoyer l'e-mail de confirmation"}
+              </button>
+            </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <AnimatePresence mode="wait">
+            {isLogin ? (
+              <motion.div
+                key="login"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={formVariants}
+                className="space-y-4"
+              >
+                <div>
+                  <FieldLabel>Email Coach</FieldLabel>
+                  <div className="relative group/input">
+                    <Mail
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                      size={16}
+                      strokeWidth={1.5}
+                    />
+                    <FieldInput
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="nom@stryvlab.com"
+                      className="pl-10"
+                      {...f("email")}
+                    />
+                  </div>
+                </div>
+
+                <div className="pb-1">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <FieldLabel>Mot de Passe</FieldLabel>
+                    <a
+                      href="#"
+                      className="text-[10px] font-bold text-[#1f8a65]/70 underline-offset-3 hover:text-[#1f8a65] transition-colors"
+                    >
+                      Oubliée ?
+                    </a>
+                  </div>
+                  <div className="relative group/input">
+                    <Lock
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                      size={16}
+                      strokeWidth={1.5}
+                    />
+                    <FieldInput
+                      name="password"
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      className="pl-10 tracking-[0.3em]"
+                      {...f("password")}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="signup"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={formVariants}
+                className="space-y-4"
+              >
+                {/* Step 1 */}
+                {step === 1 && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <FieldLabel>Prénom</FieldLabel>
+                        <FieldInput
+                          name="firstName"
+                          type="text"
+                          required
+                          placeholder="Jean"
+                          {...f("firstName")}
+                        />
+                      </div>
+                      <div>
+                        <FieldLabel>Nom</FieldLabel>
+                        <FieldInput
+                          name="lastName"
+                          type="text"
+                          required
+                          placeholder="Dupont"
+                          {...f("lastName")}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <FieldLabel>Nom Studio / Lab</FieldLabel>
+                      <div className="relative group/input">
+                        <Briefcase
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                          size={16}
+                          strokeWidth={1.5}
+                        />
+                        <FieldInput
+                          name="coachName"
+                          type="text"
+                          placeholder="STRYV Performance Lab"
+                          className="pl-10"
+                          {...f("coachName")}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <FieldLabel>Téléphone</FieldLabel>
+                      <div className="relative group/input">
+                        <Phone
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                          size={16}
+                          strokeWidth={1.5}
+                        />
+                        <FieldInput
+                          name="phone"
+                          type="tel"
+                          required
+                          placeholder="+33 6 ..."
+                          className="pl-10"
+                          {...f("phone")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2 */}
+                {step === 2 && (
+                  <div className="space-y-5">
+                    {/* Expérience + Clients */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <FieldLabel>Expérience</FieldLabel>
+                        <div className="relative">
+                          <Activity
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20"
+                            size={14}
+                            strokeWidth={1.5}
+                          />
+                          <select
+                            name="experienceLevel"
+                            required
+                            {...f("experienceLevel")}
+                            className="h-[52px] w-full appearance-none rounded-xl bg-[#0a0a0a] border-input pl-9 pr-8 text-[13px] font-medium text-white outline-none transition-all focus:outline-none [&>option]:bg-[#0a0a0a]"
+                          >
+                            <option value="" disabled>
+                              Niveau ?
+                            </option>
+                            <option value="debutant">Débutant (- 1 an)</option>
+                            <option value="intermediaire">
+                              Intermédiaire (1–3 ans)
+                            </option>
+                            <option value="confirme">Confirmé (3–5 ans)</option>
+                            <option value="expert">Expert (5 ans +)</option>
+                          </select>
+                          <ChevronDown
+                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/25"
+                            size={13}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <FieldLabel>Clients actifs</FieldLabel>
+                        <div className="relative">
+                          <Users
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20"
+                            size={14}
+                            strokeWidth={1.5}
+                          />
+                          <select
+                            name="activeClients"
+                            required
+                            {...f("activeClients")}
+                            className="h-[52px] w-full appearance-none rounded-xl bg-[#0a0a0a] border-input pl-9 pr-8 text-[13px] font-medium text-white outline-none transition-all focus:outline-none [&>option]:bg-[#0a0a0a]"
+                          >
+                            <option value="" disabled>
+                              Combien ?
+                            </option>
+                            <option value="0_5">Moins de 5</option>
+                            <option value="5_15">5 à 15</option>
+                            <option value="15_30">15 à 30</option>
+                            <option value="30_plus">Plus de 30</option>
+                          </select>
+                          <ChevronDown
+                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/25"
+                            size={13}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Outils */}
+                    <input
+                      type="hidden"
+                      name="currentTools"
+                      value={selectedTools.join(", ")}
+                    />
+                    <div>
+                      <FieldLabel>Outils utilisés actuellement</FieldLabel>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {SIGNUP_TOOLS.map((tool) => (
+                          <button
+                            key={tool}
+                            type="button"
+                            onClick={() => toggleTool(tool)}
+                            className={cn(
+                              "rounded-lg px-2 py-2 text-center text-[10px] font-semibold leading-tight transition-all",
+                              selectedTools.includes(tool)
+                                ? "bg-[#1f8a65]/10 text-[#1f8a65]"
+                                : "bg-white/[0.02] text-white/35 hover:bg-white/[0.05] hover:text-white/60",
+                            )}
+                          >
+                            {tool}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Challenges */}
+                    <input
+                      type="hidden"
+                      name="mainChallenges"
+                      value={selectedChallenges.join(", ")}
+                    />
+                    <div>
+                      <FieldLabel>
+                        Ce qui vous pose problème aujourd'hui
+                      </FieldLabel>
+                      <div className="flex flex-col gap-1.5">
+                        {SIGNUP_CHALLENGES.map((challenge) => (
+                          <button
+                            key={challenge}
+                            type="button"
+                            onClick={() => toggleChallenge(challenge)}
+                            className={cn(
+                              "rounded-lg px-3.5 py-2.5 text-left text-[11px] font-medium transition-all",
+                              selectedChallenges.includes(challenge)
+                                ? "bg-[#1f8a65]/10 text-[#1f8a65]"
+                                : "bg-white/[0.02] text-white/35 hover:bg-white/[0.05] hover:text-white/60",
+                            )}
+                          >
+                            {challenge}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Discovery */}
+                    <div className="pb-1">
+                      <FieldLabel>Comment nous avez-vous connu ?</FieldLabel>
+                      <div className="relative">
+                        <Search
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                          size={15}
+                          strokeWidth={1.5}
+                        />
+                        <select
+                          name="discoverySource"
+                          {...f("discoverySource")}
+                          className="h-[52px] w-full appearance-none rounded-xl border border-white/[0.08] bg-[#121212] pl-10 pr-8 text-[13px] font-medium text-white outline-none transition-all focus:outline-none [&>option]:bg-[#0a0a0a]"
+                        >
+                          <option value="">Sélectionner...</option>
+                          {SIGNUP_DISCOVERY.map((source) => (
+                            <option key={source} value={source}>
+                              {source}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/25"
+                          size={14}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3 */}
+                {step === 3 && (
+                  <div className="space-y-4 pb-1">
+                    <div>
+                      <FieldLabel>Email Pro</FieldLabel>
+                      <div className="relative group/input">
+                        <Mail
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                          size={16}
+                          strokeWidth={1.5}
+                        />
+                        <FieldInput
+                          name="email"
+                          type="email"
+                          required
+                          placeholder="nom@stryvlab.com"
+                          className="pl-10"
+                          {...f("email")}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <FieldLabel>Mot de passe</FieldLabel>
+                      <FieldInput
+                        name="password"
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        className="tracking-[0.3em]"
+                        {...f("password")}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Confirmation</FieldLabel>
+                      <FieldInput
+                        name="confirmPassword"
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        className="tracking-[0.3em]"
+                        {...f("confirmPassword")}
+                      />
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Submit row */}
+          <div className="flex gap-2.5 pt-5 pb-1">
+            {!isLogin && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="group flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-white/[0.03] text-white/35 transition-all hover:bg-white/[0.06] hover:text-white/60 active:scale-[0.97]"
+              >
+                <ChevronLeft
+                  size={18}
+                  className="transition-transform group-hover:-translate-x-0.5"
+                />
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group/btn flex h-[52px] min-w-0 flex-1 items-center justify-between rounded-xl bg-[#1f8a65] border-button pl-5 pr-1.5 transition-all hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <ShieldCheck
+                  size={16}
+                  className={cn(
+                    "shrink-0 text-white/60",
+                    isLoading && "animate-pulse",
+                  )}
+                />
+                <span className="truncate text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+                  {isLoading
+                    ? "Connexion..."
+                    : isLogin
+                      ? "Se connecter"
+                      : step === 3
+                        ? "Créer mon compte"
+                        : "Suivant"}
+                </span>
+              </div>
+              <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg bg-black/[0.12]">
+                {isLoading ? (
+                  <Loader2 size={16} className="animate-spin text-white" />
+                ) : (
+                  <ArrowRight
+                    size={16}
+                    className="text-white transition-transform group-hover/btn:translate-x-0.5"
+                    strokeWidth={2.25}
+                  />
+                )}
+              </div>
+            </button>
+          </div>
+        </form>
+
+        {/* Toggle */}
+        <div className="mt-5 pb-8 pt-5 text-center">
           <button
-            type="submit" disabled={isLoading}
-            className="group/btn flex h-14 min-w-0 flex-1 items-center justify-between rounded-xl border border-white/10 bg-white pl-5 pr-1.5 font-semibold text-black shadow-none transition-all hover:bg-gray-200 disabled:opacity-50"
+            onClick={() => setIsLogin(!isLogin)}
+            className="group text-[11px] font-medium text-white/50 transition-colors hover:text-white/80"
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <ShieldCheck size={18} className={`shrink-0 ${isLoading ? 'animate-pulse text-black/40' : 'text-black/55'}`} />
-              <span className="truncate text-sm font-semibold uppercase tracking-wide">
-                {isLoading ? 'Connexion...' : (isLogin ? 'Se connecter' : (step === 3 ? 'Créer mon compte' : 'Suivant'))}
-              </span>
-            </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-black/5">
-              {isLoading ? (
-                <Loader2 size={18} className="animate-spin text-black" />
-              ) : (
-                <ArrowRight size={18} className="text-black transition-transform group-hover/btn:translate-x-0.5" strokeWidth={2.25} />
-              )}
-            </div>
+            {isLogin ? (
+              <>
+                Nouveau sur STRYV ?{" "}
+                <span className="font-bold text-[#1f8a65] group-hover:text-[#217356] transition-colors">
+                  Créer un compte
+                </span>
+              </>
+            ) : (
+              <>
+                Déjà un compte ?{" "}
+                <span className="font-bold text-[#1f8a65] group-hover:text-[#217356] transition-colors">
+                  Se connecter
+                </span>
+              </>
+            )}
           </button>
         </div>
-      </form>
-
-      {/* Toggle login / signup */}
-      <div className="mt-6 border-t border-white/10 pb-10 pt-6 md:pb-12">
-        <button
-          onClick={() => setIsLogin(!isLogin)}
-          className="group text-[12px] font-medium tracking-tight text-white/45 transition-colors hover:text-white"
-        >
-          {isLogin ? (
-            <>Nouveau sur STRYV ? <span className="font-semibold text-accent underline decoration-accent/35 underline-offset-4 group-hover:decoration-accent">Créer un compte</span></>
-          ) : (
-            <>Déjà un compte ? <span className="font-semibold text-accent underline decoration-accent/35 underline-offset-4 group-hover:decoration-accent">Se connecter</span></>
-          )}
-        </button>
       </div>
-
-      </div>{/* fin zone scrollable */}
     </div>
   );
 }
 
-// --- PAGE PRINCIPALE ---
+// ─── SECTION LABEL ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+      {children}
+    </p>
+  );
+}
+
+// ─── TOOLS GRID ───────────────────────────────────────────────────────────────
+
+function ToolsGrid() {
+  return (
+    <div className="grid grid-cols-6 gap-1.5">
+      {TOOLS.map((tool) => (
+        <Tooltip key={tool.id}>
+          <TooltipTrigger>
+            <div className="relative group flex flex-col items-center gap-1.5 cursor-default">
+              <div className="w-full aspect-square rounded-lg bg-white/[0.04] flex items-center justify-center transition-all duration-150 group-hover:bg-white/[0.08]">
+                <tool.icon
+                  size={19}
+                  className="text-white/60 group-hover:text-white transition-colors duration-150"
+                />
+              </div>
+              <span className="text-[8px] font-medium text-white/45 text-center leading-tight w-full group-hover:text-white/75 transition-colors duration-150">
+                {tool.title}
+              </span>
+              {tool.isNew && (
+                <span className="absolute -top-1 -right-1 px-1 py-[1px] text-[6px] font-black uppercase bg-[#1f8a65] text-white rounded-full leading-none">
+                  NEW
+                </span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            className="max-w-[190px] bg-[#0f0f0f] p-3 text-[11px] leading-relaxed text-white/60 rounded-xl"
+          >
+            <p>{tool.desc}</p>
+          </TooltipContent>
+        </Tooltip>
+      ))}
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex flex-col items-center gap-1.5 cursor-help opacity-25">
+            <div className="w-full aspect-square rounded-lg bg-white/[0.02] flex items-center justify-center">
+              <Database size={12} className="text-white/40" />
+            </div>
+            <span className="text-[8px] font-medium text-white/30 uppercase tracking-widest">
+              ?
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="bg-[#0f0f0f] text-[11px] text-white/70 rounded-xl"
+        >
+          Prochainement
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+// ─── FEATURE ROW (Cursor-style) ───────────────────────────────────────────────
+
+function FeatureRow({
+  icon: Icon,
+  label,
+  desc,
+  accent = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  desc: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 hover:bg-white/[0.04] cursor-default">
+      <div
+        className={cn(
+          "mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+          accent
+            ? "bg-[#1f8a65]/20 text-[#1f8a65]"
+            : "bg-white/[0.07] text-white/55 group-hover:text-white/80",
+        )}
+      >
+        <Icon size={13} strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[12px] font-medium text-white/90 leading-snug">
+          {label}
+        </p>
+        <p className="text-[11px] text-white/45 leading-relaxed mt-0.5">
+          {desc}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── LANDING COLUMN ───────────────────────────────────────────────────────────
+
+function LandingColumn({ mounted }: { mounted: boolean }) {
+  const router = useRouter();
+
+  return (
+    <motion.div
+      initial="hidden"
+      animate={mounted ? "visible" : "hidden"}
+      variants={containerVariants}
+      className="w-full lg:w-[55%] rounded-2xl bg-[#181818] border-subtle p-8 lg:p-10 xl:p-12 flex flex-col overflow-y-auto"
+    >
+      {/* Logo */}
+      <motion.div
+        variants={itemVariants}
+        className="mb-8 inline-flex cursor-pointer items-center gap-3 group"
+        onClick={() => router.push("/")}
+      >
+        <Image
+          src="/images/logo.png"
+          alt="STRYV"
+          width={64}
+          height={64}
+          className="w-14 h-14 object-contain transition-transform duration-300 group-hover:scale-105"
+          priority
+        />
+        <span className="font-unbounded font-semibold text-2xl text-white tracking-tight leading-none">
+          STRYV<span className="font-light text-white/40"> lab</span>
+        </span>
+      </motion.div>
+
+      {/* Hero */}
+      <motion.h1
+        variants={itemVariants}
+        className="mb-4 text-[2.4rem] md:text-[2.8rem] xl:text-[3rem] font-black text-white tracking-tight leading-[1.05]"
+      >
+        Évaluer.
+        <br />
+        <span className="text-[#1f8a65]">Calculer.</span>
+        <br />
+        <span className="text-white/25">Piloter.</span>
+      </motion.h1>
+
+      {/* Subtitle */}
+      <motion.div variants={itemVariants} className="mb-8">
+        <p className="text-[13px] text-white/60 leading-[1.7] max-w-[400px]">
+          Arrêtez de gérer vos clients avec Excel et WhatsApp. STRYV centralise
+          tout — programmes, bilans, paiements et analyses.
+        </p>
+      </motion.div>
+
+      {/* ── Outils ── */}
+      <motion.div variants={itemVariants} className="mb-7">
+        <SectionLabel>Outils d'analyse</SectionLabel>
+        <ToolsGrid />
+      </motion.div>
+
+      {/* Divider */}
+      <motion.div
+        variants={itemVariants}
+        className="mb-6 h-px bg-white/[0.07]"
+      />
+
+      {/* ── Plateforme Coach ── */}
+      <motion.div variants={itemVariants} className="mb-6">
+        <SectionLabel>Ce que vous gérez avec STRYV</SectionLabel>
+        <div className="grid grid-cols-2 gap-x-2">
+          {COACH_FEATURES.map((f) => (
+            <FeatureRow
+              key={f.label}
+              icon={f.icon}
+              label={f.label}
+              desc={f.desc}
+              accent
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Divider */}
+      <motion.div
+        variants={itemVariants}
+        className="mb-6 h-px bg-white/[0.07]"
+      />
+
+      {/* ── Mini-app Client ── */}
+      <motion.div variants={itemVariants} className="mb-7">
+        <SectionLabel>Ce que vivent vos clients</SectionLabel>
+        <div className="grid grid-cols-2 gap-x-2">
+          {CLIENT_FEATURES.map((f) => (
+            <FeatureRow
+              key={f.label}
+              icon={f.icon}
+              label={f.label}
+              desc={f.desc}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Divider */}
+      <motion.div
+        variants={itemVariants}
+        className="mb-6 h-px bg-white/[0.07]"
+      />
+
+      {/* ── Stats ── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3">
+        {[
+          { value: "0", label: "Excel à maintenir" },
+          { value: "1", label: "interface pour tout" },
+          { value: "100%", label: "fait pour les coachs" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-lg bg-white/[0.03] p-3.5 text-center"
+          >
+            <p className="text-xl font-black text-[#1f8a65] leading-none mb-1">
+              {s.value}
+            </p>
+            <p className="text-[9.5px] font-medium text-white/50 leading-tight">
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── PAGE ─────────────────────────────────────────────────────────────────────
+
 export default function ConnectionPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // Auth state
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [resendStatus, setResendStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [formValues, setFormValues] = useState<FormValues>({
-    firstName: '', lastName: '', coachName: '', phone: '',
-    experienceLevel: '', activeClients: '', discoverySource: '',
-    email: '', password: '', confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    coachName: "",
+    phone: "",
+    experienceLevel: "",
+    activeClients: "",
+    discoverySource: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const setFormValue = (field: keyof FormValues, value: string) =>
-    setFormValues(prev => ({ ...prev, [field]: value }));
+    setFormValues((prev) => ({ ...prev, [field]: value }));
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectedChallenges, setSelectedChallenges] = useState<string[]>([]);
 
   useEffect(() => setMounted(true), []);
 
-  const handleNext = () => setStep(s => Math.min(s + 1, 3));
-  const handleBack = () => step > 1 ? setStep(s => s - 1) : setIsLoginWithReset(true);
+  const handleNext = () => setStep((s) => Math.min(s + 1, 3));
+  const handleBack = () =>
+    step > 1 ? setStep((s) => s - 1) : setIsLoginWithReset(true);
 
   const setIsLoginWithReset = (v: boolean, keepSuccess = false) => {
     setIsLogin(v);
@@ -463,10 +1145,11 @@ export default function ConnectionPage() {
   };
 
   const handleResend = async () => {
-    if (!formValues.email) return setError("Saisissez votre e-mail pour renvoyer le lien.");
-    setResendStatus('loading');
+    if (!formValues.email)
+      return setError("Saisissez votre e-mail pour renvoyer le lien.");
+    setResendStatus("loading");
     const result = await resendEmail(formValues.email);
-    setResendStatus(result.success ? 'success' : 'error');
+    setResendStatus(result.success ? "success" : "error");
     if (result.error) setError(result.error);
   };
 
@@ -482,9 +1165,7 @@ export default function ConnectionPage() {
       if (result?.error) {
         setError(result.error);
         setIsLoading(false);
-      } else {
-        router.push('/dashboard');
-      }
+      } else router.push("/dashboard");
     } else {
       if (step < 3) {
         handleNext();
@@ -492,31 +1173,22 @@ export default function ConnectionPage() {
         return;
       }
       if (formValues.password !== formValues.confirmPassword) {
-        setError('Les mots de passe ne correspondent pas.');
+        setError("Les mots de passe ne correspondent pas.");
         setIsLoading(false);
         return;
       }
-      // Reconstruire FormData depuis le state (les champs des étapes précédentes
-      // ne sont plus dans le DOM à l'étape 3)
       const formData = new FormData();
-      formData.set('firstName', formValues.firstName);
-      formData.set('lastName', formValues.lastName);
-      formData.set('coachName', formValues.coachName);
-      formData.set('phone', formValues.phone);
-      formData.set('email', formValues.email);
-      formData.set('password', formValues.password);
-      formData.set('confirmPassword', formValues.confirmPassword);
-      formData.set('experienceLevel', formValues.experienceLevel);
-      formData.set('activeClients', formValues.activeClients);
-      formData.set('discoverySource', formValues.discoverySource);
-      formData.set('currentTools', selectedTools.join(', '));
-      formData.set('currentProcess', selectedChallenges.join(', '));
+      Object.entries(formValues).forEach(([k, v]) => formData.set(k, v));
+      formData.set("currentTools", selectedTools.join(", "));
+      formData.set("currentProcess", selectedChallenges.join(", "));
       const result = await signup(formData);
       if (result?.error) {
         setError(result.error);
         setIsLoading(false);
       } else {
-        setSuccess("Compte créé ! Un e-mail de confirmation vous a été envoyé. Vérifiez votre boîte mail pour activer votre accès.");
+        setSuccess(
+          "Compte créé ! Un e-mail de confirmation vous a été envoyé.",
+        );
         setIsLoading(false);
         setIsLoginWithReset(true, true);
       }
@@ -524,147 +1196,68 @@ export default function ConnectionPage() {
   };
 
   const cardProps = {
-    isLogin, setIsLogin: setIsLoginWithReset, step, isLoading,
-    error, success, resendStatus,
-    formValues, setFormValue,
-    selectedTools, setSelectedTools,
-    selectedChallenges, setSelectedChallenges,
-    handleBack, handleResend, handleSubmit,
+    isLogin,
+    setIsLogin: setIsLoginWithReset,
+    step,
+    isLoading,
+    error,
+    success,
+    resendStatus,
+    formValues,
+    setFormValue,
+    selectedTools,
+    setSelectedTools,
+    selectedChallenges,
+    setSelectedChallenges,
+    handleBack,
+    handleResend,
+    handleSubmit,
   };
 
   return (
-    <main className="min-h-screen w-full bg-background text-primary selection:bg-accent selection:text-white flex p-4 md:p-6 lg:p-8 xl:p-12 justify-center relative overflow-x-hidden">
+    <main className="min-h-screen w-full bg-[#121212] text-white selection:bg-[#1f8a65]/25 selection:text-white flex justify-center p-4 md:p-6 lg:p-8 xl:p-10 relative overflow-x-hidden">
+      {/* Glow bg */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 15% 50%, rgba(31,138,101,0.035) 0%, transparent 55%)",
+        }}
+      />
 
-      {/* FLOW LAYOUT */}
-      <div className="w-full max-w-[1240px] flex flex-col lg:flex-row items-stretch gap-12 lg:gap-20 xl:gap-32 relative z-10 px-4 pt-12 lg:pt-20">
+      {/* Layout */}
+      <div className="relative z-10 w-full max-w-[1240px] flex flex-col lg:flex-row items-stretch gap-4 lg:gap-8 xl:gap-10 pt-8 lg:pt-14">
+        {/* Left — Landing */}
+        <LandingColumn mounted={mounted} />
 
-        {/* LEFT COLUMN — brand + tools, scrollable */}
-        <div className={`w-full lg:w-[55%] bg-surface rounded-xl border border-subtle p-12 lg:p-16 xl:p-20 relative flex flex-col justify-center shadow-none transition-all duration-1000 ease-out transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-          <div className="max-w-lg">
-            <div className="mb-8 lg:mb-12 z-20 cursor-pointer group inline-flex items-center gap-3" onClick={() => router.push('/')}>
-              <Image
-                src="/images/logo.png"
-                alt="STRYV"
-                width={48} height={48}
-                className="w-10 h-10 object-contain drop-shadow-sm transition-transform duration-700 group-hover:scale-105"
-                priority
-              />
-              <span className="font-unbounded font-semibold text-xl text-primary tracking-tight leading-none">
-                STRYV<span className="font-light text-secondary"> lab</span>
-              </span>
-            </div>
-
-            <div className="relative z-20">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 mb-6 group cursor-default">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent group-hover:animate-ping"></div>
-                <h3 className="text-[10px] font-bold text-accent uppercase tracking-[0.2em]">STRYV LAB / 11 OUTILS SYNCHRONISÉS</h3>
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-5xl xl:text-7xl font-black text-primary mb-10 tracking-tight leading-[1.05]">
-                Évaluer. <br />
-                <span className="text-accent">Calculer.</span> <br />
-                <span className="text-secondary/30">Piloter.</span>
-              </h1>
-              <div className="flex gap-4 mb-10 max-w-sm">
-                <div className="w-1 h-20 bg-accent/20 rounded-full mt-1"></div>
-                <h2 className="text-lg text-secondary font-medium leading-relaxed opacity-80">
-                  Ingénierie métabolique et analyse morphologique. <br className="hidden md:block" />
-                  Automatisez vos protocoles et centralisez le suivi de vos clients sur une interface unique.
-                </h2>
-              </div>
-
-              {/* Tools grid */}
-              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3 mb-10">
-                {TOOLS.map((tool) => (
-                  <div key={tool.id} className="relative group">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-xl bg-surface-alt border border-subtle flex items-center justify-center transition-all duration-300 group-hover:border-white/10 cursor-default">
-                        <tool.icon size={20} className="text-accent/80 group-hover:text-accent group-hover:scale-95 transition-all duration-300" />
-                      </div>
-                      <span className="text-[9px] font-semibold text-secondary text-center leading-tight w-full opacity-60 group-hover:opacity-100 group-hover:text-primary transition-all">{tool.title}</span>
-                    </div>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 p-4 bg-surface/95 backdrop-blur-md border border-subtle rounded-2xl shadow-2xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 z-50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-1 h-3 bg-accent rounded-full"></div>
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{tool.title}</span>
-                      </div>
-                      <p className="text-[11px] text-primary/80 font-medium leading-relaxed">{tool.desc}</p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-surface/95"></div>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex flex-col items-center gap-2 opacity-20 cursor-help" title="Prochainement">
-                  <div className="w-12 h-12 rounded-xl border border-dashed border-secondary flex items-center justify-center">
-                    <Database size={16} className="text-secondary" />
-                  </div>
-                  <span className="text-[9px] font-bold text-secondary uppercase tracking-widest">?</span>
-                </div>
-              </div>
-
-              <div className="p-6 bg-surface-alt border border-subtle rounded-xl mb-6 group hover:translate-y-[-2px] transition-all duration-500">
-                <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-xl bg-surface border border-subtle flex items-center justify-center text-accent group-hover:scale-105 transition-transform duration-500 shrink-0">
-                    <Database size={24} strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <h4 className="text-base font-bold text-primary mb-1 tracking-tight flex items-center gap-2">
-                      Base de Données Unifiée
-                      <span className="px-2 py-0.5 bg-accent/5 text-accent/70 text-[9px] font-black rounded uppercase border border-accent/10">SYNC AUTO</span>
-                    </h4>
-                    <p className="text-[12px] text-secondary font-medium leading-relaxed opacity-60">
-                      Chaque résultat généré par les modules est intégré au profil de votre client. Consolidez l'historique et accédez à l'ensemble des rapports sur une interface unique.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 bg-surface-alt border border-subtle rounded-xl mb-6 group hover:translate-y-[-2px] transition-all duration-500">
-                <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-xl bg-surface border border-subtle flex items-center justify-center text-accent group-hover:scale-105 transition-transform duration-500 shrink-0">
-                    <FileText size={24} strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <h4 className="text-base font-bold text-primary mb-1 tracking-tight flex items-center gap-2">
-                      Rapport de Synthèse Éditable
-                      <span className="px-2 py-0.5 bg-accent/5 text-accent/70 text-[9px] font-black rounded uppercase border border-accent/10">EXPORT PDF</span>
-                    </h4>
-                    <p className="text-[12px] text-secondary font-medium leading-relaxed opacity-60">
-                      Générez un document complet intégrant vos analyses et protocoles. Personnalisez l'affichage des modules et exportez le rapport final à votre image.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between opacity-40">
-                <span className="text-[10px] font-bold tracking-[0.3em] text-secondary uppercase">STRYV LAB / 11 OUTILS SYNCHRONISÉS</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* MOBILE: auth card in flow */}
-        <div className="w-full lg:hidden flex items-center justify-center py-12">
-          <div className="w-full max-w-[480px]">
+        {/* Mobile auth */}
+        <div className="w-full lg:hidden py-6">
+          <div className="mx-auto w-full max-w-[460px]">
             <AuthFormCard {...cardProps} />
           </div>
         </div>
 
-        {/* DESKTOP: invisible spacer */}
+        {/* Desktop spacer */}
         <div className="hidden lg:block lg:w-[45%]" aria-hidden="true" />
-
       </div>
 
-      {/* DESKTOP FIXED OVERLAY — card ne suit pas le scroll */}
-      <div className="hidden lg:flex fixed inset-0 pointer-events-none z-50 items-center justify-center p-4 md:p-6 lg:p-8 xl:p-12">
-        <div className="w-full max-w-[1240px] flex flex-row items-stretch gap-12 lg:gap-20 xl:gap-32 px-4">
+      {/* Desktop fixed auth — même centrage que le layout scrollable */}
+      <div className="hidden lg:flex fixed inset-0 pointer-events-none z-50 items-center justify-center p-4 md:p-6 lg:p-8 xl:p-10">
+        <div className="w-full max-w-[1240px] flex flex-row items-stretch gap-4 lg:gap-8 xl:gap-10 pt-8 lg:pt-14">
           <div className="w-[55%] invisible" aria-hidden="true" />
-          <div className={`w-[45%] flex justify-center items-center pointer-events-auto transition-all duration-1000 delay-500 transform ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
-            <div className="w-full max-w-[480px]">
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={mounted ? { opacity: 1, x: 0 } : { opacity: 0, x: 16 }}
+            transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="w-[45%] flex items-center pointer-events-auto"
+          >
+            <div className="w-full">
               <AuthFormCard {...cardProps} />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-
     </main>
   );
 }

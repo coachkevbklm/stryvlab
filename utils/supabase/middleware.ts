@@ -73,7 +73,7 @@ export async function updateSession(request: NextRequest) {
 
   if (isCoachProtected && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

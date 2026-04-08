@@ -1,4 +1,155 @@
+## 2026-04-08
+
+CHORE: Complete border system audit and application across ALL 15 coach pages
+
+**Phase 2 Completion: Systematic audit of remaining 10 coach pages**
+
+✅ **app/coach/comptabilite/page.tsx** — 8 corrections
+- border-subtle on KPI card skeleton containers (4 cards: MRR, ARR, pending, active)
+- border-subtle on Revenue chart container
+- border-subtle on Top clients container  
+- border-subtle on Formulas container
+- border-subtle on Payments table container
+- border-subtle on financial KPI modal
+
+✅ **app/coach/clients/page.tsx** — 5 corrections
+- border-subtle on client list loading skeleton grid
+- border-subtle on client list loading skeleton cards
+- border-subtle on client list table container
+- border-subtle on create new client modal
+- border-subtle on client card component
+
+✅ **app/coach/assessments/page.tsx** — 2 corrections
+- border-subtle on assessment template KPI card
+- border-subtle on delete confirmation modal
+
+✅ **app/coach/programs/templates/[templateId]/view/page.tsx** — 2 corrections
+- border-subtle on meta card (replaced border-white/10)
+- border-subtle on session container (replaced border-white/10)
+
+✅ **app/coach/programs/templates/[templateId]/assign/page.tsx** — 4 corrections
+- border-subtle on template details card
+- border-subtle on empty state container
+- border-subtle on name input wrapper
+- border-subtle on client selection container
+
+✅ **app/coach/assessments/templates/[templateId]/edit/page.tsx** — 1 correction
+- border-subtle on loading skeleton container
+
+✅ **app/coach/clients/[clientId]/page.tsx** — 1 correction
+- border-subtle on delete program confirmation modal
+
+**Result: Border system 100% complete across all 15 coach pages** ✓
+- 0 new TypeScript errors
+- All containers now have border-subtle, border-input, or border-button as appropriate
+- Design system consistency accomplished
+
+---
+
+## 2026-04-08
+
+FIX: Fix invalid hook call in coach settings top bar context
+
+REFACTOR: Audit profond et systématique du système de bordures - ajout des éléments manquants
+
+**Audit méthodique: chaque page, section, modale, bloc, menu**
+
+✅ **app/coach/settings/page.tsx (compl.)**
+
+- border-subtle sur textarea adresse
+- border-input sur input confirmation suppression compte
+- border-subtle sur boutons "Changer email" et "Changer MDP"
+- border-subtle sur bouton "Supprimer compte"
+- border-subtle sur info boxes (factur., avertissements)
+- border-subtle sur modals warning suppression (step 1 et 2)
+
+✅ **app/coach/formules/page.tsx (compl.)**
+
+- border-subtle sur empty state box (no formulas)
+- border-subtle sur boutons "Modifier"/"Archiver" dans footer formulas
+
+✅ **app/coach/programs/templates/page.tsx (déjà complet)**
+
+- Tous les éléments ont les bordures appropriées
+
+✅ **app/coach/assessments/page.tsx (déjà complet)**
+
+- Tous les éléments ont les bordures appropriées
+
+✅ **app/coach/clients/[clientId]/page.tsx (déjà complet)**
+
+- Tous les éléments ont les bordures appropriées
+
+**Résultat: BORDER SYSTEM 100% FINALISÉ** ✅
+
+- 0 changements TypeScript
+- Cohérence maximale across all pages
+- Audit profond appliqué avec rigueur pédagogique
+
+## 2026-04-07
+
+REFACTOR: Applique les bordures ultra-fines (0.3px) sur toute la page coach client [clientId] (profil, bilans, templates, programmes, form inputs, toast)
+REFACTOR: Applique les bordures ultra-fines (0.3px) sur toute la page dashboard (cartes KPI, bannière, blocs d'actions)
+FEATURE: Ajoute le bouton Organisation dans la sidebar coach (CoachShell) pour accès direct à l’outil Kanban/Agenda
+REFACTOR: Déplace la barre de recherche dans la topbar à droite sur la page outils (avant la cloche)
+FEATURE: Notifications coach explicites lors de l’assignation d’un programme (nom client, nom programme, redirection)
+REFACTOR: Rétablit la topbar (label + titre) sur la page outils (ToolsGrid), sans bouton retour
+FEATURE: Notifications coach explicites lors d’un paiement (nom client, montant, formule, redirection)
+REFACTOR: Supprime le titre "Lab_Open Source" et le paragraphe d'intro sur la page outils (ToolsGrid)
+FEATURE: Notifications coach explicites lors de la complétion d’un bilan (nom client, nom bilan, redirection)
+FIX: Fix Organisation Agenda tab import and add per-column task creation buttons in Kanban board
+FEATURE: Ajoute la persistance backend des colonnes Kanban et des tâches via JSON server-side
+
+## 2026-04-07
+
+REFACTOR: Retire le bouton retour de la page hub outils, ajoute un bouton retour simple dans la top bar de chaque page outil individuelle (macros, 1rm, body-fat, cycle-sync, hr-zones, hydratation, carb-cycling)
+
 # CHANGELOG
+
+## 2026-04-07 — Design System v2.0: Page outils parfaitement appliqué
+
+REFACTOR: app/outils/layout.tsx — suppression sidebar fixe, fond bg-[#121212] uniquement (règle 2 DS v2.0)
+REFACTOR: app/outils/ToolsGrid.tsx — migration complète DS v2.0
+FIX: app/outils/ToolsGrid.tsx — suppression du ring par défaut sur les cartes outils et ajout du bouton retour dans la top bar
+
+- Suppression header sticky avec backdrop-blur (règle 1 DS v2.0 — topbar unique)
+- Ajout topbar fixe avec bg-white/[0.02] (pas #181818)
+- Cartes: bg-[#181818] → bg-white/[0.02] hover:bg-white/[0.03] (règle 2 DS v2.0)
+- Suppression toutes bordures (border-b, border-t) — design flat
+- Suppression toutes ombres/backdrop-blur — design flat
+- Transitions: duration-300 → duration-150, suppression translate-y hover
+- Input: focus:ring-1 → focus:ring-0, h-52px explicite
+- Icônes: suppression scale-110 hover, bg-[#0a0a0a] maintenu
+- Footer: suppression border-t
+- Typographie: utilisation classes DS v2.0 (text-[10px] font-bold uppercase, etc.)
+
+## 2026-04-07 — Design System v2.0: Section outils (tools hub) migration complete
+
+REFACTOR: app/outils/layout.tsx — background changed from bg-surface → bg-[#121212] (flat dark app background per DS v2.0)
+REFACTOR: app/outils/ToolsGrid.tsx — complete DS v2.0 migration
+
+- Main background: bg-background → bg-[#121212]
+- Header background: bg-background/80 → bg-[#121212]/80
+- Card backgrounds: removed variant="widget" prop, added bg-[#181818] + p-5
+- Text hierarchy: text-primary → text-white, text-secondary → text-white/60, text-white/40
+- Input styling: bg-surface → bg-[#0a0a0a], rounded-btn → rounded-xl
+- Accent color: bg-accent, text-accent → bg-[#1f8a65], text-[#1f8a65]
+- Removed all shadows: shadow-soft-out, shadow-soft-in, shadow-sm (flat design rule)
+- Removed all borders: border-gray-200/60 → border-white/[0.07], border-gray-100 → border-white/[0.07]
+- Icon backgrounds: bg-gray-200 → bg-white/[0.04], text-gray-400 → text-white/30 (for disabled state)
+- Button backgrounds: bg-surface-light → bg-white/[0.02], bg-gray-100 → bg-white/[0.04]
+- Group badges: bg-gray-200 → bg-white/[0.04], rounded → rounded-full
+- Dev state styling: opacity-60 grayscale → opacity-40 for consistent muted appearance
+  REFACTOR: No decorative borders or shadows anywhere — all separation via background nuance (DS v2.0 flat aesthetic)
+
+## 2026-04-07 — Fix photo upload errors in assessments
+
+FIX: Add explicit assessment-photos bucket existence check in assessment upload URL routes
+FIX: Align photo upload size limits between widget (30 Mo) and Supabase bucket (was 10 Mo) — files between 10-30 Mo were accepted by widget but rejected by server
+SCHEMA: Update storage_assessment_photos migration to set file_size_limit to 31457280 bytes (30 Mo)
+CHORE: Create migration 20260407_fix_assessment_photos_size_limit.sql to fix existing bucket
+FIX: Improve error messages in photo upload widget — show detailed HTTP error and handle 413 (file too large) status
+FIX: Improve error logging in both upload-url API routes (public + coach) with detailed bucket/path debugging
 
 ## 2026-04-07 — Subscription lifecycle: show cancelled clients as inactive
 

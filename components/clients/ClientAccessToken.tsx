@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link2, Copy, RefreshCw, Trash2, CheckCircle2, Loader2, ExternalLink, Mail } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Props {
   clientId: string
@@ -86,34 +87,39 @@ export default function ClientAccessToken({ clientId }: Props) {
 
   return (
     <>
-    <div className="bg-surface rounded-card p-5">
+    <div className="bg-[#181818] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Link2 size={15} className="text-accent" />
-        <h3 className="font-semibold text-primary text-sm">Lien d'accès client</h3>
+        <h3 className="font-semibold text-white text-sm">Lien d'accès client</h3>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-secondary text-xs py-2">
-          <Loader2 size={13} className="animate-spin" />
-          Chargement…
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className="h-4 w-40" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-28 rounded-lg" />
+            <Skeleton className="h-8 w-36 rounded-lg" />
+            <Skeleton className="h-8 w-16 rounded-lg" />
+          </div>
         </div>
       ) : accessUrl && !revoked ? (
         <div className="flex flex-col gap-3">
           {/* URL display */}
-          <div className="flex items-center gap-2 bg-surface-light rounded-btn px-3 py-2.5">
-            <span className="flex-1 text-xs text-secondary font-mono truncate">{accessUrl}</span>
+          <div className="flex items-center gap-2 bg-white/[0.04] rounded-lg px-3 py-2.5">
+            <span className="flex-1 text-xs text-white/45 font-mono truncate">{accessUrl}</span>
           </div>
 
           {expiryLabel && (
-            <p className="text-[11px] text-secondary">
-              Expire le <span className="font-medium text-primary">{expiryLabel}</span>
+            <p className="text-[11px] text-white/45">
+              Expire le <span className="font-medium text-white">{expiryLabel}</span>
             </p>
           )}
 
           <div className="flex flex-wrap gap-2">
             <button
               onClick={copy}
-              className="flex items-center gap-1.5 bg-accent text-white text-xs font-bold px-4 py-2 rounded-btn hover:opacity-90 transition-opacity shadow-lg"
+              className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
             >
               {copied ? <CheckCircle2 size={12} /> : <Copy size={12} />}
               {copied ? 'Copié !' : 'Copier le lien'}
@@ -121,7 +127,7 @@ export default function ClientAccessToken({ clientId }: Props) {
             <button
               onClick={sendByEmail}
               disabled={sending}
-              className="flex items-center gap-1.5 text-xs font-semibold text-accent border border-accent/30 hover:bg-accent/10 px-4 py-2 rounded-btn transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               {sending ? <Loader2 size={12} className="animate-spin" /> : sent ? <CheckCircle2 size={12} /> : <Mail size={12} />}
               {sending ? 'Envoi…' : sent ? 'Envoyé !' : 'Envoyer par email'}
@@ -130,7 +136,7 @@ export default function ClientAccessToken({ clientId }: Props) {
               href={accessUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light transition-colors"
+              className="flex items-center gap-1.5 text-xs text-white/45 hover:text-white px-3 py-2 rounded-lg bg-white/[0.04] transition-colors"
             >
               <ExternalLink size={12} />
               Tester
@@ -138,7 +144,7 @@ export default function ClientAccessToken({ clientId }: Props) {
             <button
               onClick={() => void generate(false)}
               disabled={generating}
-              className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary px-3 py-2 rounded-btn bg-surface-light transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs text-white/45 hover:text-white px-3 py-2 rounded-lg bg-white/[0.04] transition-colors disabled:opacity-50"
               title="Renouveler le lien"
             >
               {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
@@ -147,7 +153,7 @@ export default function ClientAccessToken({ clientId }: Props) {
             <button
               onClick={() => setShowRevokeConfirm(true)}
               disabled={revoking}
-              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 px-3 py-2 rounded-btn bg-surface-light transition-colors disabled:opacity-50 ml-auto"
+              className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 px-3 py-2 rounded-lg bg-white/[0.04] transition-colors disabled:opacity-50 ml-auto"
               title="Révoquer"
             >
               {revoking ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
@@ -157,7 +163,7 @@ export default function ClientAccessToken({ clientId }: Props) {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-secondary">
+          <p className="text-xs text-white/45">
             {revoked
               ? 'Le lien d\'accès a été révoqué. Générez-en un nouveau pour permettre au client de se connecter.'
               : 'Aucun lien actif. Générez un lien pour permettre à votre client de se connecter en un clic.'}
@@ -165,7 +171,7 @@ export default function ClientAccessToken({ clientId }: Props) {
           <button
             onClick={() => void generate(false)}
             disabled={generating}
-            className="flex items-center gap-1.5 bg-accent text-white text-xs font-bold px-4 py-2 rounded-btn hover:opacity-90 transition-opacity shadow-lg w-fit disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors w-fit disabled:opacity-50"
           >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
             {generating ? 'Génération…' : 'Générer le lien d\'accès'}
@@ -177,22 +183,22 @@ export default function ClientAccessToken({ clientId }: Props) {
     {showRevokeConfirm && (
 
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-surface rounded-card shadow-[12px_12px_32px_#c8c8c8,-12px_-12px_32px_#ffffff] p-6 w-full max-w-sm">
-          <h3 className="font-bold text-primary mb-2">Révoquer le lien d'accès ?</h3>
-          <p className="text-sm text-secondary mb-5">
+        <div className="bg-[#181818] rounded-xl p-6 w-full max-w-sm">
+          <h3 className="font-bold text-white mb-2">Révoquer le lien d'accès ?</h3>
+          <p className="text-sm text-white/45 mb-5">
             Le client ne pourra plus utiliser ce lien pour se connecter. Vous pourrez en générer un nouveau à tout moment.
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => setShowRevokeConfirm(false)}
-              className="flex-1 py-2.5 rounded-btn bg-surface-light text-sm text-secondary hover:text-primary transition-colors font-medium"
+              className="flex-1 py-2.5 rounded-lg bg-white/[0.04] text-sm text-white/45 hover:text-white transition-colors font-medium"
             >
               Annuler
             </button>
             <button
               onClick={revoke}
               disabled={revoking}
-              className="flex-1 py-2.5 rounded-btn bg-red-500 text-white text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
+              className="flex-1 py-2.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
             >
               {revoking ? 'Révocation…' : 'Révoquer'}
             </button>

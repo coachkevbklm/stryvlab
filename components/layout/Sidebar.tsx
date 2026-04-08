@@ -60,14 +60,20 @@ const NAV_SECTIONS = [
         href: "/coach/comptabilite",
         match: (p: string) => p.startsWith("/coach/comptabilite"),
       },
+      {
+        icon: Activity,
+        label: "Organisation",
+        href: "/coach/organisation",
+        match: (p: string) => p.startsWith("/coach/organisation"),
+      },
     ],
   },
   {
-    label: "Outils",
+    label: "Calculatrices Coach",
     items: [
       {
         icon: Calculator,
-        label: "Tous les outils",
+        label: "Toutes les calculatrices",
         href: "/outils",
         match: (p: string) => p === "/outils",
       },
@@ -102,9 +108,9 @@ const NAV_SECTIONS = [
     items: [
       {
         icon: Settings,
-        label: "Paramètres",
-        href: "#",
-        match: (p: string) => p === "/settings",
+        label: "Mon compte",
+        href: "/coach/settings",
+        match: (p: string) => p.startsWith("/coach/settings"),
       },
     ],
   },
@@ -123,13 +129,13 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-surface border border-subtle rounded-xl shadow-elevated flex flex-col z-50 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-56"
+      className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-[#181818] rounded-2xl flex flex-col z-50 transition-all duration-300 ${
+        isCollapsed ? "w-16" : "w-52"
       }`}
     >
       {/* Logo */}
       <div
-        className={`flex items-center gap-3 px-4 py-5 border-b border-subtle cursor-pointer shrink-0 ${
+        className={`flex items-center gap-3 px-4 py-5 shrink-0 cursor-pointer ${
           isCollapsed ? "justify-center" : ""
         }`}
         onClick={() => !isCollapsed && router.push("/dashboard")}
@@ -137,17 +143,17 @@ export default function Sidebar() {
         <Image
           src="/images/logo.png"
           alt="STRYV"
-          width={32}
-          height={32}
-          className="w-8 h-8 object-contain shrink-0"
+          width={28}
+          height={28}
+          className="w-7 h-7 object-contain shrink-0"
         />
         {!isCollapsed && (
-          <span className="font-unbounded font-semibold text-primary tracking-tight text-xs leading-none">
-            STRYV <span className="font-light text-secondary">lab</span>
+          <span className="font-unbounded font-semibold text-white tracking-tight text-[11px] leading-none">
+            STRYV <span className="font-light text-white/40">lab</span>
             <br />
             <span
-              className="font-normal text-secondary"
-              style={{ fontSize: "10px" }}
+              className="font-normal text-white/35"
+              style={{ fontSize: "9px" }}
             >
               Coach
             </span>
@@ -155,12 +161,15 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Nav sections — scroll only here, not the whole sidebar */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
+      {/* Séparateur */}
+      <div className="h-px bg-white/[0.07] mx-3 shrink-0" />
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4 flex flex-col gap-5 no-scrollbar">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             {!isCollapsed && (
-              <p className="text-[11px] font-semibold text-secondary uppercase tracking-wider px-2 mb-1.5">
+              <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em] px-2 mb-1.5">
                 {section.label}
               </p>
             )}
@@ -174,38 +183,38 @@ export default function Sidebar() {
                     onClick={() => !disabled && router.push(href)}
                     disabled={disabled}
                     title={isCollapsed ? label : undefined}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-150 group ${
-                      isCollapsed ? "justify-center px-2" : "w-full"
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150 ${
+                      isCollapsed ? "justify-center" : "w-full"
                     } ${
                       active
-                        ? "bg-white/10 text-primary font-semibold"
+                        ? "bg-white/[0.08] text-white"
                         : disabled
-                          ? "text-secondary/30 cursor-not-allowed"
-                          : "text-secondary hover:bg-surface-light hover:text-primary"
+                          ? "text-white/20 cursor-not-allowed"
+                          : "text-white/45 hover:bg-white/[0.05] hover:text-white/80"
                     }`}
                   >
                     <Icon
-                      size={15}
-                      strokeWidth={active ? 2.5 : 1.8}
+                      size={14}
+                      strokeWidth={active ? 2.25 : 1.75}
                       className="shrink-0"
                     />
                     {!isCollapsed && (
                       <>
-                        <span className="text-xs font-semibold truncate flex-1">
+                        <span className="text-[12px] font-medium truncate flex-1">
                           {label}
                         </span>
                         {active && (
                           <ChevronRight
-                            size={12}
-                            className="shrink-0 opacity-60"
+                            size={11}
+                            className="shrink-0 text-white/30"
                           />
                         )}
+                        {disabled && (
+                          <span className="text-[8px] font-bold text-white/20">
+                            Bientôt
+                          </span>
+                        )}
                       </>
-                    )}
-                    {disabled && (
-                      <span className="text-[9px] font-bold text-secondary/40 shrink-0">
-                        Bientôt
-                      </span>
                     )}
                   </button>
                 );
@@ -215,32 +224,37 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer — outside overflow container so dropdowns render correctly */}
-      <div className="px-3 py-3 border-t border-subtle shrink-0 flex flex-col gap-0.5">
+      {/* Séparateur */}
+      <div className="h-px bg-white/[0.07] mx-3 shrink-0" />
+
+      {/* Footer */}
+      <div className="px-2 py-3 shrink-0 flex flex-col gap-0.5">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? "Développer" : "Réduire"}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-primary hover:bg-surface-light"
+          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 text-white/35 hover:text-white/70 hover:bg-white/[0.05] ${
+            isCollapsed ? "justify-center" : "w-full"
+          }`}
         >
           <ChevronRight
-            size={15}
-            strokeWidth={1.8}
-            className={`shrink-0 transition-transform ${isCollapsed ? "" : "rotate-180"}`}
+            size={14}
+            strokeWidth={1.75}
+            className={`shrink-0 transition-transform duration-300 ${isCollapsed ? "" : "rotate-180"}`}
           />
           {!isCollapsed && (
-            <span className="text-xs font-semibold">Réduire</span>
+            <span className="text-[12px] font-medium">Réduire</span>
           )}
         </button>
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-secondary hover:text-red-400 hover:bg-red-950/30 ${
-            isCollapsed ? "justify-center px-2" : "w-full"
+          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 text-white/35 hover:text-red-400 hover:bg-red-950/20 ${
+            isCollapsed ? "justify-center" : "w-full"
           }`}
           title={isCollapsed ? "Déconnexion" : undefined}
         >
-          <LogOut size={15} strokeWidth={1.8} className="shrink-0" />
+          <LogOut size={14} strokeWidth={1.75} className="shrink-0" />
           {!isCollapsed && (
-            <span className="text-xs font-semibold">Déconnexion</span>
+            <span className="text-[12px] font-medium">Déconnexion</span>
           )}
         </button>
       </div>

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Users, CheckCircle2, Loader2, Search, AlertTriangle, Ban, ArrowLeftRight } from 'lucide-react'
 import Link from 'next/link'
+import { useSetTopBar } from '@/components/layout/useSetTopBar'
 import {
   rankTemplates,
   scoreLabel,
@@ -106,89 +107,101 @@ export default function AssignTemplatePage() {
     }
   }
 
+  const topBarLeft = useMemo(() => (
+    <div className="flex items-center gap-3 min-w-0">
+      <button
+        onClick={() => router.push('/coach/programs/templates')}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/70 transition-all"
+      >
+        <ChevronLeft size={14} />
+      </button>
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">Templates</p>
+        <p className="text-[13px] font-semibold text-white leading-none truncate">Assigner — {template?.name}</p>
+      </div>
+    </div>
+  ), [router, template])
+
+  useSetTopBar(topBarLeft)
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1f8a65] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-8 py-5">
-        <div className="max-w-2xl mx-auto">
-          <Link href="/coach/programs/templates" className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary mb-3 font-medium">
-            <ChevronLeft size={16} />Templates
-          </Link>
-          <h1 className="text-xl font-bold text-primary">Assigner — {template?.name}</h1>
-          <p className="text-xs text-secondary mt-0.5">
+    <div className="min-h-screen bg-[#121212] font-sans">
+      <main className="max-w-2xl mx-auto px-8 py-6 flex flex-col gap-5">
+        <div className="bg-[#181818] border-subtle rounded-2xl p-5 space-y-2">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">Données du template</p>
+          <p className="text-sm text-white/70">
             {GOALS[template?.goal ?? ''] ?? template?.goal}
             {' · '}{LEVELS[template?.level ?? ''] ?? template?.level}
             {' · '}{template?.frequency}j/sem.
             {' · '}{template?.weeks} sem.
             {template?.equipment_archetype && (
-              <> · <span className="font-medium">{EQUIPMENT_CATEGORY_LABELS[template.equipment_archetype]}</span></>
+              <> · {EQUIPMENT_CATEGORY_LABELS[template.equipment_archetype]}</>
             )}
           </p>
         </div>
-      </header>
 
-      <main className="max-w-2xl mx-auto px-8 py-6 flex flex-col gap-5">
         {success ? (
-          <div className="bg-surface rounded-card shadow-soft-out p-10 text-center">
-            <CheckCircle2 size={48} className="text-green-500 mx-auto mb-4" />
-            <p className="font-bold text-primary text-lg">Programme créé !</p>
-            <p className="text-sm text-secondary mt-1">Redirection vers le dossier client…</p>
+          <div className="bg-[#181818] border-subtle rounded-2xl p-10 text-center">
+            <CheckCircle2 size={48} className="text-[#1f8a65] mx-auto mb-4" />
+            <p className="font-bold text-[#1f8a65] text-lg">Programme créé !</p>
+            <p className="text-sm text-white/70 mt-1">Redirection vers le dossier client…</p>
           </div>
         ) : (
           <>
             {/* Nom du programme */}
-            <div className="bg-surface rounded-card shadow-soft-out p-5">
-              <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-2">
+            <div className="bg-[#181818] rounded-2xl p-5">
+              <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-2">
                 Nom du programme pour le client
               </label>
               <input
                 value={nameOverride}
                 onChange={e => setNameOverride(e.target.value)}
-                className="w-full px-3 py-2.5 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+                className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40"
               />
             </div>
 
             {/* Sélection client */}
-            <div className="bg-surface rounded-card shadow-soft-out p-5 flex flex-col gap-4">
+            <div className="bg-[#181818] border-subtle rounded-2xl p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-primary text-sm flex items-center gap-2">
-                  <Users size={14} className="text-accent" />Choisir un client
+                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                  <Users size={14} className="text-[#1f8a65]" />Choisir un client
                 </h3>
-                <div className="flex items-center gap-2 text-xs text-secondary">
-                  <span className="text-green-600 font-semibold">{compatible.length} compatibles</span>
+                <div className="flex items-center gap-2 text-xs text-white/70">
+                  <span className="text-[#1f8a65] font-semibold">{compatible.length} compatibles</span>
                   {incompatible.length > 0 && (
                     <>
                       <span>·</span>
-                      <span className="text-red-500">{incompatible.length} incompatibles</span>
+                      <span className="text-red-400">{incompatible.length} incompatibles</span>
                     </>
                   )}
                 </div>
               </div>
 
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Rechercher un client…"
-                  className="w-full pl-9 pr-4 py-2 bg-surface-light shadow-soft-in rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-full pl-9 pr-4 py-2 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40"
                 />
               </div>
 
-              <p className="text-[10px] text-secondary/60 -mt-2">
+              <p className="text-[10px] text-white/60 -mt-2">
                 Triés par compatibilité — critères éliminatoires : équipement, fréquence (±1 toléré), niveau ±1
               </p>
 
               <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto">
                 {displayedClients.length === 0 && (
-                  <div className="text-center py-8 text-secondary text-sm">
+                  <div className="text-center py-8 text-white/60 text-sm">
                     {search ? 'Aucun client trouvé' : 'Aucun client compatible avec ce template'}
                   </div>
                 )}
@@ -210,21 +223,21 @@ export default function AssignTemplatePage() {
                         setNameOverride(`${template!.name} — ${client.first_name} ${client.last_name}`)
                       }}
                       disabled={match.hardStop}
-                      className={`flex items-start gap-3 p-3 rounded-btn text-left transition-all ${
+                      className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all ${
                         match.hardStop
-                          ? 'opacity-50 cursor-not-allowed bg-surface-light'
+                          ? 'opacity-50 cursor-not-allowed bg-[#0a0a0a]'
                           : isSelected
-                          ? 'bg-accent/10 ring-2 ring-accent/40'
+                          ? 'bg-[#1f8a65]/10 ring-2 ring-[#1f8a65]/40'
                           : isTop
-                          ? 'bg-surface-light ring-1 ring-accent/20 hover:bg-surface-light/80'
-                          : 'bg-surface-light hover:bg-surface-light/80'
+                          ? 'bg-[#0a0a0a] ring-1 ring-[#1f8a65]/20 hover:bg-white/[0.04]'
+                          : 'bg-[#0a0a0a] hover:bg-white/[0.04]'
                       }`}
                     >
                       {/* Avatar */}
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-                        match.hardStop ? 'bg-surface text-secondary'
-                        : isSelected ? 'bg-accent text-white'
-                        : 'bg-surface shadow-soft-out text-primary'
+                        match.hardStop ? 'bg-[#0a0a0a] text-white/50'
+                        : isSelected ? 'bg-[#1f8a65] text-white'
+                        : 'bg-white/[0.04] text-white/80'
                       }`}>
                         {match.hardStop
                           ? <Ban size={14} />
@@ -234,16 +247,16 @@ export default function AssignTemplatePage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-semibold text-primary text-sm truncate">
+                          <p className="font-semibold text-white text-sm truncate">
                             {client.first_name} {client.last_name}
                           </p>
                           {isTop && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent shrink-0">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1f8a65]/10 text-[#1f8a65] shrink-0">
                               Recommandé
                             </span>
                           )}
                           {hasSubstitutions && !match.hardStop && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0 flex items-center gap-0.5">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-white/70 shrink-0 flex items-center gap-0.5">
                               <ArrowLeftRight size={9} />{match.substitutions.length} substitution{match.substitutions.length > 1 ? 's' : ''}
                             </span>
                           )}
@@ -252,37 +265,37 @@ export default function AssignTemplatePage() {
                         {/* Profil structuré */}
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           {client.equipment_category && (
-                            <span className="text-[9px] font-medium text-accent/80">
+                            <span className="text-[9px] font-medium text-[#1f8a65]/80">
                               {EQUIPMENT_CATEGORY_LABELS[client.equipment_category as keyof typeof EQUIPMENT_CATEGORY_LABELS] ?? client.equipment_category}
                             </span>
                           )}
                           {client.training_goal && (
-                            <span className="text-[9px] text-secondary">{GOALS[client.training_goal] ?? client.training_goal}</span>
+                            <span className="text-[9px] text-white/70">{GOALS[client.training_goal] ?? client.training_goal}</span>
                           )}
                           {client.fitness_level && (
-                            <span className="text-[9px] text-secondary">{LEVELS[client.fitness_level] ?? client.fitness_level}</span>
+                            <span className="text-[9px] text-white/70">{LEVELS[client.fitness_level] ?? client.fitness_level}</span>
                           )}
                           {client.weekly_frequency != null && (
-                            <span className="text-[9px] font-mono text-secondary">{client.weekly_frequency}j/sem.</span>
+                            <span className="text-[9px] font-mono text-white/70">{client.weekly_frequency}j/sem.</span>
                           )}
                           {client.sport_practice && (
-                            <span className="text-[9px] text-secondary">{SPORT_PRACTICES[client.sport_practice] ?? client.sport_practice}</span>
+                            <span className="text-[9px] text-white/70">{SPORT_PRACTICES[client.sport_practice] ?? client.sport_practice}</span>
                           )}
                           {!client.training_goal && !client.fitness_level && !client.weekly_frequency && (
-                            <span className="text-[9px] text-secondary/40 italic">Profil incomplet</span>
+                            <span className="text-[9px] text-white/40 italic">Profil incomplet</span>
                           )}
                         </div>
 
                         {/* Raison du hard stop */}
                         {match.hardStop && match.hardStopReason && (
-                          <p className="text-[9px] text-red-500 mt-1 flex items-center gap-1">
+                          <p className="text-[9px] text-red-400 mt-1 flex items-center gap-1">
                             <AlertTriangle size={9} />{match.hardStopReason}
                           </p>
                         )}
 
                         {/* Warning fréquence ±1 */}
                         {!match.hardStop && match.warning && (
-                          <p className="text-[9px] text-amber-600 mt-1 flex items-center gap-1">
+                          <p className="text-[9px] text-white/70 mt-1 flex items-center gap-1">
                             <AlertTriangle size={9} />{match.warning}
                           </p>
                         )}
@@ -291,7 +304,7 @@ export default function AssignTemplatePage() {
                         {hasSubstitutions && !match.hardStop && (
                           <div className="mt-1.5 flex flex-col gap-0.5">
                             {match.substitutions.slice(0, 2).map((sub: import('@/lib/matching/template-matcher').SubstitutionResult, i: number) => (
-                              <p key={i} className="text-[9px] text-amber-600 flex items-center gap-1">
+                              <p key={i} className="text-[9px] text-white/70 flex items-center gap-1">
                                 <ArrowLeftRight size={8} />
                                 <span className="line-through opacity-60">{sub.originalExercise}</span>
                                 {' → '}
@@ -299,7 +312,7 @@ export default function AssignTemplatePage() {
                               </p>
                             ))}
                             {match.substitutions.length > 2 && (
-                              <p className="text-[9px] text-secondary/60">
+                              <p className="text-[9px] text-white/60">
                                 +{match.substitutions.length - 2} substitution{match.substitutions.length - 2 > 1 ? 's' : ''} supplémentaire{match.substitutions.length - 2 > 1 ? 's' : ''}
                               </p>
                             )}
@@ -310,14 +323,14 @@ export default function AssignTemplatePage() {
                       {/* Score badge */}
                       {!match.hardStop && (
                         <div className="flex flex-col items-center gap-0.5 shrink-0">
-                          <span className={`text-xs font-bold px-2 py-1 rounded-btn ${badgeClass}`}>
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${badgeClass}`}>
                             {match.score}
                           </span>
-                          <span className="text-[9px] text-secondary/70">{label}</span>
+                          <span className="text-[9px] text-white/70">{label}</span>
                         </div>
                       )}
 
-                      {isSelected && <CheckCircle2 size={16} className="text-accent shrink-0 mt-2" />}
+                      {isSelected && <CheckCircle2 size={16} className="text-[#1f8a65] shrink-0 mt-2" />}
                     </button>
                   )
                 })}
@@ -328,7 +341,7 @@ export default function AssignTemplatePage() {
                 <button
                   type="button"
                   onClick={() => setShowIncompatible(v => !v)}
-                  className="text-xs text-secondary hover:text-primary transition-colors text-center py-1"
+                  className="text-xs text-white/70 hover:text-white transition-colors text-center py-1"
                 >
                   {showIncompatible
                     ? 'Masquer les clients incompatibles'
@@ -339,13 +352,13 @@ export default function AssignTemplatePage() {
             </div>
 
             {assignError && (
-              <p className="text-xs text-red-500 bg-red-50 rounded-btn px-3 py-2">{assignError}</p>
+              <p className="text-xs text-red-400 bg-white/[0.03] rounded-xl px-3 py-2">{assignError}</p>
             )}
 
             <button
               onClick={handleAssign}
               disabled={!selectedClient || assigning}
-              className="flex items-center justify-center gap-2 bg-accent text-white font-bold py-3.5 rounded-btn hover:opacity-90 transition-opacity disabled:opacity-40 shadow-lg text-sm"
+              className="flex items-center justify-center gap-2 bg-[#1f8a65] text-white font-bold py-3.5 rounded-xl hover:bg-[#217356] transition-colors disabled:opacity-40 text-sm"
             >
               {assigning ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
               {assigning ? 'Création du programme…' : 'Créer le programme pour ce client'}

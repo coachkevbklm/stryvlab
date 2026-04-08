@@ -12,12 +12,12 @@ const config: Config = {
       // ─── CURSOR DASHBOARD (réf. capture) ─────────────────────────────────
       // Fond #0E0E0E · cartes #161616 · bordures #2A2A2A · accent vert #1F8A65
       colors: {
-        background: "#0E0E0E",
-        surface: "#161616",
-        "surface-alt": "#1A1A1A",
-        "surface-light": "#1C1C1C",
-        "surface-raised": "#1F1F1F",
-        dark: "#161616",
+        background: "#121212",
+        surface: "#141414",
+        "surface-alt": "#141414",
+        "surface-light": "#141414",
+        "surface-raised": "#141414",
+        dark: "#141414",
 
         primary: "#EDEDED",
         main: "var(--text-main)",

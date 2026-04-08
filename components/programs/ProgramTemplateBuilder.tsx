@@ -227,56 +227,56 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Meta ── */}
-      <div className="bg-surface rounded-card p-6 flex flex-col gap-5">
-        <h3 className="font-bold text-primary text-sm flex items-center gap-2"><Tag size={14} className="text-accent" />Informations du template</h3>
+      <div className="bg-[#181818] rounded-2xl p-6 flex flex-col gap-5">
+        <h3 className="font-bold text-white text-sm flex items-center gap-2"><Tag size={14} className="text-[#1f8a65]" />Informations du template</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Nom du template *</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Nom du template *</label>
             <input value={meta.name} onChange={e => setMeta(m => ({ ...m, name: e.target.value }))}
               placeholder="ex: PPL Hypertrophie 5j/sem"
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40" />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Description</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Description</label>
             <textarea value={meta.description} onChange={e => setMeta(m => ({ ...m, description: e.target.value }))}
               placeholder="Décris le programme, pour qui il est adapté…" rows={2}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40 resize-none" />
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40 resize-none" />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Objectif</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Objectif</label>
             <select value={meta.goal} onChange={e => setMeta(m => ({ ...m, goal: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40">
               {GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Niveau</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Niveau</label>
             <select value={meta.level} onChange={e => setMeta(m => ({ ...m, level: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40">
               {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Fréquence (jours/sem.)</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Fréquence (jours/sem.)</label>
             <input type="number" min={1} max={7} value={meta.frequency}
               onChange={e => setMeta(m => ({ ...m, frequency: parseInt(e.target.value) || 3 }))}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm font-mono text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40" />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Durée (semaines)</label>
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Durée (semaines)</label>
             <input type="number" min={1} max={52} value={meta.weeks}
               onChange={e => setMeta(m => ({ ...m, weeks: parseInt(e.target.value) || 8 }))}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm font-mono text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm font-mono text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40" />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-              <Dumbbell size={10} className="text-accent" />
+            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+              <Dumbbell size={10} className="text-[#1f8a65]" />
               Archétype équipement
-              <span className="text-[9px] font-normal text-secondary/50 normal-case tracking-normal">— utilisé pour le matching client</span>
+              <span className="text-[9px] font-normal text-white/50 normal-case tracking-normal">— utilisé pour le matching client</span>
             </label>
             <select value={meta.equipment_archetype} onChange={e => setMeta(m => ({ ...m, equipment_archetype: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40">
+              className="w-full px-3 py-2.5 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40">
               {EQUIPMENT_ARCHETYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
           </div>
@@ -284,14 +284,14 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
 
         {/* Muscle tags */}
         <div>
-          <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-2">Groupes musculaires ciblés</label>
+          <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-2">Groupes musculaires ciblés</label>
           <div className="flex flex-wrap gap-2">
             {MUSCLE_OPTIONS.map(tag => (
               <button key={tag} type="button" onClick={() => toggleMuscleTag(tag)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                   meta.muscle_tags.includes(tag)
-                    ? 'bg-accent text-white shadow'
-                    : 'bg-surface-light text-secondary hover:text-primary'
+                    ? 'bg-[#1f8a65] text-white'
+                    : 'bg-[#0a0a0a] text-white/70 hover:text-white'
                 }`}>
                 {tag}
               </button>
@@ -301,41 +301,41 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
 
         {/* Notes internes */}
         <div>
-          <label className="text-[10px] font-bold text-secondary uppercase tracking-wider block mb-1.5">Notes internes (coach)</label>
+          <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block mb-1.5">Notes internes (coach)</label>
           <input value={meta.notes} onChange={e => setMeta(m => ({ ...m, notes: e.target.value }))}
             placeholder="Contexte, précautions, contre-indications…"
-            className="w-full px-3 py-2 bg-surface-light rounded-btn text-sm text-primary outline-none focus:ring-2 focus:ring-accent/40" />
+            className="w-full px-3 py-2 bg-[#0a0a0a] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40" />
         </div>
       </div>
 
       {/* ── Sessions ── */}
       <div className="flex flex-col gap-3">
-        <h3 className="font-bold text-primary text-sm">Séances ({sessions.length})</h3>
+        <h3 className="font-bold text-white text-sm">Séances ({sessions.length})</h3>
 
         {sessions.map((session, si) => (
-          <div key={si} className="bg-surface rounded-card overflow-hidden">
+          <div key={si} className="bg-[#181818] rounded-2xl overflow-hidden">
             {/* Session header */}
-            <div className="flex items-center gap-2 p-4 border-b border-white/40">
-              <GripVertical size={14} className="text-secondary shrink-0" />
+            <div className="flex items-center gap-2 p-4 border-b border-white/10">
+              <GripVertical size={14} className="text-white/60 shrink-0" />
               <input value={session.name} onChange={e => updateSession(si, { name: e.target.value })}
                 placeholder="Nom de la séance (ex: Push A, Lower, Full Body…)"
-                className="flex-1 bg-transparent text-sm font-semibold text-primary outline-none placeholder-secondary/40" />
+                className="flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/40" />
               {/* Day picker */}
               <div className="flex gap-1">
                 {DAYS.map((d, di) => (
                   <button key={di} type="button"
                     onClick={() => updateSession(si, { day_of_week: session.day_of_week === di + 1 ? null : di + 1 })}
                     className={`w-6 h-6 rounded text-[9px] font-bold transition-colors ${
-                      session.day_of_week === di + 1 ? 'bg-accent text-white' : 'bg-surface-light text-secondary hover:text-primary'
+                      session.day_of_week === di + 1 ? 'bg-[#1f8a65] text-white' : 'bg-[#0a0a0a] text-white/70 hover:text-white'
                     }`}>
                     {d}
                   </button>
                 ))}
               </div>
-              <button onClick={() => updateSession(si, { open: !session.open })} className="text-secondary hover:text-primary">
+              <button onClick={() => updateSession(si, { open: !session.open })} className="text-white/70 hover:text-white transition-colors">
                 {session.open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
               </button>
-              <button onClick={() => setSessions(prev => prev.filter((_, idx) => idx !== si))} className="text-secondary hover:text-red-500 transition-colors">
+              <button onClick={() => setSessions(prev => prev.filter((_, idx) => idx !== si))} className="text-white/70 hover:text-red-400 transition-colors">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -344,12 +344,12 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
             {session.open && (
               <div className="p-4 flex flex-col gap-3">
                 {session.exercises.map((ex, ei) => (
-                  <div key={ei} className="bg-surface-light rounded-btn p-3 flex flex-col gap-2">
+                  <div key={ei} className="bg-[#0a0a0a] rounded-2xl p-3 flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <input value={ex.name} onChange={e => updateExercise(si, ei, { name: e.target.value })}
                         placeholder="Nom de l'exercice *"
-                        className="flex-1 bg-transparent text-sm font-medium text-primary outline-none placeholder-secondary/40" />
-                      <button onClick={() => removeExercise(si, ei)} className="text-secondary hover:text-red-500"><Trash2 size={13} /></button>
+                        className="flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/40" />
+                      <button onClick={() => removeExercise(si, ei)} className="text-white/70 hover:text-red-400"><Trash2 size={13} /></button>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {[
@@ -359,7 +359,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                         { label: 'RIR', key: 'rir', type: 'number', min: 0, max: 5 },
                       ].map(({ label, key, type, min, max }) => (
                         <div key={key}>
-                          <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">{label}</label>
+                          <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">{label}</label>
                           <input
                             type={type}
                             min={min}
@@ -368,7 +368,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                             onChange={e => updateExercise(si, ei, {
                               [key]: type === 'number' ? (e.target.value ? parseFloat(e.target.value) : null) : e.target.value
                             })}
-                            className="w-full bg-surface rounded px-2 py-1 text-xs font-mono text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                            className="w-full bg-[#0a0a0a] rounded-xl px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                           />
                         </div>
                       ))}
@@ -401,12 +401,12 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                           <button
                             type="button"
                             onClick={() => setPickerTarget({ si, ei })}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:opacity-80 transition-opacity bg-accent/10 px-2.5 py-1.5 rounded-btn"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-[#1f8a65] hover:opacity-80 transition-opacity bg-[#1f8a65]/10 px-2.5 py-1.5 rounded-xl"
                           >
                             <Library size={12} />
                             Bibliothèque
                           </button>
-                          <span className="text-secondary/40 text-[10px]">ou</span>
+                          <span className="text-white/40 text-[10px]">ou</span>
                           <input
                             ref={el => { fileInputRefs.current[`${si}-${ei}`] = el }}
                             type="file"
@@ -422,7 +422,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                             type="button"
                             disabled={uploadingKey === `${si}-${ei}`}
                             onClick={() => fileInputRefs.current[`${si}-${ei}`]?.click()}
-                            className="flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors disabled:opacity-50"
                           >
                             {uploadingKey === `${si}-${ei}`
                               ? <><Loader2 size={12} className="animate-spin" />Upload…</>
@@ -436,18 +436,18 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                     {/* Matching metadata */}
                     <div className="border-t border-white/30 pt-2 grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Pattern mouvement</label>
+                        <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">Pattern mouvement</label>
                         <select
                           value={ex.movement_pattern ?? ''}
                           onChange={e => updateExercise(si, ei, { movement_pattern: e.target.value || null })}
-                          className="w-full bg-surface rounded px-2 py-1 text-xs text-primary outline-none focus:ring-1 focus:ring-accent/40"
+                          className="w-full bg-[#0a0a0a] rounded-xl px-2 py-1 text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                         >
                           {MOVEMENT_PATTERNS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-secondary uppercase block mb-0.5">Équipement requis</label>
-                        <div className="flex flex-wrap gap-1 bg-surface rounded px-2 py-1 min-h-[28px]">
+                        <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">Équipement requis</label>
+                        <div className="flex flex-wrap gap-1 bg-[#0a0a0a] rounded-xl px-2 py-1 min-h-[28px]">
                           {EQUIPMENT_ITEMS.map(eq => {
                             const checked = ex.equipment_required.includes(eq.value)
                             return (
@@ -460,7 +460,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                                     : [...ex.equipment_required, eq.value]
                                 })}
                                 className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${
-                                  checked ? 'bg-accent text-white' : 'bg-surface-light text-secondary hover:text-primary'
+                                  checked ? 'bg-[#1f8a65] text-white' : 'bg-[#0a0a0a] text-white/70 hover:text-white'
                                 }`}
                               >
                                 {eq.label}
@@ -473,10 +473,10 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
 
                     <input value={ex.notes} onChange={e => updateExercise(si, ei, { notes: e.target.value })}
                       placeholder="Notes optionnelles"
-                      className="bg-transparent text-xs text-secondary outline-none placeholder-secondary/30 border-t border-white/30 pt-2" />
+                      className="bg-transparent text-xs text-white/70 outline-none placeholder:text-white/30 border-t border-white/30 pt-2" />
                   </div>
                 ))}
-                <button onClick={() => addExercise(si)} className="flex items-center gap-1.5 text-xs text-secondary hover:text-accent transition-colors py-1">
+                <button onClick={() => addExercise(si)} className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors py-1">
                   <Plus size={13} />Ajouter un exercice
                 </button>
               </div>
@@ -485,12 +485,12 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
         ))}
 
         <button onClick={() => setSessions(prev => [...prev, emptySession()])}
-          className="flex items-center gap-2 text-sm text-secondary hover:text-accent transition-colors py-2">
+          className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors py-2">
           <Plus size={15} />Ajouter une séance
         </button>
       </div>
 
-      {error && <p className="text-xs text-red-500 bg-red-50 rounded-btn px-3 py-2">{error}</p>}
+      {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2">{error}</p>}
 
       {/* Exercise picker modal */}
       {pickerTarget && (
@@ -511,9 +511,9 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
 
       {/* Actions */}
       <div className="flex gap-3 justify-end pb-8">
-        <button onClick={() => router.back()} className="text-sm text-secondary hover:text-primary px-4 py-2">Annuler</button>
+        <button onClick={() => router.back()} className="text-sm text-white/70 hover:text-white px-4 py-2">Annuler</button>
         <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-accent text-white text-sm font-bold px-6 py-2.5 rounded-btn hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg">
+          className="flex items-center gap-2 bg-[#1f8a65] text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-[#217356] transition-colors disabled:opacity-50">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Enregistrement…' : isEdit ? 'Mettre à jour' : 'Créer le template'}
         </button>

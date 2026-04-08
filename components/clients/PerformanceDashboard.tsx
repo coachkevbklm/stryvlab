@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ResponsiveContainer,
   LineChart,
@@ -100,10 +101,10 @@ const METRIC_LABELS: Record<Metric, string> = {
 
 // Chart-specific color palette (visual distinction for data representation)
 // Mapped to STRYVR design tokens where possible
-const CHART_TEXT_COLOR = "#8A8A85"; // muted text (from design system)
+const CHART_TEXT_COLOR = "rgba(255,255,255,0.40)"; // muted text (from design system)
 const METRIC_COLOR: Record<Metric, string> = {
-  volume: "#1A1A1A", // primary (main metric)
-  reps: "#535353", // secondary (supporting metric)
+  volume: "#141414", // primary (main metric)
+  reps: "rgba(255,255,255,0.45)", // secondary (supporting metric)
   sets: "#2DB470", // Cursor accent (heatmap / métriques)
 };
 
@@ -144,7 +145,7 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="bg-surface rounded-card p-4 flex items-start gap-3">
+    <div className="bg-[#181818] rounded-xl p-4 flex items-start gap-3">
       <div
         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}
         style={{ backgroundColor: `${color}18` }}
@@ -152,13 +153,13 @@ function KpiCard({
         <Icon size={16} style={{ color }} />
       </div>
       <div>
-        <p className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+        <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">
           {label}
         </p>
-        <p className="text-xl font-bold text-primary font-mono mt-0.5">
+        <p className="text-xl font-bold text-white font-mono mt-0.5">
           {value}
         </p>
-        {sub && <p className="text-[10px] text-secondary mt-0.5">{sub}</p>}
+        {sub && <p className="text-[10px] text-white/45 mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -168,8 +169,8 @@ function KpiCard({
 function RadarTooltipContent({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface rounded-btn px-3 py-2 text-xs border border-white/40">
-      <p className="font-bold text-primary mb-1">{payload[0]?.payload?.name}</p>
+    <div className="bg-[#181818] rounded-lg px-3 py-2 text-xs border border-white/40">
+      <p className="font-bold text-white mb-1">{payload[0]?.payload?.name}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name} : <span className="font-mono font-bold">{p.value}</span>
@@ -183,8 +184,8 @@ function RadarTooltipContent({ active, payload }: any) {
 function LineTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface rounded-btn px-3 py-2 text-xs border border-white/40">
-      <p className="font-bold text-primary mb-1">{formatDate(label)}</p>
+    <div className="bg-[#181818] rounded-lg px-3 py-2 text-xs border border-white/40">
+      <p className="font-bold text-white mb-1">{formatDate(label)}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name} : <span className="font-mono font-bold">{p.value}</span>
@@ -224,8 +225,33 @@ export default function PerformanceDashboard({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col gap-4">
+        {/* KPI row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-[#181818] rounded-xl p-4 space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-7 w-14" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          ))}
+        </div>
+        {/* Chart */}
+        <div className="bg-[#181818] rounded-xl p-5 space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+        {/* Two cols */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-[#181818] rounded-xl p-5 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+          <div className="bg-[#181818] rounded-xl p-5 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -257,7 +283,7 @@ export default function PerformanceDashboard({
       {/* ── Filtres ── */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Période */}
-        <div className="flex items-center bg-surface-light rounded-btn p-1 gap-1">
+        <div className="flex items-center bg-white/[0.04] rounded-lg p-1 gap-1">
           {([7, 30, 90, 0] as Period[]).map((p) => (
             <button
               key={p}
@@ -265,7 +291,7 @@ export default function PerformanceDashboard({
               className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
                 period === p
                   ? "bg-accent text-white shadow"
-                  : "text-secondary hover:text-primary"
+                  : "text-white/45 hover:text-white"
               }`}
             >
               {PERIOD_LABELS[p]}
@@ -274,7 +300,7 @@ export default function PerformanceDashboard({
         </div>
 
         {/* Métrique */}
-        <div className="flex items-center bg-surface-light rounded-btn p-1 gap-1">
+        <div className="flex items-center bg-white/[0.04] rounded-lg p-1 gap-1">
           {(["volume", "reps", "sets"] as Metric[]).map((m) => (
             <button
               key={m}
@@ -282,7 +308,7 @@ export default function PerformanceDashboard({
               className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
                 metric === m
                   ? "text-white shadow"
-                  : "text-secondary hover:text-primary"
+                  : "text-white/45 hover:text-white"
               }`}
               style={metric === m ? { backgroundColor: METRIC_COLOR[m] } : {}}
             >
@@ -293,15 +319,15 @@ export default function PerformanceDashboard({
       </div>
 
       {isEmpty ? (
-        <div className="bg-surface rounded-card p-16 text-center">
+        <div className="bg-[#181818] rounded-xl p-16 text-center">
           <Dumbbell
             size={40}
-            className="text-secondary mx-auto mb-4 opacity-20"
+            className="text-white/45 mx-auto mb-4 opacity-20"
           />
-          <p className="text-sm text-secondary">
+          <p className="text-sm text-white/45">
             Aucune séance sur cette période.
           </p>
-          <p className="text-xs text-secondary/60 mt-1">
+          <p className="text-xs text-white/45/60 mt-1">
             Le client doit commencer à logger ses séances.
           </p>
         </div>
@@ -355,13 +381,13 @@ export default function PerformanceDashboard({
           </div>
 
           {/* ── Volume / Reps / Sets Timeline ── */}
-          <div className="bg-surface rounded-card p-5">
+          <div className="bg-[#181818] rounded-xl p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="font-bold text-primary text-sm">
+                <h3 className="font-bold text-white text-sm">
                   Évolution — {METRIC_LABELS[metric]}
                 </h3>
-                <p className="text-xs text-secondary mt-0.5">
+                <p className="text-xs text-white/45 mt-0.5">
                   {timeline.length} jours d'activité
                 </p>
               </div>
@@ -427,7 +453,7 @@ export default function PerformanceDashboard({
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-secondary text-center py-10">
+              <p className="text-xs text-white/45 text-center py-10">
                 Pas assez de données
               </p>
             )}
@@ -436,11 +462,11 @@ export default function PerformanceDashboard({
           {/* ── Radar + RPE ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Radar groupes musculaires */}
-            <div className="bg-surface rounded-card p-5">
-              <h3 className="font-bold text-primary text-sm mb-1">
+            <div className="bg-[#181818] rounded-xl p-5">
+              <h3 className="font-bold text-white text-sm mb-1">
                 Répartition musculaire
               </h3>
-              <p className="text-xs text-secondary mb-4">
+              <p className="text-xs text-white/45 mb-4">
                 Score normalisé par groupe (0–100)
               </p>
               {radarData.length > 0 ? (
@@ -481,18 +507,18 @@ export default function PerformanceDashboard({
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-xs text-secondary text-center py-10">
+                <p className="text-xs text-white/45 text-center py-10">
                   Pas assez de données
                 </p>
               )}
             </div>
 
             {/* RPE trend */}
-            <div className="bg-surface rounded-card p-5">
-              <h3 className="font-bold text-primary text-sm mb-1">
+            <div className="bg-[#181818] rounded-xl p-5">
+              <h3 className="font-bold text-white text-sm mb-1">
                 Intensité perçue (RPE)
               </h3>
-              <p className="text-xs text-secondary mb-4">
+              <p className="text-xs text-white/45 mb-4">
                 Moyenne par séance · Zone cible 7–8
               </p>
               {rpeTrend.length > 0 ? (
@@ -558,7 +584,7 @@ export default function PerformanceDashboard({
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-xs text-secondary text-center py-10">
+                <p className="text-xs text-white/45 text-center py-10">
                   Aucune donnée RPE
                 </p>
               )}
@@ -566,11 +592,11 @@ export default function PerformanceDashboard({
           </div>
 
           {/* ── Volume par groupe musculaire (bar) ── */}
-          <div className="bg-surface rounded-card p-5">
-            <h3 className="font-bold text-primary text-sm mb-1">
+          <div className="bg-[#181818] rounded-xl p-5">
+            <h3 className="font-bold text-white text-sm mb-1">
               Volume par groupe musculaire
             </h3>
-            <p className="text-xs text-secondary mb-5">
+            <p className="text-xs text-white/45 mb-5">
               Total kg soulevés · cliquer sur une barre pour filtrer
             </p>
             {muscleGroups.length > 0 ? (
@@ -611,20 +637,20 @@ export default function PerformanceDashboard({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-secondary text-center py-8">
+              <p className="text-xs text-white/45 text-center py-8">
                 Pas assez de données
               </p>
             )}
           </div>
 
           {/* ── Progression par exercice ── */}
-          <div className="bg-surface rounded-card p-5">
+          <div className="bg-[#181818] rounded-xl p-5">
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
               <div>
-                <h3 className="font-bold text-primary text-sm">
+                <h3 className="font-bold text-white text-sm">
                   Progression par exercice
                 </h3>
-                <p className="text-xs text-secondary mt-0.5">
+                <p className="text-xs text-white/45 mt-0.5">
                   Évolution du poids max par séance
                 </p>
               </div>
@@ -633,7 +659,7 @@ export default function PerformanceDashboard({
                   <select
                     value={selectedExercise ?? ""}
                     onChange={(e) => setSelectedExercise(e.target.value)}
-                    className="appearance-none bg-surface-light rounded-btn pl-3 pr-8 py-2 text-xs font-medium text-primary outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer"
+                    className="appearance-none bg-white/[0.04] rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-white outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer"
                   >
                     {exercises.map((ex) => (
                       <option key={ex.name} value={ex.name}>
@@ -643,7 +669,7 @@ export default function PerformanceDashboard({
                   </select>
                   <ChevronDown
                     size={12}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none"
                   />
                 </div>
               )}
@@ -694,7 +720,7 @@ export default function PerformanceDashboard({
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-secondary text-center py-8">
+              <p className="text-xs text-white/45 text-center py-8">
                 Sélectionne un exercice
               </p>
             )}
