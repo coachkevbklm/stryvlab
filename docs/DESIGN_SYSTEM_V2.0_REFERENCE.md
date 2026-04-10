@@ -233,6 +233,57 @@ export default function CoachClientsPage() {
 - ❌ JAMAIS de titre/boutons action en dehors de topBarLeft/topBarRight
 - Modals, drawers flottants : OK seulement s'ils ne remplacent pas la top bar
 
+### Règle TopBar : boutons d’action
+
+Les boutons dans `topBarRight` doivent être compacts, cohérents et hiérarchisés.
+
+- ✅ Hauteur standard : `h-8` pour les boutons de top bar.
+- ✅ Rayon : `rounded-lg`.
+- ✅ Typographie : `text-[12px] font-bold uppercase tracking-[0.12em]`.
+- ✅ Espacement interne : `px-4` pour un bouton principal, `px-3` pour un bouton secondaire.
+- ✅ Icônes : `gap-2` entre l’icône et le label.
+- ✅ Bouton primaire : `bg-[#1f8a65] text-white hover:bg-[#217356] active:scale-[0.98]`.
+- ✅ Bouton secondaire : `bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80`.
+- ✅ Groupes : `topBarRight` peut contenir plusieurs actions, mais rester limité à 2 actions principales.
+- ✅ Actions conditionnelles : afficher uniquement les boutons pertinents selon l’état de la page. Exemple :
+  - `Nouveau tableau Kanban` visible uniquement en mode `kanban`
+  - `Nouvelle tâche` visible en `kanban` et `agenda`
+- ❌ Pas de bouton de top bar à `h-[52px]` ou format page hero.
+- ❌ Éviter les boutons top bar trop larges ou trop hauts qui cassent l’équilibre visuel.
+
+### Règle : groupe de bascule de vue
+
+Les boutons de changement de vue (grille / liste) doivent rester compacts, cohérents et visuellement liés.
+
+- ✅ Conteneur : `flex items-center gap-0.5 bg-[#181818] border-subtle rounded-xl p-1`.
+- ✅ Boutons : `flex items-center justify-center w-8 h-8 rounded-lg transition-all`.
+- ✅ État actif : `bg-white/[0.08] text-white`.
+- ✅ État inactif : `text-white/30 hover:text-white/60`.
+- ✅ Icônes : `LayoutGrid` pour la vue grille, `List` pour la vue liste.
+- ✅ Utiliser `aria-pressed` ou un indicateur visuel clair pour l’accessibilité.
+- ✅ Exemple : `/coach/clients` utilise ce pattern dans la barre de recherche/filtre.
+
+```tsx
+<div className="flex items-center gap-0.5 bg-[#181818] border-subtle rounded-xl p-1">
+  <button
+    type="button"
+    aria-pressed={viewMode === "grid"}
+    onClick={() => setViewMode("grid")}
+    className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${viewMode === "grid" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60"}`}
+  >
+    <LayoutGrid size={13} />
+  </button>
+  <button
+    type="button"
+    aria-pressed={viewMode === "list"}
+    onClick={() => setViewMode("list")}
+    className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${viewMode === "list" ? "bg-white/[0.08] text-white" : "text-white/30 hover:text-white/60"}`}
+  >
+    <List size={13} />
+  </button>
+</div>
+```
+
 #### Exemples implémentés
 
 - `/coach/clients` ← Reference pattern (topBarLeft = "Espace Coach" + "Clients", topBarRight = "+ Nouveau client")
@@ -392,6 +443,30 @@ function FeatureRow({ icon: Icon, label, desc, accent = false }) {
   );
 }
 ```
+
+### Search bar
+
+Use the default DS v2 input border for search fields in coach pages.
+
+```tsx
+<div className="relative flex-1 max-w-sm">
+  <Search
+    size={14}
+    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+  />
+  <input
+    type="text"
+    placeholder="Rechercher un client..."
+    className="w-full rounded-xl bg-[#0a0a0a] border-input pl-9 pr-4 h-10 text-[13px] text-white placeholder:text-white/25 outline-none"
+  />
+</div>
+```
+
+- ✅ Background input : `bg-[#0a0a0a]`
+- ✅ Border : `border-input`
+- ✅ Padding gauche : `pl-9` pour laisser de l’espace à l’icône
+- ✅ Taille : `h-10`
+- ✅ Placeholder : `text-white/25`
 
 ### Bouton CTA complet
 

@@ -424,7 +424,7 @@ export default function CoachClientsPage() {
               placeholder="Rechercher un client..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl bg-[#181818] border-input pl-9 pr-4 h-10 text-[13px] text-white placeholder:text-white/25 outline-none"
+              className="w-full rounded-xl bg-[#0a0a0a] border-input pl-9 pr-4 h-10 text-[13px] text-white placeholder:text-white/25 outline-none"
             />
           </div>
 
@@ -544,7 +544,10 @@ export default function CoachClientsPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-[#181818] border-subtle rounded-2xl p-5 space-y-4">
+              <div
+                key={i}
+                className="bg-[#181818] border-subtle rounded-2xl p-5 space-y-4"
+              >
                 <div className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
                   <div className="space-y-1.5 flex-1">

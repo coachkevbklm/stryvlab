@@ -1,3 +1,192 @@
+## 2026-04-10
+
+CHORE: next.config.js — CORS restreint au domaine stryvlab.com (plus de wildcard *), ajout headers sécurité HTTP (X-Frame-Options, HSTS, CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options)
+CHORE: .gitignore — renforcé (supabase/.temp, docs/screenshots, secrets/, .cursor/, *.log, OS files)
+CHORE: git rm --cached — screenshot commité retiré du suivi git
+FIX: AgendaCalendar — bouton Modifier (Edit3) toujours visible, plus caché derrière opacity-0/group-hover
+FEATURE: AgendaCalendar — section Assignations dans les modals création ET édition : client DB (select + lien dossier), template programme (select + lien view), template bilan (select + lien assessments)
+FIX: OrganisationPage — loadBoards log l'erreur HTTP exacte dans la console (plus silencieux)
+FIX: kanban_boards — colonne order manquante ajoutée via ALTER TABLE (migration corrective)
+FIX: kanban_columns — colonne order manquante ajoutée via ALTER TABLE (migration corrective)
+FIX: KanbanBoard — suppression du stopPropagation() sur le grip handle qui bloquait le drag dnd-kit
+FIX: AgendaCalendar — ajout modal d'édition événement (titre, date, heure début/fin, priorité, template, rappel)
+FIX: API tasks + events — defensive payload build: new sync columns only sent when explicitly provided, avoids 500 before migration is applied
+SCHEMA: kanban_tasks — add linked_event_id (FK agenda_events), is_completed boolean
+SCHEMA: agenda_events — add linked_task_id, linked_column_title, event_time_end, client_id, template_type, is_completed, notify_minutes_before
+SCHEMA: Postgres trigger trg_task_column_sync — propagate column move to linked event's linked_column_title
+SCHEMA: Postgres trigger trg_column_rename_sync — propagate column rename to all linked events
+FEATURE: Sync bi-directionnel Kanban↔Agenda : création liée établit les deux FK (linked_event_id / linked_task_id) avec 3-step sequence
+FEATURE: KanbanBoard — checkbox is_completed sur chaque tâche avec mirror automatique vers l'événement lié (PATCH)
+FEATURE: KanbanBoard — badge "Agenda" avec icône Link sur les tâches ayant un événement lié
+FEATURE: KanbanBoard — compteur de tâches complétées par colonne dans l'en-tête
+FEATURE: KanbanBoard — champ heure optionnel dans AddTaskForm quand sync agenda activée
+FEATURE: AgendaCalendar — badge linked_column_title sur les événements liés à une tâche Kanban
+FEATURE: AgendaCalendar — checkbox is_completed sur les événements avec mirror vers la tâche liée (PATCH)
+FEATURE: AgendaCalendar — formulaire enrichi : event_time_end, template_type, notify_minutes_before
+FEATURE: AgendaCalendar — "Envoyer au Kanban" avec sélecteur board + colonne (chargement lazy, remplace auto-première-colonne)
+FEATURE: AgendaCalendar — affichage time_end, linked_column_title, template_type, notify badge sur les event cards
+FEATURE: Organisation — onglet "Résumé" avec 3 cards : événements du jour, taux de complétion tâches par tableau, rappels 24h
+FIX: Organisation — limite de tableaux portée de 3 à 10 (API + UI : boutons, compteur emplacements restants)
+FEATURE: Organisation — tableaux Kanban affichés empilés verticalement (plus de liste déroulante sélecteur)
+FEATURE: Organisation — drag-and-drop pour réordonner les tableaux Kanban (useSortable + verticalListSortingStrategy)
+FEATURE: Organisation — DragOverlay carte fantôme lors du déplacement d'un tableau
+FEATURE: Organisation — bouton inline renommage/suppression de tableau visible au hover (Edit3 + Trash2)
+FEATURE: Organisation — suppression inline avec confirmation directe ("Supprimer ? Oui / Non") sans modal
+FEATURE: Organisation — "Ajouter un tableau" bouton en pointillés visible uniquement si < 3 tableaux
+FEATURE: api/organisation/boards PATCH — supporte le champ order pour la réorganisation des tableaux
+
+FIX: KanbanBoard — drag entre colonnes fonctionnel : useDroppable par colonne + closestCorners + DragOverEvent pour déplacement optimiste en temps réel
+FIX: KanbanBoard — indicateurs visuels drag : ghost card avec rotation, colonne cible highlight vert, tâche source fantôme en pointillés, texte "Déposer ici" sur colonnes vides
+FIX: KanbanBoard — DragOverlay avec dropAnimation, annulation (DragCancel) recharge l'état propre
+FEATURE: KanbanBoard — toggle "Ajouter aussi à l'agenda" dans le formulaire de création de tâche
+FEATURE: AgendaCalendar — toggle "Ajouter aussi au Kanban" dans le formulaire de création d'événement
+
+SCHEMA: Add kanban_boards, kanban_columns, kanban_tasks, agenda_events tables with RLS (coach-scoped)
+FEATURE: Organisation — Kanban et Agenda migrés de JSON fichier vers Supabase (persistance multi-tenant, production-ready)
+FEATURE: Organisation — 4 nouvelles routes API /api/organisation/{boards,columns,tasks,events} avec auth Supabase + Zod validation
+FEATURE: Organisation — KanbanBoard refait : boardId obligatoire réel, colonne CRUD fonctionnel (rename/delete/add inline), drag-and-drop corrigé, tâche inline form par colonne, DS v2 complet
+FEATURE: Organisation — AgendaCalendar refait : champ event_date/event_time aligné sur schema Supabase, double bouton "Nouvel événement" supprimé, DS v2 complet (vues jour/semaine/mois/année)
+FEATURE: Organisation — page refaite : tab switcher Kanban/Agenda, sélecteur de tableau multi-boards, auto-création du premier tableau, modal création board, modal ajout colonne, confirmation suppression board
+FIX: Organisation — KanbanBoard ne recevait pas de boardId (causait API 400 + colonnes jamais chargées)
+FIX: Organisation — kanban-columns.json sans champ boardId (filtrage retournait toujours [])
+FIX: Organisation — bouton "Nouveau tableau Kanban" ouvrait le mauvais modal (tâche au lieu de création)
+FIX: Organisation — onColumnAdd/Edit/Delete jamais passés au composant KanbanBoard
+FIX: Organisation — sync Kanban↔Agenda cassée (format legacy status sans boardId/columnId)
+REFACTOR: Dashboard — widgets Kanban/Agenda démo remplacés par liens vers /coach/organisation (évite imports de types obsolètes)
+
+## 2026-04-10
+
+FEATURE: MetricsSection — PhaseEditModal : modal d'édition complète des phases (type, libellé, dates, notes) accessible depuis la timeline
+FEATURE: MetricsSection — création annotation simplifiée : formulaire direct (1 clic) sans étape "choisir" — tab toggle Note/Événement / Phase
+FEATURE: MetricsSection — toutes les annotations supportent le champ body (pas uniquement le type "note")
+FEATURE: MetricsSection — NoteModal refactorisé : lecture avec badge type + emoji + corps, édition inline, suppression avec labels "Supprimer/Annuler"
+FEATURE: MetricsSection — timeline phases : boutons edit/delete au survol, confirmation inline suppression, édition via PhaseEditModal
+
+FEATURE: Page organisation — sync bidirectionnel Kanban ↔ Agenda : ajout dans un ajoute automatiquement dans l'autre avec date, priorité, et statut (kanban → agenda si dueDate, agenda → kanban avec status="todo")
+FEATURE: Page organisation — colonnes Kanban avec bordures DS v2.0 (border-subtle) pour division claire
+FEATURE: Page organisation — drag & drop complet : déplacement haut/bas dans colonne + entre colonnes (todo ↔ in_progress ↔ done) avec mise à jour DB temps réel
+FIX: MetricsSection — bug slider : le graphique overlay ne disparaît plus quand on recule au-delà des données (overlayMetrics basé sur series complet, pas filteredSeries)
+FIX: MetricsSection — NoteModal : édition complète (event_type, event_date, label, body) identique au formulaire de création, avec sélecteur type en chips
+FIX: MetricsSection — NoteModal : design DS v2.0 — border border-white/[0.08] sur modal, border sur inputs/boutons, bouton X avec fond visible
+FEATURE: MetricsSection — bloc Phases & Événements remplacé par vue liste groupée par mois (phases + annotations mélangées, ordre chronologique décroissant, date dd/mm par entrée)
+FIX: MetricsSection — clic sur icône annotation dans le graphique ouvre désormais le NoteModal (et non le menu contextuel) via annotationClickedRef guard sur onMouseUp
+FIX: MetricsSection — plage de temps affichée en durée lisible (ex: "3 mois", "1 an 2 mois") au lieu de dates dupliquées
+FIX: MetricsSection — section "Chronologie" renommée "Phases & Événements" avec description cohérente
+FEATURE: MetricsSection — modal post-it notes : clic sur icône graphique ou entrée de liste ouvre NoteModal (lecture + édition titre + corps + suppression avec confirmation)
+FEATURE: MetricsSection — champ "Détail" (textarea) ajouté au formulaire de création de note dans le menu contextuel du graphique
+SCHEMA: metric_annotations — ajout colonne body TEXT (migration 20260410_annotation_body.sql)
+FEATURE: API annotations — body inclus dans GET/POST/PATCH (createSchema, updateSchema mis à jour)
+FIX: MetricsSection — noteModal state déplacé dans MetricsSection (scope correct), NoteModal rendu dans la section Modals
+
+FEATURE: MetricsSection — clic sur icône annotation dans le graphique scroll et highlight la note correspondante dans le bloc chronologie (ring vert, auto-reset 2.5s)
+FEATURE: MetricsSection — isoler une courbe au clic dans la légende Δ% (autres courbes à 12% opacité, bouton "Tout afficher" apparaît)
+FIX: MetricsSection — slider période : contraste dates thumbs amélioré (text-white/75 font-bold), débordement corrigé aux extrémités (thumbLabelTranslate clamp)
+FIX: MetricsSection — slider période : label passe aux dates absolues "dd/mm/yyyy → dd/mm/yyyy" au lieu de "X mois"
+FIX: MetricsSection — tooltip annotation : position flip si proche du haut viewport, caret directionnel, hint "Cliquez pour localiser"
+FIX: MetricsSection — légende Δ% : icône directionnelle (TrendingUp/Down) + badge PLATEAU avec fond ambre ⚡ plus saillant
+REFACTOR: MetricsSection — bannière plateau remplacée par <details> collapsible compact (1 ligne par défaut)
+REFACTOR: MetricsSection — toggle "Superposé" toujours visible, grisé + disabled + tooltip si < 2 métriques sélectionnées
+FEATURE: PerformanceDashboard — add nutrition/performance diagnostic panel with PR score, recovery risk, and direct coach actions
+
+FIX: Organisation page — removed all demo data from kanban tasks and agenda events; APIs now return empty arrays by default, only loading coach-inserted data
+
+## 2026-04-09
+
+FIX: MetricsSection — annotation dates in event list now formatted as dd/mm/yyyy (via formatDate) instead of raw ISO string
+FEATURE: MetricsSection — hover tooltip on annotation icons in chart: shows label, type and date on mouse enter
+FEATURE: MetricsSection — time range slider thumbs now display live dates (dd/mm/yyyy) underneath each thumb while dragging
+FIX: MetricsSection — PenLine button now has visible border + label "Note" instead of transparent icon-only button
+
+FIX: Border system completion — added border-subtle/border-modal/border-tooltip to all remaining components with bg-[#181818] (ProgramTemplateBuilder meta/session cards, PerformanceDashboard charts/empty state/tooltips, SessionHistory items/empty state, ProgressionHistory items/empty state, ClientAccessToken main/modal, ImageCropModal, KanbanBoard modal, AgendaCalendar main/modal)
+FIX: AgendaCalendar DS v2 compliance — replace bg-[#121212] with bg-white/[0.02] on internal day/month cards for proper surface hierarchy (week view, month view, year view)
+FIX: MetricsSection overlay — add temporal slider to Superposé view below the overlay controls and above the chart
+
+FIX: Build error — resolved "Cannot find module './vendor-chunks/@supabase.js'" by clearing Next.js cache (.next) and reinstalling dependencies
+FIX: MetricsSection — removed invalid reference to 'loading' variable before its definition (line 2059)
+FIX: MetricsSection overlay — chart resize handle positioned perfectly on bottom border (50% inside/50% outside chart block) with increased size w-16 h-6
+FIX: MetricsSection overlay — "Tout/Aucun" buttons redesigned to DS v2 standards (px-3 py-1.5, text-[11px], bg-[#1f8a65] active state, proper gap-1 spacing)
+
+FIX: MetricsSection overlay — chart resize handle placed below lower border and clamp height range to 120-600px
+REFACTOR: MetricsSection overlay — replace manual drag handle with ResizablePanelGroup/ResizablePanel/ResizableHandle (shadcn) for chart resize
+FIX: MetricsSection overlay — drag handle now correctly centered on bottom border of chart block (removed pb-3, pb-5 on footer, pill style handle)
+FIX: Remove wrapping bg-[#181818] block around MetricsSection in client page — blocs now render directly on bg-[#121212] without outer container
+REFACTOR: MetricsSection — align to dashboard block style: border-subtle on all blocks, skeleton matching dashboard KPI pattern, mounted animation (opacity+translateY), section labels text-[9px] font-bold text-white/30 tracking-[0.18em], removed px-10 wrapper
+FIX: Coach/clients search bar — apply DS v2 default input border and background in search field
+FIX: MetricsSection table view loading skeleton — align skeleton block shapes with actual table layout
+FIX: MetricsSection chart/overlay layout — swap temporal slider block with metrics visualization block
+FIX: MetricsSection overlay layout — move metrics legend block below chart in overlay view
+REFACTOR: Apply DS v2 search bar style across all coach pages — ExercisePicker, templates page, template assign, tools grid (bg-[#0a0a0a], border-input, pl-9, h-10, placeholder:text-white/25)
+
+FIX: Build error — resolved "Cannot find module './vendor-chunks/@supabase.js'" by clearing Next.js cache (.next) and reinstalling dependencies
+FIX: MetricsSection — removed invalid reference to 'loading' variable before its definition (line 2059)
+FIX: MetricsSection overlay — chart resize handle positioned perfectly on bottom border (50% inside/50% outside chart block) with increased size w-16 h-6
+FIX: MetricsSection overlay — "Tout/Aucun" buttons redesigned to DS v2 standards (px-3 py-1.5, text-[11px], bg-[#1f8a65] active state, proper gap-1 spacing)
+
+FIX: MetricsSection overlay — chart resize handle placed below lower border and clamp height range to 120-600px
+REFACTOR: MetricsSection overlay — replace manual drag handle with ResizablePanelGroup/ResizablePanel/ResizableHandle (shadcn) for chart resize
+FIX: MetricsSection overlay — drag handle now correctly centered on bottom border of chart block (removed pb-3, pb-5 on footer, pill style handle)
+FIX: Remove wrapping bg-[#181818] block around MetricsSection in client page — blocs now render directly on bg-[#121212] without outer container
+REFACTOR: MetricsSection — align to dashboard block style: border-subtle on all blocks, skeleton matching dashboard KPI pattern, mounted animation (opacity+translateY), section labels text-[9px] font-bold text-white/30 tracking-[0.18em], removed px-10 wrapper
+FIX: Coach/clients search bar — apply DS v2 default input border and background in search field
+FIX: MetricsSection table view loading skeleton — align skeleton block shapes with actual table layout
+FIX: MetricsSection chart/overlay layout — swap temporal slider block with metrics visualization block
+FIX: MetricsSection overlay layout — move metrics legend block below chart in overlay view
+REFACTOR: Apply DS v2 search bar style across all coach pages — ExercisePicker, templates page, template assign, tools grid (bg-[#0a0a0a], border-input, pl-9, h-10, placeholder:text-white/25)
+REFACTOR: MetricsSection overlay — split single merged block into 3 distinct blocks (Contrôles, Légende Δ%, Graphique), each with bg-[#181818] border-subtle rounded-2xl
+REFACTOR: Apply grouped toggle button style (bg-[#181818] border-subtle rounded-xl p-1) to "Tout/Aucun" in MetricsSection overlay and "Tout/Rien" in BlockCard — consistent with view mode toggle pattern from coach/clients
+FIX: MetricsSection overlay — add active state to "Tout/Aucun" grouped toggle buttons for better state feedback
+FIX: MetricsSection overlay — reposition "Période d'analyse" block below "Vue superposée" controls and above chart
+
+REFACTOR: MetricsSection — decompose into distinct blocks (Contrôles, Période d'analyse, Données, Chronologie); slider repositioned below chart with title + description; Chronologie block with phases + événements/notes list; removed duplicate compact lists from inside MultiSeriesChart;
+FIX: Coach organisation page border styling and data display issues
+
+FIX: MetricsSection overlay — chart resize handle positioned with 50% inside chart block and 50% outside (translate-y-1/2, larger handle w-16 h-6)
+FIX: MetricsSection overlay — "Tout/Aucun" toggle buttons redesigned to DS v2 standards (px-3 py-1.5, text-[11px], accent green bg-[#1f8a65] for active state, proper spacing gap-1)
+
+FIX: Persist agenda events to disk and wire agenda modal state to the organisation page
+
+- Replaced invalid `border-subtle` CSS class with proper design system borders `border-[0.3px] border-white/[0.013]`
+- Populated `data/kanban.json` with default tasks to prevent empty Kanban board display
+- Added `disableApiFetch={true}` to components with demo data to prevent API override
+- Fixed button functionality by ensuring proper state management for tab switching and modal controls
+- Fixed tab visibility by making `TabsContent` direct children of `Tabs`
+- FEATURE: Add agenda calendar multi-view (jour/semaine/mois/année) with navigation controls
+
+FIX: Prevent homepage auth server action crash when Supabase fetch fails
+
+FIX: Coach organisation page now uses real API data for Kanban tasks and agenda events
+
+- Removed demo data (demoTasks, demoEvents)
+- Components now fetch data from `/api/kanban` and `/api/agenda` endpoints
+- Page displays actual coach organisation data in real-time
+  FIX: MetricsSection overlay — crash on "Tout" / adding metric outside group (delta.toFixed on undefined) — deltas now computed over allMetricsWithData instead of selectedMetrics only; guard changed to != null
+  FIX: PATCH /annotations/[annotationId] — remove updated_at from update payload (column does not exist in metric_annotations table → was causing 500)
+  FEATURE: MetricsSection overlay — edit existing phases/annotations via Edit2 button on chips (PATCH API)
+  FEATURE: MetricsSection overlay — event type picker shows icon + label (Programme, Blessure, Voyage, Nutrition, Note)
+  FEATURE: app/api/clients/[clientId]/annotations/[annotationId] — add PATCH route for annotation updates
+  FEATURE: MetricsSection overlay — interactive chart context menu (click/drag on chart opens phase/event/note form; drag selects date range for phases; PenLine icon fallback)
+  REFACTOR: MetricsSection overlay — removed inline phase/annotation forms; replaced by context menu; compact read-only lists remain below chart
+  FIX: Resolve coach organisation page empty display by preventing API fetch override of demo data
+
+- Added `disableApiFetch` prop to `KanbanBoard` and `AgendaCalendar` components
+- Prevented API calls from overriding initial demo tasks/events in organisation page
+- Organisation page now displays Kanban board and agenda with demo data by default
+
+FEATURE: MetricsSection overlay — interpretation panel collapsible (default collapsed, ChevronDown/Up toggle, resets on group change)
+FIX: MetricsSection overlay — body_ratios group now includes visceral_fat, updated description with ACE clinical threshold reference
+FEATURE: MetricsSection overlay — cross-group metric mixing (all metrics with data available, grouped by category)
+FEATURE: MetricsSection overlay — training phase bands (bulk/cut/maintenance/peak/deload/custom) persisted in DB via training_phases table
+FEATURE: MetricsSection overlay — automatic plateau detection per metric with evidence-based thresholds (Schoenfeld 2010, Helms 2014, Trexler 2014), amber dot markers on chart + alert banner
+FEATURE: MetricsSection overlay — delta calculated on filtered window only (baseline = first point of active filter, not absolute first point)
+FEATURE: MetricsSection overlay — event annotations pinned on timeline (program_change, injury, travel, nutrition, note) persisted in DB via metric_annotations table
+FEATURE: MetricsSection overlay — norm reference zones for single-metric absolute mode (body_fat_pct male/female, visceral_fat, sleep_hours, energy_level, stress_level — sources ACSM/WHO/ACE)
+SCHEMA: Add training_phases and metric_annotations tables with RLS policies (supabase/migrations/20260409_metrics_phases_annotations.sql)
+FEATURE: API routes for training phases CRUD (/api/clients/[clientId]/phases) and annotations CRUD (/api/clients/[clientId]/annotations)
+REFACTOR: Remove comparison mode from MetricsSection overlay view — delete SnapshotCompare component, ViewMode "compare", GitCompare/ArrowLeftRight imports, and related toolbar button
+FIX: Ensure coach organisation top bar buttons remain interactive and Kanban modal syncs reliably
+CHORE: Add top bar button style rules to DS v2 documentation and UI design rules
+CHORE: Document client list view mode toggle button pattern in DS v2 reference
+
 ## 2026-04-08
 
 CHORE: Complete border system audit and application across ALL 15 coach pages
@@ -5,14 +194,16 @@ CHORE: Complete border system audit and application across ALL 15 coach pages
 **Phase 2 Completion: Systematic audit of remaining 10 coach pages**
 
 ✅ **app/coach/comptabilite/page.tsx** — 8 corrections
+
 - border-subtle on KPI card skeleton containers (4 cards: MRR, ARR, pending, active)
 - border-subtle on Revenue chart container
-- border-subtle on Top clients container  
+- border-subtle on Top clients container
 - border-subtle on Formulas container
 - border-subtle on Payments table container
 - border-subtle on financial KPI modal
 
 ✅ **app/coach/clients/page.tsx** — 5 corrections
+
 - border-subtle on client list loading skeleton grid
 - border-subtle on client list loading skeleton cards
 - border-subtle on client list table container
@@ -20,26 +211,32 @@ CHORE: Complete border system audit and application across ALL 15 coach pages
 - border-subtle on client card component
 
 ✅ **app/coach/assessments/page.tsx** — 2 corrections
+
 - border-subtle on assessment template KPI card
 - border-subtle on delete confirmation modal
 
 ✅ **app/coach/programs/templates/[templateId]/view/page.tsx** — 2 corrections
+
 - border-subtle on meta card (replaced border-white/10)
 - border-subtle on session container (replaced border-white/10)
 
 ✅ **app/coach/programs/templates/[templateId]/assign/page.tsx** — 4 corrections
+
 - border-subtle on template details card
 - border-subtle on empty state container
 - border-subtle on name input wrapper
 - border-subtle on client selection container
 
 ✅ **app/coach/assessments/templates/[templateId]/edit/page.tsx** — 1 correction
+
 - border-subtle on loading skeleton container
 
 ✅ **app/coach/clients/[clientId]/page.tsx** — 1 correction
+
 - border-subtle on delete program confirmation modal
 
 **Result: Border system 100% complete across all 15 coach pages** ✓
+
 - 0 new TypeScript errors
 - All containers now have border-subtle, border-input, or border-button as appropriate
 - Design system consistency accomplished
@@ -49,6 +246,7 @@ CHORE: Complete border system audit and application across ALL 15 coach pages
 ## 2026-04-08
 
 FIX: Fix invalid hook call in coach settings top bar context
+FIX: Update coach formules page to separate formulas and payment history panels and fix archive modal label rendering
 
 REFACTOR: Audit profond et systématique du système de bordures - ajout des éléments manquants
 

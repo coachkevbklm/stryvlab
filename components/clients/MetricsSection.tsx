@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -18,7 +26,6 @@ import {
   PenLine,
   SlidersHorizontal,
   Filter,
-  ArrowLeftRight,
   Calendar,
   Layers,
   GripHorizontal,
@@ -287,7 +294,8 @@ const OVERLAY_GROUPS = [
     key: "body_composition",
     label: "Composition corporelle",
     desc: "Poids, masse grasse et muscle en kg — trajectoires de recomposition",
-    interpretation: "Toutes les courbes partent de 0 % au point de départ. Une hausse de la masse musculaire couplée à une baisse de la masse grasse indique une recomposition réussie, même si le poids total reste stable. Idéal pour évaluer l'efficacité d'un protocole sur la durée.",
+    interpretation:
+      "Toutes les courbes partent de 0 % au point de départ. Une hausse de la masse musculaire couplée à une baisse de la masse grasse indique une recomposition réussie, même si le poids total reste stable. Idéal pour évaluer l'efficacité d'un protocole sur la durée.",
     metrics: [
       "weight_kg",
       "fat_mass_kg",
@@ -300,14 +308,16 @@ const OVERLAY_GROUPS = [
     key: "body_ratios",
     label: "Ratios corporels",
     desc: "Pourcentages — grasse, musculaire, hydrique",
-    interpretation: "Ces ratios sont interdépendants : une baisse du % masse grasse entraîne mécaniquement une hausse relative du % musculaire, même sans gain de muscle. Interpréter toujours en parallèle avec les valeurs absolues (kg) pour distinguer une vraie prise de muscle d'un simple effet de dilution.",
-    metrics: ["body_fat_pct", "muscle_pct", "body_water_pct"],
+    interpretation:
+      "Ces ratios sont interdépendants : une baisse du % masse grasse entraîne mécaniquement une hausse relative du % musculaire, même sans gain de muscle. La graisse viscérale (score) est un indicateur de risque métabolique indépendant — un score > 12 est cliniquement significatif (ACE). Interpréter toujours les % en parallèle avec les valeurs absolues (kg) pour distinguer une vraie prise de muscle d'un simple effet de dilution.",
+    metrics: ["body_fat_pct", "visceral_fat", "muscle_pct", "body_water_pct"],
   },
   {
     key: "measurements",
     label: "Mensurations",
     desc: "Tours de taille, hanches, bras, cuisse — en cm",
-    interpretation: "Les mensurations reflètent les changements morphologiques locaux, souvent avant que le poids ne bouge. Une baisse du tour de taille avec stabilité des bras et cuisses est un signal positif de perte de graisse centrale. Particulièrement utile pour les clients en recomposition corporelle.",
+    interpretation:
+      "Les mensurations reflètent les changements morphologiques locaux, souvent avant que le poids ne bouge. Une baisse du tour de taille avec stabilité des bras et cuisses est un signal positif de perte de graisse centrale. Particulièrement utile pour les clients en recomposition corporelle.",
     metrics: [
       "waist_cm",
       "hips_cm",
@@ -321,7 +331,8 @@ const OVERLAY_GROUPS = [
     key: "wellness",
     label: "Bien-être",
     desc: "Sommeil, énergie, stress — scores et heures",
-    interpretation: "Le bien-être conditionne directement la récupération et les adaptations. Un stress chronique élevé ou un sommeil insuffisant peuvent bloquer les progrès malgré un entraînement optimal. Corréler ces courbes avec les phases d'entraînement intensif pour identifier les périodes à risque de surentraînement.",
+    interpretation:
+      "Le bien-être conditionne directement la récupération et les adaptations. Un stress chronique élevé ou un sommeil insuffisant peuvent bloquer les progrès malgré un entraînement optimal. Corréler ces courbes avec les phases d'entraînement intensif pour identifier les périodes à risque de surentraînement.",
     metrics: ["sleep_hours", "energy_level", "stress_level"],
   },
 ];
@@ -342,6 +353,199 @@ interface MetricRow {
 interface MetricSeries {
   [fieldKey: string]: { date: string; value: number }[];
 }
+
+// ─── Training phases & annotations ───────────────────────────────────────────
+
+type PhaseType = "bulk" | "cut" | "maintenance" | "peak" | "deload" | "custom";
+type AnnotationType =
+  | "program_change"
+  | "injury"
+  | "travel"
+  | "nutrition"
+  | "note";
+
+interface TrainingPhase {
+  id: string;
+  label: string;
+  phase_type: PhaseType;
+  date_start: string;
+  date_end: string | null;
+  notes?: string | null;
+}
+
+interface MetricAnnotation {
+  id: string;
+  event_date: string;
+  label: string;
+  body?: string | null;
+  event_type: AnnotationType;
+}
+
+const PHASE_COLORS: Record<
+  PhaseType,
+  { bg: string; text: string; label: string }
+> = {
+  bulk: {
+    bg: "rgba(99,102,241,0.12)",
+    text: "#818cf8",
+    label: "Prise de masse",
+  },
+  cut: { bg: "rgba(249,115,22,0.12)", text: "#fb923c", label: "Sèche" },
+  maintenance: {
+    bg: "rgba(255,255,255,0.04)",
+    text: "#9ca3af",
+    label: "Maintien",
+  },
+  peak: {
+    bg: "rgba(250,204,21,0.10)",
+    text: "#facc15",
+    label: "Pic de performance",
+  },
+  deload: { bg: "rgba(34,211,238,0.08)", text: "#67e8f9", label: "Décharge" },
+  custom: {
+    bg: "rgba(31,138,101,0.10)",
+    text: "#1f8a65",
+    label: "Personnalisé",
+  },
+};
+
+const ANNOTATION_ICONS: Record<AnnotationType, string> = {
+  program_change: "⚡",
+  injury: "🩹",
+  travel: "✈️",
+  nutrition: "🥗",
+  note: "📌",
+};
+
+const ANNOTATION_LABELS: Record<AnnotationType, string> = {
+  program_change: "Programme",
+  injury: "Blessure",
+  travel: "Voyage",
+  nutrition: "Nutrition",
+  note: "Note",
+};
+
+// ─── Scientific plateau thresholds ───────────────────────────────────────────
+// Sources: Schoenfeld 2010, Helms et al. 2014, Trexler et al. 2014, NSCA
+
+const PLATEAU_THRESHOLDS: Partial<
+  Record<string, { pct: number; minPoints: number }>
+> = {
+  muscle_mass_kg: { pct: 0.5, minPoints: 4 },
+  skeletal_muscle_mass_kg: { pct: 0.5, minPoints: 4 },
+  fat_mass_kg: { pct: 1.5, minPoints: 3 },
+  body_fat_pct: { pct: 2.0, minPoints: 3 },
+  weight_kg: { pct: 0.5, minPoints: 3 },
+  waist_cm: { pct: 1.0, minPoints: 3 },
+  sleep_hours: { pct: 5.0, minPoints: 4 },
+  energy_level: { pct: 10.0, minPoints: 4 },
+};
+const DEFAULT_PLATEAU_THRESHOLD = { pct: 2.0, minPoints: 3 };
+
+function detectPlateaus(
+  data: { date: string; value: number }[],
+  metricKey: string,
+): { startIdx: number; endIdx: number; startDate: string; endDate: string }[] {
+  const threshold = PLATEAU_THRESHOLDS[metricKey] ?? DEFAULT_PLATEAU_THRESHOLD;
+  const plateaus: {
+    startIdx: number;
+    endIdx: number;
+    startDate: string;
+    endDate: string;
+  }[] = [];
+  if (data.length < threshold.minPoints) return plateaus;
+  let plateauStart = 0;
+  for (let i = 1; i < data.length; i++) {
+    const baseVal = data[plateauStart].value;
+    if (baseVal === 0) {
+      plateauStart = i;
+      continue;
+    }
+    const variation =
+      Math.abs((data[i].value - baseVal) / Math.abs(baseVal)) * 100;
+    if (variation < threshold.pct) {
+      if (i - plateauStart + 1 >= threshold.minPoints) {
+        if (
+          plateaus.length > 0 &&
+          plateaus[plateaus.length - 1].endIdx === i - 1
+        ) {
+          plateaus[plateaus.length - 1].endIdx = i;
+          plateaus[plateaus.length - 1].endDate = data[i].date;
+        } else if (i - plateauStart + 1 === threshold.minPoints) {
+          plateaus.push({
+            startIdx: plateauStart,
+            endIdx: i,
+            startDate: data[plateauStart].date,
+            endDate: data[i].date,
+          });
+        } else if (plateaus.length > 0) {
+          plateaus[plateaus.length - 1].endIdx = i;
+          plateaus[plateaus.length - 1].endDate = data[i].date;
+        }
+      }
+    } else {
+      plateauStart = i;
+    }
+  }
+  return plateaus;
+}
+
+// ─── Norm reference zones (evidence-based) ───────────────────────────────────
+// Sources: ACSM Guidelines, WHO, ACE Body Fat Standards
+
+type NormZone = { label: string; min: number; max: number; color: string };
+
+const NORM_ZONES: Partial<
+  Record<
+    string,
+    { male?: NormZone[]; female?: NormZone[]; neutral?: NormZone[] }
+  >
+> = {
+  body_fat_pct: {
+    male: [
+      { label: "Essentiel", min: 2, max: 5, color: "rgba(99,102,241,0.12)" },
+      { label: "Athlète", min: 5, max: 13, color: "rgba(31,138,101,0.12)" },
+      { label: "Forme", min: 13, max: 17, color: "rgba(34,197,94,0.10)" },
+      { label: "Acceptable", min: 17, max: 24, color: "rgba(250,204,21,0.08)" },
+      { label: "Obèse", min: 24, max: 45, color: "rgba(239,68,68,0.10)" },
+    ],
+    female: [
+      { label: "Essentiel", min: 10, max: 13, color: "rgba(99,102,241,0.12)" },
+      { label: "Athlète", min: 13, max: 20, color: "rgba(31,138,101,0.12)" },
+      { label: "Forme", min: 20, max: 24, color: "rgba(34,197,94,0.10)" },
+      { label: "Acceptable", min: 24, max: 31, color: "rgba(250,204,21,0.08)" },
+      { label: "Obèse", min: 31, max: 55, color: "rgba(239,68,68,0.10)" },
+    ],
+  },
+  visceral_fat: {
+    neutral: [
+      { label: "Sain", min: 1, max: 9, color: "rgba(31,138,101,0.12)" },
+      { label: "Excessif", min: 9, max: 14, color: "rgba(250,204,21,0.10)" },
+      { label: "Dangereux", min: 14, max: 30, color: "rgba(239,68,68,0.12)" },
+    ],
+  },
+  sleep_hours: {
+    neutral: [
+      { label: "Insuffisant", min: 0, max: 6, color: "rgba(239,68,68,0.10)" },
+      { label: "Optimal", min: 6, max: 9, color: "rgba(31,138,101,0.12)" },
+      { label: "Excessif", min: 9, max: 12, color: "rgba(250,204,21,0.08)" },
+    ],
+  },
+  energy_level: {
+    neutral: [
+      { label: "Faible", min: 0, max: 4, color: "rgba(239,68,68,0.10)" },
+      { label: "Modéré", min: 4, max: 7, color: "rgba(250,204,21,0.08)" },
+      { label: "Optimal", min: 7, max: 10, color: "rgba(31,138,101,0.12)" },
+    ],
+  },
+  stress_level: {
+    neutral: [
+      { label: "Faible", min: 0, max: 3, color: "rgba(31,138,101,0.12)" },
+      { label: "Modéré", min: 3, max: 7, color: "rgba(250,204,21,0.08)" },
+      { label: "Élevé", min: 7, max: 10, color: "rgba(239,68,68,0.10)" },
+    ],
+  },
+};
 
 type ViewMode = "table" | "charts" | "overlay";
 type ChartCategory = "composition" | "measurements" | "wellness";
@@ -624,13 +828,15 @@ function KpiCard({
             </div>
             {/* Delta pill */}
             {delta !== null && (
-              <div className={`flex flex-col items-center shrink-0 px-3 py-2 rounded-xl ${
-                delta === 0
-                  ? "bg-white/[0.06]"
-                  : deltaGood
-                    ? "bg-[#1f8a65]"
-                    : "bg-red-500/15"
-              }`}>
+              <div
+                className={`flex flex-col items-center shrink-0 px-3 py-2 rounded-xl ${
+                  delta === 0
+                    ? "bg-white/[0.06]"
+                    : deltaGood
+                      ? "bg-[#1f8a65]"
+                      : "bg-red-500/15"
+                }`}
+              >
                 <span
                   className={`text-[11px] font-bold tabular-nums leading-tight flex items-center gap-0.5 ${
                     delta === 0
@@ -644,9 +850,17 @@ function KpiCard({
                   <span>{Math.abs(delta).toFixed(1)}</span>
                 </span>
                 {field?.unit && (
-                  <span className={`text-[9px] font-medium mt-0.5 ${
-                    delta === 0 ? "text-white/40" : deltaGood ? "text-white/60" : "text-red-400"
-                  }`}>{field.unit}</span>
+                  <span
+                    className={`text-[9px] font-medium mt-0.5 ${
+                      delta === 0
+                        ? "text-white/40"
+                        : deltaGood
+                          ? "text-white/60"
+                          : "text-red-400"
+                    }`}
+                  >
+                    {field.unit}
+                  </span>
                 )}
               </div>
             )}
@@ -834,7 +1048,7 @@ function FullChart({
   return (
     <div className="bg-[#181818] rounded-2xl overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="px-6 pt-6 pb-5 flex items-start justify-between gap-4">
+      <div className="px-6 pt-6 pb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.12em] mb-2">
             {field.label}
@@ -1076,7 +1290,7 @@ function FullChart({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 flex items-center justify-between">
+      <div className="px-5 py-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[9px] font-medium text-white/40">
           {new Date(data[0].date).toLocaleDateString("fr-FR", {
             day: "2-digit",
@@ -1112,11 +1326,7 @@ interface MultiTooltipProps {
   label?: string;
 }
 
-function MultiTooltip({
-  active,
-  payload,
-  label,
-}: MultiTooltipProps) {
+function MultiTooltip({ active, payload, label }: MultiTooltipProps) {
   if (!active || !payload?.length) return null;
   const dateStr = label
     ? new Date(label).toLocaleDateString("fr-FR", {
@@ -1181,21 +1391,157 @@ function MultiTooltip({
   );
 }
 
+// ─── Annotation label for ReferenceLine — captures hover events ──────────────
+function AnnotationLabelContent({
+  viewBox,
+  ann,
+  onHover,
+  onLeave,
+  onClick,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  viewBox?: any;
+  ann: MetricAnnotation;
+  onHover: (ann: MetricAnnotation, x: number, y: number) => void;
+  onLeave: () => void;
+  onClick?: (id: string) => void;
+}) {
+  if (!viewBox) return null;
+  const { x, y } = viewBox;
+  const emoji = ANNOTATION_ICONS[ann.event_type];
+  return (
+    <g
+      onMouseEnter={(e) => {
+        const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+        onHover(ann, rect.left + rect.width / 2, rect.top);
+      }}
+      onMouseLeave={onLeave}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(ann.id);
+      }}
+      style={{ cursor: "pointer" }}
+    >
+      {/* Hit area — larger than visual circle for easier targeting */}
+      <circle cx={x} cy={y + 14} r={16} fill="transparent" />
+      <circle cx={x} cy={y + 14} r={11} fill="rgba(255,255,255,0.10)" />
+      <text
+        x={x}
+        y={y + 19}
+        textAnchor="middle"
+        fontSize={12}
+        style={{ userSelect: "none", pointerEvents: "none" }}
+      >
+        {emoji}
+      </text>
+    </g>
+  );
+}
+
 function MultiSeriesChart({
   selectedMetrics,
   series,
   rows,
+  clientId,
+  clientGender,
+  phases,
+  annotations,
+  onPhasesChange,
+  onAnnotationsChange,
+  onAnnotationClick,
+  timeRangeDays,
+  setTimeRangeDays,
 }: {
   selectedMetrics: string[];
   series: MetricSeries;
   rows: MetricRow[];
+  clientId: string;
+  clientGender?: string | null;
+  phases: TrainingPhase[];
+  annotations: MetricAnnotation[];
+  onPhasesChange: (phases: TrainingPhase[]) => void;
+  onAnnotationsChange: (annotations: MetricAnnotation[]) => void;
+  onAnnotationClick?: (id: string) => void;
+  timeRangeDays: TimeRangeDays;
+  setTimeRangeDays: React.Dispatch<React.SetStateAction<TimeRangeDays>>;
 }) {
+  // ── Feature 1: Cross-group mixing — all metrics with data are available ──
+  const allMetricsWithData = FIELDS.filter(
+    (f) => (series[f.key]?.length ?? 0) > 0,
+  ).map((f) => f.key);
   const [visibleSeries, setVisibleSeries] = useState<Set<string>>(
-    () => new Set(OVERLAY_GROUPS[0].metrics),
+    () =>
+      new Set(
+        OVERLAY_GROUPS[0].metrics.filter((m) => (series[m]?.length ?? 0) > 0),
+      ),
   );
-  const [chartHeight, setChartHeight] = useState(220);
 
-  // Baseline = first value of each series (used for % normalization)
+  const [chartHeight, setChartHeight] = useState(300);
+
+  // ── Interpretation panel toggle (default collapsed) ──
+  const [showInterpretation, setShowInterpretation] = useState(false);
+
+  // ── Context menu state ──
+  // Step "choose" is skipped — annotation form is the default entry
+  type ContextStep = "choose" | "phase" | "annotation";
+  interface ContextMenu {
+    x: number;
+    y: number;
+    dateStart: string;
+    dateEnd: string | null;
+    isRange: boolean;
+    editingId?: string; // if set, we're editing an existing item
+    editingType?: "phase" | "annotation"; // which type is being edited
+  }
+  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const [contextStep, setContextStep] = useState<ContextStep>("annotation");
+  const [ctxPhaseForm, setCtxPhaseForm] = useState<{
+    label: string;
+    phase_type: PhaseType;
+    date_start: string;
+    date_end: string;
+    notes: string;
+  }>({
+    label: "",
+    phase_type: "bulk",
+    date_start: "",
+    date_end: "",
+    notes: "",
+  });
+  // Unified annotation form — all types now have body
+  const [ctxAnnForm, setCtxAnnForm] = useState<{
+    label: string;
+    event_type: AnnotationType;
+    event_date: string;
+    body: string;
+  }>({ label: "", event_type: "note", event_date: "", body: "" });
+
+  // ── Legend focus (isolate a single curve) ──
+  const [focusedMetric, setFocusedMetric] = useState<string | null>(null);
+
+  // ── Annotation hover tooltip ──
+  const [hoveredAnnotation, setHoveredAnnotation] = useState<{
+    ann: MetricAnnotation;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+
+  // ── Drag-range state for phase selection ──
+  const [dragState, setDragState] = useState<{
+    startDate: string;
+    currentDate: string;
+  } | null>(null);
+
+  // ── Flag: annotation icon was just clicked — ignore next chart mouseUp ──
+  const annotationClickedRef = useRef(false);
+
+  // ── Saving state ──
+  const [savingPhase, setSavingPhase] = useState(false);
+  const [savingAnnotation, setSavingAnnotation] = useState(false);
+
+  // ── Feature 4: Delta on filtered window ──
+  // series is already filtered by the parent (filteredSeries) so baseline = first point of filtered window
+
   const baselineValues = useMemo(() => {
     const b: Record<string, number> = {};
     selectedMetrics.forEach((k) => {
@@ -1205,15 +1551,14 @@ function MultiSeriesChart({
     return b;
   }, [selectedMetrics, series]);
 
-  // Build unified date axis
-  const dateSet = new Set<string>();
-  selectedMetrics.forEach((k) => {
-    const metricSeries = series[k] ?? [];
-    metricSeries.forEach((d) => dateSet.add(d.date));
-  });
-  const dates = Array.from(dateSet).sort();
+  const dates = useMemo(() => {
+    const dateSet = new Set<string>();
+    selectedMetrics.forEach((k) => {
+      (series[k] ?? []).forEach((d) => dateSet.add(d.date));
+    });
+    return Array.from(dateSet).sort();
+  }, [selectedMetrics, series]);
 
-  // Merge — store normalized values under `__pct_${key}`
   const merged = useMemo(
     () =>
       dates.map((date) => {
@@ -1231,52 +1576,81 @@ function MultiSeriesChart({
           }
         });
         return row;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dates.join(","), selectedMetrics.join(","), baselineValues],
   );
 
-  const lastValues = useMemo(() => {
-    const lv: Record<string, number | undefined> = {};
-    selectedMetrics.forEach((k) => {
-      const s = series[k] ?? [];
-      lv[k] = s[s.length - 1]?.value;
-    });
-    return lv;
-  }, [selectedMetrics, series]);
-
-  // Delta % for each series (last vs first)
   const deltas = useMemo(() => {
     const d: Record<string, number | null> = {};
-    selectedMetrics.forEach((k) => {
+    // Cover all metrics with data, not just selectedMetrics — visibleSeries can include any
+    allMetricsWithData.forEach((k) => {
       const s = series[k] ?? [];
       if (s.length < 2) {
         d[k] = null;
         return;
       }
-
       const baseline = s[0].value;
       const last = s[s.length - 1].value;
-
       d[k] =
         baseline !== 0 ? ((last - baseline) / Math.abs(baseline)) * 100 : null;
     });
     return d;
-  }, [selectedMetrics, series]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMetricsWithData.join(","), series]);
 
-  if (merged.length === 0)
-    return (
-      <div className="bg-[#181818] rounded-2xl p-8 text-center text-white/40 text-sm">
-        Aucune donnée pour les métriques sélectionnées
-      </div>
-    );
+  // ── Feature 3: Plateau detection per visible metric ──
+  const plateausByMetric = useMemo(() => {
+    const result: Record<string, ReturnType<typeof detectPlateaus>> = {};
+    selectedMetrics.forEach((k) => {
+      if (visibleSeries.has(k)) {
+        result[k] = detectPlateaus(series[k] ?? [], k);
+      }
+    });
+    return result;
+  }, [selectedMetrics, series, visibleSeries]);
 
-  // Chart config for shadcn with semantic colors
-  const chartConfig = createChartConfig(selectedMetrics);
+  const metricsWithPlateau = Object.entries(plateausByMetric)
+    .filter(([, p]) => p.length > 0)
+    .map(([k]) => k);
 
+  // ── Feature 6: Single-metric absolute mode for norm zones ──
+  const singleVisibleMetric =
+    visibleSeries.size === 1 ? Array.from(visibleSeries)[0] : null;
+  const normZoneEntry = singleVisibleMetric
+    ? NORM_ZONES[singleVisibleMetric]
+    : null;
+  const gender = clientGender?.toLowerCase();
+  const activeNormZones: NormZone[] | undefined = normZoneEntry
+    ? (normZoneEntry.neutral ??
+      (gender === "female" || gender === "femme"
+        ? normZoneEntry.female
+        : normZoneEntry.male))
+    : undefined;
+  const useAbsoluteAxis = !!(singleVisibleMetric && activeNormZones);
+
+  const absoluteData = useMemo(() => {
+    if (!singleVisibleMetric) return [];
+    return (series[singleVisibleMetric] ?? []).map((d) => ({
+      date: d.date,
+      value: d.value,
+    }));
+  }, [singleVisibleMetric, series]);
+
+  const absMin =
+    absoluteData.length > 0 ? Math.min(...absoluteData.map((d) => d.value)) : 0;
+  const absMax =
+    absoluteData.length > 0
+      ? Math.max(...absoluteData.map((d) => d.value))
+      : 100;
+  const absPad = Math.max((absMax - absMin) * 0.15, 1);
+  const absDomain: [number, number] = [
+    Math.floor(absMin - absPad),
+    Math.ceil(absMax + absPad),
+  ];
+
+  // Pct mode Y domain
   const dataKeys = selectedMetrics.map((k) => `__pct_${k}`);
-
-  // Y axis range — based on actual visible data only, not symmetric
   const visibleDataKeys = dataKeys.filter((k) =>
     visibleSeries.has(k.replace("__pct_", "")),
   );
@@ -1294,34 +1668,275 @@ function MultiSeriesChart({
   ];
 
   // Active group detection
-  const activeGroupKey = OVERLAY_GROUPS.find((g) => {
-    const withData = g.metrics.filter((m) => (series[m]?.length ?? 0) > 0);
-    if (withData.length === 0) return false;
-    return (
-      withData.every((m) => visibleSeries.has(m)) &&
-      visibleSeries.size === withData.length
-    );
-  })?.key ?? null;
+  const activeGroupKey =
+    OVERLAY_GROUPS.find((g) => {
+      const withData = g.metrics.filter((m) => (series[m]?.length ?? 0) > 0);
+      if (withData.length === 0) return false;
+      return (
+        withData.every((m) => visibleSeries.has(m)) &&
+        visibleSeries.size === withData.length
+      );
+    })?.key ?? null;
+  const activeGroup =
+    OVERLAY_GROUPS.find((g) => g.key === activeGroupKey) ?? null;
 
-  const activeGroup = OVERLAY_GROUPS.find((g) => g.key === activeGroupKey) ?? null;
+  const chartConfig = createChartConfig(selectedMetrics);
+
+  // ── Context menu helpers ──
+  function openContextMenu(
+    e: React.MouseEvent,
+    dateStart: string,
+    dateEnd: string | null,
+  ) {
+    const isRange = !!(dateEnd && dateEnd !== dateStart);
+    setContextMenu({ x: e.clientX, y: e.clientY, dateStart, dateEnd, isRange });
+    // Skip "choose" — go straight to annotation form (most common action)
+    setContextStep("annotation");
+    setCtxPhaseForm({
+      label: "",
+      phase_type: "bulk",
+      date_start: dateStart,
+      date_end: dateEnd ?? "",
+      notes: "",
+    });
+    setCtxAnnForm({ label: "", event_type: "note", event_date: dateStart, body: "" });
+  }
+
+  function closeContextMenu() {
+    setContextMenu(null);
+    setContextStep("annotation");
+    setDragState(null);
+  }
+
+  function openEditPhase(phase: TrainingPhase, e: React.MouseEvent) {
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      dateStart: phase.date_start,
+      dateEnd: phase.date_end ?? null,
+      isRange: !!phase.date_end,
+      editingId: phase.id,
+      editingType: "phase",
+    });
+    setContextStep("phase");
+    setCtxPhaseForm({
+      label: phase.label,
+      phase_type: phase.phase_type,
+      date_start: phase.date_start,
+      date_end: phase.date_end ?? "",
+      notes: phase.notes ?? "",
+    });
+  }
+
+  function openEditAnnotation(ann: MetricAnnotation, e: React.MouseEvent) {
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      dateStart: ann.event_date,
+      dateEnd: null,
+      isRange: false,
+      editingId: ann.id,
+      editingType: "annotation",
+    });
+    setContextStep("annotation");
+    setCtxAnnForm({
+      label: ann.label,
+      event_type: ann.event_type,
+      event_date: ann.event_date,
+      body: ann.body ?? "",
+    });
+  }
+
+  // ── Phase handlers ──
+  async function handleSavePhase(form: typeof ctxPhaseForm) {
+    if (!form.label || !form.date_start) return;
+    setSavingPhase(true);
+    const editingId = contextMenu?.editingId;
+    try {
+      if (editingId) {
+        const res = await fetch(
+          `/api/clients/${clientId}/phases/${editingId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              label: form.label,
+              phase_type: form.phase_type,
+              date_start: form.date_start,
+              date_end: form.date_end || null,
+              notes: form.notes || null,
+            }),
+          },
+        );
+        if (res.ok) {
+          const updated = await res.json();
+          onPhasesChange(phases.map((p) => (p.id === editingId ? updated : p)));
+          closeContextMenu();
+        }
+      } else {
+        const res = await fetch(`/api/clients/${clientId}/phases`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: form.label,
+            phase_type: form.phase_type,
+            date_start: form.date_start,
+            date_end: form.date_end || null,
+            notes: form.notes || null,
+          }),
+        });
+        if (res.ok) {
+          const newPhase = await res.json();
+          onPhasesChange([...phases, newPhase]);
+          closeContextMenu();
+        }
+      }
+    } finally {
+      setSavingPhase(false);
+    }
+  }
+
+  async function handleDeletePhase(id: string) {
+    await fetch(`/api/clients/${clientId}/phases/${id}`, { method: "DELETE" });
+    onPhasesChange(phases.filter((p) => p.id !== id));
+  }
+
+  // ── Annotation handlers — unified (all types support body) ──
+  async function handleSaveAnnotation(form: typeof ctxAnnForm) {
+    if (!form.label || !form.event_date) return;
+    setSavingAnnotation(true);
+    const editingId = contextMenu?.editingId;
+    const payload = {
+      label: form.label,
+      body: form.body || null,
+      event_type: form.event_type,
+      event_date: form.event_date,
+    };
+    try {
+      if (editingId) {
+        const res = await fetch(
+          `/api/clients/${clientId}/annotations/${editingId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (res.ok) {
+          const updated = await res.json();
+          onAnnotationsChange(
+            annotations
+              .map((a) => (a.id === editingId ? updated : a))
+              .sort((a, b) => a.event_date.localeCompare(b.event_date)),
+          );
+          closeContextMenu();
+        }
+      } else {
+        const res = await fetch(`/api/clients/${clientId}/annotations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const newAnnotation = await res.json();
+          onAnnotationsChange(
+            [...annotations, newAnnotation].sort((a, b) =>
+              a.event_date.localeCompare(b.event_date),
+            ),
+          );
+          closeContextMenu();
+        }
+      }
+    } finally {
+      setSavingAnnotation(false);
+    }
+  }
+
+  async function handleDeleteAnnotation(id: string) {
+    await fetch(`/api/clients/${clientId}/annotations/${id}`, {
+      method: "DELETE",
+    });
+    onAnnotationsChange(annotations.filter((a) => a.id !== id));
+  }
+
+  // ── Chart click/drag date extraction ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function getDateFromChartEvent(payload: any): string | null {
+    if (!payload) return null;
+    const activePayload = payload.activePayload ?? payload.activeLabel;
+    if (typeof activePayload === "string") return activePayload;
+    const label = payload.activeLabel;
+    if (typeof label === "string") return label;
+    return null;
+  }
 
   return (
-    <div className="bg-[#181818] rounded-2xl overflow-visible relative pb-3">
-      <div className="px-5 pt-5 pb-0">
-
-        {/* Description globale */}
-        <div className="mb-5 pb-5 border-b border-white/[0.07]">
-          <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.14em] mb-1.5">
+    <div className="flex flex-col gap-4">
+      {/* ── Bloc 1 : Contrôles — groupes + sélection métriques ── */}
+      <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
+        {/* Description */}
+        <div className="mb-4 pb-4 border-b border-white/[0.05]">
+          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em] mb-1.5">
             Vue superposée
           </p>
           <p className="text-[12px] text-white/55 leading-relaxed">
-            Compare l'évolution relative de plusieurs métriques sur la même période. Chaque courbe part de <span className="text-white/80 font-semibold">0 %</span> au premier point de mesure — ce qui permet de comparer des indicateurs d'unités différentes (kg, cm, score) sur un même graphique. L'axe vertical indique la variation en pourcentage par rapport au départ.
+            {useAbsoluteAxis ? (
+              <>
+                Axe absolu activé — une seule métrique visible. Les zones de
+                référence scientifiques sont affichées.{" "}
+                <span className="text-white/80 font-semibold">
+                  Sélectionner plusieurs métriques
+                </span>{" "}
+                pour revenir en mode Δ%.
+              </>
+            ) : (
+              <>
+                Compare l&apos;évolution relative de plusieurs métriques. Chaque
+                courbe part de{" "}
+                <span className="text-white/80 font-semibold">0 %</span> au
+                premier point de la période filtrée. Δ calculé sur la{" "}
+                <span className="text-[#1f8a65]">
+                  fenêtre active uniquement
+                </span>
+                .
+              </>
+            )}
           </p>
         </div>
 
-        {/* Groupes */}
+        {/* ── Feature 3: Plateau alerts — compact collapsible ── */}
+        {metricsWithPlateau.length > 0 && (
+          <details className="mb-4 group rounded-xl bg-amber-500/[0.07] overflow-hidden">
+            <summary className="flex items-center gap-2 px-4 py-2.5 cursor-pointer list-none select-none">
+              <span className="text-amber-400 text-[12px]">⚡</span>
+              <p className="text-[11px] font-bold text-amber-400 flex-1">
+                Plateau détecté ·{" "}
+                <span className="font-normal text-amber-400/70">
+                  {metricsWithPlateau
+                    .map((k) => FIELD_MAP[k]?.label ?? k)
+                    .join(", ")}
+                </span>
+              </p>
+              <ChevronDown
+                size={12}
+                className="text-amber-400/60 transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <div className="px-4 pb-3 pt-1">
+              <p className="text-[11px] text-white/45 leading-relaxed">
+                Variation insuffisante selon les seuils evidence-based
+                (Schoenfeld 2010, Helms 2014). Un ajustement du protocole
+                d&apos;entraînement ou nutritionnel est recommandé.
+              </p>
+            </div>
+          </details>
+        )}
+
+        {/* ── Groupes ── */}
         <div className="mb-4">
-          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-[0.14em] mb-2">
+          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em] mb-2">
             Groupes
           </p>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -1335,7 +1950,10 @@ function MultiSeriesChart({
                 <button
                   key={group.key}
                   disabled={!hasData}
-                  onClick={() => setVisibleSeries(new Set(withData))}
+                  onClick={() => {
+                    setVisibleSeries(new Set(withData));
+                    setShowInterpretation(false);
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                     isActive
                       ? "bg-[#1f8a65] text-white"
@@ -1349,125 +1967,243 @@ function MultiSeriesChart({
               );
             })}
           </div>
-
-          {/* Description du groupe actif */}
           {activeGroup && (
             <div className="rounded-xl bg-white/[0.03] px-4 py-3">
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.12em] mb-1">
-                Comment interpréter
-              </p>
-              <p className="text-[12px] text-white/55 leading-relaxed">
-                {activeGroup.interpretation}
-              </p>
+              <button
+                onClick={() => setShowInterpretation((v) => !v)}
+                className="flex items-center justify-between w-full"
+              >
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.12em]">
+                  Comment interpréter
+                </p>
+                {showInterpretation ? (
+                  <ChevronUp size={13} className="text-white/30" />
+                ) : (
+                  <ChevronDown size={13} className="text-white/30" />
+                )}
+              </button>
+              {showInterpretation && (
+                <p className="text-[12px] text-white/55 leading-relaxed mt-2">
+                  {activeGroup.interpretation}
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* Métriques individuelles */}
-        <div className="mb-4">
+        {/* ── Feature 1: All metrics — cross-group mixing ── */}
+        <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-[0.14em]">
+            <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
               Métriques
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-[#181818] border-subtle rounded-xl p-1">
               <button
-                onClick={() => setVisibleSeries(new Set(selectedMetrics))}
-                className="text-[10px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
+                type="button"
+                aria-pressed={
+                  visibleSeries.size === allMetricsWithData.length &&
+                  allMetricsWithData.length > 0
+                }
+                onClick={() => setVisibleSeries(new Set(allMetricsWithData))}
+                className={`flex items-center justify-center px-3 py-1.5 rounded-lg transition-all text-[11px] font-semibold ${
+                  visibleSeries.size === allMetricsWithData.length &&
+                  allMetricsWithData.length > 0
+                    ? "bg-[#1f8a65] text-white"
+                    : "text-white/60 hover:bg-white/[0.08] hover:text-white"
+                }`}
               >
                 Tout
               </button>
               <button
+                type="button"
+                aria-pressed={visibleSeries.size === 0}
                 onClick={() => setVisibleSeries(new Set())}
-                className="text-[10px] font-semibold text-white/35 hover:text-white/60 transition-colors"
+                className={`flex items-center justify-center px-3 py-1.5 rounded-lg transition-all text-[11px] font-semibold ${
+                  visibleSeries.size === 0
+                    ? "bg-[#1f8a65] text-white"
+                    : "text-white/60 hover:bg-white/[0.08] hover:text-white"
+                }`}
               >
                 Aucun
               </button>
             </div>
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            {selectedMetrics.map((k) => {
-              const f = FIELD_MAP[k];
-              if (!f) return null;
-              const color = getMetricColor(k);
-              const isVisible = visibleSeries.has(k);
-              return (
-                <button
-                  key={k}
-                  onClick={() => {
-                    const newSet = new Set(visibleSeries);
-                    if (isVisible) newSet.delete(k);
-                    else newSet.add(k);
-                    setVisibleSeries(newSet);
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                  style={
-                    isVisible
-                      ? {
-                          backgroundColor: `${color}22`,
-                          color: color,
+          {(["composition", "measurements", "wellness"] as const).map((cat) => {
+            const catFields = FIELDS.filter(
+              (f) => f.category === cat && allMetricsWithData.includes(f.key),
+            );
+            if (catFields.length === 0) return null;
+            const catLabels: Record<string, string> = {
+              composition: "Composition",
+              measurements: "Mensurations",
+              wellness: "Bien-être",
+            };
+            return (
+              <div key={cat} className="mb-2">
+                <p className="text-[9px] font-bold text-white/25 uppercase tracking-[0.18em] mb-1.5">
+                  {catLabels[cat]}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {catFields.map((f) => {
+                    const color = getMetricColor(f.key);
+                    const isVisible = visibleSeries.has(f.key);
+                    const hasPlateau =
+                      (plateausByMetric[f.key]?.length ?? 0) > 0;
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={() => {
+                          const newSet = new Set(visibleSeries);
+                          if (isVisible) newSet.delete(f.key);
+                          else newSet.add(f.key);
+                          setVisibleSeries(newSet);
+                        }}
+                        className="relative px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                        style={
+                          isVisible
+                            ? { backgroundColor: `${color}22`, color }
+                            : {
+                                backgroundColor: "rgba(255,255,255,0.04)",
+                                color: "rgba(255,255,255,0.30)",
+                              }
                         }
-                      : {
-                          backgroundColor: "rgba(255,255,255,0.05)",
-                          color: "rgba(255,255,255,0.35)",
-                        }
-                  }
-                >
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
+                      >
+                        {f.label}
+                        {hasPlateau && isVisible && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Chart — empty state si aucune série visible n'a de données */}
-      {visibleSeries.size > 0 && merged.length === 0 && (
-        <div className="mx-5 mb-5 rounded-xl bg-white/[0.03] px-5 py-6 text-center">
-          <p className="text-[12px] font-semibold text-white/40 mb-1">Aucune donnée pour ce groupe</p>
-          <p className="text-[11px] text-white/25">Ces métriques n'ont pas encore été saisies pour ce client. Importez un CSV ou ajoutez une mesure manuellement.</p>
-        </div>
-      )}
+      <TimeRangeSlider
+        timeRangeDays={timeRangeDays}
+        setTimeRangeDays={setTimeRangeDays}
+      />
 
-      <div className="pb-3 px-1 pt-1">
-        <svg width={0} height={0} style={{ position: "absolute" }}>
-          <defs>
-            {selectedMetrics.map((k) => {
-              return (
-                <linearGradient
-                  key={k}
-                  id={`multiGrad_${k}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor={getMetricColor(k)}
-                    stopOpacity={0.18}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={getMetricColor(k)}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              );
-            })}
-          </defs>
-        </svg>
+      {/* ── Bloc 2 : Graphique ── */}
+      <div
+        className="bg-[#181818] border-subtle rounded-2xl relative"
+        style={{ height: chartHeight }}
+      >
+        {/* ── Chart empty state ── */}
+        {visibleSeries.size > 0 && merged.length === 0 && !useAbsoluteAxis && (
+          <div className="mx-5 mt-5 mb-5 rounded-xl bg-white/[0.03] px-5 py-6 text-center">
+            <p className="text-[12px] font-semibold text-white/40 mb-1">
+              Aucune donnée pour ce groupe
+            </p>
+            <p className="text-[11px] text-white/25">
+              Ces métriques n&apos;ont pas encore été saisies. Importez un CSV
+              ou ajoutez une mesure.
+            </p>
+          </div>
+        )}
 
-        <ChartContainer config={chartConfig} className="w-full" style={{ height: chartHeight }}>
+        <div className="absolute inset-0 px-1 pt-1 pb-8">
+          {/* PenLine button — opens context menu without date */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const today = new Date().toISOString().split("T")[0];
+              openContextMenu(e, today, null);
+            }}
+            className="absolute top-2 right-3 z-10 flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-[#181818] border border-white/[0.10] hover:bg-white/[0.09] hover:border-white/[0.18] transition-all"
+            title="Ajouter une phase, un événement ou une note"
+          >
+            <PenLine size={11} className="text-white/55" />
+            <span className="text-[9px] font-bold text-white/45 uppercase tracking-[0.10em]">
+              Note
+            </span>
+          </button>
+
+          <ChartContainer
+            config={chartConfig}
+            className="w-full"
+            style={{ height: "100%" }}
+          >
+            {useAbsoluteAxis ? (
               <LineChart
-                data={merged}
+                data={absoluteData}
                 margin={{ top: 8, right: 16, bottom: 4, left: 4 }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseDown={(payload: any, e: any) => {
+                  const date = getDateFromChartEvent(payload);
+                  if (date)
+                    setDragState({ startDate: date, currentDate: date });
+                  void e;
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseMove={(payload: any) => {
+                  if (!dragState) return;
+                  const date = getDateFromChartEvent(payload);
+                  if (date && date !== dragState.currentDate)
+                    setDragState((d) =>
+                      d ? { ...d, currentDate: date } : null,
+                    );
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseUp={(payload: any, e: any) => {
+                  if (annotationClickedRef.current) {
+                    annotationClickedRef.current = false;
+                    setDragState(null);
+                    return;
+                  }
+                  if (!dragState) return;
+                  const date =
+                    getDateFromChartEvent(payload) ?? dragState.startDate;
+                  const [d1, d2] = [dragState.startDate, date].sort();
+                  setDragState(null);
+                  openContextMenu(
+                    e as React.MouseEvent,
+                    d1,
+                    d1 === d2 ? null : d2,
+                  );
+                }}
+                style={{ cursor: "crosshair" }}
               >
-                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
-                <ReferenceLine y={0} stroke="rgba(255,255,255,0.20)" strokeWidth={1} />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="rgba(255,255,255,0.06)"
+                />
+                {activeNormZones?.map((z) => (
+                  <ReferenceLine
+                    key={`nmin-${z.label}`}
+                    y={z.min}
+                    stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
+                    strokeDasharray="3 3"
+                    strokeWidth={1}
+                  />
+                ))}
+                {activeNormZones?.map((z) => (
+                  <ReferenceLine
+                    key={`nmax-${z.label}`}
+                    y={z.max}
+                    stroke={z.color.replace(/[\d.]+\)$/, "0.35)")}
+                    strokeDasharray="3 3"
+                    strokeWidth={1}
+                  />
+                ))}
+                {dragState && dragState.currentDate !== dragState.startDate && (
+                  <ReferenceLine
+                    x={dragState.currentDate}
+                    stroke="rgba(255,255,255,0.40)"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                  />
+                )}
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.30)", fontWeight: 600 }}
+                  tick={{
+                    fontSize: 10,
+                    fill: "rgba(255,255,255,0.30)",
+                    fontWeight: 600,
+                  }}
                   axisLine={false}
                   tickLine={false}
                   tickCount={6}
@@ -1480,7 +2216,169 @@ function MultiSeriesChart({
                   }
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.30)", fontWeight: 600 }}
+                  tick={{
+                    fontSize: 10,
+                    fill: "rgba(255,255,255,0.30)",
+                    fontWeight: 600,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={42}
+                  domain={absDomain}
+                  tickFormatter={(v) =>
+                    `${v}${FIELD_MAP[singleVisibleMetric!]?.unit ? " " + FIELD_MAP[singleVisibleMetric!]!.unit : ""}`
+                  }
+                />
+                <ChartTooltip
+                  content={
+                    <CustomTooltip
+                      unit={FIELD_MAP[singleVisibleMetric!]?.unit}
+                      fieldLabel={FIELD_MAP[singleVisibleMetric!]?.label}
+                      accentColor={getMetricColor(singleVisibleMetric!)}
+                    />
+                  }
+                  cursor={{
+                    stroke: "rgba(255,255,255,0.15)",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 3",
+                  }}
+                />
+                {phases.map((phase) => (
+                  <ReferenceLine
+                    key={phase.id}
+                    x={phase.date_start}
+                    stroke={PHASE_COLORS[phase.phase_type].text}
+                    strokeOpacity={0.5}
+                    strokeWidth={1.5}
+                    strokeDasharray="4 2"
+                    label={{
+                      value: phase.label,
+                      position: "insideTopLeft",
+                      fontSize: 9,
+                      fill: PHASE_COLORS[phase.phase_type].text,
+                      dy: -2,
+                    }}
+                  />
+                ))}
+                {annotations.map((ann) => (
+                  <ReferenceLine
+                    key={ann.id}
+                    x={ann.event_date}
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
+                    label={(props) => (
+                      <AnnotationLabelContent
+                        {...props}
+                        ann={ann}
+                        onHover={(a, sx, sy) =>
+                          setHoveredAnnotation({
+                            ann: a,
+                            screenX: sx,
+                            screenY: sy,
+                          })
+                        }
+                        onLeave={() => setHoveredAnnotation(null)}
+                        onClick={(id) => {
+                          annotationClickedRef.current = true;
+                          onAnnotationClick?.(id);
+                        }}
+                      />
+                    )}
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={getMetricColor(singleVisibleMetric!)}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, style: { cursor: "pointer" } }}
+                  isAnimationActive
+                  animationDuration={500}
+                />
+              </LineChart>
+            ) : (
+              <LineChart
+                data={merged}
+                margin={{ top: 8, right: 16, bottom: 4, left: 4 }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseDown={(payload: any, e: any) => {
+                  const date = getDateFromChartEvent(payload);
+                  if (date)
+                    setDragState({ startDate: date, currentDate: date });
+                  void e;
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseMove={(payload: any) => {
+                  if (!dragState) return;
+                  const date = getDateFromChartEvent(payload);
+                  if (date && date !== dragState.currentDate)
+                    setDragState((d) =>
+                      d ? { ...d, currentDate: date } : null,
+                    );
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onMouseUp={(payload: any, e: any) => {
+                  if (annotationClickedRef.current) {
+                    annotationClickedRef.current = false;
+                    setDragState(null);
+                    return;
+                  }
+                  if (!dragState) return;
+                  const date =
+                    getDateFromChartEvent(payload) ?? dragState.startDate;
+                  const [d1, d2] = [dragState.startDate, date].sort();
+                  setDragState(null);
+                  openContextMenu(
+                    e as React.MouseEvent,
+                    d1,
+                    d1 === d2 ? null : d2,
+                  );
+                }}
+                style={{ cursor: "crosshair" }}
+              >
+                <CartesianGrid
+                  vertical={false}
+                  stroke="rgba(255,255,255,0.06)"
+                />
+                <ReferenceLine
+                  y={0}
+                  stroke="rgba(255,255,255,0.20)"
+                  strokeWidth={1}
+                />
+                {dragState && dragState.currentDate !== dragState.startDate && (
+                  <ReferenceLine
+                    x={dragState.currentDate}
+                    stroke="rgba(255,255,255,0.40)"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                  />
+                )}
+                <XAxis
+                  dataKey="date"
+                  tick={{
+                    fontSize: 10,
+                    fill: "rgba(255,255,255,0.30)",
+                    fontWeight: 600,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickCount={6}
+                  tickFormatter={(d) =>
+                    new Date(d).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                  }
+                />
+                <YAxis
+                  tick={{
+                    fontSize: 10,
+                    fill: "rgba(255,255,255,0.30)",
+                    fontWeight: 600,
+                  }}
                   axisLine={false}
                   tickLine={false}
                   width={40}
@@ -1489,350 +2387,559 @@ function MultiSeriesChart({
                 />
                 <ChartTooltip
                   content={<MultiTooltip />}
-                  cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1, strokeDasharray: "4 3" }}
+                  cursor={{
+                    stroke: "rgba(255,255,255,0.15)",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 3",
+                  }}
                 />
+                {phases.map((phase) => {
+                  const c = PHASE_COLORS[phase.phase_type];
+                  return (
+                    <ReferenceLine
+                      key={phase.id}
+                      x={phase.date_start}
+                      stroke={c.text}
+                      strokeOpacity={phase.date_end ? 0.5 : 0.35}
+                      strokeWidth={1.5}
+                      strokeDasharray="4 2"
+                      label={{
+                        value: phase.label,
+                        position: "insideTopLeft",
+                        fontSize: 9,
+                        fill: c.text,
+                        dy: -2,
+                      }}
+                    />
+                  );
+                })}
+                {annotations.map((ann) => (
+                  <ReferenceLine
+                    key={ann.id}
+                    x={ann.event_date}
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
+                    label={(props) => (
+                      <AnnotationLabelContent
+                        {...props}
+                        ann={ann}
+                        onHover={(a, sx, sy) =>
+                          setHoveredAnnotation({
+                            ann: a,
+                            screenX: sx,
+                            screenY: sy,
+                          })
+                        }
+                        onLeave={() => setHoveredAnnotation(null)}
+                        onClick={(id) => {
+                          annotationClickedRef.current = true;
+                          onAnnotationClick?.(id);
+                        }}
+                      />
+                    )}
+                  />
+                ))}
                 {selectedMetrics.map((k) => {
                   if (!visibleSeries.has(k)) return null;
+                  const color = getMetricColor(k);
+                  const metricPlateaus = plateausByMetric[k] ?? [];
+                  const plateauDateSet = new Set(
+                    metricPlateaus.flatMap((p) => {
+                      const start = dates.indexOf(p.startDate);
+                      const end = dates.indexOf(p.endDate);
+                      return dates.slice(Math.max(0, start), end + 1);
+                    }),
+                  );
+                  const isFocused =
+                    focusedMetric === null || focusedMetric === k;
                   return (
                     <Line
                       key={k}
                       type="monotone"
                       dataKey={`__pct_${k}`}
-                      stroke={getMetricColor(k)}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 4 }}
+                      stroke={color}
+                      strokeWidth={
+                        isFocused ? (focusedMetric === k ? 3 : 2) : 2
+                      }
+                      strokeOpacity={isFocused ? 1 : 0.12}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      dot={(dotProps: any) => {
+                        const date = dates[dotProps.index];
+                        if (!plateauDateSet.has(date))
+                          return <g key={dotProps.index} />;
+                        return (
+                          <circle
+                            key={dotProps.index}
+                            cx={dotProps.cx}
+                            cy={dotProps.cy}
+                            r={2.5}
+                            fill="rgba(251,191,36,0.9)"
+                            stroke="none"
+                          />
+                        );
+                      }}
+                      activeDot={{ r: 4, style: { cursor: "pointer" } }}
                       isAnimationActive
                       animationDuration={500}
                     />
                   );
                 })}
               </LineChart>
-            </ChartContainer>
-
-      </div>
-
-      {/* Footer */}
-      <div className="px-5 pb-2 flex items-center gap-2">
-        <p className="text-[9px] text-white/20 font-medium">
-          {merged[0]
-            ? new Date(merged[0].date as string).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })
-            : ""}
-        </p>
-        <div className="flex-1 h-px bg-white/[0.08]" />
-        <p className="text-[9px] text-white/20 font-medium">
-          {merged[merged.length - 1]
-            ? new Date(merged[merged.length - 1].date as string).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })
-            : ""}
-        </p>
-      </div>
-
-      {/* Drag handle — positionné sur le bord bas */}
-      <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          const startY = e.clientY;
-          const startH = chartHeight;
-          const onMove = (ev: MouseEvent) => {
-            const next = Math.max(120, Math.min(600, startH + ev.clientY - startY));
-            setChartHeight(next);
-          };
-          const onUp = () => {
-            window.removeEventListener("mousemove", onMove);
-            window.removeEventListener("mouseup", onUp);
-          };
-          window.addEventListener("mousemove", onMove);
-          window.addEventListener("mouseup", onUp);
-        }}
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10 cursor-row-resize group"
-      >
-        <div className="z-10 flex h-5 w-10 items-center justify-center rounded-lg bg-[#2a2a2a] group-hover:bg-[#333] transition-colors">
-          <GripHorizontal size={12} className="text-white/40 group-hover:text-white/70 transition-colors" />
+            )}
+          </ChartContainer>
         </div>
-      </div>
-    </div>
-  );
-}
+        {/* absolute inset chart */}
 
-// ─── Snapshot compare (date A vs date B) ─────────────────────────────────────
-
-interface SnapshotCompareProps {
-  rows: MetricRow[];
-  series: MetricSeries;
-}
-
-function SnapshotCompare({ rows, series }: SnapshotCompareProps) {
-  const availableDates = rows.map((r) => ({
-    id: r.submissionId,
-    date: r.date,
-    label: formatDate(r.date),
-  }));
-
-  const [dateA, setDateA] = useState<string>(availableDates[0]?.id ?? "");
-  const [dateB, setDateB] = useState<string>(
-    availableDates[availableDates.length - 1]?.id ?? "",
-  );
-
-  const rowA = rows.find((r) => r.submissionId === dateA);
-  const rowB = rows.find((r) => r.submissionId === dateB);
-
-  // All fields that have data in at least one of the two snapshots
-  const comparedFields = FIELDS.filter(
-    (f) =>
-      rowA?.values[f.key] !== undefined || rowB?.values[f.key] !== undefined,
-  );
-
-  if (availableDates.length < 2) {
-    return (
-      <div className="bg-[#181818] rounded-2xl p-8 text-center text-sm text-[rgba(255,255,255,0.40)]">
-        Il faut au moins 2 mesures pour comparer des snapshots.
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Date pickers */}
-      <div className="bg-[#181818] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-white/20 shrink-0" />
-          <div className="flex flex-col gap-0.5 flex-1">
-            <label className="text-[10px] font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide">
-              Mesure A
-            </label>
-            <select
-              value={dateA}
-              onChange={(e) => setDateA(e.target.value)}
-              className="bg-[#0a0a0a] rounded-lg px-2.5 py-1.5 text-xs font-medium text-white outline-none transition-colors"
-            >
-              {availableDates.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center self-center mt-4 sm:mt-0">
-          <button
-            type="button"
-            onClick={() => {
-              setDateA(dateB);
-              setDateB(dateA);
-            }}
-            className="inline-flex items-center gap-2 rounded-full bg-white/[0.04] px-3 py-2 text-[10px] font-semibold text-white/80 transition hover:bg-white/[0.08]"
-          >
-            <ArrowLeftRight size={14} />
-            Inverser
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 flex-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#1f8a65] shrink-0" />
-          <div className="flex flex-col gap-0.5 flex-1">
-            <label className="text-[10px] font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide">
-              Mesure B
-            </label>
-            <select
-              value={dateB}
-              onChange={(e) => setDateB(e.target.value)}
-              className="bg-[#0a0a0a] rounded-lg px-2.5 py-1.5 text-xs font-medium text-white outline-none transition-colors"
-            >
-              {availableDates.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Comparison table */}
-      <div className="bg-[#181818] rounded-2xl overflow-hidden">
-        {/* Header row */}
-        <div className="h-px bg-white/[0.07] mx-4" />
-        <div className="grid grid-cols-[1fr_100px_100px_80px] px-4 py-3">
-          <p className="text-[10px] font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide">
-            Métrique
+        {/* Footer dates — ancré en bas du bloc */}
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-2 pt-1 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[9px] text-white/20 font-medium">
+            {(
+              useAbsoluteAxis
+                ? absoluteData[0]?.date
+                : (merged[0]?.date as string)
+            )
+              ? new Date(
+                  useAbsoluteAxis
+                    ? absoluteData[0]?.date
+                    : (merged[0]?.date as string),
+                ).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "2-digit",
+                })
+              : ""}
           </p>
-          <div className="text-right">
-            <div className="inline-flex items-center gap-1 justify-end">
-              <div className="w-2 h-2 rounded-full bg-white/25" />
-              <p className="text-[10px] font-semibold text-white">
-                {rowA ? formatDate(rowA.date) : "—"}
-              </p>
-              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-white/50">
-                A
-              </span>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="inline-flex items-center gap-1 justify-end">
-              <div className="w-2 h-2 rounded-full bg-[#1f8a65] shrink-0" />
-              <p className="text-[10px] font-semibold text-white">
-                {rowB ? formatDate(rowB.date) : "—"}
-              </p>
-              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-white/50">
-                B
-              </span>
-            </div>
-          </div>
-          <p className="text-[10px] font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-right">
-            Δ
+          <div className="flex-1 h-px bg-white/[0.08]" />
+          <p className="text-[9px] text-white/20 font-medium">
+            {(
+              useAbsoluteAxis
+                ? absoluteData[absoluteData.length - 1]?.date
+                : (merged[merged.length - 1]?.date as string)
+            )
+              ? new Date(
+                  useAbsoluteAxis
+                    ? absoluteData[absoluteData.length - 1]?.date
+                    : (merged[merged.length - 1]?.date as string),
+                ).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "2-digit",
+                })
+              : ""}
           </p>
         </div>
-        <div className="h-px bg-white/[0.07] mx-4" />
 
-        {/* Group by category */}
-        {(["composition", "measurements", "wellness"] as const).map((cat) => {
-          const catFields = comparedFields.filter((f) => f.category === cat);
-          if (catFields.length === 0) return null;
-          const catLabels: Record<string, string> = {
-            composition: "Composition",
-            measurements: "Mensurations",
-            wellness: "Bien-être",
-          };
-          return (
-            <div key={cat}>
-              <div className="px-4 py-2 bg-white/[0.03]">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
-                  {catLabels[cat]}
-                </p>
-              </div>
-              {catFields.map((f) => {
-                const vA = rowA?.values[f.key];
-                const vB = rowB?.values[f.key];
-                const diff =
-                  vA !== undefined && vB !== undefined ? vB - vA : null;
-                const isNegGood = NEG_GOOD_FIELDS.includes(f.key);
-                const diffGood =
-                  diff === null || diff === 0
-                    ? null
-                    : isNegGood
-                      ? diff < 0
-                      : diff > 0;
-                const diffSign =
-                  diff === null ? null : diff > 0 ? "+" : diff < 0 ? "" : "=";
+        {/* Drag handle — sur la bordure basse du bloc, centré */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startH = chartHeight;
+            const onMove = (ev: MouseEvent) =>
+              setChartHeight(
+                Math.max(120, Math.min(600, startH + ev.clientY - startY)),
+              );
+            const onUp = () => {
+              window.removeEventListener("mousemove", onMove);
+              window.removeEventListener("mouseup", onUp);
+            };
+            window.addEventListener("mousemove", onMove);
+            window.addEventListener("mouseup", onUp);
+          }}
+          className="absolute left-1/2 bottom-0 -translate-x-1/2 -translate-y-1/2 z-10 cursor-row-resize group"
+        >
+          <div className="flex h-6 w-16 items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.12] group-hover:border-white/[0.18] transition-all">
+            <GripHorizontal
+              size={12}
+              className="text-white/30 group-hover:text-white/60 transition-colors"
+            />
+          </div>
+        </div>
+      </div>
+      {/* end Bloc 2: Graphique */}
 
+      {/* ── Bloc 3 : Légende Δ% + zones normatives ── */}
+      {(visibleSeries.size > 0 || (useAbsoluteAxis && activeNormZones)) && (
+        <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
+          {/* Feature 4: Delta legend on filtered window */}
+          {visibleSeries.size > 0 && (
+            <div
+              className={`flex flex-wrap gap-2 ${useAbsoluteAxis && activeNormZones ? "mb-4 pb-4 border-b border-white/[0.05]" : ""}`}
+            >
+              {Array.from(visibleSeries).map((k) => {
+                const f = FIELD_MAP[k];
+                const delta = deltas[k];
+                const color = getMetricColor(k);
+                const isNegGood = NEG_GOOD_FIELDS.includes(k);
+                if (!f) return null;
                 return (
-                  <div
-                    key={f.key}
-                    className="grid grid-cols-[1fr_100px_100px_80px] px-4 py-2.5 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.02] transition-colors"
+                  <button
+                    key={k}
+                    onClick={() =>
+                      setFocusedMetric(focusedMetric === k ? null : k)
+                    }
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      focusedMetric === k
+                        ? "bg-white/[0.08] ring-1 ring-white/[0.12]"
+                        : focusedMetric !== null
+                          ? "bg-white/[0.015] opacity-40"
+                          : "bg-white/[0.03] hover:bg-white/[0.06]"
+                    }`}
+                    title={
+                      focusedMetric === k
+                        ? "Cliquez pour afficher toutes les courbes"
+                        : "Cliquez pour isoler cette courbe"
+                    }
                   >
-                    <div>
-                      <p className="text-xs font-medium text-white">
-                        {f.label}
-                      </p>
-                      {f.unit && (
-                        <p className="text-[9px] text-white/40">{f.unit}</p>
-                      )}
-                    </div>
-                    <p className="text-right font-mono text-xs font-bold text-white self-center">
-                      {vA !== undefined ? (
-                        fmtVal(vA, f.unit)
-                      ) : (
-                        <span className="text-white/40">—</span>
-                      )}
-                    </p>
-                    <p className="text-right font-mono text-xs font-bold text-white self-center">
-                      {vB !== undefined ? (
-                        fmtVal(vB, f.unit)
-                      ) : (
-                        <span className="text-white/40">—</span>
-                      )}
-                    </p>
-                    <div className="flex justify-end items-center self-center">
-                      {diff !== null ? (
-                        <span
-                          className={`text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full ${
-                            diff === 0
-                              ? "bg-[#0a0a0a] text-[rgba(255,255,255,0.40)]"
-                              : diffGood
-                                ? "bg-[#1f8a65]/15 text-[#1f8a65]"
-                                : "bg-red-500/15 text-red-300"
-                          }`}
-                        >
-                          {diffSign}
-                          {Math.abs(diff) < 0.1
-                            ? diff.toFixed(2)
-                            : diff.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-white/40 text-[10px]">—</span>
-                      )}
-                    </div>
-                  </div>
+                    <div
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: color }}
+                    />
+                    <span className="text-[10px] text-white/55 font-medium">
+                      {f.label}
+                    </span>
+                    {delta != null &&
+                      (() => {
+                        const isGood = isNegGood ? delta < 0 : delta > 0;
+                        const colorClass =
+                          delta === 0
+                            ? "text-white/30"
+                            : isGood
+                              ? "text-[#1f8a65]"
+                              : "text-red-400";
+                        const Arrow =
+                          delta > 0
+                            ? TrendingUp
+                            : delta < 0
+                              ? TrendingDown
+                              : Minus;
+                        return (
+                          <span
+                            className={`flex items-center gap-0.5 text-[10px] font-bold tabular-nums ${colorClass}`}
+                          >
+                            <Arrow size={10} strokeWidth={2.5} />
+                            {delta > 0 ? "+" : ""}
+                            {delta.toFixed(1)}%
+                          </span>
+                        );
+                      })()}
+                    {(plateausByMetric[k]?.length ?? 0) > 0 && (
+                      <span className="flex items-center gap-0.5 text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-md">
+                        ⚡ PLATEAU
+                      </span>
+                    )}
+                  </button>
                 );
               })}
+              {focusedMetric !== null && (
+                <button
+                  onClick={() => setFocusedMetric(null)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold text-white/35 hover:text-white/60 bg-white/[0.02] hover:bg-white/[0.05] transition-all"
+                >
+                  <X size={9} />
+                  Tout afficher
+                </button>
+              )}
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Radar-style summary bar (top 5 deltas) */}
-      {rowA &&
-        rowB &&
-        (() => {
-          const deltas = FIELDS.map((f) => {
-            const vA = rowA.values[f.key];
-            const vB = rowB.values[f.key];
-            if (vA === undefined || vB === undefined) return null;
-            const diff = vB - vA;
-            const pct = vA !== 0 ? (diff / Math.abs(vA)) * 100 : 0;
-            const isNegGood = NEG_GOOD_FIELDS.includes(f.key);
-            const good = diff === 0 ? null : isNegGood ? diff < 0 : diff > 0;
-            return { field: f, diff, pct, good };
-          })
-            .filter(Boolean)
-            .filter((d) => d!.diff !== 0)
-            .sort((a, b) => Math.abs(b!.pct) - Math.abs(a!.pct))
-            .slice(0, 5);
-
-          if (deltas.length === 0) return null;
-
-          return (
-            <div className="bg-[#181818] rounded-2xl p-5">
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">
-                Plus grands écarts A → B
+          {/* Feature 6: Norm zones legend (single-metric absolute mode) */}
+          {useAbsoluteAxis && activeNormZones && (
+            <div>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.12em] mb-2">
+                Zones de référence — {FIELD_MAP[singleVisibleMetric!]?.label}
               </p>
-              <p className="text-[9px] text-white/30 uppercase tracking-[0.12em] mb-4">
-                A = {formatDate(rowA.date)} • B = {formatDate(rowB.date)}
+              <div className="flex flex-wrap gap-2 mb-1">
+                {activeNormZones.map((z) => (
+                  <div key={z.label} className="flex items-center gap-1.5">
+                    <div
+                      className="w-2.5 h-2.5 rounded-sm"
+                      style={{
+                        background: z.color.replace(/[\d.]+\)$/, "0.7)"),
+                      }}
+                    />
+                    <span className="text-[10px] text-white/50">
+                      {z.label}{" "}
+                      <span className="text-white/25">
+                        {z.min}–{z.max} {FIELD_MAP[singleVisibleMetric!]?.unit}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] text-white/25">
+                Sources : ACSM, WHO, ACE Body Fat Standards
               </p>
-              <div className="flex flex-col gap-3">
-                {deltas.map((d) => {
-                  if (!d) return null;
-                  const barWidth = Math.min(Math.abs(d.pct), 100);
-                  return (
-                    <div key={d.field.key} className="flex items-center gap-3">
-                      <p className="text-xs text-white/60 w-28 shrink-0 truncate">
-                        {d.field.label}
-                      </p>
-                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${d.good === true ? "bg-[#1f8a65]" : d.good === false ? "bg-red-400" : "bg-white/30"}`}
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                      <p
-                        className={`text-[10px] font-bold tabular-nums w-16 text-right ${
-                          d.good === true
-                            ? "text-[#1f8a65]"
-                            : d.good === false
-                              ? "text-red-400"
-                              : "text-white/50"
+            </div>
+          )}
+        </div>
+      )}
+
+      {contextMenu && (
+        <>
+          {/* backdrop */}
+          <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
+          <div
+            className="fixed z-50 w-[290px] rounded-xl bg-[#181818] border border-white/[0.08] shadow-2xl p-3 flex flex-col gap-2"
+            style={{
+              top: Math.min(contextMenu.y, window.innerHeight - 400),
+              left: Math.min(Math.max(8, contextMenu.x - 145), window.innerWidth - 298),
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-0.5">
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.12em]">
+                {contextMenu.editingId
+                  ? contextMenu.editingType === "phase"
+                    ? "Modifier la phase"
+                    : "Modifier l'annotation"
+                  : contextMenu.isRange
+                    ? `${formatDate(contextMenu.dateStart)} → ${contextMenu.dateEnd ? formatDate(contextMenu.dateEnd) : "…"}`
+                    : formatDate(contextMenu.dateStart)}
+              </p>
+              <button
+                onClick={closeContextMenu}
+                className="text-white/20 hover:text-white/60 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            {/* Toggle: annotation ↔ phase (only when creating, not editing) */}
+            {!contextMenu.editingId && (
+              <div className="flex items-center gap-1 bg-white/[0.04] rounded-lg p-0.5 mb-1">
+                <button
+                  onClick={() => setContextStep("annotation")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+                    contextStep === "annotation"
+                      ? "bg-[#1f8a65] text-white"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <span>📌</span> Note / Événement
+                </button>
+                <button
+                  onClick={() => setContextStep("phase")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+                    contextStep === "phase"
+                      ? "bg-white/[0.10] text-white"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <span>🏋️</span> Phase
+                </button>
+              </div>
+            )}
+
+            {/* ── Annotation form (unified — all types) ── */}
+            {contextStep === "annotation" && (
+              <div className="flex flex-col gap-2">
+                {/* Type chips */}
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1.5">
+                    Type
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    {(Object.keys(ANNOTATION_ICONS) as AnnotationType[]).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setCtxAnnForm((p) => ({ ...p, event_type: t }))}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold transition-all ${
+                          ctxAnnForm.event_type === t
+                            ? "bg-[#1f8a65] text-white"
+                            : "bg-white/[0.05] text-white/40 hover:bg-white/[0.09] hover:text-white/70"
                         }`}
                       >
-                        {d.diff > 0 ? "+" : ""}
-                        {d.diff < 0.1 && d.diff > -0.1
-                          ? d.diff.toFixed(2)
-                          : d.diff.toFixed(1)}{" "}
-                        {d.field.unit}
-                      </p>
-                    </div>
-                  );
-                })}
+                        <span>{ANNOTATION_ICONS[t]}</span>
+                        <span>{ANNOTATION_LABELS[t]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                    Titre
+                  </label>
+                  <input
+                    autoFocus
+                    value={ctxAnnForm.label}
+                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, label: e.target.value }))}
+                    placeholder={
+                      ctxAnnForm.event_type === "program_change" ? "ex: Nouveau programme push/pull"
+                      : ctxAnnForm.event_type === "injury" ? "ex: Douleur épaule droite"
+                      : ctxAnnForm.event_type === "nutrition" ? "ex: Ajout créatine"
+                      : ctxAnnForm.event_type === "travel" ? "ex: Vacances Espagne"
+                      : "ex: Observation importante"
+                    }
+                    className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20"
+                  />
+                </div>
+
+                {/* Body — always visible, all types */}
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                    Détail <span className="text-white/20 font-normal normal-case">(optionnel)</span>
+                  </label>
+                  <textarea
+                    value={ctxAnnForm.body}
+                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, body: e.target.value }))}
+                    placeholder="Contexte, protocole, observations…"
+                    rows={2}
+                    className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20 resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={ctxAnnForm.event_date}
+                    onChange={(e) => setCtxAnnForm((p) => ({ ...p, event_date: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none [color-scheme:dark]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    onClick={closeContextMenu}
+                    className="text-[10px] text-white/35 hover:text-white/60 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => handleSaveAnnotation(ctxAnnForm)}
+                    disabled={savingAnnotation || !ctxAnnForm.label || !ctxAnnForm.event_date}
+                    className="px-3 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[10px] font-bold disabled:opacity-50 hover:bg-[#217356] transition-colors"
+                  >
+                    {savingAnnotation ? "…" : contextMenu?.editingId ? "Modifier" : "Enregistrer"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Phase form ── */}
+            {contextStep === "phase" && (
+              <div className="flex flex-col gap-2">
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                    Nom
+                  </label>
+                  <input
+                    autoFocus
+                    value={ctxPhaseForm.label}
+                    onChange={(e) => setCtxPhaseForm((p) => ({ ...p, label: e.target.value }))}
+                    placeholder="ex: Prise de masse hiver"
+                    className="w-full px-2.5 py-1.5 bg-[#0a0a0a] rounded-lg text-[11px] text-white outline-none placeholder:text-white/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                    Type
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    {(Object.keys(PHASE_COLORS) as PhaseType[]).map((pt) => (
+                      <button
+                        key={pt}
+                        onClick={() => setCtxPhaseForm((p) => ({ ...p, phase_type: pt }))}
+                        className="px-2 py-1 rounded-md text-[9px] font-bold transition-all"
+                        style={
+                          ctxPhaseForm.phase_type === pt
+                            ? { backgroundColor: PHASE_COLORS[pt].bg, color: PHASE_COLORS[pt].text }
+                            : { backgroundColor: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)" }
+                        }
+                      >
+                        {PHASE_COLORS[pt].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                      Début
+                    </label>
+                    <input
+                      type="date"
+                      value={ctxPhaseForm.date_start}
+                      onChange={(e) => setCtxPhaseForm((p) => ({ ...p, date_start: e.target.value }))}
+                      className="w-full px-2 py-1.5 bg-[#0a0a0a] rounded-lg text-[10px] text-white outline-none [color-scheme:dark]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase tracking-wide text-white/35 block mb-1">
+                      Fin
+                    </label>
+                    <input
+                      type="date"
+                      value={ctxPhaseForm.date_end}
+                      onChange={(e) => setCtxPhaseForm((p) => ({ ...p, date_end: e.target.value }))}
+                      className="w-full px-2 py-1.5 bg-[#0a0a0a] rounded-lg text-[10px] text-white outline-none [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    onClick={closeContextMenu}
+                    className="text-[10px] text-white/35 hover:text-white/60 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => handleSavePhase(ctxPhaseForm)}
+                    disabled={savingPhase || !ctxPhaseForm.label || !ctxPhaseForm.date_start}
+                    className="px-3 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[10px] font-bold disabled:opacity-50 hover:bg-[#217356] transition-colors"
+                  >
+                    {savingPhase ? "…" : contextMenu?.editingId ? "Modifier" : "Enregistrer"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Annotation hover tooltip ── */}
+      {hoveredAnnotation &&
+        (() => {
+          // Flip below the icon if near top of viewport
+          const nearTop = hoveredAnnotation.screenY < 120;
+          return (
+            <div
+              className="fixed z-[60] pointer-events-none"
+              style={{
+                top: nearTop
+                  ? hoveredAnnotation.screenY + 28
+                  : hoveredAnnotation.screenY - 12,
+                left: hoveredAnnotation.screenX,
+                transform: nearTop
+                  ? "translateX(-50%)"
+                  : "translate(-50%, -100%)",
+              }}
+            >
+              <div className="relative bg-[#0f0f0f] border border-white/[0.10] rounded-xl px-3 py-2.5 max-w-[240px] shadow-2xl">
+                {/* Caret — top if tooltip is below icon, bottom if above */}
+                {nearTop ? (
+                  <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#0f0f0f] border-l border-t border-white/[0.10] rotate-45" />
+                ) : (
+                  <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#0f0f0f] border-r border-b border-white/[0.10] rotate-45" />
+                )}
+                <p className="text-[11px] font-semibold text-white leading-snug">
+                  {ANNOTATION_ICONS[hoveredAnnotation.ann.event_type]}{" "}
+                  {hoveredAnnotation.ann.label}
+                </p>
+                <p className="text-[9px] text-white/45 mt-1">
+                  {ANNOTATION_LABELS[hoveredAnnotation.ann.event_type]} ·{" "}
+                  {formatDate(hoveredAnnotation.ann.event_date)}
+                </p>
+                <p className="text-[8px] text-white/25 mt-1">
+                  Cliquez pour localiser dans la liste
+                </p>
               </div>
             </div>
           );
@@ -1973,7 +3080,7 @@ function FilterPanel({
       </div>
 
       {/* Metric selector (only relevant for charts/overlay view) */}
-      {(viewMode === "charts" || viewMode === "compare") && (
+      {viewMode === "charts" && (
         <div>
           <p className="text-[10px] font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide mb-2">
             Métriques affichées
@@ -2389,6 +3496,7 @@ function ManualEntryForm({
 
 interface Props {
   clientId: string;
+  clientGender?: string | null;
 }
 
 const TABLE_COLS = FIELDS.filter((f) =>
@@ -2443,7 +3551,484 @@ function getTimeRangeBounds(range: TimeRangeDays) {
   };
 }
 
-export default function MetricsSection({ clientId }: Props) {
+function formatThumbDate(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+// Returns a human-readable duration label for the selected range (e.g. "3 mois", "1 an 2 mois")
+function formatRangeDuration(daysStart: number, daysEnd: number): string {
+  const diff = Math.abs(daysEnd - daysStart);
+  if (diff < 7) return `${diff} jour${diff > 1 ? "s" : ""}`;
+  if (diff < 14) return "1 semaine";
+  if (diff < 30) return `${Math.round(diff / 7)} semaines`;
+  const months = Math.round(diff / 30.44);
+  if (months < 12) return `${months} mois`;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (rem === 0) return `${years} an${years > 1 ? "s" : ""}`;
+  return `${years} an${years > 1 ? "s" : ""} ${rem} mois`;
+}
+
+// Returns a CSS translateX value that prevents the label from overflowing the track edges
+function thumbLabelTranslate(pct: number): string {
+  if (pct < 8) return "translateX(0%)";
+  if (pct > 92) return "translateX(-100%)";
+  return "translateX(-50%)";
+}
+
+function TimeRangeSlider({
+  timeRangeDays,
+  setTimeRangeDays,
+}: {
+  timeRangeDays: TimeRangeDays;
+  setTimeRangeDays: Dispatch<SetStateAction<TimeRangeDays>>;
+}) {
+  const MAX = 730;
+  const leftPct = (timeRangeDays[0] / MAX) * 100;
+  const rightPct = (timeRangeDays[1] / MAX) * 100;
+  // Hide right label when thumbs are too close (avoids collision)
+  const tooClose = rightPct - leftPct < 14;
+
+  const rangeLabel = formatRangeDuration(timeRangeDays[0], timeRangeDays[1]);
+
+  return (
+    <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+            Période d&apos;analyse
+          </p>
+          <p className="text-[12px] text-white/55 leading-snug mt-0.5">
+            Faites glisser les curseurs pour affiner la fenêtre temporelle du
+            graphique.
+          </p>
+        </div>
+        <span className="text-[11px] font-semibold text-white/70 shrink-0 ml-4 tabular-nums">
+          {rangeLabel}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <Calendar size={13} className="text-white/30 shrink-0" />
+        <div className="relative w-full">
+          <Slider
+            value={timeRangeDays}
+            onValueChange={(value) => {
+              const next = Array.isArray(value)
+                ? [value[0], value[1]]
+                : timeRangeDays;
+              setTimeRangeDays(next as TimeRangeDays);
+            }}
+            min={0}
+            max={MAX}
+            step={1}
+            className="w-full"
+          />
+          {/* Date labels under thumbs — clamped to avoid overflow */}
+          <div className="relative h-5 mt-1.5 select-none pointer-events-none">
+            <span
+              className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
+              style={{
+                left: `${leftPct}%`,
+                transform: thumbLabelTranslate(leftPct),
+              }}
+            >
+              {formatThumbDate(timeRangeDays[0])}
+            </span>
+            {!tooClose && (
+              <span
+                className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
+                style={{
+                  left: `${rightPct}%`,
+                  transform: thumbLabelTranslate(rightPct),
+                }}
+              >
+                {formatThumbDate(timeRangeDays[1])}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Note detail modal — post-it style reader + editor ────────────────────────
+const ANNOTATION_TYPE_OPTIONS: {
+  value: AnnotationType;
+  label: string;
+  icon: string;
+}[] = [
+  { value: "program_change", label: "Programme", icon: "⚡" },
+  { value: "injury", label: "Blessure", icon: "🩹" },
+  { value: "travel", label: "Voyage", icon: "✈️" },
+  { value: "nutrition", label: "Nutrition", icon: "🥗" },
+  { value: "note", label: "Note", icon: "📌" },
+];
+
+function NoteModal({
+  ann,
+  clientId,
+  onClose,
+  onSaved,
+  onDeleted,
+}: {
+  ann: MetricAnnotation;
+  clientId: string;
+  onClose: () => void;
+  onSaved: (updated: MetricAnnotation) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [eventType, setEventType] = useState<AnnotationType>(ann.event_type);
+  const [eventDate, setEventDate] = useState(ann.event_date);
+  const [label, setLabel] = useState(ann.label);
+  const [body, setBody] = useState(ann.body ?? "");
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  function cancelEdit() {
+    setEditing(false);
+    setEventType(ann.event_type);
+    setEventDate(ann.event_date);
+    setLabel(ann.label);
+    setBody(ann.body ?? "");
+  }
+
+  async function save() {
+    if (!label || !eventDate) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/clients/${clientId}/annotations/${ann.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label, body: body || null, event_type: eventType, event_date: eventDate }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onSaved(updated);
+        setEditing(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteAnn() {
+    await fetch(`/api/clients/${clientId}/annotations/${ann.id}`, { method: "DELETE" });
+    onDeleted(ann.id);
+  }
+
+  const currentIcon = ANNOTATION_ICONS[eventType];
+  const currentLabel = ANNOTATION_LABELS[eventType];
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#181818] border border-white/[0.08] rounded-2xl w-full max-w-md flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {editing ? (
+          /* ── Edit mode ── */
+          <>
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
+              <p className="text-[11px] font-bold text-white/50 uppercase tracking-[0.12em]">Modifier l&apos;annotation</p>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.08] transition-all"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 flex flex-col gap-3">
+              {/* Type */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Type</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {ANNOTATION_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setEventType(opt.value)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        eventType === opt.value
+                          ? "bg-[#1f8a65] text-white"
+                          : "bg-white/[0.04] text-white/45 hover:bg-white/[0.07] hover:text-white/70"
+                      }`}
+                    >
+                      <span>{opt.icon}</span>{opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Titre */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Titre</label>
+                <input
+                  autoFocus
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="ex: Ajout créatine"
+                  className="w-full bg-[#0a0a0a] rounded-lg px-3 py-2 text-[12px] text-white outline-none placeholder:text-white/20"
+                />
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">Date</label>
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full bg-[#0a0a0a] rounded-lg px-3 py-2 text-[12px] text-white outline-none [color-scheme:dark]"
+                />
+              </div>
+
+              {/* Détail */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/35 mb-1.5">
+                  Détail <span className="text-white/20 font-normal normal-case">(optionnel)</span>
+                </label>
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Contexte, observations, protocole…"
+                  rows={4}
+                  className="w-full bg-[#0a0a0a] rounded-lg px-3 py-2 text-[12px] text-white/80 outline-none placeholder:text-white/20 resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between px-5 pb-5 pt-3 border-t border-white/[0.06]">
+              <button
+                onClick={cancelEdit}
+                className="text-[11px] font-medium text-white/40 hover:text-white/70 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={save}
+                disabled={saving || !label || !eventDate}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#1f8a65] text-white text-[11px] font-bold hover:bg-[#217356] disabled:opacity-50 transition-colors"
+              >
+                {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+                Enregistrer
+              </button>
+            </div>
+          </>
+        ) : (
+          /* ── Read mode ── */
+          <>
+            {/* Header — emoji large + type badge + date */}
+            <div className="flex items-start gap-4 px-5 pt-5 pb-4 border-b border-white/[0.06]">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center text-[20px] shrink-0">
+                {currentIcon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold text-white leading-snug mb-1">
+                  {label}
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.06] text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">
+                    {currentLabel}
+                  </span>
+                  <span className="text-[10px] text-white/30 tabular-nums">
+                    {formatDate(ann.event_date)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/30 hover:text-white/70 hover:bg-white/[0.08] transition-all shrink-0 mt-0.5"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Body — read zone */}
+            <div className="px-5 py-4 min-h-[72px]">
+              {body ? (
+                <p className="text-[12px] text-white/65 leading-relaxed whitespace-pre-wrap">
+                  {body}
+                </p>
+              ) : (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-[11px] text-white/25 italic hover:text-white/45 transition-colors text-left"
+                >
+                  Aucun détail — cliquer pour ajouter une note…
+                </button>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 pb-5 pt-3 border-t border-white/[0.06]">
+              {!confirmDelete ? (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/25 hover:text-red-400 hover:bg-red-400/5 transition-all"
+                >
+                  <Trash2 size={11} />
+                  Supprimer
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-red-400 font-medium">Confirmer ?</span>
+                  <button
+                    onClick={deleteAnn}
+                    className="px-2.5 py-1.5 rounded-lg bg-red-400/10 border border-red-400/25 text-[11px] font-bold text-red-400 hover:bg-red-400/20 transition-colors"
+                  >
+                    Supprimer
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-2.5 py-1.5 rounded-lg text-[11px] text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60 text-[11px] font-semibold hover:bg-white/[0.09] hover:text-white hover:border-white/[0.14] transition-all"
+              >
+                <Edit2 size={11} />
+                Modifier
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PhaseEditModal ───────────────────────────────────────────────────────────
+interface PhaseEditModalProps {
+  phase: TrainingPhase;
+  onClose: () => void;
+  onSave: (form: {
+    label: string;
+    phase_type: PhaseType;
+    date_start: string;
+    date_end: string;
+    notes: string;
+  }) => Promise<void>;
+  saving: boolean;
+}
+
+function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps) {
+  const [label, setLabel] = useState(phase.label);
+  const [phaseType, setPhaseType] = useState<PhaseType>(phase.phase_type);
+  const [dateStart, setDateStart] = useState(phase.date_start.slice(0, 10));
+  const [dateEnd, setDateEnd] = useState(phase.date_end ? phase.date_end.slice(0, 10) : "");
+  const [notes, setNotes] = useState(phase.notes ?? "");
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#181818] rounded-2xl p-5 border border-white/[0.06] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-white">Modifier la phase</p>
+          <button onClick={onClose} className="text-white/40 hover:text-white/70 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Phase type chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.keys(PHASE_COLORS) as PhaseType[]).map((pt) => (
+            <button
+              key={pt}
+              onClick={() => setPhaseType(pt)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
+              style={
+                phaseType === pt
+                  ? { backgroundColor: PHASE_COLORS[pt].bg, color: PHASE_COLORS[pt].text, outline: `1px solid ${PHASE_COLORS[pt].text}40` }
+                  : { backgroundColor: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.4)" }
+              }
+            >
+              {PHASE_COLORS[pt].label}
+            </button>
+          ))}
+        </div>
+
+        {/* Label */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Libellé</label>
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Ex: Bulk hiver 2026"
+            className="w-full bg-[#0a0a0a] rounded-xl px-3 h-9 text-[12px] text-white placeholder:text-white/20 outline-none"
+          />
+        </div>
+
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Début</label>
+            <input
+              type="date"
+              value={dateStart}
+              onChange={(e) => setDateStart(e.target.value)}
+              className="w-full bg-[#0a0a0a] rounded-xl px-3 h-9 text-[12px] text-white outline-none"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Fin (opt.)</label>
+            <input
+              type="date"
+              value={dateEnd}
+              onChange={(e) => setDateEnd(e.target.value)}
+              className="w-full bg-[#0a0a0a] rounded-xl px-3 h-9 text-[12px] text-white outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Notes (opt.)</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Objectifs, contexte..."
+            className="w-full bg-[#0a0a0a] rounded-xl px-3 py-2.5 text-[12px] text-white placeholder:text-white/20 outline-none resize-none"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={onClose}
+            className="flex-1 h-9 rounded-xl bg-white/[0.04] text-[12px] text-white/55 hover:text-white/80 transition-colors font-medium"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => onSave({ label, phase_type: phaseType, date_start: dateStart, date_end: dateEnd, notes })}
+            disabled={saving || !dateStart}
+            className="flex-1 h-9 rounded-xl bg-[#1f8a65] text-[12px] text-white font-bold hover:bg-[#217356] disabled:opacity-50 transition-colors"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : "Enregistrer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MetricsSection({ clientId, clientGender }: Props) {
   const [rows, setRows] = useState<MetricRow[]>([]);
   const [series, setSeries] = useState<MetricSeries>({});
   const [loading, setLoading] = useState(true);
@@ -2458,7 +4043,18 @@ export default function MetricsSection({ clientId }: Props) {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
-  const [timeRangeDays, setTimeRangeDays] = useState<TimeRangeDays>([0, 730]); // Default: tout l'historique (2 ans)
+  const [timeRangeDays, setTimeRangeDays] = useState<TimeRangeDays>([0, 730]);
+  const [phases, setPhases] = useState<TrainingPhase[]>([]);
+  const [annotations, setAnnotations] = useState<MetricAnnotation[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [highlightedAnnotationId, setHighlightedAnnotationId] = useState<
+    string | null
+  >(null);
+  const annotationRefs = useMemo(() => new Map<string, HTMLDivElement>(), []);
+  const [noteModal, setNoteModal] = useState<MetricAnnotation | null>(null);
+  const [phaseDeleteConfirm, setPhaseDeleteConfirm] = useState<string | null>(null);
+  const [phaseEditModal, setPhaseEditModal] = useState<TrainingPhase | null>(null);
+  const [phaseEditSaving, setPhaseEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2474,7 +4070,20 @@ export default function MetricsSection({ clientId }: Props) {
 
   useEffect(() => {
     load();
+    setMounted(true);
   }, [load]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/clients/${clientId}/phases`).then((r) => r.json()),
+      fetch(`/api/clients/${clientId}/annotations`).then((r) => r.json()),
+    ])
+      .then(([phasesData, annotationsData]) => {
+        if (Array.isArray(phasesData)) setPhases(phasesData);
+        if (Array.isArray(annotationsData)) setAnnotations(annotationsData);
+      })
+      .catch(() => {});
+  }, [clientId]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -2546,9 +4155,11 @@ export default function MetricsSection({ clientId }: Props) {
     (f) => f.category === chartCategory,
   );
 
-  // For overlay view: only show metrics selected in filter AND that have data
+  // For overlay view: show metrics that have data in the FULL series (not filtered window)
+  // so that the slider can be moved freely without making the chart disappear.
+  // The chart itself receives filteredSeries and will show the filtered window.
   const overlayMetrics = filter.selectedMetrics.filter(
-    (k) => (filteredSeries[k]?.length ?? 0) > 0,
+    (k) => (series[k]?.length ?? 0) > 0,
   );
 
   // Active filter count (for badge)
@@ -2559,74 +4170,277 @@ export default function MetricsSection({ clientId }: Props) {
       : 0,
   ].reduce((a, b) => a + b, 0);
 
+  // Shared slider block rendered in both charts and overlay views
+  const SliderBlock = (
+    <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+            Période d&apos;analyse
+          </p>
+          <p className="text-[12px] text-white/55 leading-snug mt-0.5">
+            Faites glisser les curseurs pour affiner la fenêtre temporelle du
+            graphique.
+          </p>
+        </div>
+        <span className="text-[11px] font-semibold text-white/70 shrink-0 ml-4 tabular-nums">
+          {formatRangeDuration(timeRangeDays[0], timeRangeDays[1])}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <Calendar size={13} className="text-white/30 shrink-0" />
+        <div className="relative w-full">
+          <Slider
+            value={timeRangeDays}
+            onValueChange={(value) => {
+              const next = Array.isArray(value)
+                ? [value[0], value[1]]
+                : timeRangeDays;
+              setTimeRangeDays(next as TimeRangeDays);
+            }}
+            min={0}
+            max={730}
+            step={1}
+            className="w-full"
+          />
+          {/* Date labels under thumbs — clamped to avoid overflow */}
+          <div className="relative h-5 mt-1.5 select-none pointer-events-none">
+            <span
+              className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
+              style={{
+                left: `${(timeRangeDays[0] / 730) * 100}%`,
+                transform: thumbLabelTranslate((timeRangeDays[0] / 730) * 100),
+              }}
+            >
+              {formatThumbDate(timeRangeDays[0])}
+            </span>
+            {Math.abs(timeRangeDays[1] - timeRangeDays[0]) > 88 && (
+              <span
+                className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
+                style={{
+                  left: `${(timeRangeDays[1] / 730) * 100}%`,
+                  transform: thumbLabelTranslate(
+                    (timeRangeDays[1] / 730) * 100,
+                  ),
+                }}
+              >
+                {formatThumbDate(timeRangeDays[1])}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-0 px-10">
-      {/* ── Main content ── */}
-      <div className="flex flex-col gap-6">
-        {/* ── Toolbar ── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#181818] rounded-2xl px-5 py-4">
-          {/* Left: View mode toggle */}
-          <div className="flex items-center gap-0.5 bg-white/[0.05] rounded-full p-1 shrink-0">
-            {[
-              { key: "table" as ViewMode, label: "Tableau", Icon: Table2 },
-              {
-                key: "charts" as ViewMode,
-                label: "Graphiques",
-                Icon: BarChart2,
-              },
-              ...(filter.selectedMetrics.length > 1
-                ? [
-                    {
-                      key: "overlay" as ViewMode,
-                      label: "Superposé",
-                      Icon: Layers,
-                    },
-                  ]
-                : []),
-            ].map(({ key, label, Icon }) => (
+    <div className="flex flex-col gap-4">
+      {/* ── Bloc 1 : Contrôles (vue + actions) ── */}
+      <div
+        className={`flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 bg-[#181818] border-subtle rounded-2xl px-5 py-4 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      >
+        {/* Left: View mode toggle */}
+        <div className="flex w-full sm:w-auto flex-wrap items-center gap-0.5 bg-white/[0.05] rounded-full p-1 min-w-0">
+          {[
+            { key: "table" as ViewMode, label: "Tableau", Icon: Table2 },
+            { key: "charts" as ViewMode, label: "Graphiques", Icon: BarChart2 },
+            { key: "overlay" as ViewMode, label: "Superposé", Icon: Layers },
+          ].map(({ key, label, Icon }) => {
+            const canOverlay = filter.selectedMetrics.length > 1;
+            const isOverlay = key === "overlay";
+            const disabled = isOverlay && !canOverlay;
+            return (
               <button
                 key={key}
-                onClick={() => setViewMode(key)}
+                onClick={() => !disabled && setViewMode(key)}
+                disabled={disabled}
+                title={
+                  disabled
+                    ? "Sélectionnez au moins 2 métriques pour activer ce mode"
+                    : undefined
+                }
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   viewMode === key
                     ? "bg-[#1f8a65] text-white"
-                    : "text-white/60 hover:text-white"
+                    : disabled
+                      ? "text-white/20 cursor-not-allowed"
+                      : "text-white/60 hover:text-white"
                 }`}
               >
                 <Icon size={12} />
                 <span className="hidden sm:inline">{label}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Filter button */}
+        {/* Right: Actions */}
+        <div className="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto min-w-0">
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              showFilters
+                ? "bg-[#1f8a65] text-white"
+                : "bg-white/[0.05] text-white/60 hover:text-white hover:bg-white/[0.08]"
+            }`}
+          >
+            <Filter size={12} />
+            <span className="hidden sm:inline">Filtrer</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#1f8a65] text-white text-[9px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowManualEntry(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+          >
+            <PenLine size={12} />
+            <span className="hidden sm:inline">Saisie</span>
+          </button>
+
+          <CsvImportButton
+            clientId={clientId}
+            compact
+            onImported={() => {
+              showToast("Import CSV réussi");
+              load();
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ── Bloc 2 : Panneau de filtres (inline) ── */}
+      {showFilters && (
+        <FilterPanel
+          filter={filter}
+          onChange={setFilter}
+          fieldsWithData={fieldsWithData}
+          viewMode={viewMode}
+          onClose={() => setShowFilters(false)}
+        />
+      )}
+
+      {/* ── Filtre actif pill ── */}
+      {!showFilters && filter.preset !== "all" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1f8a65] text-white text-[10px] font-semibold">
+            <Calendar size={10} />
+            {filter.preset === "custom"
+              ? `${filter.dateFrom ? formatDate(filter.dateFrom) : "…"} → ${filter.dateTo ? formatDate(filter.dateTo) : "…"}`
+              : (
+                  {
+                    "1m": "1 mois",
+                    "3m": "3 mois",
+                    "6m": "6 mois",
+                    "1y": "1 an",
+                  } as Record<string, string>
+                )[filter.preset]}
             <button
-              onClick={() => setShowFilters((v) => !v)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                showFilters
-                  ? "bg-[#1f8a65] text-white"
-                  : "bg-white/[0.05] text-white/60 hover:text-white hover:bg-white/[0.08]"
-              }`}
+              onClick={() =>
+                setFilter((p) => ({
+                  ...p,
+                  preset: "all",
+                  dateFrom: "",
+                  dateTo: "",
+                }))
+              }
+              className="ml-1 opacity-60 hover:opacity-100"
             >
-              <Filter size={12} />
-              <span className="hidden sm:inline">Filtrer</span>
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#1f8a65] text-white text-[9px] font-bold flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
+              <X size={9} />
             </button>
+          </div>
+          <p className="text-[10px] text-white/40">
+            {filteredRows.length} mesure{filteredRows.length !== 1 ? "s" : ""}{" "}
+            dans cette période
+          </p>
+        </div>
+      )}
 
+      {/* ── Loading ── */}
+      {loading && (
+        <div className="flex flex-col gap-4">
+          {viewMode === "table" ? (
+            <div className="bg-[#181818] border-subtle rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-[minmax(96px,1fr)_1.8fr] gap-3 border-b border-white/[0.06] px-4 py-3">
+                <Skeleton className="h-3 w-24" />
+                <div className="flex flex-wrap justify-end gap-3">
+                  {Array.from({
+                    length: Math.min(TABLE_COLS.length + 2, 6),
+                  }).map((_, index) => (
+                    <Skeleton key={index} className="h-3 w-14" />
+                  ))}
+                </div>
+              </div>
+              <div className="divide-y divide-white/[0.05]">
+                {[1, 2, 3, 4].map((row) => (
+                  <div
+                    key={row}
+                    className="grid grid-cols-[minmax(96px,1fr)_1.8fr] gap-3 px-4 py-3"
+                  >
+                    <Skeleton className="h-3 w-20" />
+                    <div className="flex flex-wrap justify-end gap-3">
+                      {Array.from({
+                        length: Math.min(TABLE_COLS.length + 2, 6),
+                      }).map((_, index) => (
+                        <Skeleton key={index} className="h-3 w-14" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 py-3">
+                <Skeleton className="h-3 w-40" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-[#181818] border-subtle rounded-2xl p-5 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-2.5 w-20" />
+                      <Skeleton className="w-7 h-7 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-9 w-14" />
+                  </div>
+                ))}
+              </div>
+              <div className="bg-[#181818] border-subtle rounded-2xl p-5 space-y-3">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-48 w-full rounded-xl" />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Empty state ── */}
+      {!loading && !hasData && (
+        <div className="bg-[#181818] border-subtle rounded-2xl p-10 flex flex-col items-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center">
+            <BarChart2 size={20} className="text-[#1f8a65]" />
+          </div>
+          <div>
+            <p className="font-bold text-white">Aucune donnée</p>
+            <p className="text-xs text-white/40 max-w-xs mt-1">
+              Importez un fichier CSV depuis votre balance connectée, ou
+              saisissez les mesures manuellement.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
             <button
               onClick={() => setShowManualEntry(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.06] text-[#1f8a65] text-xs font-bold hover:bg-white/[0.09] transition-colors"
             >
-              <PenLine size={12} />
-              <span className="hidden sm:inline">Saisie</span>
+              <PenLine size={13} />
+              Saisie manuelle
             </button>
-
             <CsvImportButton
               clientId={clientId}
               compact
@@ -2637,372 +4451,425 @@ export default function MetricsSection({ clientId }: Props) {
             />
           </div>
         </div>
+      )}
 
-        {/* ── Filter panel (inline, below toolbar) ── */}
-        {showFilters && (
-          <FilterPanel
-            filter={filter}
-            onChange={setFilter}
-            fieldsWithData={fieldsWithData}
-            viewMode={viewMode}
-            onClose={() => setShowFilters(false)}
-          />
-        )}
-
-        {/* ── Active filter summary pill ── */}
-        {!showFilters && filter.preset !== "all" && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1f8a65] text-white text-[10px] font-semibold">
-              <Calendar size={10} />
-              {filter.preset === "custom"
-                ? `${filter.dateFrom ? formatDate(filter.dateFrom) : "…"} → ${filter.dateTo ? formatDate(filter.dateTo) : "…"}`
-                : (
-                    {
-                      "1m": "1 mois",
-                      "3m": "3 mois",
-                      "6m": "6 mois",
-                      "1y": "1 an",
-                    } as Record<string, string>
-                  )[filter.preset]}
-              <button
-                onClick={() =>
-                  setFilter((p) => ({
-                    ...p,
-                    preset: "all",
-                    dateFrom: "",
-                    dateTo: "",
-                  }))
-                }
-                className="ml-1 opacity-60 hover:opacity-100"
-              >
-                <X size={9} />
-              </button>
-            </div>
-            <p className="text-[10px] text-[rgba(255,255,255,0.40)]">
-              {filteredRows.length} mesure{filteredRows.length !== 1 ? "s" : ""}{" "}
-              dans cette période
-            </p>
-          </div>
-        )}
-
-        {/* ── Loading ── */}
-        {loading && (
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-[#181818] rounded-2xl p-5 space-y-3">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-9 w-16" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                </div>
-              ))}
-            </div>
-            <div className="bg-[#181818] rounded-2xl p-5 space-y-3">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-48 w-full rounded-xl" />
-            </div>
-          </div>
-        )}
-
-        {/* ── Empty state ── */}
-        {!loading && !hasData && (
-          <div className="bg-[#181818] rounded-2xl p-10 flex flex-col items-center gap-3 text-center">
-            <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center">
-              <BarChart2 size={20} className="text-[#1f8a65]" />
-            </div>
-            <div>
-              <p className="font-bold text-white">Aucune donnée</p>
-              <p className="text-xs text-[rgba(255,255,255,0.40)] max-w-xs mt-1">
-                Importez un fichier CSV depuis votre balance connectée, ou
-                saisissez les mesures manuellement.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                onClick={() => setShowManualEntry(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.06] text-[#1f8a65] text-xs font-bold hover:bg-white/[0.09] transition-colors"
-              >
-                <PenLine size={13} />
-                Saisie manuelle
-              </button>
-              <CsvImportButton
-                clientId={clientId}
-                compact
-                onImported={() => {
-                  showToast("Import CSV réussi");
-                  load();
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── TABLE VIEW ── */}
-        {!loading && hasData && viewMode === "table" && (
-          <div className="bg-[#181818] rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="px-3 py-3 text-left w-8" />
-                    <th className="px-3 py-3 text-left font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap">
-                      Date
+      {/* ── Bloc 3 : TABLE VIEW ── */}
+      {!loading && hasData && viewMode === "table" && (
+        <div
+          className={`bg-[#181818] border-subtle rounded-2xl overflow-hidden transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="px-3 py-3 text-left w-8" />
+                  <th className="px-3 py-3 text-left font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap">
+                    Date
+                  </th>
+                  {TABLE_COLS.map((f) => (
+                    <th
+                      key={f.key}
+                      className="px-3 py-3 text-right font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap"
+                    >
+                      {f.label}
+                      {f.unit ? (
+                        <span className="font-normal opacity-60 ml-0.5">
+                          ({f.unit})
+                        </span>
+                      ) : null}
                     </th>
-                    {TABLE_COLS.map((f) => (
-                      <th
-                        key={f.key}
-                        className="px-3 py-3 text-right font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap"
+                  ))}
+                  <th className="px-3 py-3 text-right font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap">
+                    Tendance
+                  </th>
+                  <th className="px-3 py-3 w-16" />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((row, idx) => {
+                  const isExpanded = expandedRows.has(row.submissionId);
+                  const allFieldsInRow = FIELDS.filter(
+                    (f) => row.values[f.key] !== undefined,
+                  );
+                  const hiddenFields = allFieldsInRow.filter(
+                    (f) => !TABLE_COLS.some((c) => c.key === f.key),
+                  );
+                  return (
+                    <>
+                      <tr
+                        key={row.submissionId}
+                        className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
                       >
-                        {f.label}
-                        {f.unit ? (
-                          <span className="font-normal opacity-60 ml-0.5">
-                            ({f.unit})
-                          </span>
-                        ) : null}
-                      </th>
-                    ))}
-                    <th className="px-3 py-3 text-right font-semibold text-[rgba(255,255,255,0.40)] uppercase tracking-wide text-[10px] whitespace-nowrap">
-                      Tendance
-                    </th>
-                    <th className="px-3 py-3 w-16" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.map((row, idx) => {
-                    const isExpanded = expandedRows.has(row.submissionId);
-                    const allFieldsInRow = FIELDS.filter(
-                      (f) => row.values[f.key] !== undefined,
-                    );
-                    const hiddenFields = allFieldsInRow.filter(
-                      (f) => !TABLE_COLS.some((c) => c.key === f.key),
-                    );
-                    return (
-                      <>
-                        <tr
-                          key={row.submissionId}
-                          className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
-                        >
-                          <td className="px-3 py-2.5">
-                            {hiddenFields.length > 0 && (
-                              <button
-                                onClick={() => toggleRow(row.submissionId)}
-                                className="text-white/40 hover:text-white/60 transition-colors"
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp size={13} />
-                                ) : (
-                                  <ChevronDown size={13} />
-                                )}
-                              </button>
+                        <td className="px-3 py-2.5">
+                          {hiddenFields.length > 0 && (
+                            <button
+                              onClick={() => toggleRow(row.submissionId)}
+                              className="text-white/40 hover:text-white/60 transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp size={13} />
+                              ) : (
+                                <ChevronDown size={13} />
+                              )}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-white/60 whitespace-nowrap text-[11px]">
+                          {formatDate(row.date)}
+                        </td>
+                        {TABLE_COLS.map((f) => (
+                          <td
+                            key={f.key}
+                            className="px-3 py-2.5 text-right font-mono tabular-nums"
+                          >
+                            {row.values[f.key] !== undefined ? (
+                              <span className="font-bold text-white">
+                                {row.values[f.key]}
+                              </span>
+                            ) : (
+                              <span className="text-white/40">—</span>
                             )}
                           </td>
-                          <td className="px-3 py-2.5 font-mono text-white/60 whitespace-nowrap text-[11px]">
-                            {formatDate(row.date)}
-                          </td>
-                          {TABLE_COLS.map((f) => (
-                            <td
-                              key={f.key}
-                              className="px-3 py-2.5 text-right font-mono tabular-nums"
-                            >
-                              {row.values[f.key] !== undefined ? (
-                                <span className="font-bold text-white">
-                                  {row.values[f.key]}
-                                </span>
-                              ) : (
-                                <span className="text-white/40">—</span>
+                        ))}
+                        <td className="px-3 py-2.5">
+                          <div className="flex justify-end">
+                            <Sparkline
+                              data={(filteredSeries["weight_kg"] ?? []).slice(
+                                0,
+                                idx + 1,
                               )}
-                            </td>
-                          ))}
-                          <td className="px-3 py-2.5">
-                            <div className="flex justify-end">
-                              <Sparkline
-                                data={(filteredSeries["weight_kg"] ?? []).slice(
-                                  0,
-                                  idx + 1,
-                                )}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => setEditingRow(row)}
-                                className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-[#0a0a0a] transition-colors"
-                                title="Modifier"
-                              >
-                                <Edit2 size={12} />
-                              </button>
-                              <button
-                                onClick={() => setDeleteTarget(row)}
-                                className="p-1.5 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-500/15 transition-colors"
-                                title="Supprimer"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                            />
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => setEditingRow(row)}
+                              className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-[#0a0a0a] transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(row)}
+                              className="p-1.5 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-500/15 transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && hiddenFields.length > 0 && (
+                        <tr
+                          key={`${row.submissionId}-exp`}
+                          className="bg-white/[0.02] border-b border-white/[0.05]"
+                        >
+                          <td
+                            colSpan={TABLE_COLS.length + 4}
+                            className="px-6 py-3"
+                          >
+                            <div className="flex flex-wrap gap-4">
+                              {hiddenFields.map((f) => (
+                                <div
+                                  key={f.key}
+                                  className="flex items-center gap-1.5"
+                                >
+                                  <span className="text-[10px] text-[rgba(255,255,255,0.40)]">
+                                    {f.label} :
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-white">
+                                    {row.values[f.key]}
+                                    {f.unit ? ` ${f.unit}` : ""}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </td>
                         </tr>
-                        {isExpanded && hiddenFields.length > 0 && (
-                          <tr
-                            key={`${row.submissionId}-exp`}
-                            className="bg-white/[0.02] border-b border-white/[0.05]"
-                          >
-                            <td
-                              colSpan={TABLE_COLS.length + 4}
-                              className="px-6 py-3"
-                            >
-                              <div className="flex flex-wrap gap-4">
-                                {hiddenFields.map((f) => (
-                                  <div
-                                    key={f.key}
-                                    className="flex items-center gap-1.5"
-                                  >
-                                    <span className="text-[10px] text-[rgba(255,255,255,0.40)]">
-                                      {f.label} :
-                                    </span>
-                                    <span className="font-mono text-xs font-bold text-white">
-                                      {row.values[f.key]}
-                                      {f.unit ? ` ${f.unit}` : ""}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="h-px bg-white/[0.06] mx-4" />
-            <div className="px-4 py-2.5 flex items-center justify-between">
-              <p className="text-[10px] text-[rgba(255,255,255,0.40)]">
-                {filteredRows.length} mesure{filteredRows.length > 1 ? "s" : ""}
-                {filter.preset !== "all" ? " (filtrées)" : " au total"}
-              </p>
-              <p className="text-[10px] text-white/40">
-                ↕ Cliquez sur la flèche pour voir toutes les valeurs
-              </p>
-            </div>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+          <div className="h-px bg-white/[0.06] mx-4" />
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <p className="text-[10px] text-[rgba(255,255,255,0.40)]">
+              {filteredRows.length} mesure{filteredRows.length > 1 ? "s" : ""}
+              {filter.preset !== "all" ? " (filtrées)" : " au total"}
+            </p>
+            <p className="text-[10px] text-white/40">
+              ↕ Cliquez sur la flèche pour voir toutes les valeurs
+            </p>
+          </div>
+        </div>
+      )}
 
-        {/* ── CHARTS VIEW ── */}
-        {!loading && hasData && viewMode === "charts" && (
-          <div className="flex flex-col gap-6">
-            {/* Sub-tabs: category */}
-            <div className="flex items-center gap-0.5 bg-white/[0.05] rounded-full p-1 self-start">
-              {[
-                { key: "composition" as ChartCategory, label: "Composition" },
-                {
-                  key: "measurements" as ChartCategory,
-                  label: "Mensurations",
-                },
-                { key: "wellness" as ChartCategory, label: "Bien-être" },
-              ].map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setChartCategory(cat.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    chartCategory === cat.key
-                      ? "bg-[#181818] text-white"
-                      : "text-white/60 hover:text-white"
-                  }`}
-                >
-                  {cat.label}
-                  {fieldsWithData.filter((f) => f.category === cat.key)
-                    .length > 0 && (
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded-full ${chartCategory === cat.key ? "bg-white/20 text-white/80" : "bg-white/[0.06] text-white/40"}`}
-                    >
-                      {
-                        fieldsWithData.filter((f) => f.category === cat.key)
-                          .length
-                      }
-                    </span>
-                  )}
-                </button>
+      {/* ── Bloc 4 : CHARTS VIEW ── */}
+      {!loading && hasData && viewMode === "charts" && (
+        <>
+          {/* Sub-tabs: category */}
+          <div className="flex items-center gap-0.5 bg-white/[0.05] rounded-full p-1 self-start">
+            {[
+              { key: "composition" as ChartCategory, label: "Composition" },
+              { key: "measurements" as ChartCategory, label: "Mensurations" },
+              { key: "wellness" as ChartCategory, label: "Bien-être" },
+            ].map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setChartCategory(cat.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  chartCategory === cat.key
+                    ? "bg-[#181818] text-white"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                {cat.label}
+                {fieldsWithData.filter((f) => f.category === cat.key).length >
+                  0 && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 rounded-full ${chartCategory === cat.key ? "bg-white/20 text-white/80" : "bg-white/[0.06] text-white/40"}`}
+                  >
+                    {
+                      fieldsWithData.filter((f) => f.category === cat.key)
+                        .length
+                    }
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Slider bloc — avant les graphiques */}
+          {SliderBlock}
+
+          {/* Charts grid */}
+          {chartsInCategory.length === 0 ? (
+            <div className="bg-[#181818] border-subtle rounded-2xl p-8 text-center text-white/40 text-sm">
+              Aucune donnée pour cette catégorie
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {chartsInCategory.map((f) => (
+                <FullChart
+                  key={f.key}
+                  fieldKey={f.key}
+                  data={filteredSeries[f.key] ?? []}
+                />
               ))}
             </div>
+          )}
+        </>
+      )}
 
-            {/* Time range slider — pleine largeur */}
-            <div className="flex items-center gap-3">
-              <Calendar size={14} className="text-white/40 shrink-0" />
-              <div className="flex-1">
-                <Slider
-                  value={timeRangeDays}
-                  onValueChange={(value) => {
-                    const next = Array.isArray(value)
-                      ? [value[0], value[1]]
-                      : timeRangeDays;
-                    setTimeRangeDays(next as TimeRangeDays);
-                  }}
-                  min={0}
-                  max={730}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-              <span className="text-[11px] font-semibold text-white/60 min-w-[100px] text-right">
-                {formatTimeRangeLabel(timeRangeDays)}
-              </span>
-            </div>
+      {/* ── Bloc 5 : OVERLAY VIEW ── */}
+      {!loading && hasData && viewMode === "overlay" && (
+        <>
+          {/* Graphique superposé */}
+          <MultiSeriesChart
+            selectedMetrics={overlayMetrics}
+            series={filteredSeries}
+            rows={filteredRows}
+            clientId={clientId}
+            clientGender={clientGender}
+            phases={phases}
+            annotations={annotations}
+            onPhasesChange={setPhases}
+            onAnnotationsChange={setAnnotations}
+            onAnnotationClick={(id) => {
+              const ann = annotations.find((a) => a.id === id);
+              if (ann) setNoteModal(ann);
+            }}
+            timeRangeDays={timeRangeDays}
+            setTimeRangeDays={setTimeRangeDays}
+          />
 
-            {chartsInCategory.length === 0 ? (
-              <div className="bg-[#181818] rounded-2xl p-8 text-center text-[rgba(255,255,255,0.40)] text-sm">
-                Aucune donnée pour cette catégorie
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {chartsInCategory.map((f) => (
-                  <FullChart
-                    key={f.key}
-                    fieldKey={f.key}
-                    data={filteredSeries[f.key] ?? []}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          {/* Bloc Phases & Événements — vue liste groupée par mois */}
+          {(phases.length > 0 || annotations.length > 0) &&
+            (() => {
+              // Build unified timeline items sorted by date descending
+              type TimelineItem =
+                | { kind: "phase"; date: string; phase: TrainingPhase }
+                | { kind: "ann"; date: string; ann: MetricAnnotation };
 
-        {/* ── OVERLAY VIEW ── */}
-        {!loading && hasData && viewMode === "overlay" && (
-          <div className="flex flex-col gap-4">
-            {/* Time range range slider for overlay */}
-            <div className="flex items-center justify-end gap-3">
-              <Calendar size={14} className="text-white/40 shrink-0" />
-              <div className="flex-1 min-w-[280px]">
-                <Slider
-                  value={timeRangeDays}
-                  onValueChange={(value) => {
-                    const next = Array.isArray(value)
-                      ? [value[0], value[1]]
-                      : timeRangeDays;
-                    setTimeRangeDays(next as TimeRangeDays);
-                  }}
-                  min={0}
-                  max={730} // 2 years = "all time"
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-              <span className="text-[11px] font-semibold text-white/60 min-w-[100px] text-right">
-                {formatTimeRangeLabel(timeRangeDays)}
-              </span>
-            </div>
+              const items: TimelineItem[] = [
+                ...phases.map((p) => ({
+                  kind: "phase" as const,
+                  date: p.date_start,
+                  phase: p,
+                })),
+                ...annotations.map((a) => ({
+                  kind: "ann" as const,
+                  date: a.event_date,
+                  ann: a,
+                })),
+              ].sort((a, b) => b.date.localeCompare(a.date));
 
-            <MultiSeriesChart
-              selectedMetrics={overlayMetrics}
-              series={filteredSeries}
-              rows={filteredRows}
-            />
-          </div>
-        )}
+              // Group by "MMMM YYYY" (fr-FR)
+              const groups: { label: string; items: TimelineItem[] }[] = [];
+              for (const item of items) {
+                const d = new Date(item.date + "T00:00:00");
+                const label = d.toLocaleDateString("fr-FR", {
+                  month: "long",
+                  year: "numeric",
+                });
+                const last = groups[groups.length - 1];
+                if (last && last.label === label) last.items.push(item);
+                else groups.push({ label, items: [item] });
+              }
 
-      </div>
+              return (
+                <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.05]">
+                    <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+                      Phases & Événements
+                    </p>
+                    <span className="text-[9px] text-white/20 tabular-nums">
+                      {phases.length + annotations.length} entrée
+                      {phases.length + annotations.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-5">
+                    {groups.map((group) => (
+                      <div key={group.label}>
+                        <p className="text-[9px] font-bold text-white/20 tracking-[0.14em] mb-2 capitalize">
+                          {group.label}
+                        </p>
+                        <div className="flex flex-col gap-1">
+                          {group.items.map((item, i) => {
+                            if (item.kind === "phase") {
+                              const ph = item.phase;
+                              const c = PHASE_COLORS[ph.phase_type];
+                              const dayStart = new Date(
+                                ph.date_start + "T00:00:00",
+                              ).toLocaleDateString("fr-FR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                              });
+                              const dayEnd = ph.date_end
+                                ? new Date(
+                                    ph.date_end + "T00:00:00",
+                                  ).toLocaleDateString("fr-FR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                  })
+                                : null;
+                              return (
+                                <div
+                                  key={`phase-${ph.id}-${i}`}
+                                  className="group flex items-center gap-2.5 px-3 py-2 rounded-lg"
+                                  style={{ backgroundColor: c.bg }}
+                                >
+                                  {/* Color dot */}
+                                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.text }} />
+                                  {/* Date */}
+                                  <span className="text-[9px] tabular-nums w-[34px] shrink-0" style={{ color: c.text, opacity: 0.7 }}>
+                                    {dayStart}
+                                  </span>
+                                  {/* Label */}
+                                  <span className="text-[11px] font-semibold flex-1 min-w-0 truncate" style={{ color: c.text }}>
+                                    {ph.label}
+                                  </span>
+                                  {/* Type + end date */}
+                                  <span className="text-[9px] shrink-0" style={{ color: c.text, opacity: 0.55 }}>
+                                    {PHASE_COLORS[ph.phase_type].label}{dayEnd ? ` → ${dayEnd}` : ""}
+                                  </span>
+                                  {/* Actions */}
+                                  {phaseDeleteConfirm === ph.id ? (
+                                    <div className="flex items-center gap-1 ml-1 shrink-0">
+                                      <button
+                                        onClick={async () => {
+                                          await fetch(`/api/clients/${clientId}/phases/${ph.id}`, { method: "DELETE" });
+                                          setPhases((prev) => prev.filter((p) => p.id !== ph.id));
+                                          setPhaseDeleteConfirm(null);
+                                        }}
+                                        className="text-[9px] font-bold text-red-400 hover:text-red-300 transition-colors px-1"
+                                      >
+                                        Oui
+                                      </button>
+                                      <button
+                                        onClick={() => setPhaseDeleteConfirm(null)}
+                                        className="text-[9px] text-white/30 hover:text-white/60 transition-colors px-1"
+                                      >
+                                        Non
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-0.5 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setPhaseEditModal(ph); }}
+                                        className="p-1 rounded text-white/20 hover:text-white/60 transition-colors"
+                                        title="Modifier"
+                                      >
+                                        <Edit2 size={9} />
+                                      </button>
+                                      <button
+                                        onClick={() => setPhaseDeleteConfirm(ph.id)}
+                                        className="p-1 rounded text-white/20 hover:text-red-400 transition-colors"
+                                        title="Supprimer"
+                                      >
+                                        <Trash2 size={9} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+
+                            // annotation
+                            const ann = item.ann;
+                            const day = new Date(
+                              ann.event_date + "T00:00:00",
+                            ).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            });
+                            return (
+                              <button
+                                key={`ann-${ann.id}-${i}`}
+                                onClick={() => setNoteModal(ann)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] transition-all text-left group w-full"
+                              >
+                                {/* Emoji */}
+                                <span className="text-[13px] shrink-0 w-[18px] text-center">
+                                  {ANNOTATION_ICONS[ann.event_type]}
+                                </span>
+                                {/* Date */}
+                                <span className="text-[9px] text-white/30 tabular-nums w-[34px] shrink-0">
+                                  {day}
+                                </span>
+                                {/* Label */}
+                                <span className="text-[11px] font-medium text-white/75 group-hover:text-white/90 transition-colors flex-1 min-w-0 truncate">
+                                  {ann.label}
+                                </span>
+                                {/* Type badge */}
+                                <span className="text-[8px] text-white/20 shrink-0 font-semibold uppercase tracking-[0.10em]">
+                                  {ANNOTATION_LABELS[ann.event_type]}
+                                </span>
+                                {/* Body dot — has detail */}
+                                {ann.body && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0" title="Contient un détail" />
+                                )}
+                                {/* Arrow */}
+                                <ChevronDown
+                                  size={10}
+                                  className="text-white/15 group-hover:text-white/35 transition-colors shrink-0 -rotate-90"
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+        </>
+      )}
 
       {/* ── Modals ── */}
       {editingRow && (
@@ -3060,6 +4927,56 @@ export default function MetricsSection({ clientId }: Props) {
           </div>
         </div>
       )}
+
+      {noteModal && (
+        <NoteModal
+          ann={noteModal}
+          clientId={clientId}
+          onClose={() => setNoteModal(null)}
+          onSaved={(updated) => {
+            setAnnotations((prev) =>
+              prev.map((a) => (a.id === updated.id ? updated : a)),
+            );
+            setNoteModal(updated);
+          }}
+          onDeleted={(id) => {
+            setAnnotations((prev) => prev.filter((a) => a.id !== id));
+            setNoteModal(null);
+          }}
+        />
+      )}
+
+      {/* ── Phase edit modal (from list) ── */}
+      {phaseEditModal && (() => {
+        const ph = phaseEditModal;
+        const localRef = { current: { label: ph.label, phase_type: ph.phase_type, date_start: ph.date_start, date_end: ph.date_end ?? "", notes: ph.notes ?? "" } };
+        return (
+          <PhaseEditModal
+            phase={ph}
+            onClose={() => setPhaseEditModal(null)}
+            onSave={async (form) => {
+              setPhaseEditSaving(true);
+              try {
+                const res = await fetch(`/api/clients/${clientId}/phases/${ph.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ label: form.label, phase_type: form.phase_type, date_start: form.date_start, date_end: form.date_end || null, notes: form.notes || null }),
+                });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setPhases((prev) => prev.map((p) => (p.id === ph.id ? updated : p)));
+                  setPhaseEditModal(null);
+                  showToast("Phase modifiée");
+                }
+              } finally {
+                setPhaseEditSaving(false);
+              }
+            }}
+            saving={phaseEditSaving}
+          />
+        );
+        void localRef;
+      })()}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#181818] text-white text-xs font-bold px-4 py-2.5 rounded-full flex items-center gap-2">

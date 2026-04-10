@@ -55,6 +55,25 @@ type Subscription = {
   } | null;
 };
 
+type Payment = {
+  id: string;
+  status: string;
+  amount_eur: number;
+  payment_date: string;
+  payment_method: string | null;
+  description: string | null;
+  client: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  } | null;
+  subscription: {
+    formula: {
+      name: string;
+    } | null;
+  } | null;
+};
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const BILLING_LABELS: Record<string, string> = {
@@ -99,6 +118,21 @@ const SUB_STATUS: Record<string, { label: string; cls: string; dot: string }> =
       dot: "bg-gray-400",
     },
   };
+
+const PAYMENT_STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  paid: {
+    label: "Payé",
+    cls: "bg-emerald-100 text-emerald-700",
+  },
+  pending: {
+    label: "En attente",
+    cls: "bg-amber-100 text-amber-700",
+  },
+  failed: {
+    label: "Échoué",
+    cls: "bg-red-100 text-red-700",
+  },
+};
 
 const PALETTE = [
   "#6366f1",
@@ -160,6 +194,10 @@ export default function FormulasPage() {
   >({});
   const [loadingSubs, setLoadingSubs] = useState<string | null>(null);
 
+  // Payment history
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(true);
+
   // ── Load ───────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -173,20 +211,26 @@ export default function FormulasPage() {
     setLoading(false);
   }, []);
 
+  const loadPayments = useCallback(async () => {
+    setLoadingPayments(true);
+    const res = await fetch(`/api/payments`);
+    if (res.ok) {
+      const data = await res.json();
+      setPayments(data.payments ?? []);
+    }
+    setLoadingPayments(false);
+  }, []);
+
   useEffect(() => {
     loadFormulas();
-  }, [loadFormulas]);
+    loadPayments();
+  }, [loadFormulas, loadPayments]);
 
   // ── Load subscribers for a formula ────────────────────────────────────────
 
   async function loadSubscribers(formulaId: string) {
     if (subscribers[formulaId]) return;
     setLoadingSubs(formulaId);
-    // Fetch all active subscriptions — filter client-side by formula_id
-    const res = await fetch(`/api/payments?client_id=all`); // fallback: get all clients
-    // We need a dedicated endpoint; use the payments API with formula context
-    // Instead, fetch subscriptions for each client is too expensive.
-    // Use the comptabilite subscriptions data — fetch directly via supabase query
     const subsRes = await fetch(`/api/formulas/${formulaId}/subscribers`);
     if (subsRes.ok) {
       const data = await subsRes.json();
@@ -409,317 +453,432 @@ export default function FormulasPage() {
           ))}
         </div>
 
-        {/* FORMULAS LIST */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-[#181818] border-subtle rounded-2xl p-5"
-              >
-                <div className="flex items-start gap-4">
-                  <Skeleton className="w-11 h-11 rounded-xl shrink-0" />
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-5 w-48" />
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                    </div>
-                    <Skeleton className="h-4 w-64" />
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                      <Skeleton className="h-6 w-14 rounded-full" />
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.04]">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-4 w-12" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-8 w-20 rounded-lg" />
-                        <Skeleton className="h-8 w-16 rounded-lg" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : displayed.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-24 text-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border-subtle flex items-center justify-center mb-4">
-              <CreditCard size={28} className="text-white/20" />
-            </div>
-            <p className="text-base font-bold text-white mb-1">
-              Aucune formule créée
-            </p>
-            <p className="text-sm text-white/40 mb-6">
-              Créez vos offres de coaching pour les assigner à vos clients.
-            </p>
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#1f8a65] text-white rounded-xl font-bold text-sm hover:bg-[#217356] transition-all"
-            >
-              <Plus size={16} />
-              Créer ma première formule
-            </button>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            {displayed.map((formula, i) => {
-              const subs = subscribers[formula.id] ?? [];
-              const activeSubs = subs.filter(
-                (s) => s.status === "active" || s.status === "trial",
-              );
-              const isExpanded = expandedId === formula.id;
-
-              return (
-                <motion.div
-                  key={formula.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className={`bg-[#181818] rounded-2xl overflow-hidden transition-all border-subtle ${
-                    formula.is_active ? "" : "opacity-60"
-                  }`}
-                >
-                  {/* Formula header */}
-                  <div className="p-5 flex items-start gap-4">
-                    {/* Color dot */}
-                    <div
-                      className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
-                      style={{ backgroundColor: formula.color + "20" }}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: formula.color }}
-                      />
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-base font-bold text-white">
-                              {formula.name}
-                            </h2>
-                            {!formula.is_active && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                Archivée
-                              </span>
-                            )}
+        <div className="grid grid-cols-1 xl:grid-cols-[1.45fr_0.95fr] gap-6">
+          <section className="space-y-3">
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-[#181818] border-subtle rounded-2xl p-5"
+                  >
+                    <div className="flex items-start gap-4">
+                      <Skeleton className="w-11 h-11 rounded-xl shrink-0" />
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-5 w-48" />
+                          <Skeleton className="h-6 w-20 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-64" />
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                          <Skeleton className="h-6 w-20 rounded-full" />
+                          <Skeleton className="h-6 w-14 rounded-full" />
+                        </div>
+                        <div className="flex items-center justify-between pt-3 border-t border-white/[0.04]">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-4 w-12" />
+                            <Skeleton className="h-4 w-16" />
                           </div>
-                          {formula.description && (
-                            <p className="text-sm text-white/40 mt-0.5 line-clamp-1">
-                              {formula.description}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-8 w-20 rounded-lg" />
+                            <Skeleton className="h-8 w-16 rounded-lg" />
+                          </div>
                         </div>
-
-                        {/* Price */}
-                        <div className="text-right shrink-0">
-                          <p className="text-xl font-black text-white font-mono">
-                            {formula.price_eur.toFixed(2)} €
-                          </p>
-                          <p className="text-xs text-white/40 font-medium">
-                            {BILLING_LABELS[formula.billing_cycle]}
-                            {formula.duration_months &&
-                              ` · ${formula.duration_months} mois`}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Features */}
-                      {formula.features.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          {formula.features.slice(0, 4).map((f, fi) => (
-                            <span
-                              key={fi}
-                              className="flex items-center gap-1 text-[11px] text-white/40 bg-white/[0.02] px-2 py-0.5 rounded-full"
-                            >
-                              <Check
-                                size={9}
-                                className="text-emerald-500 shrink-0"
-                              />
-                              {f}
-                            </span>
-                          ))}
-                          {formula.features.length > 4 && (
-                            <span className="text-[11px] text-white/20 px-2 py-0.5">
-                              +{formula.features.length - 4}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Footer row */}
-                      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
-                        {/* Subscribers count */}
-                        <button
-                          onClick={() => toggleExpand(formula.id)}
-                          className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors group"
-                        >
-                          <Users
-                            size={13}
-                            className="text-white/30 group-hover:text-white transition-colors"
-                          />
-                          <span>Clients</span>
-                          {loadingSubs === formula.id ? (
-                            <Loader2 size={11} className="animate-spin" />
-                          ) : isExpanded ? (
-                            <ChevronDown size={11} />
-                          ) : (
-                            <ChevronRight size={11} />
-                          )}
-                        </button>
-
-                        <div className="flex-1" />
-
-                        {/* Actions */}
-                        <button
-                          onClick={() => openEdit(formula)}
-                          className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors px-3 py-1.5 rounded-lg border-subtle hover:bg-white/[0.04]"
-                        >
-                          <Edit2 size={12} />
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => setArchiveTarget(formula)}
-                          className={`flex items-center gap-1.5 text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg border-subtle ${
-                            formula.is_active
-                              ? "text-white/60 hover:text-amber-400 hover:bg-amber-900/20"
-                              : "text-white/60 hover:text-emerald-400 hover:bg-emerald-900/20"
-                          }`}
-                        >
-                          {formula.is_active ? (
-                            <EyeOff size={12} />
-                          ) : (
-                            <Eye size={12} />
-                          )}
-                          {formula.is_active ? "Archiver" : "Restaurer"}
-                        </button>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : displayed.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-24 text-center"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border-subtle flex items-center justify-center mb-4">
+                  <CreditCard size={28} className="text-white/20" />
+                </div>
+                <p className="text-base font-bold text-white mb-1">
+                  Aucune formule créée
+                </p>
+                <p className="text-sm text-white/40 mb-6">
+                  Créez vos offres de coaching pour les assigner à vos clients.
+                </p>
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#1f8a65] text-white rounded-xl font-bold text-sm hover:bg-[#217356] transition-all"
+                >
+                  <Plus size={16} />
+                  Créer ma première formule
+                </button>
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                {displayed.map((formula, i) => {
+                  const subs = subscribers[formula.id] ?? [];
+                  const activeSubs = subs.filter(
+                    (s) => s.status === "active" || s.status === "trial",
+                  );
+                  const isExpanded = expandedId === formula.id;
 
-                  {/* Subscribers panel */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="border-t border-white/[0.04] bg-white/[0.02] px-5 py-4">
-                          {loadingSubs === formula.id ? (
-                            <div className="space-y-3 py-2">
-                              <div className="flex items-center gap-3 p-3">
-                                <Skeleton className="w-8 h-8 rounded-lg" />
-                                <div className="space-y-1 flex-1">
-                                  <Skeleton className="h-4 w-32" />
-                                  <Skeleton className="h-3 w-24" />
-                                </div>
-                                <Skeleton className="h-4 w-16" />
-                              </div>
-                              <div className="flex items-center gap-3 p-3">
-                                <Skeleton className="w-8 h-8 rounded-lg" />
-                                <div className="space-y-1 flex-1">
-                                  <Skeleton className="h-4 w-28" />
-                                  <Skeleton className="h-3 w-20" />
-                                </div>
-                                <Skeleton className="h-4 w-14" />
-                              </div>
-                            </div>
-                          ) : subs.length === 0 ? (
-                            <div className="text-center py-4">
-                              <p className="text-xs text-white/30 italic">
-                                Aucun client abonné à cette formule
-                              </p>
-                              <button
-                                onClick={() => router.push("/coach/clients")}
-                                className="mt-2 text-xs font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
-                              >
-                                Assigner depuis un dossier client →
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">
-                                {subs.length} client{subs.length > 1 ? "s" : ""}{" "}
-                                — {activeSubs.length} actif
-                                {activeSubs.length > 1 ? "s" : ""}
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {subs.map((sub) => {
-                                  const cfg =
-                                    SUB_STATUS[sub.status] ?? SUB_STATUS.active;
-                                  const price =
-                                    sub.price_override_eur ?? formula.price_eur;
-                                  return (
-                                    <button
-                                      key={sub.id}
-                                      onClick={() =>
-                                        router.push(
-                                          `/coach/clients/${sub.client_id}`,
-                                        )
-                                      }
-                                      className="flex items-center gap-3 p-3 bg-white/[0.02] border-subtle rounded-xl hover:bg-white/[0.04] transition-all text-left group"
-                                    >
-                                      {/* Avatar */}
-                                      <div
-                                        className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white font-black text-xs"
-                                        style={{
-                                          backgroundColor: formula.color,
-                                        }}
-                                      >
-                                        {sub.client
-                                          ? `${sub.client.first_name[0]}${sub.client.last_name[0]}`
-                                          : "?"}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-white truncate group-hover:text-[#1f8a65] transition-colors">
-                                          {sub.client
-                                            ? `${sub.client.first_name} ${sub.client.last_name}`
-                                            : "—"}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <span
-                                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cfg.cls}`}
-                                          >
-                                            {cfg.label}
-                                          </span>
-                                          {sub.price_override_eur != null && (
-                                            <span className="text-[10px] text-white/30 font-mono">
-                                              {price.toFixed(2)} €
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <ChevronRight
-                                        size={13}
-                                        className="text-white/20 shrink-0"
-                                      />
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </>
-                          )}
+                  return (
+                    <motion.div
+                      key={formula.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className={`bg-[#181818] rounded-2xl overflow-hidden transition-all border-subtle ${
+                        formula.is_active ? "" : "opacity-60"
+                      }`}
+                    >
+                      {/* Formula header */}
+                      <div className="p-5 flex items-start gap-4">
+                        {/* Color dot */}
+                        <div
+                          className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
+                          style={{ backgroundColor: formula.color + "20" }}
+                        >
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: formula.color }}
+                          />
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="text-base font-bold text-white">
+                                  {formula.name}
+                                </h2>
+                                {!formula.is_active && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                                    Archivée
+                                  </span>
+                                )}
+                              </div>
+                              {formula.description && (
+                                <p className="text-sm text-white/40 mt-0.5 line-clamp-1">
+                                  {formula.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Price */}
+                            <div className="text-right shrink-0">
+                              <p className="text-xl font-black text-white font-mono">
+                                {formula.price_eur.toFixed(2)} €
+                              </p>
+                              <p className="text-xs text-white/40 font-medium">
+                                {BILLING_LABELS[formula.billing_cycle]}
+                                {formula.duration_months &&
+                                  ` · ${formula.duration_months} mois`}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Features */}
+                          {formula.features.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {formula.features.slice(0, 4).map((f, fi) => (
+                                <span
+                                  key={fi}
+                                  className="flex items-center gap-1 text-[11px] text-white/40 bg-white/[0.02] px-2 py-0.5 rounded-full"
+                                >
+                                  <Check
+                                    size={9}
+                                    className="text-emerald-500 shrink-0"
+                                  />
+                                  {f}
+                                </span>
+                              ))}
+                              {formula.features.length > 4 && (
+                                <span className="text-[11px] text-white/20 px-2 py-0.5">
+                                  +{formula.features.length - 4}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Footer row */}
+                          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
+                            {/* Subscribers count */}
+                            <button
+                              onClick={() => toggleExpand(formula.id)}
+                              className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors group"
+                            >
+                              <Users
+                                size={13}
+                                className="text-white/30 group-hover:text-white transition-colors"
+                              />
+                              <span>Clients</span>
+                              {loadingSubs === formula.id ? (
+                                <Loader2 size={11} className="animate-spin" />
+                              ) : isExpanded ? (
+                                <ChevronDown size={11} />
+                              ) : (
+                                <ChevronRight size={11} />
+                              )}
+                            </button>
+
+                            <div className="flex-1" />
+
+                            {/* Actions */}
+                            <button
+                              onClick={() => openEdit(formula)}
+                              className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors px-3 py-1.5 rounded-lg border-subtle hover:bg-white/[0.04]"
+                            >
+                              <Edit2 size={12} />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => setArchiveTarget(formula)}
+                              className={`flex items-center gap-1.5 text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg border-subtle ${
+                                formula.is_active
+                                  ? "text-white/60 hover:text-amber-400 hover:bg-amber-900/20"
+                                  : "text-white/60 hover:text-emerald-400 hover:bg-emerald-900/20"
+                              }`}
+                            >
+                              {formula.is_active ? (
+                                <EyeOff size={12} />
+                              ) : (
+                                <Eye size={12} />
+                              )}
+                              {formula.is_active ? "Archiver" : "Restaurer"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subscribers panel */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="border-t border-white/[0.04] bg-white/[0.02] px-5 py-4">
+                              {loadingSubs === formula.id ? (
+                                <div className="space-y-3 py-2">
+                                  <div className="flex items-center gap-3 p-3">
+                                    <Skeleton className="w-8 h-8 rounded-lg" />
+                                    <div className="space-y-1 flex-1">
+                                      <Skeleton className="h-4 w-32" />
+                                      <Skeleton className="h-3 w-24" />
+                                    </div>
+                                    <Skeleton className="h-4 w-16" />
+                                  </div>
+                                  <div className="flex items-center gap-3 p-3">
+                                    <Skeleton className="w-8 h-8 rounded-lg" />
+                                    <div className="space-y-1 flex-1">
+                                      <Skeleton className="h-4 w-28" />
+                                      <Skeleton className="h-3 w-20" />
+                                    </div>
+                                    <Skeleton className="h-4 w-14" />
+                                  </div>
+                                </div>
+                              ) : subs.length === 0 ? (
+                                <div className="text-center py-4">
+                                  <p className="text-xs text-white/30 italic">
+                                    Aucun client abonné à cette formule
+                                  </p>
+                                  <button
+                                    onClick={() =>
+                                      router.push("/coach/clients")
+                                    }
+                                    className="mt-2 text-xs font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
+                                  >
+                                    Assigner depuis un dossier client →
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">
+                                    {subs.length} client
+                                    {subs.length > 1 ? "s" : ""} —{" "}
+                                    {activeSubs.length} actif
+                                    {activeSubs.length > 1 ? "s" : ""}
+                                  </p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {subs.map((sub) => {
+                                      const cfg =
+                                        SUB_STATUS[sub.status] ??
+                                        SUB_STATUS.active;
+                                      const price =
+                                        sub.price_override_eur ??
+                                        formula.price_eur;
+                                      return (
+                                        <button
+                                          key={sub.id}
+                                          onClick={() =>
+                                            router.push(
+                                              `/coach/clients/${sub.client_id}`,
+                                            )
+                                          }
+                                          className="flex items-center gap-3 p-3 bg-white/[0.02] border-subtle rounded-xl hover:bg-white/[0.04] transition-all text-left group"
+                                        >
+                                          {/* Avatar */}
+                                          <div
+                                            className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white font-black text-xs"
+                                            style={{
+                                              backgroundColor: formula.color,
+                                            }}
+                                          >
+                                            {sub.client
+                                              ? `${sub.client.first_name[0]}${sub.client.last_name[0]}`
+                                              : "?"}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-white truncate group-hover:text-[#1f8a65] transition-colors">
+                                              {sub.client
+                                                ? `${sub.client.first_name} ${sub.client.last_name}`
+                                                : "—"}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                              <span
+                                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cfg.cls}`}
+                                              >
+                                                {cfg.label}
+                                              </span>
+                                              {sub.price_override_eur !=
+                                                null && (
+                                                <span className="text-[10px] text-white/30 font-mono">
+                                                  {price.toFixed(2)} €
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <ChevronRight
+                                            size={13}
+                                            className="text-white/20 shrink-0"
+                                          />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+          <section className="space-y-3">
+            <div className="bg-[#181818] border-subtle rounded-2xl p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    Historique de paiements
+                  </p>
+                  <p className="text-xs text-white/40 max-w-[20rem]">
+                    Dernières transactions clients.
+                  </p>
+                </div>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                  {payments.length} paiement{payments.length > 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {loadingPayments ? (
+                <div className="space-y-3 mt-5">
+                  {[1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className="h-24 rounded-3xl bg-white/[0.03] animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : payments.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm text-white/40">
+                    Aucun paiement enregistré pour l'instant.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3 mt-5">
+                  {payments.slice(0, 6).map((payment) => {
+                    const cfg =
+                      PAYMENT_STATUS_CONFIG[payment.status] ??
+                      PAYMENT_STATUS_CONFIG.paid;
+                    const isPaid = payment.status === "paid";
+                    return (
+                      <button
+                        key={payment.id}
+                        type="button"
+                        onClick={() =>
+                          payment.client
+                            ? router.push(`/coach/clients/${payment.client.id}`)
+                            : undefined
+                        }
+                        className={`text-left rounded-3xl p-4 border-subtle transition-all ${
+                          isPaid
+                            ? "bg-emerald-500/10 hover:bg-emerald-500/15"
+                            : "bg-white/[0.02] hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/40">
+                              {new Date(
+                                payment.payment_date,
+                              ).toLocaleDateString("fr-FR")}
+                            </p>
+                            <p className="mt-2 text-sm font-semibold text-white truncate">
+                              {payment.client
+                                ? `${payment.client.first_name} ${payment.client.last_name}`
+                                : "Client inconnu"}
+                            </p>
+                            <p className="text-[12px] text-white/50 mt-1 max-w-[18rem] truncate">
+                              {payment.subscription?.formula?.name ||
+                                payment.description ||
+                                "Paiement"}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-base font-black text-white font-mono">
+                              {payment.amount_eur.toFixed(2)} €
+                            </p>
+                            <span
+                              className={`inline-flex items-center gap-1 mt-2 text-[10px] font-bold px-2 py-1 rounded-full ${cfg.cls}`}
+                            >
+                              {cfg.label}
+                            </span>
+                          </div>
+                        </div>
+                        {payment.payment_method && (
+                          <p className="mt-3 text-[11px] text-white/40">
+                            Méthode : {payment.payment_method}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {payments.length > 6 && (
+                    <div className="text-right pt-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/coach/comptabilite")}
+                        className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
+                      >
+                        Voir tout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
 
       {/* ── MODAL CREATE / EDIT ──────────────────────────────────────────────── */}
@@ -966,20 +1125,20 @@ export default function FormulasPage() {
             <p className="text-sm text-white/60 mb-5">
               {archiveTarget.is_active ? (
                 <>
-                  La formule{" "}
+                  La formule "
                   <span className="font-medium text-white">
-                    \"{`archiveTarget.name`}\"
-                  </span>{" "}
-                  sera masquée du catalogue. Les abonnements existants ne sont
+                    {archiveTarget.name}
+                  </span>
+                  " sera masquée du catalogue. Les abonnements existants ne sont
                   pas affectés.
                 </>
               ) : (
                 <>
-                  La formule{" "}
+                  La formule "
                   <span className="font-medium text-white">
-                    \"{`archiveTarget.name`}\"
-                  </span>{" "}
-                  sera de nouveau disponible à l'assignation.
+                    {archiveTarget.name}
+                  </span>
+                  " sera de nouveau disponible à l'assignation.
                 </>
               )}
             </p>

@@ -1145,12 +1145,23 @@ export default function ConnectionPage() {
   };
 
   const handleResend = async () => {
-    if (!formValues.email)
-      return setError("Saisissez votre e-mail pour renvoyer le lien.");
+    if (!formValues.email) {
+      setError("Saisissez votre e-mail pour renvoyer le lien.");
+      return;
+    }
+
     setResendStatus("loading");
-    const result = await resendEmail(formValues.email);
-    setResendStatus(result.success ? "success" : "error");
-    if (result.error) setError(result.error);
+    setError(null);
+
+    try {
+      const result = await resendEmail(formValues.email);
+      setResendStatus(result.success ? "success" : "error");
+      if (result.error) setError(result.error);
+    } catch (error) {
+      console.error("[homepage] resendEmail failed:", error);
+      setResendStatus("error");
+      setError("Impossible de renvoyer l’e-mail pour le moment.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1159,39 +1170,49 @@ export default function ConnectionPage() {
     setError(null);
     setSuccess(null);
 
-    if (isLogin) {
-      const formData = new FormData(e.currentTarget);
-      const result = await login(formData);
-      if (result?.error) {
-        setError(result.error);
-        setIsLoading(false);
-      } else router.push("/dashboard");
-    } else {
-      if (step < 3) {
-        handleNext();
-        setIsLoading(false);
-        return;
-      }
-      if (formValues.password !== formValues.confirmPassword) {
-        setError("Les mots de passe ne correspondent pas.");
-        setIsLoading(false);
-        return;
-      }
-      const formData = new FormData();
-      Object.entries(formValues).forEach(([k, v]) => formData.set(k, v));
-      formData.set("currentTools", selectedTools.join(", "));
-      formData.set("currentProcess", selectedChallenges.join(", "));
-      const result = await signup(formData);
-      if (result?.error) {
-        setError(result.error);
-        setIsLoading(false);
+    try {
+      if (isLogin) {
+        const formData = new FormData(e.currentTarget);
+        const result = await login(formData);
+        if (result?.error) {
+          setError(result.error);
+        } else {
+          router.push("/dashboard");
+        }
       } else {
-        setSuccess(
-          "Compte créé ! Un e-mail de confirmation vous a été envoyé.",
-        );
-        setIsLoading(false);
-        setIsLoginWithReset(true, true);
+        if (step < 3) {
+          handleNext();
+          setIsLoading(false);
+          return;
+        }
+        if (formValues.password !== formValues.confirmPassword) {
+          setError("Les mots de passe ne correspondent pas.");
+          setIsLoading(false);
+          return;
+        }
+        const formData = new FormData();
+        Object.entries(formValues).forEach(([k, v]) => formData.set(k, v));
+        formData.set("currentTools", selectedTools.join(", "));
+        formData.set("currentProcess", selectedChallenges.join(", "));
+        const result = await signup(formData);
+        if (result?.error) {
+          setError(result.error);
+        } else {
+          setSuccess(
+            "Compte créé ! Un e-mail de confirmation vous a été envoyé.",
+          );
+          setIsLoginWithReset(true, true);
+        }
       }
+    } catch (error) {
+      console.error("[homepage] auth submit failed:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de contacter le service d’authentification.",
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 

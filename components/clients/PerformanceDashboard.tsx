@@ -131,6 +131,60 @@ function formatVolume(v: number) {
   return v >= 1000 ? `${(v / 1000).toFixed(1)}t` : `${v}kg`;
 }
 
+interface MetricSeries {
+  [fieldKey: string]: { date: string; value: number }[];
+}
+
+function getLatestSeriesValue(
+  series: MetricSeries | null,
+  key: string,
+): number | null {
+  const values = series?.[key];
+  if (!values?.length) return null;
+  return values[values.length - 1].value;
+}
+
+function getSeriesDelta(
+  series: MetricSeries | null,
+  key: string,
+): number | null {
+  const values = series?.[key];
+  if (!values || values.length < 2) return null;
+  return values[values.length - 1].value - values[0].value;
+}
+
+function estimateFatMass(series: MetricSeries | null): number | null {
+  const fatMass = getLatestSeriesValue(series, "fat_mass_kg");
+  if (fatMass != null) return fatMass;
+  const weight = getLatestSeriesValue(series, "weight_kg");
+  const bf = getLatestSeriesValue(series, "body_fat_pct");
+  if (weight != null && bf != null) return (weight * bf) / 100;
+  return null;
+}
+
+function estimateFatMassDelta(series: MetricSeries | null): number | null {
+  const fatMassDelta = getSeriesDelta(series, "fat_mass_kg");
+  if (fatMassDelta != null) return fatMassDelta;
+  const weightValues = series?.["weight_kg"];
+  const bfValues = series?.["body_fat_pct"];
+  if (!weightValues?.length || !bfValues?.length) return null;
+  const firstWeight = weightValues[0].value;
+  const lastWeight = weightValues[weightValues.length - 1].value;
+  const firstBf = bfValues[0].value;
+  const lastBf = bfValues[bfValues.length - 1].value;
+  return (lastWeight * lastBf) / 100 - (firstWeight * firstBf) / 100;
+}
+
+function safeDivide(value: number, divisor: number): number | null {
+  if (!divisor || Number.isNaN(divisor)) return null;
+  return value / divisor;
+}
+
+function formatSign(value: number | null): string {
+  if (value == null) return "—";
+  return value >= 0 ? `+${value.toFixed(1)}` : `${value.toFixed(1)}`;
+}
+
 function KpiCard({
   label,
   value,
@@ -145,7 +199,7 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="bg-[#181818] rounded-xl p-4 flex items-start gap-3">
+    <div className="bg-[#181818] border-subtle rounded-xl p-4 flex items-start gap-3">
       <div
         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}
         style={{ backgroundColor: `${color}18` }}
@@ -156,9 +210,7 @@ function KpiCard({
         <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">
           {label}
         </p>
-        <p className="text-xl font-bold text-white font-mono mt-0.5">
-          {value}
-        </p>
+        <p className="text-xl font-bold text-white font-mono mt-0.5">{value}</p>
         {sub && <p className="text-[10px] text-white/45 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -169,7 +221,7 @@ function KpiCard({
 function RadarTooltipContent({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#181818] rounded-lg px-3 py-2 text-xs border border-white/40">
+    <div className="bg-[#181818] border-tooltip rounded-lg px-3 py-2 text-xs">
       <p className="font-bold text-white mb-1">{payload[0]?.payload?.name}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
@@ -184,7 +236,7 @@ function RadarTooltipContent({ active, payload }: any) {
 function LineTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#181818] rounded-lg px-3 py-2 text-xs border border-white/40">
+    <div className="bg-[#181818] border-tooltip rounded-lg px-3 py-2 text-xs">
       <p className="font-bold text-white mb-1">{formatDate(label)}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
@@ -205,19 +257,26 @@ export default function PerformanceDashboard({
   const [metric, setMetric] = useState<Metric>("volume");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [data, setData] = useState<PerformanceData | null>(null);
+  const [metricsSeries, setMetricsSeries] = useState<MetricSeries | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(
-      `/api/clients/${clientId}/performance?days=${period}`,
-    );
-    const d = await res.json();
-    setData(d);
-    if (!selectedExercise && d.exercises?.[0])
-      setSelectedExercise(d.exercises[0].name);
+    const [perfRes, metricsRes] = await Promise.all([
+      fetch(`/api/clients/${clientId}/performance?days=${period}`),
+      fetch(`/api/clients/${clientId}/metrics`),
+    ]);
+
+    const perfData = await perfRes.json();
+    const metricsData = await metricsRes.json().catch(() => ({ series: {} }));
+
+    setData(perfData);
+    setMetricsSeries(metricsData.series ?? {});
+
+    if (!selectedExercise && perfData.exercises?.[0])
+      setSelectedExercise(perfData.exercises[0].name);
     setLoading(false);
-  }, [clientId, period]);
+  }, [clientId, period, selectedExercise]);
 
   useEffect(() => {
     fetchData();
@@ -228,7 +287,7 @@ export default function PerformanceDashboard({
       <div className="flex flex-col gap-4">
         {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-[#181818] rounded-xl p-4 space-y-2">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-7 w-14" />
@@ -259,6 +318,163 @@ export default function PerformanceDashboard({
   if (!data) return null;
 
   const { kpis, timeline, muscleGroups, exercises, rpeTrend } = data;
+  const latestWeight = getLatestSeriesValue(metricsSeries, "weight_kg");
+  const latestProtein = getLatestSeriesValue(metricsSeries, "protein_g");
+  const latestCaloriesPlan = getLatestSeriesValue(
+    metricsSeries,
+    "calories_target",
+  );
+  const latestBmr = getLatestSeriesValue(metricsSeries, "bmr_kcal");
+  const latestMuscleMass =
+    getLatestSeriesValue(metricsSeries, "muscle_mass_kg") ??
+    getLatestSeriesValue(metricsSeries, "skeletal_muscle_mass_kg");
+  const latestFatMass = estimateFatMass(metricsSeries);
+  const deltaMuscleMass =
+    getSeriesDelta(metricsSeries, "muscle_mass_kg") ??
+    getSeriesDelta(metricsSeries, "skeletal_muscle_mass_kg");
+  const deltaFatMass = estimateFatMassDelta(metricsSeries);
+  const deltaWeight = getSeriesDelta(metricsSeries, "weight_kg");
+  const caloriesActual =
+    [
+      "calories_actual",
+      "actual_calories",
+      "calories_consumed",
+      "consumed_calories",
+      "kcal_real",
+      "kcal_actual",
+    ]
+      .map((key) => getLatestSeriesValue(metricsSeries, key))
+      .find((value) => value != null) ?? null;
+
+  const firstTimelineWithReps =
+    timeline.find((point) => point.reps > 0) ?? null;
+  const lastTimelineWithReps =
+    [...timeline].reverse().find((point) => point.reps > 0) ?? null;
+  const firstAvgLoad = firstTimelineWithReps
+    ? firstTimelineWithReps.volume / firstTimelineWithReps.reps
+    : null;
+  const lastAvgLoad = lastTimelineWithReps
+    ? lastTimelineWithReps.volume / lastTimelineWithReps.reps
+    : null;
+  const deltaChargeMean =
+    lastAvgLoad != null && firstAvgLoad != null
+      ? lastAvgLoad - firstAvgLoad
+      : null;
+  const proteinPerKg =
+    latestProtein != null && latestWeight ? latestProtein / latestWeight : null;
+  const calorieDeficitPercent =
+    latestCaloriesPlan && caloriesActual != null
+      ? ((caloriesActual - latestCaloriesPlan) / latestCaloriesPlan) * 100
+      : null;
+  const weightStable =
+    deltaWeight != null ? Math.abs(deltaWeight) <= 0.5 : false;
+  const sleepDelta = getSeriesDelta(metricsSeries, "sleep_hours");
+  const stressDelta = getSeriesDelta(metricsSeries, "stress_level");
+  const energyDelta = getSeriesDelta(metricsSeries, "energy_level");
+
+  const hasNutritionData = latestCaloriesPlan != null && caloriesActual != null;
+  const adherenceLabel = hasNutritionData
+    ? Math.abs(calorieDeficitPercent ?? 0) <= 5
+      ? "Adhérence solide"
+      : Math.abs(calorieDeficitPercent ?? 0) > 10
+        ? "Adhérence compromise"
+        : "Adhérence marginale"
+    : "Données nutritionnelles incomplètes";
+
+  const metabolicEfficiency =
+    hasNutritionData && deltaMuscleMass != null
+      ? safeDivide(caloriesActual - latestCaloriesPlan, deltaMuscleMass)
+      : null;
+
+  const prScore =
+    deltaChargeMean != null && deltaFatMass != null
+      ? safeDivide(deltaChargeMean, deltaFatMass)
+      : null;
+
+  const recoveryRisk =
+    deltaChargeMean != null &&
+    deltaChargeMean > 0 &&
+    ((sleepDelta != null && sleepDelta < 0) ||
+      (energyDelta != null && energyDelta < 0) ||
+      (stressDelta != null && stressDelta > 0));
+
+  const performanceOutcome = () => {
+    if (!hasNutritionData) return "Indéterminée";
+    if (
+      calorieDeficitPercent != null &&
+      calorieDeficitPercent <= -20 &&
+      weightStable
+    )
+      return "Données invalides";
+    if (
+      prScore != null &&
+      prScore < 1 &&
+      deltaFatMass != null &&
+      deltaFatMass > 0
+    )
+      return "Inefficace";
+    if (recoveryRisk) return "À risque";
+    if (proteinPerKg != null && proteinPerKg < 1.8) return "Inefficace";
+    if (deltaChargeMean != null && deltaChargeMean > 0) return "Validée";
+    return "Indéterminée";
+  };
+
+  const analysisAction = () => {
+    if (!hasNutritionData) {
+      return "Corriger immédiate de la capture des calories réelles. Le coaching est suspendu jusqu'à fiabilisation des données nutritionnelles.";
+    }
+    if (
+      calorieDeficitPercent != null &&
+      calorieDeficitPercent <= -20 &&
+      weightStable
+    ) {
+      return "Données incohérentes : vérifier la saisie calorique ou mettre le coaching en pause. Le poids stable ne peut pas coexister avec un déficit réel > 20 %.";
+    }
+    if (recoveryRisk) {
+      return "Réduire immédiatement le volume d'entraînement. Le sommeil/fatigue se dégradent tandis que la charge augmente.";
+    }
+    if (proteinPerKg != null && proteinPerKg < 1.8) {
+      return "Augmenter les protéines à minimum 1.8 g/kg. Priorité sur la protéine, pas sur le cardio.";
+    }
+    if (
+      prScore != null &&
+      prScore < 1 &&
+      deltaFatMass != null &&
+      deltaFatMass > 0
+    ) {
+      return "Réviser la stratégie : la prise de poids est non fonctionnelle. Ajuster le nutritionnel avant d'augmenter le volume.";
+    }
+    if (deltaChargeMean != null && deltaChargeMean <= 0) {
+      return "Stabiliser le volume et reprendre la fiabilisation des données avant d'augmenter l'intensité.";
+    }
+    return "Maintenir la stratégie actuelle, en gardant la priorité sur la cohérence des calories et du suivi de la récupération.";
+  };
+
+  const analysisConclusion = () => {
+    const caloriesText =
+      caloriesActual != null ? `${Math.round(caloriesActual)} kcal` : "X kcal";
+    const proteinText =
+      latestProtein != null
+        ? `${Math.round(latestProtein)} g de protéines`
+        : "Y g de protéines";
+    const forceDeltaText =
+      deltaChargeMean != null ? `${deltaChargeMean.toFixed(1)} kg` : "Z";
+
+    if (!hasNutritionData) {
+      return `L'apport de ${caloriesText} avec ${proteinText} ne peut pas être validé. Données nutritionnelles réelles manquantes.`;
+    }
+
+    if (performanceOutcome() === "Inefficace") {
+      return `L'apport de ${caloriesText} avec ${proteinText} a produit ${forceDeltaText} de gain de charge moyenne. La stratégie est Inefficace.`;
+    }
+    if (performanceOutcome() === "À risque") {
+      return `L'apport de ${caloriesText} avec ${proteinText} montre une hausse de charge de ${forceDeltaText} dans un contexte de récupération dégradée. La stratégie est À risque.`;
+    }
+    if (performanceOutcome() === "Validée") {
+      return `L'apport de ${caloriesText} avec ${proteinText} a produit ${forceDeltaText} de gain de charge moyenne. La stratégie est Validée.`;
+    }
+    return `L'apport de ${caloriesText} avec ${proteinText} nécessite confirmation : l'issue reste Indéterminée.`;
+  };
 
   // Normaliser les données radar (0–100)
   const maxValues = {
@@ -319,7 +535,7 @@ export default function PerformanceDashboard({
       </div>
 
       {isEmpty ? (
-        <div className="bg-[#181818] rounded-xl p-16 text-center">
+        <div className="bg-[#181818] border-subtle rounded-xl p-16 text-center">
           <Dumbbell
             size={40}
             className="text-white/45 mx-auto mb-4 opacity-20"
@@ -380,8 +596,87 @@ export default function PerformanceDashboard({
             />
           </div>
 
+          <div className="bg-[#181818] border-subtle rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-white/40">
+                  Diagnostics automatisés
+                </p>
+                <h3 className="font-bold text-white text-sm mt-1">
+                  Analyse nutrition & performance
+                </h3>
+              </div>
+              <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] text-white/60">
+                {performanceOutcome()}
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">
+                  Synthèse du delta
+                </p>
+                <p className="text-sm text-white leading-snug">
+                  {adherenceLabel} ·{" "}
+                  {latestWeight != null
+                    ? `${formatSign(deltaWeight)} kg`
+                    : "Poids indisponible"}
+                </p>
+                <p className="text-[11px] text-white/45 mt-2">
+                  {latestBmr != null ? `BMR ${Math.round(latestBmr)} kcal` : ""}
+                  {latestBmr != null && latestMuscleMass != null ? " · " : ""}
+                  {latestMuscleMass != null
+                    ? `Muscle ${latestMuscleMass.toFixed(1)} kg`
+                    : ""}
+                  {(latestBmr != null || latestMuscleMass != null) &&
+                  latestFatMass != null
+                    ? " · "
+                    : ""}
+                  {latestFatMass != null
+                    ? `Graisse ${latestFatMass.toFixed(1)} kg`
+                    : ""}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">Conclusion</p>
+                <p className="text-sm text-white leading-snug">
+                  {analysisConclusion()}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">Action directe</p>
+                <p className="text-sm text-white leading-snug">
+                  {analysisAction()}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">PR Score</p>
+                <p className="text-sm text-white">
+                  {prScore != null ? prScore.toFixed(2) : "Non calculable"}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">Prot./kg</p>
+                <p className="text-sm text-white">
+                  {proteinPerKg != null
+                    ? `${proteinPerKg.toFixed(2)} g/kg`
+                    : "Indisponible"}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] p-3">
+                <p className="text-[11px] text-white/45 mb-2">Δ graisse</p>
+                <p className="text-sm text-white">
+                  {deltaFatMass != null
+                    ? `${formatSign(deltaFatMass)} kg`
+                    : "Indisponible"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* ── Volume / Reps / Sets Timeline ── */}
-          <div className="bg-[#181818] rounded-xl p-5">
+          <div className="bg-[#181818] border-subtle rounded-xl p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-white text-sm">
@@ -462,7 +757,7 @@ export default function PerformanceDashboard({
           {/* ── Radar + RPE ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Radar groupes musculaires */}
-            <div className="bg-[#181818] rounded-xl p-5">
+            <div className="bg-[#181818] border-subtle rounded-xl p-5">
               <h3 className="font-bold text-white text-sm mb-1">
                 Répartition musculaire
               </h3>
@@ -514,7 +809,7 @@ export default function PerformanceDashboard({
             </div>
 
             {/* RPE trend */}
-            <div className="bg-[#181818] rounded-xl p-5">
+            <div className="bg-[#181818] border-subtle rounded-xl p-5">
               <h3 className="font-bold text-white text-sm mb-1">
                 Intensité perçue (RPE)
               </h3>
@@ -592,7 +887,7 @@ export default function PerformanceDashboard({
           </div>
 
           {/* ── Volume par groupe musculaire (bar) ── */}
-          <div className="bg-[#181818] rounded-xl p-5">
+          <div className="bg-[#181818] border-subtle rounded-xl p-5">
             <h3 className="font-bold text-white text-sm mb-1">
               Volume par groupe musculaire
             </h3>
@@ -644,7 +939,7 @@ export default function PerformanceDashboard({
           </div>
 
           {/* ── Progression par exercice ── */}
-          <div className="bg-[#181818] rounded-xl p-5">
+          <div className="bg-[#181818] border-subtle rounded-xl p-5">
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
               <div>
                 <h3 className="font-bold text-white text-sm">

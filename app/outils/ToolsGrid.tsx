@@ -248,7 +248,7 @@ export default function ToolsGrid() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Rechercher (ex: Eau, Force, Diète...)"
-          className="w-full pl-11 pr-4 py-3 bg-[#0a0a0a] rounded-xl text-[14px] font-medium text-white placeholder:text-white/20 outline-none focus:ring-0 transition-all duration-200 h-[52px]"
+          className="w-full pl-9 pr-4 h-10 bg-[#0a0a0a] border-input rounded-xl text-[14px] font-medium text-white placeholder:text-white/25 outline-none focus:ring-0 transition-all duration-200"
         />
         {searchQuery && (
           <button

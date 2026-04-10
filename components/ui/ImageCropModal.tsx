@@ -1,18 +1,23 @@
-'use client'
+"use client";
 
-import { useState, useRef, useCallback } from 'react'
-import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
-import 'react-image-crop/dist/ReactCrop.css'
-import { X, Check, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
+import { useState, useRef, useCallback } from "react";
+import ReactCrop, {
+  type Crop,
+  type PixelCrop,
+  centerCrop,
+  makeAspectCrop,
+} from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { X, Check, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function centerSquareCrop(width: number, height: number): Crop {
   return centerCrop(
-    makeAspectCrop({ unit: '%', width: 80 }, 1, width, height),
+    makeAspectCrop({ unit: "%", width: 80 }, 1, width, height),
     width,
     height,
-  )
+  );
 }
 
 async function getCroppedBlob(
@@ -20,13 +25,13 @@ async function getCroppedBlob(
   crop: PixelCrop,
   outputSize = 512,
 ): Promise<Blob> {
-  const canvas = document.createElement('canvas')
-  canvas.width = outputSize
-  canvas.height = outputSize
-  const ctx = canvas.getContext('2d')!
+  const canvas = document.createElement("canvas");
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+  const ctx = canvas.getContext("2d")!;
 
-  const scaleX = image.naturalWidth / image.width
-  const scaleY = image.naturalHeight / image.height
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
 
   ctx.drawImage(
     image,
@@ -38,62 +43,73 @@ async function getCroppedBlob(
     0,
     outputSize,
     outputSize,
-  )
+  );
 
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob)
-      else reject(new Error('Canvas to blob failed'))
-    }, 'image/jpeg', 0.92)
-  })
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas to blob failed"));
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ImageCropModalProps {
-  file: File
-  onConfirm: (blob: Blob, filename: string) => void
-  onClose: () => void
+  file: File;
+  onConfirm: (blob: Blob, filename: string) => void;
+  onClose: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ImageCropModal({ file, onConfirm, onClose }: ImageCropModalProps) {
-  const [crop, setCrop] = useState<Crop>()
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
-  const [processing, setProcessing] = useState(false)
-  const imgRef = useRef<HTMLImageElement>(null)
-  const srcUrl = URL.createObjectURL(file)
+export default function ImageCropModal({
+  file,
+  onConfirm,
+  onClose,
+}: ImageCropModalProps) {
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [processing, setProcessing] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const srcUrl = URL.createObjectURL(file);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { width, height } = e.currentTarget
-    setCrop(centerSquareCrop(width, height))
+    const { width, height } = e.currentTarget;
+    setCrop(centerSquareCrop(width, height));
   }
 
   const handleConfirm = useCallback(async () => {
-    if (!completedCrop || !imgRef.current) return
-    setProcessing(true)
+    if (!completedCrop || !imgRef.current) return;
+    setProcessing(true);
     try {
-      const blob = await getCroppedBlob(imgRef.current, completedCrop)
-      const ext = 'jpg'
-      onConfirm(blob, `identite-visuelle.${ext}`)
+      const blob = await getCroppedBlob(imgRef.current, completedCrop);
+      const ext = "jpg";
+      onConfirm(blob, `identite-visuelle.${ext}`);
     } catch (err) {
-      console.error('Crop failed:', err)
+      console.error("Crop failed:", err);
     } finally {
-      setProcessing(false)
-      URL.revokeObjectURL(srcUrl)
+      setProcessing(false);
+      URL.revokeObjectURL(srcUrl);
     }
-  }, [completedCrop, onConfirm, srcUrl])
+  }, [completedCrop, onConfirm, srcUrl]);
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-[#181818] rounded-2xl w-full max-w-lg flex flex-col overflow-hidden">
-
+      <div className="bg-[#181818] border-modal rounded-2xl w-full max-w-lg flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0">
           <div>
-            <h3 className="text-sm font-bold text-white">Recadrer l&apos;image</h3>
-            <p className="text-[11px] text-white/35 mt-0.5">Ajustez le cadre carré — faites glisser ou redimensionner</p>
+            <h3 className="text-sm font-bold text-white">
+              Recadrer l&apos;image
+            </h3>
+            <p className="text-[11px] text-white/35 mt-0.5">
+              Ajustez le cadre carré — faites glisser ou redimensionner
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -109,8 +125,8 @@ export default function ImageCropModal({ file, onConfirm, onClose }: ImageCropMo
         <div className="flex items-center justify-center bg-[#0a0a0a] p-4 max-h-[60vh] overflow-auto">
           <ReactCrop
             crop={crop}
-            onChange={c => setCrop(c)}
-            onComplete={c => setCompletedCrop(c)}
+            onChange={(c) => setCrop(c)}
+            onComplete={(c) => setCompletedCrop(c)}
             aspect={1}
             circularCrop={false}
             minWidth={50}
@@ -123,7 +139,7 @@ export default function ImageCropModal({ file, onConfirm, onClose }: ImageCropMo
               src={srcUrl}
               alt="Recadrage"
               onLoad={onImageLoad}
-              style={{ maxHeight: '55vh', maxWidth: '100%', display: 'block' }}
+              style={{ maxHeight: "55vh", maxWidth: "100%", display: "block" }}
             />
           </ReactCrop>
         </div>
@@ -148,16 +164,16 @@ export default function ImageCropModal({ file, onConfirm, onClose }: ImageCropMo
               disabled={!completedCrop || processing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#1f8a65] hover:bg-[#217356] disabled:opacity-40 transition-colors"
             >
-              {processing
-                ? <Loader2 size={13} className="animate-spin" />
-                : <Check size={13} />
-              }
-              {processing ? 'Traitement…' : 'Confirmer'}
+              {processing ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Check size={13} />
+              )}
+              {processing ? "Traitement…" : "Confirmer"}
             </button>
           </div>
         </div>
-
       </div>
     </div>
-  )
+  );
 }

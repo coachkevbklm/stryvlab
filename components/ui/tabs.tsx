@@ -7,6 +7,19 @@ export interface TabsProps extends React.ComponentProps<"div"> {
   className?: string;
 }
 
+function cloneWithProps(
+  children: React.ReactNode,
+  extraProps: Record<string, any>,
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (React.isValidElement(child)) {
+      const clonedChildren = cloneWithProps(child.props.children, extraProps);
+      return React.cloneElement(child, extraProps, clonedChildren);
+    }
+    return child;
+  });
+}
+
 export function Tabs({
   value,
   onValueChange,
@@ -16,14 +29,9 @@ export function Tabs({
 }: TabsProps) {
   return (
     <div className={cn("w-full", className)} {...props}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
-            tabValue: value,
-            onTabChange: onValueChange,
-          });
-        }
-        return child;
+      {cloneWithProps(children, {
+        tabValue: value,
+        onTabChange: onValueChange,
       })}
     </div>
   );
@@ -32,11 +40,27 @@ export function Tabs({
 export function TabsList({
   children,
   className,
+  tabValue,
+  onTabChange,
 }: {
   children: React.ReactNode;
   className?: string;
+  tabValue?: string;
+  onTabChange?: (v: string) => void;
 }) {
-  return <div className={cn("flex gap-2", className)}>{children}</div>;
+  return (
+    <div className={cn("flex gap-2", className)}>
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            tabValue,
+            onTabChange,
+          } as any);
+        }
+        return child;
+      })}
+    </div>
+  );
 }
 
 export function TabsTrigger({

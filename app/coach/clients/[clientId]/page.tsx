@@ -1012,9 +1012,7 @@ export default function ClientDetailPage() {
           )}
 
           {tab === "metriques" && (
-            <div className="bg-[#181818] border-subtle rounded-xl p-6">
-              <MetricsSection clientId={clientId} />
-            </div>
+            <MetricsSection clientId={clientId} clientGender={client?.gender} />
           )}
 
           {tab === "historique" && <SessionHistory clientId={clientId} />}

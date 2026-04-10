@@ -216,13 +216,13 @@ export default function ProgramTemplatesPage() {
             <div className="flex-1 relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher un template…"
-                className="w-full pl-9 pr-4 py-2.5 bg-[#0a0a0a] border-input rounded-xl text-sm text-white outline-none placeholder:text-white/20 focus:ring-2 focus:ring-[#1f8a65]/40"
+                className="w-full pl-9 pr-4 h-10 bg-[#0a0a0a] border-input rounded-xl text-sm text-white outline-none placeholder:text-white/25 focus:ring-2 focus:ring-[#1f8a65]/40"
               />
             </div>
             <button

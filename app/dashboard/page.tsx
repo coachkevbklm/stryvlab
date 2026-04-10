@@ -12,12 +12,10 @@ import {
   UserPlus,
   ClipboardList,
   AlertTriangle,
-  CalendarCheck2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
-import KanbanBoard, { KanbanTask } from "@/components/ui/KanbanBoard";
-import AgendaCalendar, { AgendaEvent } from "@/components/ui/AgendaCalendar";
+import { Kanban, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -92,55 +90,6 @@ export default function DashboardPage() {
 
   useSetTopBar(topBarLeft);
 
-  // Tâches Kanban démo (à remplacer par fetch API)
-  const demoTasks: KanbanTask[] = [
-    {
-      id: "1",
-      title: "Valider le bilan de Paul",
-      status: "todo",
-      priority: "high",
-      dueDate: "2026-04-08",
-    },
-    {
-      id: "2",
-      title: "Relancer Julie (inactif)",
-      status: "in_progress",
-      priority: "medium",
-      dueDate: "2026-04-09",
-    },
-    {
-      id: "3",
-      title: "Programmer séance Luc",
-      status: "todo",
-      priority: "low",
-    },
-    { id: "4", title: "Analyser progression Emma", status: "done" },
-  ];
-
-  // Événements agenda démo (à remplacer par fetch API)
-  const demoEvents: AgendaEvent[] = [
-    {
-      id: "e1",
-      title: "Séance Paul",
-      date: "2026-04-08",
-      time: "10:00",
-      priority: "high",
-    },
-    {
-      id: "e2",
-      title: "Bilan Julie",
-      date: "2026-04-09",
-      time: "14:00",
-      priority: "medium",
-    },
-    {
-      id: "e3",
-      title: "Appel découverte",
-      date: "2026-04-10",
-      time: "09:00",
-      priority: "low",
-    },
-  ];
 
   const QUICK_ACTIONS = [
     {
@@ -299,26 +248,36 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Alertes & tâches (Kanban) + Agenda */}
+        {/* Organisation shortcuts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-[#181818] border-subtle rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={18} className="text-yellow-400" />
-              <span className="text-white/70 text-xs font-bold uppercase tracking-wider">
-                Tâches & Priorités
+          <button
+            onClick={() => router.push("/coach/organisation")}
+            className="bg-[#181818] border-subtle rounded-2xl p-5 text-left group hover:bg-white/[0.04] transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
+                <Kanban size={16} className="text-white/50" />
+              </div>
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/50">
+                Kanban
               </span>
             </div>
-            <KanbanBoard tasks={demoTasks} />
-          </div>
-          <div className="bg-[#181818] border-subtle rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <CalendarCheck2 size={18} className="text-[#1f8a65]" />
-              <span className="text-white/70 text-xs font-bold uppercase tracking-wider">
+            <p className="text-[13px] text-white/30">Gérer vos tâches et projets</p>
+          </button>
+          <button
+            onClick={() => router.push("/coach/organisation")}
+            className="bg-[#181818] border-subtle rounded-2xl p-5 text-left group hover:bg-white/[0.04] transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f8a65]/10 group-hover:bg-[#1f8a65]/20 transition-colors">
+                <Calendar size={16} className="text-[#1f8a65]" />
+              </div>
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/50">
                 Agenda
               </span>
             </div>
-            <AgendaCalendar events={demoEvents} />
-          </div>
+            <p className="text-[13px] text-white/30">Consulter vos événements</p>
+          </button>
         </div>
 
         {/* Actions rapides */}

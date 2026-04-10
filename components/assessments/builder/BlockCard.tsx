@@ -149,19 +149,20 @@ export default function BlockCard({
           <span className="text-[9px] text-white/40 uppercase tracking-[0.12em] font-bold mr-auto">
             Champs
           </span>
-          <button
-            onClick={showAll}
-            className="text-[9px] font-bold text-white/60 hover:text-[#1f8a65] transition-colors"
-          >
-            Tout
-          </button>
-          <span className="text-white/20">·</span>
-          <button
-            onClick={hideAll}
-            className="text-[9px] font-bold text-white/60 hover:text-white transition-colors"
-          >
-            Rien
-          </button>
+          <div className="flex items-center gap-0.5 bg-[#181818] border-subtle rounded-xl p-1">
+            <button
+              onClick={showAll}
+              className="flex items-center justify-center w-8 h-8 rounded-lg transition-all text-[9px] font-bold text-white/30 hover:bg-white/[0.08] hover:text-white"
+            >
+              Tout
+            </button>
+            <button
+              onClick={hideAll}
+              className="flex items-center justify-center w-8 h-8 rounded-lg transition-all text-[9px] font-bold text-white/30 hover:bg-white/[0.08] hover:text-white"
+            >
+              Rien
+            </button>
+          </div>
         </div>
       )}
 

@@ -281,7 +281,7 @@ function TopBar({ left: sidebarLeft }: { left: number }) {
 
   return (
     <header
-      className="fixed top-4 right-4 h-16 z-40 bg-[#181818] border-subtle rounded-2xl px-5 flex items-center justify-between gap-4 transition-all duration-300"
+      className="fixed top-4 right-4 h-16 z-50 pointer-events-auto bg-[#181818] border-subtle rounded-2xl px-5 flex items-center justify-between gap-4 transition-all duration-300"
       style={{ left: sidebarLeft }}
     >
       <div className="flex-1 min-w-0">

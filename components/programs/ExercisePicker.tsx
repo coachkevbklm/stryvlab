@@ -1,176 +1,207 @@
-'use client'
+"use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react'
-import Image from 'next/image'
-import { Search, X, SlidersHorizontal, Check, ChevronDown } from 'lucide-react'
-import exerciseCatalog from '@/data/exercise-catalog.json'
+import { useState, useMemo, useRef, useEffect } from "react";
+import Image from "next/image";
+import { Search, X, SlidersHorizontal, Check, ChevronDown } from "lucide-react";
+import exerciseCatalog from "@/data/exercise-catalog.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface CatalogEntry {
-  id: string
-  name: string
-  slug: string
-  gifUrl: string
-  muscleGroup: string
-  exerciseType: 'exercise' | 'pedagogique'
-  pattern: string[]
-  movementPattern: string | null
-  equipment: string[]
-  isCompound: boolean
-  muscles: string[]
+  id: string;
+  name: string;
+  slug: string;
+  gifUrl: string;
+  muscleGroup: string;
+  exerciseType: "exercise" | "pedagogique";
+  pattern: string[];
+  movementPattern: string | null;
+  equipment: string[];
+  isCompound: boolean;
+  muscles: string[];
 }
 
 interface Props {
-  onSelect: (exercise: { name: string; gifUrl: string; movementPattern: string | null; equipment: string[] }) => void
-  onClose: () => void
+  onSelect: (exercise: {
+    name: string;
+    gifUrl: string;
+    movementPattern: string | null;
+    equipment: string[];
+  }) => void;
+  onClose: () => void;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const MUSCLE_LABELS: Record<string, string> = {
-  abdos: 'Abdos',
-  biceps: 'Biceps',
-  dos: 'Dos',
-  epaules: 'Épaules',
-  fessiers: 'Fessiers',
-  'ischio-jambiers': 'Ischio-jambiers',
-  mollets: 'Mollets',
-  pectoraux: 'Pectoraux',
-  quadriceps: 'Quadriceps',
-  triceps: 'Triceps',
-}
+  abdos: "Abdos",
+  biceps: "Biceps",
+  dos: "Dos",
+  epaules: "Épaules",
+  fessiers: "Fessiers",
+  "ischio-jambiers": "Ischio-jambiers",
+  mollets: "Mollets",
+  pectoraux: "Pectoraux",
+  quadriceps: "Quadriceps",
+  triceps: "Triceps",
+};
 
 const PATTERN_LABELS: Record<string, string> = {
-  push: 'Push',
-  pull: 'Pull',
-  legs: 'Jambes',
-  hinge: 'Charnière (Hinge)',
-  carry: 'Porté (Carry)',
-  core: 'Gainage (Core)',
-}
+  push: "Push",
+  pull: "Pull",
+  legs: "Jambes",
+  hinge: "Charnière (Hinge)",
+  carry: "Porté (Carry)",
+  core: "Gainage (Core)",
+};
 
 const EQUIPMENT_LABELS: Record<string, string> = {
-  barbell: 'Barre',
-  dumbbell: 'Haltères',
-  machine: 'Machine',
-  cable: 'Poulie',
-  bodyweight: 'Poids du corps',
-  kettlebell: 'Kettlebell',
-  band: 'Élastique',
-  smith: 'Smith Machine',
-  landmine: 'Landmine',
-  trx: 'Sangles/TRX',
-  medicine_ball: 'Médecine-ball',
-  swiss_ball: 'Swiss Ball',
-  trap_bar: 'Trap Bar',
-  ez_bar: 'Barre EZ',
-  rings: 'Anneaux',
-  sled: 'Traîneau',
-  sandbag: 'Sandbag',
-}
+  barbell: "Barre",
+  dumbbell: "Haltères",
+  machine: "Machine",
+  cable: "Poulie",
+  bodyweight: "Poids du corps",
+  kettlebell: "Kettlebell",
+  band: "Élastique",
+  smith: "Smith Machine",
+  landmine: "Landmine",
+  trx: "Sangles/TRX",
+  medicine_ball: "Médecine-ball",
+  swiss_ball: "Swiss Ball",
+  trap_bar: "Trap Bar",
+  ez_bar: "Barre EZ",
+  rings: "Anneaux",
+  sled: "Traîneau",
+  sandbag: "Sandbag",
+};
 
-const catalog = exerciseCatalog as CatalogEntry[]
+const catalog = exerciseCatalog as CatalogEntry[];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ExercisePicker({ onSelect, onClose }: Props) {
-  const [search, setSearch] = useState('')
-  const [filterMuscle, setFilterMuscle] = useState<string>('')
-  const [filterPattern, setFilterPattern] = useState<string>('')
-  const [filterEquipment, setFilterEquipment] = useState<string>('')
-  const [filterCompound, setFilterCompound] = useState<'all' | 'compound' | 'isolation'>('all')
-  const [filterType, setFilterType] = useState<'all' | 'exercise' | 'pedagogique'>('all')
-  const [showFilters, setShowFilters] = useState(false)
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [search, setSearch] = useState("");
+  const [filterMuscle, setFilterMuscle] = useState<string>("");
+  const [filterPattern, setFilterPattern] = useState<string>("");
+  const [filterEquipment, setFilterEquipment] = useState<string>("");
+  const [filterCompound, setFilterCompound] = useState<
+    "all" | "compound" | "isolation"
+  >("all");
+  const [filterType, setFilterType] = useState<
+    "all" | "exercise" | "pedagogique"
+  >("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const searchRef = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    searchRef.current?.focus()
-  }, [])
+    searchRef.current?.focus();
+  }, []);
 
   // All unique values for filter dropdowns
   const allPatterns = useMemo(() => {
-    const s = new Set<string>()
-    catalog.forEach(e => e.pattern.forEach(p => s.add(p)))
-    return Array.from(s).sort()
-  }, [])
+    const s = new Set<string>();
+    catalog.forEach((e) => e.pattern.forEach((p) => s.add(p)));
+    return Array.from(s).sort();
+  }, []);
 
   const allEquipment = useMemo(() => {
-    const s = new Set<string>()
-    catalog.forEach(e => e.equipment.forEach(eq => s.add(eq)))
-    return Array.from(s).sort()
-  }, [])
+    const s = new Set<string>();
+    catalog.forEach((e) => e.equipment.forEach((eq) => s.add(eq)));
+    return Array.from(s).sort();
+  }, []);
 
   const filtered = useMemo(() => {
-    let results = catalog
+    let results = catalog;
 
     if (search.trim()) {
-      const q = search.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      results = results.filter(e => {
-        const name = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        const slug = e.slug.replace(/-/g, ' ')
-        return name.includes(q) || slug.includes(q)
-      })
+      const q = search
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      results = results.filter((e) => {
+        const name = e.name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        const slug = e.slug.replace(/-/g, " ");
+        return name.includes(q) || slug.includes(q);
+      });
     }
 
     if (filterMuscle) {
-      results = results.filter(e => e.muscleGroup === filterMuscle)
+      results = results.filter((e) => e.muscleGroup === filterMuscle);
     }
 
     if (filterPattern) {
-      results = results.filter(e => e.pattern.includes(filterPattern))
+      results = results.filter((e) => e.pattern.includes(filterPattern));
     }
 
     if (filterEquipment) {
-      results = results.filter(e => e.equipment.includes(filterEquipment))
+      results = results.filter((e) => e.equipment.includes(filterEquipment));
     }
 
-    if (filterCompound === 'compound') {
-      results = results.filter(e => e.isCompound)
-    } else if (filterCompound === 'isolation') {
-      results = results.filter(e => !e.isCompound)
+    if (filterCompound === "compound") {
+      results = results.filter((e) => e.isCompound);
+    } else if (filterCompound === "isolation") {
+      results = results.filter((e) => !e.isCompound);
     }
 
     // Par défaut ('all') = exercices uniquement. 'pedagogique' = démos uniquement.
-    if (filterType === 'pedagogique') {
-      results = results.filter(e => e.exerciseType === 'pedagogique')
+    if (filterType === "pedagogique") {
+      results = results.filter((e) => e.exerciseType === "pedagogique");
     } else {
-      results = results.filter(e => e.exerciseType === 'exercise')
+      results = results.filter((e) => e.exerciseType === "exercise");
     }
 
-    return results
-  }, [search, filterMuscle, filterPattern, filterEquipment, filterCompound, filterType])
+    return results;
+  }, [
+    search,
+    filterMuscle,
+    filterPattern,
+    filterEquipment,
+    filterCompound,
+    filterType,
+  ]);
 
-  const activeFiltersCount = [filterMuscle, filterPattern, filterEquipment, filterCompound !== 'all', filterType !== 'all'].filter(Boolean).length
+  const activeFiltersCount = [
+    filterMuscle,
+    filterPattern,
+    filterEquipment,
+    filterCompound !== "all",
+    filterType !== "all",
+  ].filter(Boolean).length;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
         className="bg-[#181818] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-3xl flex flex-col"
-        style={{ maxHeight: '92vh' }}
-        onClick={e => e.stopPropagation()}
+        style={{ maxHeight: "92vh" }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/20 shrink-0">
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+            />
             <input
               ref={searchRef}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un exercice…"
-              className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#0a0a0a] text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40 placeholder:text-white/30"
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#0a0a0a] border-input text-sm text-white outline-none focus:ring-2 focus:ring-[#1f8a65]/40 placeholder:text-white/25 h-10"
             />
           </div>
           <button
             type="button"
-            onClick={() => setShowFilters(f => !f)}
+            onClick={() => setShowFilters((f) => !f)}
             className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
               showFilters || activeFiltersCount > 0
-                ? 'bg-[#1f8a65] text-white'
-                : 'bg-white/[0.03] text-white/70 hover:text-white'
+                ? "bg-[#1f8a65] text-white"
+                : "bg-white/[0.03] text-white/70 hover:text-white"
             }`}
           >
             <SlidersHorizontal size={13} />
@@ -196,97 +227,131 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {/* Muscle group */}
               <div>
-                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">Muscle</label>
+                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">
+                  Muscle
+                </label>
                 <div className="relative">
                   <select
                     value={filterMuscle}
-                    onChange={e => setFilterMuscle(e.target.value)}
+                    onChange={(e) => setFilterMuscle(e.target.value)}
                     className="w-full appearance-none pl-2 pr-6 py-1.5 bg-[#0a0a0a] rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                   >
                     <option value="">Tous</option>
                     {Object.entries(MUSCLE_LABELS).map(([v, l]) => (
-                      <option key={v} value={v}>{l}</option>
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown
+                    size={10}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+                  />
                 </div>
               </div>
 
               {/* Pattern */}
               <div>
-                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">Mouvement</label>
+                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">
+                  Mouvement
+                </label>
                 <div className="relative">
                   <select
                     value={filterPattern}
-                    onChange={e => setFilterPattern(e.target.value)}
+                    onChange={(e) => setFilterPattern(e.target.value)}
                     className="w-full appearance-none pl-2 pr-6 py-1.5 bg-[#0a0a0a] rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                   >
                     <option value="">Tous</option>
-                    {allPatterns.map(p => (
-                      <option key={p} value={p}>{PATTERN_LABELS[p] ?? p}</option>
+                    {allPatterns.map((p) => (
+                      <option key={p} value={p}>
+                        {PATTERN_LABELS[p] ?? p}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown
+                    size={10}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+                  />
                 </div>
               </div>
 
               {/* Equipment */}
               <div>
-                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">Matériel</label>
+                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">
+                  Matériel
+                </label>
                 <div className="relative">
                   <select
                     value={filterEquipment}
-                    onChange={e => setFilterEquipment(e.target.value)}
+                    onChange={(e) => setFilterEquipment(e.target.value)}
                     className="w-full appearance-none pl-2 pr-6 py-1.5 bg-[#0a0a0a] rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                   >
                     <option value="">Tous</option>
-                    {allEquipment.map(eq => (
-                      <option key={eq} value={eq}>{EQUIPMENT_LABELS[eq] ?? eq}</option>
+                    {allEquipment.map((eq) => (
+                      <option key={eq} value={eq}>
+                        {EQUIPMENT_LABELS[eq] ?? eq}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown
+                    size={10}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+                  />
                 </div>
               </div>
 
               {/* Compound / Isolation */}
               <div>
-                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">Articulations</label>
+                <label className="text-[9px] font-bold text-white/60 uppercase tracking-wider block mb-1">
+                  Articulations
+                </label>
                 <div className="relative">
                   <select
                     value={filterCompound}
-                    onChange={e => setFilterCompound(e.target.value as 'all' | 'compound' | 'isolation')}
+                    onChange={(e) =>
+                      setFilterCompound(
+                        e.target.value as "all" | "compound" | "isolation",
+                      )
+                    }
                     className="w-full appearance-none pl-2 pr-6 py-1.5 bg-[#0a0a0a] rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
                   >
                     <option value="all">Tous</option>
                     <option value="compound">Polyarticulaire</option>
                     <option value="isolation">Isolation</option>
                   </select>
-<ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <ChevronDown
+                    size={10}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Filtre type pédagogique — ligne séparée */}
             <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/20 flex-wrap">
-              <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider shrink-0">Contenu</span>
-              {([
-                { value: 'all', label: 'Exercices' },
-                { value: 'pedagogique', label: '🎓 Démos pédagogiques' },
-              ] as const).map(({ value, label }) => (
+              <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider shrink-0">
+                Contenu
+              </span>
+              {(
+                [
+                  { value: "all", label: "Exercices" },
+                  { value: "pedagogique", label: "🎓 Démos pédagogiques" },
+                ] as const
+              ).map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setFilterType(value)}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
                     filterType === value
-                      ? 'bg-[#1f8a65] text-white'
-                      : 'bg-[#0a0a0a] text-white/70 hover:text-white'
+                      ? "bg-[#1f8a65] text-white"
+                      : "bg-[#0a0a0a] text-white/70 hover:text-white"
                   }`}
                 >
                   {label}
                 </button>
               ))}
-              {filterType === 'pedagogique' && (
+              {filterType === "pedagogique" && (
                 <span className="text-[9px] text-white/70 bg-white/[0.04] px-2 py-0.5 rounded-full font-medium">
                   Positions, vues anatomiques, démonstrations techniques
                 </span>
@@ -299,11 +364,11 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                 <button
                   key={v}
                   type="button"
-                  onClick={() => setFilterMuscle(filterMuscle === v ? '' : v)}
+                  onClick={() => setFilterMuscle(filterMuscle === v ? "" : v)}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
                     filterMuscle === v
-                      ? 'bg-[#1f8a65] text-white'
-                      : 'bg-[#0a0a0a] text-white/60 hover:text-white'
+                      ? "bg-[#1f8a65] text-white"
+                      : "bg-[#0a0a0a] text-white/60 hover:text-white"
                   }`}
                 >
                   {l}
@@ -312,7 +377,13 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
               {activeFiltersCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => { setFilterMuscle(''); setFilterPattern(''); setFilterEquipment(''); setFilterCompound('all'); setFilterType('all') }}
+                  onClick={() => {
+                    setFilterMuscle("");
+                    setFilterPattern("");
+                    setFilterEquipment("");
+                    setFilterCompound("all");
+                    setFilterType("all");
+                  }}
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/[0.03] text-white/70 hover:bg-white/[0.06] transition-colors"
                 >
                   Réinitialiser
@@ -325,8 +396,8 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
         {/* Results count */}
         <div className="px-4 py-2 shrink-0">
           <p className="text-[10px] text-white/70 font-medium">
-            {filtered.length} exercice{filtered.length !== 1 ? 's' : ''}
-            {(search || activeFiltersCount > 0) ? ' trouvés' : ' disponibles'}
+            {filtered.length} exercice{filtered.length !== 1 ? "s" : ""}
+            {search || activeFiltersCount > 0 ? " trouvés" : " disponibles"}
           </p>
         </div>
 
@@ -336,15 +407,24 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
             <div className="flex flex-col items-center justify-center py-16 text-white/60 gap-2">
               <Search size={28} className="opacity-30" />
               <p className="text-sm">Aucun exercice trouvé</p>
-              <p className="text-xs opacity-60">Modifie ta recherche ou tes filtres</p>
+              <p className="text-xs opacity-60">
+                Modifie ta recherche ou tes filtres
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {filtered.map(exercise => (
+              {filtered.map((exercise) => (
                 <button
                   key={exercise.id}
                   type="button"
-                  onClick={() => onSelect({ name: exercise.name, gifUrl: exercise.gifUrl, movementPattern: exercise.movementPattern ?? null, equipment: exercise.equipment ?? [] })}
+                  onClick={() =>
+                    onSelect({
+                      name: exercise.name,
+                      gifUrl: exercise.gifUrl,
+                      movementPattern: exercise.movementPattern ?? null,
+                      equipment: exercise.equipment ?? [],
+                    })
+                  }
                   onMouseEnter={() => setHoveredId(exercise.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   className="group relative flex flex-col bg-[#0a0a0a] rounded-2xl overflow-hidden hover:bg-white/[0.04] active:scale-[0.98] transition-all text-left"
@@ -384,14 +464,15 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                       {exercise.name}
                     </p>
                     <div className="flex flex-wrap gap-1">
-                      {exercise.exerciseType === 'pedagogique' ? (
+                      {exercise.exerciseType === "pedagogique" ? (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-white/80">
                           🎓 Pédagogique
                         </span>
                       ) : (
                         <>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1f8a65]/10 text-[#1f8a65]">
-                            {MUSCLE_LABELS[exercise.muscleGroup] ?? exercise.muscleGroup}
+                            {MUSCLE_LABELS[exercise.muscleGroup] ??
+                              exercise.muscleGroup}
                           </span>
                           {exercise.isCompound ? (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-white/80">
@@ -402,8 +483,11 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                               Iso
                             </span>
                           )}
-                          {exercise.pattern.slice(0, 1).map(p => (
-                            <span key={p} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#0a0a0a] text-white/70">
+                          {exercise.pattern.slice(0, 1).map((p) => (
+                            <span
+                              key={p}
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#0a0a0a] text-white/70"
+                            >
                               {PATTERN_LABELS[p] ?? p}
                             </span>
                           ))}
@@ -418,5 +502,5 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }
