@@ -1,4 +1,5 @@
-import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import { createBrowserClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export function createClient() {
   return createBrowserClient(
@@ -7,6 +8,7 @@ export function createClient() {
   );
 }
 
+// Service role client — bypasses RLS, uses supabase-js directly (no cookie handling needed)
 export function createServiceClient(url: string, key: string) {
-  return createServerClient(url, key);
+  return createSupabaseClient(url, key);
 }
