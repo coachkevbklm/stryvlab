@@ -1,5 +1,6 @@
 ## 2026-04-12
 
+FEATURE: POST /api/clients/[clientId]/invite — route API pour envoyer l'invitation email au client (password setup)
 FEATURE: sendInvitationEmail — function mailer pour invitation client à définir son mot de passe (Supabase recovery link)
 FIX: Client access — remplace magic link OTP (fragile, usage unique) par signInWithPassword avec mot de passe temporaire généré côté serveur
 CHORE: Supprime app/client/auth/confirm page (plus nécessaire — session créée côté serveur)
