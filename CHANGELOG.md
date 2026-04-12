@@ -1,3 +1,8 @@
+## 2026-04-12
+
+FEATURE: Add HeroSummary component for coach dashboard — greeting, narrative alerts, KPI command bar
+FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coach endpoint
+
 ## 2026-04-13
 
 FEATURE: Client invitation — flux email avec définition de mot de passe (remplace magic link OTP fragile)
