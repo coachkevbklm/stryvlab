@@ -1,5 +1,8 @@
 ## 2026-04-12
 
+FEATURE: Add /client/set-password page — PKCE code exchange + updateUser flow for first-time password setup
+FIX: middleware — exclude /client/set-password and /client/acces-suspendu from client auth guard
+
 FEATURE: POST /api/clients/[clientId]/invite — route API pour envoyer l'invitation email au client (password setup)
 FEATURE: sendInvitationEmail — function mailer pour invitation client à définir son mot de passe (Supabase recovery link)
 FIX: Client access — remplace magic link OTP (fragile, usage unique) par signInWithPassword avec mot de passe temporaire généré côté serveur

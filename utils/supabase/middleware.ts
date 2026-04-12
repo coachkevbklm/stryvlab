@@ -50,7 +50,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/client') &&
     !pathname.startsWith('/client/login') &&
     !pathname.startsWith('/client/auth') &&
-    !pathname.startsWith('/client/access')
+    !pathname.startsWith('/client/access') &&
+    !pathname.startsWith('/client/set-password') &&
+    !pathname.startsWith('/client/acces-suspendu')
 
   const isClientLogin = pathname.startsWith('/client/login')
 
