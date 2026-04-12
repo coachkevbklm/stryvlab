@@ -55,6 +55,7 @@ interface Client {
   gender?: string;
   goal?: string;
   notes?: string;
+  status?: string;
   training_goal?: string | null;
   fitness_level?: string | null;
   sport_practice?: string | null;
@@ -985,7 +986,7 @@ export default function ClientDetailPage() {
               </div>
               <ClientAccessToken
                 clientId={clientId}
-                clientStatus="inactive"
+                clientStatus={client?.status ?? "inactive"}
                 clientEmail={client?.email ?? null}
               />
             </div>
