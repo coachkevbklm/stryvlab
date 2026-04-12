@@ -1,5 +1,7 @@
 ## 2026-04-12
 
+FEATURE: Add POST /api/cron/expire-subscriptions — nightly cron to expire subscriptions and deactivate clients
+FEATURE: Add vercel.json — configure Vercel Cron for subscription expiry (0 0 * * * UTC)
 FEATURE: Add DELETE /api/clients/[clientId]/access — revoke client access (status inactive + token revoked)
 FEATURE: Add /client/acces-suspendu page — suspended access screen (DS v2.0)
 FEATURE: Middleware status check — redirect inactive clients to /client/acces-suspendu
