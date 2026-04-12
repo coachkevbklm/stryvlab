@@ -70,3 +70,110 @@ export async function PATCH(
 
   return NextResponse.json({ client: data })
 }
+
+// DELETE /api/clients/[clientId]?mode=archive|delete
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { clientId: string } }
+) {
+  const { searchParams } = new URL(req.url)
+  const mode = searchParams.get('mode')
+
+  if (mode !== 'archive' && mode !== 'delete') {
+    return NextResponse.json({ error: 'Paramètre mode invalide (archive|delete)' }, { status: 400 })
+  }
+
+  const supabase = createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
+  const service = serviceClient()
+
+  const { data: clientRow, error: fetchError } = await service
+    .from('coach_clients')
+    .select('id, user_id')
+    .eq('id', params.clientId)
+    .eq('coach_id', user.id)
+    .single()
+
+  if (fetchError || !clientRow) {
+    return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
+  }
+
+  if (mode === 'archive') {
+    await service
+      .from('client_access_tokens')
+      .update({ revoked: true })
+      .eq('client_id', params.clientId)
+
+    const { error } = await service
+      .from('coach_clients')
+      .update({ status: 'archived' })
+      .eq('id', params.clientId)
+
+    if (error) {
+      console.error('DELETE archive:', error)
+      return NextResponse.json({ error: 'Archivage impossible' }, { status: 500 })
+    }
+
+    return NextResponse.json({ mode: 'archive', clientId: params.clientId })
+  }
+
+  // Hard delete
+  const { data: submissions } = await service
+    .from('assessment_submissions')
+    .select('id')
+    .eq('client_id', params.clientId)
+
+  if (submissions && submissions.length > 0) {
+    const submissionIds = submissions.map((s: { id: string }) => s.id)
+    const { error: responsesError } = await service
+      .from('assessment_responses')
+      .delete()
+      .in('submission_id', submissionIds)
+    if (responsesError) {
+      console.error('DELETE responses:', responsesError)
+      return NextResponse.json({ error: 'Suppression réponses impossible' }, { status: 500 })
+    }
+  }
+
+  const clientScopedTables = [
+    'assessment_submissions',
+    'client_access_tokens',
+    'client_subscriptions',
+    'metric_annotations',
+  ]
+
+  for (const table of clientScopedTables) {
+    const { error } = await service
+      .from(table)
+      .delete()
+      .eq('client_id', params.clientId)
+    if (error) {
+      console.error(`DELETE ${table}:`, error)
+      return NextResponse.json({ error: `Suppression ${table} impossible` }, { status: 500 })
+    }
+  }
+
+  const { error: clientDeleteError } = await service
+    .from('coach_clients')
+    .delete()
+    .eq('id', params.clientId)
+
+  if (clientDeleteError) {
+    console.error('DELETE coach_clients:', clientDeleteError)
+    return NextResponse.json({ error: 'Suppression client impossible' }, { status: 500 })
+  }
+
+  const authUserId = (clientRow as Record<string, unknown>).user_id as string | null | undefined
+  if (authUserId) {
+    const { error: authDeleteError } = await service.auth.admin.deleteUser(authUserId)
+    if (authDeleteError) {
+      console.error('DELETE auth user:', authDeleteError)
+    }
+  }
+
+  return NextResponse.json({ mode: 'delete', clientId: params.clientId })
+}
