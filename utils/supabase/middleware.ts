@@ -67,6 +67,31 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Vérification du statut client (accès suspendu)
+  if (isClientProtected && user) {
+    const serviceSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() { return [] },
+          setAll() {},
+        },
+      }
+    )
+    const { data: clientRecord } = await serviceSupabase
+      .from('coach_clients')
+      .select('status')
+      .eq('user_id', user.id)
+      .single()
+
+    if (clientRecord?.status === 'inactive') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/client/acces-suspendu'
+      return NextResponse.redirect(url)
+    }
+  }
+
   if (isClientLogin && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/client'

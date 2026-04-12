@@ -1,5 +1,9 @@
 ## 2026-04-12
 
+FEATURE: Add DELETE /api/clients/[clientId]/access — revoke client access (status inactive + token revoked)
+FEATURE: Add /client/acces-suspendu page — suspended access screen (DS v2.0)
+FEATURE: Middleware status check — redirect inactive clients to /client/acces-suspendu
+
 FEATURE: Refonte ClientAccessToken — invitation email + coupure d'accès (props clientStatus + clientEmail)
 
 FEATURE: Add /client/set-password page — PKCE code exchange + updateUser flow for first-time password setup
