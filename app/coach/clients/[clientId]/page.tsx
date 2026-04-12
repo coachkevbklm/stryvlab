@@ -983,9 +983,11 @@ export default function ClientDetailPage() {
                   }}
                 />
               </div>
-              <div className="bg-[#181818] border-subtle rounded-xl p-6">
-                <ClientAccessToken clientId={clientId} />
-              </div>
+              <ClientAccessToken
+                clientId={clientId}
+                clientStatus="inactive"
+                clientEmail={client?.email ?? null}
+              />
             </div>
           )}
 

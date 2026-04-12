@@ -1,248 +1,150 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  Link2,
-  Copy,
-  RefreshCw,
-  Trash2,
-  CheckCircle2,
-  Loader2,
-  ExternalLink,
+  UserCheck,
+  UserX,
   Mail,
+  Loader2,
+  CheckCircle2,
+  ShieldOff,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   clientId: string;
+  clientStatus: string;
+  clientEmail: string | null;
 }
 
-export default function ClientAccessToken({ clientId }: Props) {
-  const [accessUrl, setAccessUrl] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [revoked, setRevoked] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+export default function ClientAccessToken({ clientId, clientStatus, clientEmail }: Props) {
+  const [status, setStatus] = useState(clientStatus);
+  const [inviting, setInviting] = useState(false);
+  const [invited, setInvited] = useState(false);
   const [revoking, setRevoking] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/clients/${clientId}/access-token`)
-      .then((r) => r.json())
-      .then((d) => {
-        setAccessUrl(d.access_url ?? null);
-        setExpiresAt(d.expires_at ?? null);
-        setRevoked(d.revoked ?? false);
-      })
-      .finally(() => setLoading(false));
-  }, [clientId]);
-
-  async function generate(sendEmail = false) {
-    setGenerating(true);
-    const res = await fetch(`/api/clients/${clientId}/access-token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ send_email: sendEmail }),
-    });
+  async function sendInvitation() {
+    setInviting(true);
+    setError(null);
+    const res = await fetch(`/api/clients/${clientId}/invite`, { method: "POST" });
     const d = await res.json();
-    if (d.access_url) {
-      setAccessUrl(d.access_url);
-      setRevoked(false);
-      setExpiresAt(
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      );
+    if (!res.ok) {
+      setError(d.error ?? "Erreur lors de l'envoi.");
+    } else {
+      setInvited(true);
+      setStatus("active");
+      setTimeout(() => setInvited(false), 4000);
     }
-    setGenerating(false);
+    setInviting(false);
   }
 
-  async function sendByEmail() {
-    setSending(true);
-    const res = await fetch(`/api/clients/${clientId}/access-token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ send_email: true }),
-    });
-    const d = await res.json();
-    if (d.access_url) {
-      setAccessUrl(d.access_url);
-      setRevoked(false);
-      setExpiresAt(
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      );
-    }
-    setSent(true);
-    setTimeout(() => setSent(false), 3000);
-    setSending(false);
-  }
-
-  async function revoke() {
+  async function revokeAccess() {
     setRevoking(true);
-    await fetch(`/api/clients/${clientId}/access-token`, { method: "DELETE" });
-    setAccessUrl(null);
-    setRevoked(true);
+    setError(null);
+    const res = await fetch(`/api/clients/${clientId}/access`, { method: "DELETE" });
+    if (res.ok) {
+      setStatus("inactive");
+    } else {
+      const d = await res.json();
+      setError(d.error ?? "Erreur lors de la révocation.");
+    }
     setRevoking(false);
     setShowRevokeConfirm(false);
   }
 
-  function copy() {
-    if (!accessUrl) return;
-    navigator.clipboard.writeText(accessUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  const expiryLabel = expiresAt
-    ? new Date(expiresAt).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
+  const isActive = status === "active";
 
   return (
     <>
-      <div className="bg-[#181818] border-subtle rounded-xl p-5">
+      <div className="bg-[#181818] border-[0.3px] border-white/[0.06] rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Link2 size={15} className="text-accent" />
-          <h3 className="font-semibold text-white text-sm">
-            Lien d'accès client
-          </h3>
+          <UserCheck size={15} className="text-[#1f8a65]" />
+          <h3 className="font-semibold text-white text-sm">Accès client</h3>
+          <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+            isActive
+              ? "bg-[#1f8a65]/15 text-[#1f8a65]"
+              : "bg-white/[0.06] text-white/40"
+          }`}>
+            {isActive ? "Actif" : "Inactif"}
+          </span>
         </div>
 
-        {loading ? (
+        {!clientEmail ? (
+          <p className="text-xs text-white/40">
+            Ce client n&apos;a pas d&apos;adresse email. Ajoutez-en une pour l&apos;inviter.
+          </p>
+        ) : isActive ? (
           <div className="flex flex-col gap-3">
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-4 w-40" />
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-28 rounded-lg" />
-              <Skeleton className="h-8 w-36 rounded-lg" />
-              <Skeleton className="h-8 w-16 rounded-lg" />
-            </div>
-          </div>
-        ) : accessUrl && !revoked ? (
-          <div className="flex flex-col gap-3">
-            {/* URL display */}
-            <div className="flex items-center gap-2 bg-white/[0.04] rounded-lg px-3 py-2.5">
-              <span className="flex-1 text-xs text-white/45 font-mono truncate">
-                {accessUrl}
-              </span>
-            </div>
-
-            {expiryLabel && (
-              <p className="text-[11px] text-white/45">
-                Expire le{" "}
-                <span className="font-medium text-white">{expiryLabel}</span>
-              </p>
-            )}
-
-            <div className="flex flex-wrap gap-2">
+            <p className="text-xs text-white/45">
+              Le client a accès à son espace STRYV. Il peut se connecter avec son email et son mot de passe.
+            </p>
+            <div className="flex gap-2 flex-wrap">
               <button
-                onClick={copy}
-                className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                onClick={() => void sendInvitation()}
+                disabled={inviting}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white/55 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
-                {copied ? <CheckCircle2 size={12} /> : <Copy size={12} />}
-                {copied ? "Copié !" : "Copier le lien"}
-              </button>
-              <button
-                onClick={sendByEmail}
-                disabled={sending}
-                className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {sending ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : sent ? (
-                  <CheckCircle2 size={12} />
-                ) : (
-                  <Mail size={12} />
-                )}
-                {sending ? "Envoi…" : sent ? "Envoyé !" : "Envoyer par email"}
-              </button>
-              <a
-                href={accessUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-white/45 hover:text-white px-3 py-2 rounded-lg bg-white/[0.04] transition-colors"
-              >
-                <ExternalLink size={12} />
-                Tester
-              </a>
-              <button
-                onClick={() => void generate(false)}
-                disabled={generating}
-                className="flex items-center gap-1.5 text-xs text-white/45 hover:text-white px-3 py-2 rounded-lg bg-white/[0.04] transition-colors disabled:opacity-50"
-                title="Renouveler le lien"
-              >
-                {generating ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={12} />
-                )}
-                Renouveler
+                {inviting ? <Loader2 size={12} className="animate-spin" /> : invited ? <CheckCircle2 size={12} /> : <Mail size={12} />}
+                {inviting ? "Envoi…" : invited ? "Invitation envoyée !" : "Renvoyer l'invitation"}
               </button>
               <button
                 onClick={() => setShowRevokeConfirm(true)}
-                disabled={revoking}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 px-3 py-2 rounded-lg bg-white/[0.04] transition-colors disabled:opacity-50 ml-auto"
-                title="Révoquer"
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 bg-white/[0.04] hover:bg-white/[0.08] px-4 py-2 rounded-lg transition-colors ml-auto"
               >
-                {revoking ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Trash2 size={12} />
-                )}
-                Révoquer
+                <ShieldOff size={12} />
+                Couper l&apos;accès
               </button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-white/45">
-              {revoked
-                ? "Le lien d'accès a été révoqué. Générez-en un nouveau pour permettre au client de se connecter."
-                : "Aucun lien actif. Générez un lien pour permettre à votre client de se connecter en un clic."}
+              {status === "archived"
+                ? "Ce client est archivé. Restaurez-le avant de l'inviter."
+                : "Ce client n'a pas encore accès à son espace. Envoyez-lui une invitation pour qu'il crée son mot de passe."}
             </p>
-            <button
-              onClick={() => void generate(false)}
-              disabled={generating}
-              className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors w-fit disabled:opacity-50"
-            >
-              {generating ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Link2 size={12} />
-              )}
-              {generating ? "Génération…" : "Générer le lien d'accès"}
-            </button>
+            {status !== "archived" && (
+              <button
+                onClick={() => void sendInvitation()}
+                disabled={inviting}
+                className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors w-fit disabled:opacity-50"
+              >
+                {inviting ? <Loader2 size={12} className="animate-spin" /> : invited ? <CheckCircle2 size={12} /> : <Mail size={12} />}
+                {inviting ? "Envoi…" : invited ? "Invitation envoyée !" : "Inviter le client"}
+              </button>
+            )}
           </div>
+        )}
+
+        {error && (
+          <p className="mt-3 text-xs text-red-400">{error}</p>
         )}
       </div>
 
       {showRevokeConfirm && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#181818] border-modal rounded-xl p-6 w-full max-w-sm">
-            <h3 className="font-bold text-white mb-2">
-              Révoquer le lien d'accès ?
-            </h3>
-            <p className="text-sm text-white/45 mb-5">
-              Le client ne pourra plus utiliser ce lien pour se connecter. Vous
-              pourrez en générer un nouveau à tout moment.
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#181818] border-[0.3px] border-white/[0.06] rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <UserX size={18} className="text-red-400" />
+              <h3 className="font-bold text-white">Couper l&apos;accès client ?</h3>
+            </div>
+            <p className="text-sm text-white/50 mb-5">
+              Le client sera déconnecté et ne pourra plus accéder à son espace. Vous pourrez le réinviter à tout moment.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRevokeConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg bg-white/[0.04] text-sm text-white/45 hover:text-white transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-lg bg-white/[0.04] text-sm text-white/50 hover:text-white transition-colors font-medium"
               >
                 Annuler
               </button>
               <button
-                onClick={revoke}
+                onClick={() => void revokeAccess()}
                 disabled={revoking}
                 className="flex-1 py-2.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
               >
-                {revoking ? "Révocation…" : "Révoquer"}
+                {revoking ? "Révocation…" : "Couper l'accès"}
               </button>
             </div>
           </div>

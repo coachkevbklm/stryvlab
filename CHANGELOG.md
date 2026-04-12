@@ -1,5 +1,7 @@
 ## 2026-04-12
 
+FEATURE: Refonte ClientAccessToken — invitation email + coupure d'accès (props clientStatus + clientEmail)
+
 FEATURE: Add /client/set-password page — PKCE code exchange + updateUser flow for first-time password setup
 FIX: middleware — exclude /client/set-password and /client/acces-suspendu from client auth guard
 
