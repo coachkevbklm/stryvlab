@@ -1,7 +1,164 @@
+## 2026-04-12
+
+FEATURE: sendInvitationEmail — function mailer pour invitation client à définir son mot de passe (Supabase recovery link)
+FIX: Client access — remplace magic link OTP (fragile, usage unique) par signInWithPassword avec mot de passe temporaire généré côté serveur
+CHORE: Supprime app/client/auth/confirm page (plus nécessaire — session créée côté serveur)
+CHORE: middleware matcher — retire exclusion /client/access (signInWithPassword est idempotent)
+FIX: /client/access/[token] — utilise magic_url stocké en DB au lieu de régénérer un OTP à chaque clic (évite double consommation Vercel Edge)
+FIX: middleware matcher — exclure /client/access
+FIX: /client/auth/confirm — remplace la route handler par un Client Component qui lit le hash Supabase Implicit Flow côté browser
+FIX: Accès client — redirectTo pointe vers /client/auth/confirm pour la session magic link
+
+FIX: Add force-dynamic to /api/calculator-results/query and /api/dashboard routes to fix Vercel static rendering errors
+FEATURE: modules.ts — ajout champ bmr_kcal_measured dans le module biometrics (visible si Balance à impédance)
+REFACTOR: MacroCalculator — suppression champ Multiplicateur occupation (auto-calculé depuis occupation), suppression du toggle Manuel/Avec client (barre de recherche toujours visible), suppression du verrou protéines (bouton lock inutile)
+
+FIX: client/access/[token] route — magic link regénéré à la volée au clic (plus de magic_url stale en DB), redirectTo dérivé du request origin
+FIX: access-token route — URL construite depuis req.nextUrl.origin (plus de localhost hardcodé en prod), redirectTo magic link corrigé
+
+FIX: MetricsSection — drag handle graphique sorti du bloc à hauteur fixe, redesigné en pill fine (3px) sans superposition
+
+FEATURE: lib/formulas/macros.ts — refonte moteur v2 : Mifflin fallback, EAT cardio séparé (Swain & Franklin), alcool (7 kcal/g Lieber 1991), caféine +BMR (Dulloo 1989), phase lutéale +175 kcal (Webb 1986), visceral fat stratification (IDF 2006), SmartProtocol 12 suggestions scientifiques, ContextFlags, ratiosByBW, tdeeGross, corrections[]
+FEATURE: app/api/lab/client-search/route.ts — 12 nouveaux champs : bmr_kcal_measured, visceral_fat_level, waist_cm, perceived_intensity, cardio_frequency, cardio_duration_min, cardio_types, sleep_quality, post_session_recovery, caffeine_daily_mg, alcohol_weekly, work_hours_per_week, menstrual_cycle
+FEATURE: lib/lab/useLabClientSearch.ts — type LabClient étendu 15 nouveaux champs cardio/wellness/lifestyle/biométrie
+FEATURE: app/outils/macros/MacroCalculator.tsx — refonte complète : layout 2 colonnes, injection client 20+ champs, section avancée bien-être/lifestyle, TDEE breakdown visuel flow + barres, macros ratios g/kg LBM et g/kg PC, Smart Protocol panel prioritisé avec boutons application, Context Flags provenance, slider calorique + override protéines g/kg PC
+
+FIX: modules.ts — restore muscle_mass_kg label to "Masse musculaire" (kg, all muscle types), muscle_mass_pct to "Masse musculaire (%)" (direct from device, not computed), add skeletal_muscle_pct field "Masse musculaire squelettique (%)" as separate field
+FIX: MetricsSection.tsx — align FIELD_MAP: muscle_mass_kg="Masse musculaire", muscle_mass_pct="Masse musculaire %", add skeletal_muscle_pct="Musc. squelettique %"; add to body_ratios group + METRIC_COLORS + PLATEAU_THRESHOLDS
+FIX: healthMath.ts — deriveMetrics now preserves both muscle_mass_kg and muscle_mass_pct when both provided directly (no overwrite); add skeletal_muscle_pct to BiometricInputs + DerivedMetrics (pass-through, never computed)
+FIX: useBiometrics.ts — load skeletal_muscle_pct from fieldMap and pass to deriveMetrics inputs
+FEATURE: MetricsSection.tsx — vue superposée plein écran : bouton Maximize2 dans header, modal 95vw×92vh avec fermeture ✕ / Escape / click-outside, state isFullscreen dans MultiSeriesChart (même series/visibleSeries partagés)
+REFACTOR: MetricsSection.tsx — palette couleurs métriques unifiée : suppression doublons (vert×3, orange×2, bleu×2), familles sémantiques (graisse=orange/rouge, muscle=3 verts distincts, structure=teal/bleu, mensurations=spectre froid, bien-être=indigo/jaune); suppression champ color de FieldDef + FIELDS (METRIC_COLORS source unique); chips overlay : point coloré toujours visible (opacity réduite si inactif); boutons groupe : micro-palette 3 points + style border DS v2.0
+FIX: MetricsSection.tsx — lean_mass_kg réintégré dans groupe Recomposition (était absent de DEFAULT_OVERLAY_METRICS → chip cliquable mais Line non rendue); waist_hip_ratio category corrigée "composition"→"measurements"; waist_cm ajouté dans groupe Risque métabolique (waist_hip_ratio absent si hips non renseigné)
+REFACTOR: MetricsSection.tsx — OVERLAY_GROUPS : retrait lean_mass_kg du groupe Recomposition (redondant avec weight+fat), retrait waist_cm du groupe Risque métabolique (dupliqué avec Mensurations tronc), textes interprétation mis à jour avec sources; explication ligne plate ajoutée dans commentaire graphique
+FIX: AssessmentForm.tsx — supprimer le calcul bidirectionnel automatique muscle_mass_kg ↔ muscle_mass_pct (les deux sont des valeurs directes de balance, indépendantes)
+FIX: recalculate/route.ts — ajouter skeletal_muscle_pct dans fieldMap et BiometricInputs
+REFACTOR: MetricsSection.tsx — redesign OVERLAY_GROUPS: 4→6 groupes scientifiquement cohérents (Recomposition, Ratios corporels, Risque métabolique, Mensurations membres, Mensurations tronc, Récupération); add waist_hip_ratio to FIELD_MAP + METRIC_COLORS; textes d'interprétation avec sources (Schoenfeld 2010, Spiegel 2010, IDF 2006, OMS, ACE)
+
+FIX: MacroCalculator.tsx — client injection now uses sport_practice (daily activity level) instead of fitness_level (training expertise) for NEAT/activity mapping; remove FITNESS_ACTIVITY_MAP which wrongly mapped training level to NEAT steps
+FEATURE: MacroCalculator.tsx — protein override input now accepts g/kg bodyweight ratio (e.g. 1.8) instead of absolute grams; placeholder shows algo ratio, conversion ratio × weight_kg done in effect
+FIX: MacroCalculator.tsx — remove unused Search import from lucide-react
+
+## 2026-04-11
+
+FIX: lab/client-search/route.ts — align field_key with modules.ts ground truth: remove phantom skeletal_muscle_mass_kg/bmr_kcal, remove sleep_hours legacy fallback, fix training_calories_weekly→training_calories
+FIX: MetricsSection.tsx — rename muscle_mass_kg/pct labels to "Masse musc. squelettique" to match modules.ts ground truth (label was "Masse musculaire" but field stores skeletal muscle from InBody/Tanita)
+FEATURE: MetricsSection.tsx — add lean_mass_kg (masse maigre) to FIELDS, OVERLAY_GROUPS, PLATEAU_THRESHOLDS and METRIC_COLORS
+FIX: MetricsSection.tsx — align FIELDS field_key with actual assessment modules: sleep_hours→sleep_duration_h, remove phantom skeletal_muscle_mass_kg and bmr_kcal (never stored by bilan)
+FIX: metrics/[submissionId]/route.ts PATCH — resolve block_id from existing responses before upsert to prevent cross-block duplicates when editing bilan submissions
+FIX: recalculate/route.ts — delete stale derived responses in wrong block_id before upsert to prevent cross-block duplicates in metric charts
+REFACTOR: lib/health/bioNorms.ts — système de tooltips entièrement revu : NormReference sans URL (source bibliographique DOI uniquement), ZoneInsights par zone × sexe pour 11 métriques, resolveInsight() intégré dans evaluateMetric
+REFACTOR: components/health/BioNormsGauge.tsx — tooltip affiche zone_insight contextualisé en premier, référence scientifique en footer discret ; suppression du lien URL et de la note physiologique générique
+FIX: lib/health/useBiometrics.ts — fallback 'hip_cm' → 'hips_cm' pour les bilans créés avant le renommage (RTH et Navy invisibles pour ces clients)
+FIX: lib/health/bioNorms.ts — MUSCLE_MASS_RANGES recalibrés pour impédancemétrie (masse totale ~60-75%) — anciens ranges basés DXA/squelettique provoquaient des faux high_risk ; suppression zone "Hypertrophie extrême" sans plafond
+FIX: lib/health/healthMath.ts — seuil MUSCLE_PCT_MAX_PHYSIOLOGICAL relevé 60% → 75% (balances Tanita/InBody mesurent masse musculaire totale, pas squelettique seule)
+REFACTOR: app/coach/clients/[clientId]/bilans/[submissionId]/page.tsx — bouton retour déplacé dans la TopBar (pattern interpage standard) au lieu du contenu inline
+FIX: app/outils/macros/MacroCalculator.tsx — clientSearch.clear extrait comme variable stable avant useMemo(topRight) ; évite boucle infinie de re-renders qui bloquait la navigation sidebar
+FIX: components/layout/useSetTopBar.tsx — suppression du cleanup setTopBar({}) qui causait des re-renders pendant la navigation
+FIX: app/outils/ToolsGrid.tsx — topBarRight wrappé dans useMemo(searchQuery) pour éviter les re-renders en cascade du TopBarProvider
+REFRACTOR: app/outils/body-fat/BodyFatCalculator.tsx — page réorganisée au DS v2.0 avec layout colonne, inputs stylés, cartes de résultat et FAQ alignés sur le modèle macros
+
+REFACTOR: components/health/BioNormsPanel.tsx — skeleton adapté à la structure réelle (GaugeSkeleton par section, 3 sections avec nombre de jauges correct, barre 5 segments, header/valeur/badge) ; waist_height_ratio et metabolic_age_delta ajoutés dans les sections
+FEATURE: lib/health/healthMath.ts — ajout calculateWaistHeightRatio (Savva 2010), estimateMetabolicAge (Katch-McArdle + Mifflin-St Jeor fallback), champ metabolic_age dans BiometricInputs + DerivedMetrics
+FEATURE: lib/health/bioNorms.ts — normes waist_height_ratio (seuil 0.5 universel) et metabolic_age_delta (delta vs âge réel) + evaluateAll étendu
+FEATURE: lib/assessments/modules.ts — champ metabolic_age (optionnel, visible si balance à impédance)
+REFACTOR: lib/health/useBiometrics.ts — passage metabolic_age dans inputs + waist_height_ratio/metabolic_age_estimated dans evaluateAll
+REFACTOR: app/api/assessments/submissions/[submissionId]/recalculate/route.ts — calcul et upsert waist_height_ratio + metabolic_age_estimated
+
+FIX: components/layout/useSetTopBar.tsx — suppression du cleanup setTopBar({}) qui causait des re-renders pendant la navigation et bloquait le routing depuis certaines pages
+FIX: app/outils/ToolsGrid.tsx — topBarRight wrappé dans useMemo (dépendance searchQuery) pour éviter les re-renders en cascade du TopBarProvider
+
+REFACTOR: lib/email/mailer.ts — refonte complète du template email DS v2.0 (fond #121212, card #181818, accent #1f8a65, texte rgba white) ; ajout sendPaymentReminderEmail + sendInvoiceEmail ; transport nodemailer centralisé et exporté
+CHORE: lib/email/resend.ts — suppression (dead code, jamais utilisé)
+REFACTOR: app/api/payments/[paymentId]/remind/route.ts — suppression transport nodemailer inline, délègue à sendPaymentReminderEmail
+REFACTOR: app/api/payments/[paymentId]/invoice/route.ts — suppression transport nodemailer inline, délègue à sendInvoiceEmail
+REFACTOR: app/api/cron/payment-reminders/route.ts — suppression transport nodemailer inline, délègue à sendPaymentReminderEmail
+
+FIX: components/assessments/form/MetricField.tsx — fix scroll sur inputs numériques (onWheel → blur) ; ajout accordion guide mesuration (📏) pour tous les champs de mensuration
+FEATURE: lib/assessments/modules.ts — ajout arm_left_contracted_cm + forearm_left_cm (champs manquants pour symétrie) ; shoulder_width_cm renommé shoulder_circumference_cm (tour d'épaules, min/max corrigés) ; guides de prise de mesure (accordion 📏) sur tous les champs mensurations
+FEATURE: components/assessments/form/AssessmentForm.tsx — calculs auto waist_hip_ratio (waist/hips) ; calories_target calculées en lecture seule depuis macros (P×4 + C×4 + F×9) ; agrégats mensurations arm_cm/thigh_cm/calf_cm depuis max(droit, gauche)
+
+FEATURE: app/coach/clients/[clientId]/bilans/[submissionId]/page.tsx — nouvelle page vue bilan coach : affichage complet des réponses groupées par bloc, photos cliquables avec viewer, bouton Modifier (mode édition inline AssessmentForm), bouton Réouvrir avec regénération token
+FIX: components/assessments/form/AssessmentForm.tsx — props initialResponses + onSaved pour mode édition coach ; calculs auto bidirectionnels weight_kg ↔ body_fat_pct ↔ fat_mass_kg ↔ lean_mass_kg, muscle_mass_kg ↔ muscle_mass_pct, BMI depuis weight + height
+FIX: components/assessments/form/MetricField.tsx — guide photos accordion (collapsé par défaut) avec parsing bullet-points pour les champs photo_upload
+FIX: lib/assessments/modules.ts — module Photos : helper guide photo sur tous les champs photo ; hip_cm renommé hips_cm (cohérence MetricsSection) ; ajout champs arm_cm, thigh_cm, calf_cm (mesures agrégées visibles)
+FIX: app/api/assessments/public/[token]/responses/route.ts — email notification coach redirige vers /coach/clients/[clientId]/bilans/[submissionId]
+FIX: app/client/bilans/[submissionId]/page.tsx — référence submission.status remplacée par submissionData.status
+
+FIX: lib/health/healthMath.ts — guard physiologique muscle_mass_pct > 60% : valeur rejetée (null) si seuil dépassé, évite les fausses alertes "hypertrophie extrême" causées par confusion lean_mass / muscle_mass
+FIX: lib/csv-import/detect.ts — synonyms CSV corrigés : "lean mass"/"masse maigre"/"lbm" retirés de muscle_mass_kg, mappés vers lean_mass_kg ; ajout TARGET_FIELDS lean_mass_kg et muscle_mass_pct ; visceral_fat renommé visceral_fat_level
+FIX: components/clients/MetricsSection.tsx — clés standardisées muscle_pct → muscle_mass_pct, visceral_fat → visceral_fat_level (cohérence DB)
+FIX: components/assessments/dashboard/ClientMetricsDashboard.tsx — clés standardisées muscle_pct → muscle_mass_pct, visceral_fat → visceral_fat_level
+FIX: lib/assessments/modules.ts — height_cm required: true ; helpers améliorés pour body_fat_pct, lean_mass_kg, muscle_mass_kg
+
+FIX: components/health/BioNormsGauge.tsx — remplacement Tooltip base-ui par tooltip custom (useState + positionnement absolu) : rendu entièrement contrôlé, fond #0e0e0e, box-shadow, bordures rgba, fermeture au clic extérieur
+FIX: components/health/BioNormsPanel.tsx — alerte critique redessinée avec header groupé, lignes séparées, badge zone à droite
+
+FEATURE: components/clients/MetricsSection.tsx — integrate BioNormsPanel as "Normes" view mode (4th toggle option, always active)
+
+FEATURE: components/health/BioNormsPanel.tsx — panel complet normes biométriques avec alertes critiques, bandeau Navy, et jauges groupées par section
+FEATURE: components/health/NavySuggestionBanner.tsx — bandeau suggestion méthode Navy avec apply/dismiss et état disabled
+
+FEATURE: components/health/BioNormsGauge.tsx — visual gauge component for biometric norms display with segmented bar, zone badge, info tooltip, and critical indicator
+
+REFACTOR: lib/formulas/bodyFat.ts — navyBodyFat delegates to healthMath.navyBodyFatPct (removes inline density formula duplication)
+FEATURE: lib/health/useBiometrics.ts — hook React client qui charge assessment_responses depuis Supabase, appelle deriveMetrics + evaluateAll, expose criticalAlerts, navySuggestion, applyNavySuggestion et refetch
+FEATURE: app/api/assessments/submissions/[submissionId]/recalculate/route.ts — POST endpoint to recalculate derived biometric metrics (BMI, lean mass, fat mass) from existing assessment_responses and upsert results
+FEATURE: lib/assessments/modules.ts — add muscle_mass_pct field after muscle_mass_kg in body composition module
+FEATURE: lib/health/bioNorms.ts — module de normes physiologiques (9 métriques, sources OMS/ACE/EFSA/IOF/IDF/Janssen/Kyle/Tanita) avec evaluateMetric et evaluateAll
+FIX: lib/health/healthMath.ts — gardes division par zéro dans calculateBMI, bodyFatPctFromMass, musclePctFromKg, muscleKgFromPct (return NaN si weight/height <= 0)
+FIX: lib/health/healthMath.ts — garde log10(<=0) dans navyBodyFatPct pour homme (waist-neck<=0) et femme (waist+hips-neck<=0)
+FIX: lib/health/healthMath.ts — navyBodyFatPct retourne maintenant round1() avant le return final
+FIX: lib/health/healthMath.ts — deriveMetrics vérifie isFinite(navyResult) en plus de isNaN pour le navy_suggestion
+FIX: lib/health/healthMath.ts — lean_mass_kg = null si fat_mass_kg > weight_kg (inputs physiologiquement impossibles)
+REFACTOR: lib/health/healthMath.ts — suppression de 'navy_estimated' du type body_fat_source (dead code — Navy = suggestion uniquement)
+REFACTOR: lib/health/healthMath.ts — age_at_measurement rendu optionnel dans BiometricInputs
+REFACTOR: lib/health/healthMath.ts — round1 exportée
+CHORE: lib/health/healthMath.ts — ajout citation "Coefficients from NHRC Report 84-29, Table 2, p.14" dans JSDoc navyBodyFatPct
+
+FEATURE: lib/health/healthMath.ts — nouveau module pur (zéro dépendances) — source de vérité mathématique pour BMI, masse grasse bi-directionnelle, masse musculaire bi-directionnelle, méthode Navy (Hodgdon & Beckett 1984 + Siri 1961), deriveMetrics() avec fallback Navy suggestion non auto-appliqué
+
+## 2026-04-11
+
+FIX: app/outils/macros/MacroCalculator.tsx — fitness_level (niveau sportif) ne mappe plus vers activityLevel — seul daily_steps bilan ou choix manuel du coach détermine le niveau d'activité quotidienne
+FIX: app/api/lab/client-search/route.ts — field_key mismatch : ajout skeletal_muscle_mass_kg comme fallback de muscle_mass_kg, sleep_hours accepté en plus de sleep_duration_h
+FEATURE: lib/formulas/macros.ts — nouveaux inputs optionnels : muscleMassKg, bmrKcalMeasured (priorité balance avec validation plage), sessionDurationMin + trainingTypes (EAT via MET×durée), trainingCaloriesWeekly (tracker si delta >20%), occupationMultiplier (NEAT pondéré par occupation), stressLevel + sleepDurationH (suggestion récupération)
+FEATURE: lib/formulas/macros.ts — NEAT pondéré par poids (pas × 0.0005 × kg) + coefficient occupation + dataProvenance flags + recoveryAdaptation suggestion
+FEATURE: app/api/lab/client-search/route.ts — enrichissement complet : 10+ field_keys bilan récupérés (muscle_mass_kg, bmr_kcal, session_duration_min, training_calories, training_types, daily_steps, stress_level, sleep_duration_h, energy_level, recovery_score, occupation) — stratégie hybride biométrie=plus récent / wellness=moyenne 3 derniers
+FEATURE: lib/lab/useLabClientSearch.ts — type LabClient enrichi avec tous les nouveaux champs
+FEATURE: app/outils/macros/MacroCalculator.tsx — injection des données bilan enrichies, daily_steps → activityLevel auto-mapping, bouton "Adapter au profil de récupération" interactif, badges de provenance BMR/LBM/EAT/NEAT dans breakdown
+REFACTOR: app/outils/macros/MacroCalculator.tsx — Full-Auto applique maintenant le Standard Lab automatiquement (ratios optimaux protéines/lipides/glucides selon l'objectif) sans interaction coach — vraie différence vs Semi-Auto qui injecte les données et laisse le coach calculer
+FIX: app/outils/macros/MacroCalculator.tsx — injection client : guards if(x) → != null (évite de bloquer les valeurs 0), activityLevel injecté depuis fitness_level via FITNESS_ACTIVITY_MAP, triggerCalculate full-auto utilise le bon activityLevel mappé
+FIX: app/outils/macros/MacroCalculator.tsx — anchor protéines : recalcul toujours depuis baseResult (évite la dérive), calorieDelta basé sur baseResult.tdee, lipides et protéines correctement fixes quand anchor actif
+FIX: app/api/lab/client-search/route.ts — colonnes inexistantes retirées (name, age, height_cm) : first_name+last_name pour le nom, age dérivé de date_of_birth, height_cm extrait des assessment_responses
+REFACTOR: app/outils/macros/MacroCalculator.tsx — refonte layout inputs : 3 blocs distincts (Biométrie / Activité+Séances / Objectif+CTA), barre d'ajustements horizontale dans la zone résultats, suppression colonne 4 ajustements (trop dense)
+REFACTOR: app/outils/macros/MacroCalculator.tsx — refonte complète layout full-width (inputs horizontaux en haut, résultats en bas), breakdown TDEE visuel (BMR→NEAT→EAT→TEF→TDEE→Target), macros en cartes hero, Full-Auto débloqué (inject + calcul auto au select), panneau Standard Lab inline avec rationale par objectif, ajustements dans colonne 4 de la grille inputs
+
+FIX: app/outils/macros/MacroCalculator.tsx + ToolsGrid.tsx — correction opacités bordures : border-white/[0.013/016/02] → border-white/[0.06] (valeur standard DS confirmée sur coach/organisation)
+FIX: app/api/lab/client-search/route.ts — suppression await sur createServerClient() (sync), !inner → left join sur assessment_responses, logs d'erreur explicites
+DOCS: docs/DESIGN_SYSTEM_V2.0_REFERENCE.md + .claude/rules/ui-design-system.md — token bordure standard documenté : border-[0.3px] border-white/[0.06], interdiction des opacités < 0.04
+FIX: lib/lab/useLabClientSearch.ts + app/api/lab/client-search/route.ts — seuil de recherche abaissé de 2 à 1 caractère minimum pour déclencher la recherche client
+FIX: components/layout/CoachShell.tsx — remplacement des button+router.push() par des Link natifs dans la nav sidebar — élimine les navigations multiples/aléatoires au clic
+FIX: app/outils/macros/page.tsx — suppression du useSetTopBar redondant qui écrasait le topBar de MacroCalculator (mode switcher Manuel/Semi-Auto/Full-Auto + bouton retour DS v2.0 n'apparaissaient plus)
+
+REFACTOR: app/outils/macros/MacroCalculator.tsx — bordures DS v2.0 appliquées partout : blocs border-[0.3px] border-white/[0.013], inputs border-[0.3px] border-white/[0.016], boutons border-[0.3px] border-white/[0.02], modal border-[0.3px] border-white/[0.013], séparateurs border-t-[0.3px] border-white/[0.06]
+REFACTOR: app/outils/ToolsGrid.tsx — refonte complète DS v2.0 : bordures ultra-fines border-[0.3px] border-white/[0.013], suppression Card shadcn, cards active/dev avec bg-white/[0.02] et hover, section labels, topBar search inline, empty state, footer
+REFACTOR: app/outils/macros/MacroCalculator.tsx — alignement strict DS v2.0 : inputs h-[52px] rounded-xl, bouton CTA pattern exact (pl-5 pr-1.5 + icone div), bordures ultra-fines sur tous les blocs et modals, suppression header redondant (topBar gère le retour), font-mono sur données numériques
+
+FEATURE: app/outils/macros/MacroCalculator.tsx — refonte complète avec mode switcher 3 positions (Manuel / Semi-Auto / Full-Auto), barre de recherche client dynamique avec injection automatique des données biométriques
+FEATURE: app/outils/macros/MacroCalculator.tsx — panneau ajustements avancés : slider calorique -30/+30%, switch grammes/%, ancrage protéines, bouton Standard Lab
+FEATURE: app/outils/macros/MacroCalculator.tsx — modal de validation protocole : diff automatique ancien/nouveau, cases à cocher par changement, badge majeur/mineur, champ contexte, action "Valider & Ancrer" → annotation timeline
+FEATURE: lib/lab/useLabClientSearch.ts — hook de recherche client pour le mode Semi-Auto des outils Lab (debounce 300ms)
+FEATURE: app/api/lab/client-search/route.ts — endpoint GET de recherche client par nom/email avec injection des dernières métriques (weight_kg, body_fat_pct)
+FEATURE: app/api/clients/[clientId]/annotations/route.ts — ajout event_type 'lab_protocol' pour les annotations générées depuis le Lab
+
 ## 2026-04-10
 
-CHORE: next.config.js — CORS restreint au domaine stryvlab.com (plus de wildcard *), ajout headers sécurité HTTP (X-Frame-Options, HSTS, CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options)
-CHORE: .gitignore — renforcé (supabase/.temp, docs/screenshots, secrets/, .cursor/, *.log, OS files)
+FIX: app/page.tsx — bouton "Oubliée ?" fonctionnel avec formulaire inline forgot password (redirectTo vers /auth/reset-password)
+FIX: app/coach/settings/page.tsx — handleResetPassword passe redirectTo avec NEXT_PUBLIC_SITE_URL pour éviter redirection vers localhost
+FEATURE: app/auth/reset-password/page.tsx — nouvelle page de réinitialisation de mot de passe (PASSWORD_RECOVERY event Supabase)
+CHORE: next.config.js — CORS restreint au domaine stryvlab.com (plus de wildcard _), ajout headers sécurité HTTP (X-Frame-Options, HSTS, CSP, Permissions-Policy, Referrer-Policy, X-Content-Type-Options)
+CHORE: .gitignore — renforcé (supabase/.temp, docs/screenshots, secrets/, .cursor/, _.log, OS files)
 CHORE: git rm --cached — screenshot commité retiré du suivi git
 FIX: AgendaCalendar — bouton Modifier (Edit3) toujours visible, plus caché derrière opacity-0/group-hover
 FEATURE: AgendaCalendar — section Assignations dans les modals création ET édition : client DB (select + lien dossier), template programme (select + lien view), template bilan (select + lien assessments)
