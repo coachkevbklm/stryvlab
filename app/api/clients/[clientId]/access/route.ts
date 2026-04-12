@@ -19,10 +19,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const db = service()
 
-  // Vérifier ownership
+  // Vérifier ownership + récupérer user_id pour forcer la déconnexion Supabase
   const { data: client } = await db
     .from('coach_clients')
-    .select('id')
+    .select('id, user_id')
     .eq('id', params.clientId)
     .eq('coach_id', user.id)
     .single()
@@ -43,6 +43,11 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     .update({ revoked: true })
     .eq('client_id', params.clientId)
     .eq('coach_id', user.id)
+
+  // Forcer la déconnexion Supabase (invalide le JWT actif immédiatement)
+  if (client.user_id) {
+    await db.auth.admin.signOut(client.user_id)
+  }
 
   return NextResponse.json({ success: true })
 }

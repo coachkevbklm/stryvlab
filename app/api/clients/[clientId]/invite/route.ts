@@ -33,10 +33,11 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
 
-  // Générer un lien de définition de mot de passe via admin API
-  // type 'recovery' = crée le compte si inexistant + génère un lien reset password valable 1h
+  // Générer un lien d'invitation via admin API
+  // type 'invite' = crée le compte Supabase si inexistant + génère un lien signup valable 24h
+  // type 'recovery' échoue si l'user n'existe pas encore — 'invite' est le bon choix pour un premier accès
   const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-    type: 'recovery',
+    type: 'invite',
     email: client.email,
     options: {
       redirectTo: `${siteUrl}/client/set-password`,
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   })
 
   if (linkError || !linkData?.properties?.action_link) {
-    console.error('generateLink recovery error:', linkError)
+    console.error('generateLink invite error:', linkError)
     return NextResponse.json({ error: 'Impossible de générer le lien d\'invitation' }, { status: 500 })
   }
 
