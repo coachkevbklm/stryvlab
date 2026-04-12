@@ -1,5 +1,6 @@
 ## 2026-04-12
 
+FEATURE: Add FinancialStrip component — MRR, monthly revenue, pending & overdue payments with EUR formatting
 FEATURE: Add ClientsSection component for coach dashboard — client cards with status segmentation, weight trends, sparklines
 FEATURE: Add HeroSummary component for coach dashboard — greeting, narrative alerts, KPI command bar
 FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coach endpoint
