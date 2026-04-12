@@ -7,6 +7,7 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
+FEATURE: Superpower Coach Dashboard — hero summary, alertes priorisées, clients segmentés avec sparklines, financier condensé
 FEATURE: Client invitation — flux email avec définition de mot de passe (remplace magic link OTP fragile)
 FEATURE: POST /api/clients/[clientId]/invite — génère lien recovery Supabase + envoie email SMTP
 FEATURE: Page /client/set-password — premier accès client, définition du mot de passe
