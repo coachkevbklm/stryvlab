@@ -1,3 +1,15 @@
+## 2026-04-13
+
+FEATURE: Client invitation — flux email avec définition de mot de passe (remplace magic link OTP fragile)
+FEATURE: POST /api/clients/[clientId]/invite — génère lien recovery Supabase + envoie email SMTP
+FEATURE: Page /client/set-password — premier accès client, définition du mot de passe
+FEATURE: Coupure d'accès manuelle coach — DELETE /api/clients/[clientId]/access
+FEATURE: Page /client/acces-suspendu — redirection si status = inactive
+FEATURE: Middleware — vérification coach_clients.status sur routes client protégées
+FEATURE: Cron nightly /api/cron/expire-subscriptions — expire abonnements + désactive clients
+REFACTOR: /client/login — retrait signup (client toujours invité par coach)
+REFACTOR: ClientAccessToken — refonte UX invitation/actif/suspendu
+
 ## 2026-04-12
 
 FEATURE: Add POST /api/cron/expire-subscriptions — nightly cron to expire subscriptions and deactivate clients
