@@ -172,7 +172,12 @@ export async function GET(_req: NextRequest) {
 
   // ── Clients cards (max 8, triés par activité récente) ───────────────────
   const activeClients = clients.filter(c => c.status === 'active');
-  const clientIds = activeClients.slice(0, 8).map(c => c.id);
+  const sortedActiveClients = [...activeClients].sort((a, b) => {
+    const aAct = a.last_activity_at ?? a.created_at;
+    const bAct = b.last_activity_at ?? b.created_at;
+    return bAct.localeCompare(aAct);
+  });
+  const clientIds = sortedActiveClients.slice(0, 8).map(c => c.id);
 
   const [metricsRes, subscriptionsByClient] = await Promise.all([
     clientIds.length > 0
@@ -196,13 +201,8 @@ export async function GET(_req: NextRequest) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const fortyFiveDaysAgo = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
-  const dashboardClients: DashboardClient[] = activeClients
+  const dashboardClients: DashboardClient[] = sortedActiveClients
     .slice(0, 8)
-    .sort((a, b) => {
-      const aAct = a.last_activity_at ?? a.created_at;
-      const bAct = b.last_activity_at ?? b.created_at;
-      return bAct.localeCompare(aAct);
-    })
     .map(c => {
       const clientMetrics = metricsData.filter(m => m.client_id === c.id);
 
