@@ -7,6 +7,8 @@
  *   ACE Categories: American Council on Exercise
  */
 
+import { navyBodyFatPct } from '@/lib/health/healthMath';
+
 export type BodyFatGender = 'male' | 'female';
 export type BodyFatMethod = 'navy' | 'skinfold';
 
@@ -50,15 +52,7 @@ export interface BodyFatCategory {
 
 /** US Navy Method (Hodgdon & Beckett 1984) — precision ±3-5% */
 export function navyBodyFat(input: NavyInput): number {
-  const { gender, height: h, neck: n, waist: wa, hips: hi } = input;
-  let density: number;
-  if (gender === 'male') {
-    density = 1.0324 - 0.19077 * Math.log10(wa - n) + 0.15456 * Math.log10(h);
-  } else {
-    density = 1.29579 - 0.35004 * Math.log10(wa + (hi ?? 0) - n) + 0.22100 * Math.log10(h);
-  }
-  // Siri 1961 conversion
-  return (495 / density) - 450;
+  return navyBodyFatPct(input.gender, input.waist, input.neck, input.height, input.hips);
 }
 
 /** Jackson-Pollock 3-Site (1985) — precision ±3-4% */

@@ -13,6 +13,10 @@ interface Props {
   token: string;
   clientName: string;
   isCoach?: boolean;
+  /** Réponses initiales (mode édition coach) — pré-remplit le formulaire */
+  initialResponses?: ResponseMap;
+  /** Callback appelé après sauvegarde réussie en mode coach */
+  onSaved?: () => void;
 }
 
 export default function AssessmentForm({
@@ -21,8 +25,10 @@ export default function AssessmentForm({
   token,
   clientName,
   isCoach,
+  initialResponses,
+  onSaved,
 }: Props) {
-  const [responses, setResponses] = useState<ResponseMap>({});
+  const [responses, setResponses] = useState<ResponseMap>(initialResponses ?? {});
   const [currentBlock, setCurrentBlock] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,15 +39,134 @@ export default function AssessmentForm({
   const block = blocks[currentBlock];
   const isLast = currentBlock === blocks.length - 1;
 
+  // ── Calculs auto bidirectionnels ────────────────────────────────────────────
+  // Trouve le blockId qui contient un field_key donné
+  function findBlockId(fieldKey: string): string | null {
+    for (const blk of blocks) {
+      if (blk.fields.some((f) => f.key === fieldKey)) return blk.id;
+    }
+    return null;
+  }
+
+  function getVal(fieldKey: string, prev: ResponseMap): number | null {
+    const bid = findBlockId(fieldKey);
+    if (!bid) return null;
+    const v = prev[bid]?.[fieldKey];
+    return typeof v === "number" && !isNaN(v) ? v : null;
+  }
+
+  // Applique les dérivations sans écraser un champ qui vient d'être édité manuellement
+  function applyDerived(
+    prev: ResponseMap,
+    changedBlockId: string,
+    changedKey: string,
+  ): ResponseMap {
+    const next = { ...prev };
+
+    function set(fieldKey: string, value: number) {
+      const bid = findBlockId(fieldKey);
+      if (!bid) return;
+      next[bid] = { ...(next[bid] ?? {}), [fieldKey]: Math.round(value * 100) / 100 };
+    }
+
+    const weight = getVal("weight_kg", next);
+    const bf_pct = getVal("body_fat_pct", next);
+    const bf_kg = getVal("fat_mass_kg", next);
+    const mm_kg = getVal("muscle_mass_kg", next);
+    const mm_pct = getVal("muscle_mass_pct", next);
+    const height = getVal("height_cm", next);
+
+    // body_fat_pct ↔ fat_mass_kg (via weight)
+    if (weight && weight > 0) {
+      if (changedKey === "body_fat_pct" && bf_pct !== null) {
+        set("fat_mass_kg", (weight * bf_pct) / 100);
+        set("lean_mass_kg", weight * (1 - bf_pct / 100));
+      } else if (changedKey === "fat_mass_kg" && bf_kg !== null) {
+        set("body_fat_pct", (bf_kg / weight) * 100);
+        set("lean_mass_kg", weight - bf_kg);
+      } else if (changedKey === "weight_kg") {
+        if (bf_pct !== null) {
+          set("fat_mass_kg", (weight * bf_pct) / 100);
+          set("lean_mass_kg", weight * (1 - bf_pct / 100));
+        } else if (bf_kg !== null) {
+          set("body_fat_pct", (bf_kg / weight) * 100);
+          set("lean_mass_kg", weight - bf_kg);
+        }
+        // muscle_mass_kg et muscle_mass_pct sont des valeurs directes de balance — pas de calcul bidirectionnel
+      }
+    }
+
+    // BMI depuis weight + height
+    if (changedKey === "weight_kg" || changedKey === "height_cm") {
+      const w = weight ?? getVal("weight_kg", next);
+      const h = height ?? getVal("height_cm", next);
+      if (w && h && h > 0) {
+        set("bmi", w / ((h / 100) * (h / 100)));
+      }
+    }
+
+    // waist_hip_ratio depuis waist_cm + hips_cm
+    if (changedKey === "waist_cm" || changedKey === "hips_cm") {
+      const waist = getVal("waist_cm", next);
+      const hips = getVal("hips_cm", next);
+      if (waist && hips && hips > 0) {
+        set("waist_hip_ratio", waist / hips);
+      }
+    }
+
+    // calories_target (lecture seule) depuis macros : P×4 + C×4 + F×9
+    if (
+      changedKey === "protein_g" ||
+      changedKey === "carbs_g" ||
+      changedKey === "fat_g"
+    ) {
+      const p = getVal("protein_g", next);
+      const c = getVal("carbs_g", next);
+      const f = getVal("fat_g", next);
+      // Recalcule dès qu'au moins une macro est renseignée
+      const kcal = ((p ?? 0) * 4) + ((c ?? 0) * 4) + ((f ?? 0) * 9);
+      if (kcal > 0) set("calories_target", kcal);
+    }
+
+    // Agrégats mensurations : max(droit, gauche) → champ dominant
+    if (changedKey === "arm_right_cm" || changedKey === "arm_left_cm") {
+      const r = getVal("arm_right_cm", next);
+      const l = getVal("arm_left_cm", next);
+      const dominant = r !== null && l !== null ? Math.max(r, l) : (r ?? l);
+      if (dominant !== null) set("arm_cm", dominant);
+    }
+    if (changedKey === "thigh_right_cm" || changedKey === "thigh_left_cm") {
+      const r = getVal("thigh_right_cm", next);
+      const l = getVal("thigh_left_cm", next);
+      const dominant = r !== null && l !== null ? Math.max(r, l) : (r ?? l);
+      if (dominant !== null) set("thigh_cm", dominant);
+    }
+    if (changedKey === "calf_right_cm" || changedKey === "calf_left_cm") {
+      const r = getVal("calf_right_cm", next);
+      const l = getVal("calf_left_cm", next);
+      const dominant = r !== null && l !== null ? Math.max(r, l) : (r ?? l);
+      if (dominant !== null) set("calf_cm", dominant);
+    }
+
+    return next;
+  }
+
   function setValue(
     blockId: string,
     fieldKey: string,
     value: string | number | string[] | boolean,
   ) {
-    setResponses((prev) => ({
-      ...prev,
-      [blockId]: { ...(prev[blockId] ?? {}), [fieldKey]: value },
-    }));
+    setResponses((prev) => {
+      const withValue = {
+        ...prev,
+        [blockId]: { ...(prev[blockId] ?? {}), [fieldKey]: value },
+      };
+      // Dérivations uniquement sur les champs numériques
+      if (typeof value === "number") {
+        return applyDerived(withValue, blockId, fieldKey);
+      }
+      return withValue;
+    });
   }
 
   const buildPayload = useCallback(
@@ -136,6 +261,10 @@ export default function AssessmentForm({
       if (!res.ok) {
         const d = await res.json();
         setError(d.error || "Erreur lors de la soumission");
+        return;
+      }
+      if (isCoach && onSaved) {
+        onSaved();
         return;
       }
       setSubmitted(true);

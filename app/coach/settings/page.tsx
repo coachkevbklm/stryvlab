@@ -139,6 +139,12 @@ export default function SettingsPage() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Change email states
+  const [emailChangeOpen, setEmailChangeOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [confirmNewEmail, setConfirmNewEmail] = useState("");
+  const [emailChanging, setEmailChanging] = useState(false);
+
   // Delete account states
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -241,12 +247,35 @@ export default function SettingsPage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user?.email) return;
-    await supabase.auth.resetPasswordForEmail(user.email);
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${siteUrl}/auth/reset-password`,
+    });
     showToast("Email de réinitialisation envoyé");
   }
 
   async function handleChangeEmail() {
-    showToast("Fonctionnalité disponible prochainement");
+    if (newEmail.toLowerCase() !== confirmNewEmail.toLowerCase()) {
+      showToast("Les adresses e-mail ne correspondent pas", "error");
+      return;
+    }
+    if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      showToast("Adresse e-mail invalide", "error");
+      return;
+    }
+    setEmailChanging(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    setEmailChanging(false);
+    if (error) {
+      showToast(error.message || "Erreur lors du changement d'email", "error");
+    } else {
+      showToast("Lien de confirmation envoyé à votre nouvelle adresse");
+      setEmailChangeOpen(false);
+      setNewEmail("");
+      setConfirmNewEmail("");
+    }
   }
 
   async function handleDeleteAccount() {
@@ -300,8 +329,8 @@ export default function SettingsPage() {
         ════════════════════════════════════════════════════════════ */}
         <Section
           icon={User}
-          title="Profil"
-          description="Nom, marque, coordonnées et logo"
+          title="Profil pro"
+          description="Identité, marque et coordonnées professionnelles"
         >
           {/* Identité visuelle */}
           <div className="mb-6">
@@ -539,27 +568,81 @@ export default function SettingsPage() {
         >
           <div className="space-y-3">
             {/* Changer email */}
-            <button
-              type="button"
-              onClick={handleChangeEmail}
-              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl bg-white/[0.04] border-subtle hover:bg-white/[0.07] transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <Mail
-                  size={15}
-                  className="text-white/40 group-hover:text-white/60 transition-colors"
-                />
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-white">
-                    Changer d&apos;email
-                  </p>
-                  <p className="text-[11px] text-white/35">
-                    Un lien de confirmation sera envoyé
-                  </p>
+            {!emailChangeOpen ? (
+              <button
+                type="button"
+                onClick={() => setEmailChangeOpen(true)}
+                className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl bg-white/[0.04] border-subtle hover:bg-white/[0.07] transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <Mail
+                    size={15}
+                    className="text-white/40 group-hover:text-white/60 transition-colors"
+                  />
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-white">
+                      Changer d&apos;email
+                    </p>
+                    <p className="text-[11px] text-white/35">
+                      Un lien de confirmation sera envoyé à la nouvelle adresse
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown size={13} className="text-white/20 -rotate-90" />
+              </button>
+            ) : (
+              <div className="rounded-xl bg-white/[0.04] border-subtle p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail size={14} className="text-white/40" />
+                  <p className="text-sm font-semibold text-white">Changer d&apos;email</p>
+                </div>
+                <p className="text-[11px] text-white/40 leading-relaxed">
+                  Saisissez votre nouvelle adresse deux fois. Un lien de confirmation vous sera envoyé à cette adresse — votre email ne changera qu&apos;après validation.
+                </p>
+                <div>
+                  <label className={labelCls}>Nouvelle adresse e-mail</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="nouvelle@email.com"
+                    autoComplete="off"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Confirmer la nouvelle adresse</label>
+                  <input
+                    type="email"
+                    value={confirmNewEmail}
+                    onChange={(e) => setConfirmNewEmail(e.target.value)}
+                    placeholder="nouvelle@email.com"
+                    autoComplete="off"
+                    className={inputCls}
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setEmailChangeOpen(false); setNewEmail(""); setConfirmNewEmail(""); }}
+                    className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-[13px] text-white/55 hover:text-white/80 transition-colors font-medium"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleChangeEmail}
+                    disabled={emailChanging || !newEmail || !confirmNewEmail}
+                    className="flex-1 py-2.5 rounded-xl bg-[#1f8a65] text-white text-[13px] font-bold hover:bg-[#217356] disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {emailChanging ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : null}
+                    {emailChanging ? "Envoi…" : "Envoyer le lien"}
+                  </button>
                 </div>
               </div>
-              <ChevronDown size={13} className="text-white/20 -rotate-90" />
-            </button>
+            )}
 
             {/* Changer MDP */}
             <button

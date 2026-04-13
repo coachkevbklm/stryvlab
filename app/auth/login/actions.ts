@@ -65,6 +65,7 @@ export async function signup(formData: FormData) {
     const supabase = createClient();
 
     const email = formData.get("email") as string;
+    const confirmEmail = formData.get("confirmEmail") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
@@ -98,6 +99,10 @@ export async function signup(formData: FormData) {
         error:
           "Veuillez remplir au moins les champs obligatoires (Identité / Contact / Sécurité).",
       };
+    }
+
+    if (email.toLowerCase() !== confirmEmail.toLowerCase()) {
+      return { error: "Les adresses e-mail ne correspondent pas." };
     }
 
     if (password !== confirmPassword) {

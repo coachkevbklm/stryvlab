@@ -129,7 +129,7 @@ export async function POST(
           (submission.template_snapshot as any)?.[0]?.name ??
           (submission.template_snapshot as any)?.name ??
           "Bilan";
-        const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/coach/clients/${submission.client_id}`;
+        const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/coach/clients/${submission.client_id}/bilans/${submission.id}`;
         await sendBilanCompletedEmail({
           to: coachEmail,
           coachFirstName,

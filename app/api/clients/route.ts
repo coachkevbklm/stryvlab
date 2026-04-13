@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       fitness_level:    fitness_level    || null,
       sport_practice:   sport_practice   || null,
       weekly_frequency: weekly_frequency ?? null,
-      status: 'active',
+      status: 'inactive',
     })
     .select()
     .single()

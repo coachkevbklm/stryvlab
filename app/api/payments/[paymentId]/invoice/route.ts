@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { generateReceiptPdf } from '@/lib/pdf/receipt'
-import nodemailer from 'nodemailer'
+import { sendInvoiceEmail } from '@/lib/email/mailer'
 
 function serviceClient() {
   return createServiceClient(
@@ -133,29 +133,14 @@ export async function POST(
       return NextResponse.json({ error: 'Le client n\'a pas d\'adresse email' }, { status: 400 })
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'mail.privateemail.com',
-      port: Number(process.env.SMTP_PORT) || 465,
-      secure: true,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    })
-
-    const FROM = `${coachName} <${process.env.SMTP_USER}>`
-
-    await transporter.sendMail({
-      from: FROM,
+    await sendInvoiceEmail({
       to: client.email,
-      subject: `Reçu de paiement — ${Number(payment.amount_eur).toFixed(2)} € — ${invoiceNumber}`,
-      html: `
-        <p>Bonjour ${client.first_name ?? ''},</p>
-        <p>Veuillez trouver ci-joint votre reçu de paiement <strong>${invoiceNumber}</strong> d'un montant de <strong>${Number(payment.amount_eur).toFixed(2)} €</strong>.</p>
-        <p style="font-size:12px;color:#999;">Généré avec STRYVR</p>
-      `,
-      attachments: [{
-        filename: `recu-${invoiceNumber}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
+      clientFirstName: client.first_name ?? '',
+      coachName,
+      invoiceNumber,
+      amount: Number(payment.amount_eur),
+      pdfBuffer,
+      fromName: coachName,
     })
 
     // Mark as sent

@@ -24,7 +24,7 @@ const createSchema = z.object({
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   label: z.string().min(1).max(200),
   body: z.string().max(5000).optional(),
-  event_type: z.enum(['program_change', 'injury', 'travel', 'nutrition', 'note']),
+  event_type: z.enum(['program_change', 'injury', 'travel', 'nutrition', 'note', 'lab_protocol']),
 })
 
 export async function GET(

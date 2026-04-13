@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Upload, X, Loader2, Check } from "lucide-react";
+import { Camera, Upload, X, Loader2, Check, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { FieldConfig } from "@/types/assessment";
 
 interface Props {
@@ -123,24 +123,95 @@ function PhotoUploadWidget({
   }
 
   const { label, required, helper } = field;
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  // Détection guide photo : helper multiligne avec "📸"
+  const isPhotoGuide = helper?.startsWith("📸");
 
   return (
     <div>
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <label className="text-sm font-bold text-primary flex items-center gap-1.5">
-          <Camera size={14} className="text-secondary/60 shrink-0" />
+        <label className="text-[12px] font-semibold text-white flex items-center gap-1.5">
+          <Camera size={14} className="text-white/40 shrink-0" />
           {label}
           {required && <span className="text-red-500">*</span>}
         </label>
         {uploaded && !uploading && (
-          <span className="flex items-center gap-1 text-xs font-bold text-green-600 shrink-0">
+          <span className="flex items-center gap-1 text-[11px] font-bold text-[#1f8a65] shrink-0">
             <Check size={12} />
             Uploadée
           </span>
         )}
       </div>
 
-      {helper && <p className="text-xs text-secondary/70 mb-2">{helper}</p>}
+      {helper && !isPhotoGuide && (
+        <p className="text-[11px] text-white/40 mb-2">{helper}</p>
+      )}
+
+      {/* Guide photo — accordion */}
+      {isPhotoGuide && helper && (
+        <div className="mb-3 rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setGuideOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+          >
+            <span className="flex items-center gap-2 text-[11px] font-semibold text-white/60">
+              <Info size={13} className="text-[#1f8a65] shrink-0" />
+              Guide photo — comment bien prendre la photo
+            </span>
+            {guideOpen ? (
+              <ChevronUp size={13} className="text-white/40 shrink-0" />
+            ) : (
+              <ChevronDown size={13} className="text-white/40 shrink-0" />
+            )}
+          </button>
+          {guideOpen && (
+            <div className="px-3 pb-3 border-t border-white/[0.04]">
+              <div className="pt-2.5 flex flex-col gap-1.5">
+                {helper
+                  .split("\n")
+                  .filter((line) => line.trim().length > 0)
+                  .map((line, i) => {
+                    const isBullet = line.trim().startsWith("•");
+                    const isTitle = line.trim().startsWith("📸");
+                    if (isTitle) {
+                      return (
+                        <p key={i} className="text-[11px] font-semibold text-white/70 mb-1">
+                          {line.trim()}
+                        </p>
+                      );
+                    }
+                    if (isBullet) {
+                      const parts = line.trim().slice(2).split(" : ");
+                      return (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="text-[#1f8a65] text-[11px] mt-0.5 shrink-0">•</span>
+                          <p className="text-[11px] text-white/55 leading-relaxed">
+                            {parts.length > 1 ? (
+                              <>
+                                <span className="font-semibold text-white/75">{parts[0]}</span>
+                                {" : "}
+                                {parts.slice(1).join(" : ")}
+                              </>
+                            ) : (
+                              line.trim().slice(2)
+                            )}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p key={i} className="text-[11px] text-white/40">
+                        {line.trim()}
+                      </p>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Zone de drop / preview */}
       <div
@@ -246,6 +317,74 @@ function PhotoUploadWidget({
   );
 }
 
+// Accordion guide pour les champs de mensuration (helper commençant par "📏")
+function MeasureGuideAccordion({ helper }: { helper: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-2 rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left"
+      >
+        <span className="flex items-center gap-2 text-[11px] font-semibold text-white/60">
+          <Info size={13} className="text-[#1f8a65] shrink-0" />
+          Comment prendre cette mesure ?
+        </span>
+        {open ? (
+          <ChevronUp size={13} className="text-white/40 shrink-0" />
+        ) : (
+          <ChevronDown size={13} className="text-white/40 shrink-0" />
+        )}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 border-t border-white/[0.04]">
+          <div className="pt-2.5 flex flex-col gap-1.5">
+            {helper
+              .split("\n")
+              .filter((line) => line.trim().length > 0)
+              .map((line, i) => {
+                const isBullet = line.trim().startsWith("•");
+                const isTitle = line.trim().startsWith("📏");
+                if (isTitle) {
+                  return (
+                    <p key={i} className="text-[11px] font-semibold text-white/70 mb-1">
+                      {line.trim()}
+                    </p>
+                  );
+                }
+                if (isBullet) {
+                  const parts = line.trim().slice(2).split(" : ");
+                  return (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-[#1f8a65] text-[11px] mt-0.5 shrink-0">•</span>
+                      <p className="text-[11px] text-white/55 leading-relaxed">
+                        {parts.length > 1 ? (
+                          <>
+                            <span className="font-semibold text-white/75">{parts[0]}</span>
+                            {" : "}
+                            {parts.slice(1).join(" : ")}
+                          </>
+                        ) : (
+                          line.trim().slice(2)
+                        )}
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <p key={i} className="text-[11px] text-white/40">
+                    {line.trim()}
+                  </p>
+                );
+              })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MetricField({
   field,
   value,
@@ -279,11 +418,19 @@ export default function MetricField({
     </div>
   );
 
+  // Accordion guide pour les helpers 📏 (mensurations)
+  const isMeasureGuide = helper?.startsWith("📏");
+
+  const measureGuideEl = isMeasureGuide && helper ? (
+    <MeasureGuideAccordion helper={helper} />
+  ) : null;
+
   if (input_type === "number") {
     return (
       <div>
         {labelEl}
-        {helper && <p className="text-[11px] text-white/40 mb-2">{helper}</p>}
+        {helper && !isMeasureGuide && <p className="text-[11px] text-white/40 mb-2">{helper}</p>}
+        {measureGuideEl}
         <input
           type="number"
           min={min}
@@ -293,6 +440,7 @@ export default function MetricField({
           onChange={(e) =>
             onChange(e.target.value === "" ? "" : parseFloat(e.target.value))
           }
+          onWheel={(e) => e.currentTarget.blur()}
           placeholder={
             placeholder ??
             (min !== undefined && max !== undefined ? `${min} – ${max}` : "")

@@ -29,7 +29,11 @@ import {
   Calendar,
   Layers,
   GripHorizontal,
+  Activity,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
+import { BioNormsPanel } from "@/components/health/BioNormsPanel";
 import {
   Area,
   AreaChart,
@@ -56,8 +60,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Chart color palette (semantic mapping to STRYVR design tokens) ────────────
 // Only gray tones for charts - green only on hover/active states
-const CHART_COLOR_PRIMARY = "#3d3d3d"; // gris neutre sombre DS v2.0
-const CHART_COLOR_ACCENT = "#525252"; // gris neutre moyen DS v2.0
 
 // ─── Chart config for shadcn charts ───────────────────────────────────────────
 function createChartConfig(selectedMetrics: string[]): ChartConfig {
@@ -79,7 +81,6 @@ interface FieldDef {
   key: string;
   label: string;
   unit: string;
-  color: string;
   category: "composition" | "measurements" | "wellness";
   step: number;
 }
@@ -89,7 +90,6 @@ const FIELDS: FieldDef[] = [
     key: "weight_kg",
     label: "Poids",
     unit: "kg",
-    color: CHART_COLOR_PRIMARY,
     category: "composition",
     step: 0.1,
   },
@@ -97,7 +97,6 @@ const FIELDS: FieldDef[] = [
     key: "body_fat_pct",
     label: "Masse grasse %",
     unit: "%",
-    color: CHART_COLOR_ACCENT,
     category: "composition",
     step: 0.1,
   },
@@ -105,7 +104,13 @@ const FIELDS: FieldDef[] = [
     key: "fat_mass_kg",
     label: "Masse grasse",
     unit: "kg",
-    color: CHART_COLOR_ACCENT,
+    category: "composition",
+    step: 0.1,
+  },
+  {
+    key: "lean_mass_kg",
+    label: "Masse maigre",
+    unit: "kg",
     category: "composition",
     step: 0.1,
   },
@@ -113,15 +118,20 @@ const FIELDS: FieldDef[] = [
     key: "muscle_mass_kg",
     label: "Masse musculaire",
     unit: "kg",
-    color: CHART_COLOR_PRIMARY,
     category: "composition",
     step: 0.1,
   },
   {
-    key: "muscle_pct",
-    label: "Musculaire %",
+    key: "muscle_mass_pct",
+    label: "Masse musculaire %",
     unit: "%",
-    color: CHART_COLOR_ACCENT,
+    category: "composition",
+    step: 0.1,
+  },
+  {
+    key: "skeletal_muscle_pct",
+    label: "Musc. squelettique %",
+    unit: "%",
     category: "composition",
     step: 0.1,
   },
@@ -129,7 +139,6 @@ const FIELDS: FieldDef[] = [
     key: "body_water_pct",
     label: "Hydrique %",
     unit: "%",
-    color: CHART_COLOR_PRIMARY,
     category: "composition",
     step: 0.1,
   },
@@ -137,31 +146,13 @@ const FIELDS: FieldDef[] = [
     key: "bone_mass_kg",
     label: "Masse osseuse",
     unit: "kg",
-    color: CHART_COLOR_ACCENT,
     category: "composition",
     step: 0.01,
   },
   {
-    key: "visceral_fat",
+    key: "visceral_fat_level",
     label: "Graisse viscérale",
     unit: "",
-    color: CHART_COLOR_PRIMARY,
-    category: "composition",
-    step: 1,
-  },
-  {
-    key: "skeletal_muscle_mass_kg",
-    label: "Masse musculaire squelettique",
-    unit: "kg",
-    color: CHART_COLOR_ACCENT,
-    category: "composition",
-    step: 0.1,
-  },
-  {
-    key: "bmr_kcal",
-    label: "Métabolisme de base",
-    unit: "kcal",
-    color: CHART_COLOR_PRIMARY,
     category: "composition",
     step: 1,
   },
@@ -169,7 +160,6 @@ const FIELDS: FieldDef[] = [
     key: "waist_cm",
     label: "Tour de taille",
     unit: "cm",
-    color: CHART_COLOR_PRIMARY,
     category: "measurements",
     step: 0.5,
   },
@@ -177,7 +167,6 @@ const FIELDS: FieldDef[] = [
     key: "hips_cm",
     label: "Hanches",
     unit: "cm",
-    color: CHART_COLOR_ACCENT,
     category: "measurements",
     step: 0.5,
   },
@@ -185,7 +174,6 @@ const FIELDS: FieldDef[] = [
     key: "chest_cm",
     label: "Poitrine",
     unit: "cm",
-    color: CHART_COLOR_PRIMARY,
     category: "measurements",
     step: 0.5,
   },
@@ -193,7 +181,6 @@ const FIELDS: FieldDef[] = [
     key: "arm_cm",
     label: "Bras",
     unit: "cm",
-    color: CHART_COLOR_ACCENT,
     category: "measurements",
     step: 0.5,
   },
@@ -201,7 +188,6 @@ const FIELDS: FieldDef[] = [
     key: "thigh_cm",
     label: "Cuisse",
     unit: "cm",
-    color: CHART_COLOR_PRIMARY,
     category: "measurements",
     step: 0.5,
   },
@@ -209,7 +195,6 @@ const FIELDS: FieldDef[] = [
     key: "calf_cm",
     label: "Mollet",
     unit: "cm",
-    color: CHART_COLOR_ACCENT,
     category: "measurements",
     step: 0.5,
   },
@@ -217,15 +202,20 @@ const FIELDS: FieldDef[] = [
     key: "neck_cm",
     label: "Cou",
     unit: "cm",
-    color: CHART_COLOR_PRIMARY,
     category: "measurements",
     step: 0.5,
   },
   {
-    key: "sleep_hours",
+    key: "waist_hip_ratio",
+    label: "Ratio taille/hanches",
+    unit: "",
+    category: "measurements",
+    step: 0.01,
+  },
+  {
+    key: "sleep_duration_h",
     label: "Sommeil",
     unit: "h",
-    color: CHART_COLOR_PRIMARY,
     category: "wellness",
     step: 0.25,
   },
@@ -233,7 +223,6 @@ const FIELDS: FieldDef[] = [
     key: "energy_level",
     label: "Énergie",
     unit: "/10",
-    color: CHART_COLOR_ACCENT,
     category: "wellness",
     step: 1,
   },
@@ -241,46 +230,65 @@ const FIELDS: FieldDef[] = [
     key: "stress_level",
     label: "Stress",
     unit: "/10",
-    color: CHART_COLOR_PRIMARY,
     category: "wellness",
     step: 1,
   },
 ];
 
 const FIELD_MAP = Object.fromEntries(FIELDS.map((f) => [f.key, f]));
-const KPI_FIELDS = ["weight_kg", "body_fat_pct", "muscle_mass_kg", "bmr_kcal"];
+const KPI_FIELDS = ["weight_kg", "body_fat_pct", "muscle_mass_kg", "muscle_mass_pct"];
 const NEG_GOOD_FIELDS = [
   "body_fat_pct",
   "fat_mass_kg",
-  "visceral_fat",
+  "visceral_fat_level",
   "bmi",
   "stress_level",
 ];
 
 // ─── Couleurs sémantiques par métrique ───────────────────────────────────────
-// Chaque métrique a une couleur fixe — pas index-based.
-// Palette : teintes distinctes, lisibles sur fond sombre DS v2.0.
+// Source de vérité unique — utilisée dans overlay ET chips.
+// Règle : aucun doublon de couleur. Familles sémantiques cohérentes.
+//
+// Famille graisse    : orange/rouge  — signal négatif
+// Famille muscle     : vert          — 3 teintes distinctes selon précision
+// Famille structure  : teal/bleu     — masse maigre, eau, os
+// Famille mensurations : spectre froid distinct de la composition
+// Famille bien-être  : indigo/jaune/rouge clair
 const METRIC_COLORS: Record<string, string> = {
-  weight_kg: "#9ca3af", // gris neutre — poids total
-  body_fat_pct: "#f97316", // orange — masse grasse %
-  fat_mass_kg: "#fb923c", // orange clair — masse grasse kg
-  muscle_mass_kg: "#1f8a65", // vert accent — masse musculaire
-  muscle_pct: "#34d399", // vert émeraude — % musculaire
-  skeletal_muscle_mass_kg: "#10b981", // vert moyen — musc. squelettique
-  body_water_pct: "#38bdf8", // bleu clair — hydratation
-  bone_mass_kg: "#a78bfa", // violet — os
-  visceral_fat: "#ef4444", // rouge — graisse viscérale
-  bmr_kcal: "#facc15", // jaune — métabolisme
-  waist_cm: "#f97316", // orange — tour de taille
-  hips_cm: "#fb7185", // rose — hanches
-  chest_cm: "#c084fc", // violet clair — poitrine
-  arm_cm: "#34d399", // vert — bras
-  thigh_cm: "#38bdf8", // bleu — cuisse
-  calf_cm: "#22d3ee", // cyan — mollet
-  neck_cm: "#a3e635", // vert lime — cou
-  sleep_hours: "#818cf8", // indigo — sommeil
-  energy_level: "#facc15", // jaune — énergie
-  stress_level: "#f87171", // rouge clair — stress
+  // ── Poids ──────────────────────────────────────────────────────────────────
+  weight_kg:           "#9ca3af", // gris neutre — poids total (référence)
+
+  // ── Graisse (famille orange→rouge) ────────────────────────────────────────
+  body_fat_pct:        "#f97316", // orange vif — % masse grasse
+  fat_mass_kg:         "#fb923c", // orange moyen — masse grasse kg
+  visceral_fat_level:  "#ef4444", // rouge — graisse viscérale (risque élevé)
+
+  // ── Muscle (famille vert, 3 teintes distinctes) ────────────────────────────
+  muscle_mass_kg:      "#1f8a65", // vert STRYV foncé — masse musculaire kg (valeur absolue)
+  muscle_mass_pct:     "#34d399", // vert émeraude — % musculaire total
+  skeletal_muscle_pct: "#86efac", // vert clair pastel — % squelettique (sous-ensemble)
+
+  // ── Structure corporelle (famille teal/bleu) ──────────────────────────────
+  lean_mass_kg:        "#2dd4bf", // teal — masse maigre (distinct du vert muscle)
+  body_water_pct:      "#38bdf8", // bleu ciel — hydratation cellulaire
+  bone_mass_kg:        "#a78bfa", // violet — masse osseuse
+
+  // ── Mensurations tronc (famille amber/rose) ────────────────────────────────
+  waist_cm:            "#fbbf24", // amber — tour de taille (risque central)
+  hips_cm:             "#f472b6", // rose — hanches
+  waist_hip_ratio:     "#fb7185", // rose-rouge — ratio taille/hanches
+
+  // ── Mensurations membres (spectre froid distinct) ─────────────────────────
+  chest_cm:            "#c084fc", // violet clair — poitrine
+  arm_cm:              "#60a5fa", // bleu moyen — bras
+  thigh_cm:            "#7dd3fc", // bleu clair — cuisse
+  calf_cm:             "#67e8f9", // cyan — mollet
+  neck_cm:             "#a3e635", // lime — cou (Navy)
+
+  // ── Bien-être ─────────────────────────────────────────────────────────────
+  sleep_duration_h:    "#818cf8", // indigo — sommeil
+  energy_level:        "#facc15", // jaune — énergie subjective
+  stress_level:        "#f87171", // rouge clair — stress perçu
 };
 
 function getMetricColor(key: string): string {
@@ -291,49 +299,57 @@ function getMetricColor(key: string): string {
 // Seules les métriques comparables ensemble (même échelle narrative) sont groupées.
 const OVERLAY_GROUPS = [
   {
-    key: "body_composition",
-    label: "Composition corporelle",
-    desc: "Poids, masse grasse et muscle en kg — trajectoires de recomposition",
+    key: "recomposition",
+    label: "Recomposition",
+    desc: "Poids, masse grasse et masse musculaire en kg — trajectoires de recomposition",
     interpretation:
-      "Toutes les courbes partent de 0 % au point de départ. Une hausse de la masse musculaire couplée à une baisse de la masse grasse indique une recomposition réussie, même si le poids total reste stable. Idéal pour évaluer l'efficacité d'un protocole sur la durée.",
+      "Vue centrale du coach. Toutes les courbes sont normalisées à 0 % au point de départ — chaque série montre sa variation relative, indépendamment de son unité. Le signal clé : fat_mass ↓ + muscle_mass ↑ simultanément, même si le poids total stagne. C'est la signature d'une recomposition réussie. lean_mass (= poids − graisse) est un indicateur de rétention globale : il monte si le client gagne du muscle ou de l'eau, et descend si le déficit est trop agressif. Seuil de détection plateau : ±0.5 % sur 4 bilans consécutifs (Schoenfeld 2010). Minimum 3 points pour interpréter une tendance.",
     metrics: [
       "weight_kg",
       "fat_mass_kg",
+      "lean_mass_kg",
       "muscle_mass_kg",
-      "skeletal_muscle_mass_kg",
-      "bone_mass_kg",
     ],
   },
   {
     key: "body_ratios",
     label: "Ratios corporels",
-    desc: "Pourcentages — grasse, musculaire, hydrique",
+    desc: "% masse grasse, % musculaire total, % squelettique, % hydratation",
     interpretation:
-      "Ces ratios sont interdépendants : une baisse du % masse grasse entraîne mécaniquement une hausse relative du % musculaire, même sans gain de muscle. La graisse viscérale (score) est un indicateur de risque métabolique indépendant — un score > 12 est cliniquement significatif (ACE). Interpréter toujours les % en parallèle avec les valeurs absolues (kg) pour distinguer une vraie prise de muscle d'un simple effet de dilution.",
-    metrics: ["body_fat_pct", "visceral_fat", "muscle_pct", "body_water_pct"],
+      "Ces ratios sont mécaniquement interdépendants : une baisse du % masse grasse fait monter le % musculaire même sans vrai gain. Croiser toujours avec 'Recomposition' (valeurs absolues) pour distinguer un vrai gain d'un effet de dilution. muscle_mass_pct et skeletal_muscle_pct évoluent souvent de concert — un écart croissant entre les deux peut signaler une adaptation du tissu conjonctif ou une variation de la méthode de mesure. body_water_pct : une chute soudaine indique déshydratation, pas perte de graisse.",
+    metrics: ["body_fat_pct", "muscle_mass_pct", "skeletal_muscle_pct", "body_water_pct"],
   },
   {
-    key: "measurements",
-    label: "Mensurations",
-    desc: "Tours de taille, hanches, bras, cuisse — en cm",
+    key: "metabolic_risk",
+    label: "Risque métabolique",
+    desc: "Graisse viscérale, ratio taille/hanches — indicateurs cardio-métaboliques",
     interpretation:
-      "Les mensurations reflètent les changements morphologiques locaux, souvent avant que le poids ne bouge. Une baisse du tour de taille avec stabilité des bras et cuisses est un signal positif de perte de graisse centrale. Particulièrement utile pour les clients en recomposition corporelle.",
-    metrics: [
-      "waist_cm",
-      "hips_cm",
-      "chest_cm",
-      "arm_cm",
-      "thigh_cm",
-      "calf_cm",
-    ],
+      "Indicateurs de risque indépendants du poids total — un client normopondéral peut avoir un profil à risque élevé. Graisse viscérale (score Tanita) : seuil clinique à 12 (ACE). Ratio taille/hanches : risque élevé > 0.85 femme / 0.90 homme (OMS 2011). Ces deux métriques répondent en 4–8 semaines à un déficit calorique modéré, souvent avant que le poids ne bouge.",
+    metrics: ["visceral_fat_level", "waist_cm", "waist_hip_ratio"],
+  },
+  {
+    key: "measurements_upper",
+    label: "Mensurations — membres",
+    desc: "Bras, cuisse, mollet, poitrine — développement musculaire segmentaire",
+    interpretation:
+      "Signal d'hypertrophie localisée. Bras + cuisse en hausse avec tour de taille stable = prise de masse propre. Ces mesures bougent lentement (4–8 semaines minimum) — ne pas interpréter sur moins de 3 points. Particulièrement utile pour valider la progression quand la balance est ambiguë (rétention d'eau, variation de glycogène).",
+    metrics: ["arm_cm", "thigh_cm", "calf_cm", "chest_cm"],
+  },
+  {
+    key: "measurements_central",
+    label: "Mensurations — tronc",
+    desc: "Taille, hanches, cou — morphologie centrale et ratio",
+    interpretation:
+      "Tour de taille = premier indicateur de perte de graisse abdominale, souvent avant le poids. Hanches : marqueur de distribution gynoïde. Tour de cou : utilisé dans la formule Navy pour estimer la masse grasse (Hodgdon & Beckett 1984) — une réduction du cou peut signaler une perte de graisse faciale/cervicale. Ratio taille/hanches évolue même sans variation de poids.",
+    metrics: ["waist_cm", "hips_cm", "neck_cm"],
   },
   {
     key: "wellness",
-    label: "Bien-être",
-    desc: "Sommeil, énergie, stress — scores et heures",
+    label: "Récupération & bien-être",
+    desc: "Sommeil, énergie subjective, stress perçu",
     interpretation:
-      "Le bien-être conditionne directement la récupération et les adaptations. Un stress chronique élevé ou un sommeil insuffisant peuvent bloquer les progrès malgré un entraînement optimal. Corréler ces courbes avec les phases d'entraînement intensif pour identifier les périodes à risque de surentraînement.",
-    metrics: ["sleep_hours", "energy_level", "stress_level"],
+      "Le bien-être conditionne directement les adaptations. Un stress chronique élevé (cortisol) bloque la lipolyse et favorise le catabolisme musculaire. Sommeil < 7h est associé à une réduction de 55% de la perte de masse grasse sous déficit calorique (Spiegel et al. 2010). Corréler ces courbes avec les phases d'entraînement pour identifier les périodes à risque de surentraînement.",
+    metrics: ["sleep_duration_h", "energy_level", "stress_level"],
   },
 ];
 
@@ -431,13 +447,15 @@ const ANNOTATION_LABELS: Record<AnnotationType, string> = {
 const PLATEAU_THRESHOLDS: Partial<
   Record<string, { pct: number; minPoints: number }>
 > = {
+  lean_mass_kg: { pct: 0.5, minPoints: 4 },
   muscle_mass_kg: { pct: 0.5, minPoints: 4 },
-  skeletal_muscle_mass_kg: { pct: 0.5, minPoints: 4 },
+  muscle_mass_pct: { pct: 1.0, minPoints: 4 },
+  skeletal_muscle_pct: { pct: 1.0, minPoints: 4 },
   fat_mass_kg: { pct: 1.5, minPoints: 3 },
   body_fat_pct: { pct: 2.0, minPoints: 3 },
   weight_kg: { pct: 0.5, minPoints: 3 },
   waist_cm: { pct: 1.0, minPoints: 3 },
-  sleep_hours: { pct: 5.0, minPoints: 4 },
+  sleep_duration_h: { pct: 5.0, minPoints: 4 },
   energy_level: { pct: 10.0, minPoints: 4 },
 };
 const DEFAULT_PLATEAU_THRESHOLD = { pct: 2.0, minPoints: 3 };
@@ -517,14 +535,14 @@ const NORM_ZONES: Partial<
       { label: "Obèse", min: 31, max: 55, color: "rgba(239,68,68,0.10)" },
     ],
   },
-  visceral_fat: {
+  visceral_fat_level: {
     neutral: [
       { label: "Sain", min: 1, max: 9, color: "rgba(31,138,101,0.12)" },
       { label: "Excessif", min: 9, max: 14, color: "rgba(250,204,21,0.10)" },
       { label: "Dangereux", min: 14, max: 30, color: "rgba(239,68,68,0.12)" },
     ],
   },
-  sleep_hours: {
+  sleep_duration_h: {
     neutral: [
       { label: "Insuffisant", min: 0, max: 6, color: "rgba(239,68,68,0.10)" },
       { label: "Optimal", min: 6, max: 9, color: "rgba(31,138,101,0.12)" },
@@ -547,7 +565,7 @@ const NORM_ZONES: Partial<
   },
 };
 
-type ViewMode = "table" | "charts" | "overlay";
+type ViewMode = "table" | "charts" | "overlay" | "norms";
 type ChartCategory = "composition" | "measurements" | "wellness";
 type DateRangePreset = "1m" | "3m" | "6m" | "1y" | "all" | "custom";
 
@@ -1477,6 +1495,20 @@ function MultiSeriesChart({
   );
 
   const [chartHeight, setChartHeight] = useState(300);
+  const chartHeightRef = useRef(300);
+  const chartDivRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ── Fermer plein écran avec Escape ──
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isFullscreen]);
 
   // ── Interpretation panel toggle (default collapsed) ──
   const [showInterpretation, setShowInterpretation] = useState(false);
@@ -1872,15 +1904,24 @@ function MultiSeriesChart({
     return null;
   }
 
-  return (
+  const innerContent = (
     <div className="flex flex-col gap-4">
       {/* ── Bloc 1 : Contrôles — groupes + sélection métriques ── */}
       <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
         {/* Description */}
         <div className="mb-4 pb-4 border-b border-white/[0.05]">
-          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em] mb-1.5">
-            Vue superposée
-          </p>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+              Vue superposée
+            </p>
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/[0.04] text-white/30 hover:bg-white/[0.08] hover:text-white/60 transition-all"
+              title="Plein écran (F)"
+            >
+              <Maximize2 size={11} />
+            </button>
+          </div>
           <p className="text-[12px] text-white/55 leading-relaxed">
             {useAbsoluteAxis ? (
               <>
@@ -1954,14 +1995,27 @@ function MultiSeriesChart({
                     setVisibleSeries(new Set(withData));
                     setShowInterpretation(false);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                     isActive
-                      ? "bg-[#1f8a65] text-white"
+                      ? "bg-[#1f8a65]/20 text-white border-[0.3px] border-[#1f8a65]/40"
                       : hasData
-                        ? "bg-white/[0.06] text-white/60 hover:bg-white/[0.10] hover:text-white"
-                        : "bg-white/[0.03] text-white/20 cursor-not-allowed"
+                        ? "bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white border-[0.3px] border-white/[0.06]"
+                        : "bg-white/[0.02] text-white/15 cursor-not-allowed border-[0.3px] border-white/[0.04]"
                   }`}
                 >
+                  {/* Micro-palette : 3 premiers points colorés du groupe */}
+                  <span className="flex items-center gap-0.5 shrink-0">
+                    {group.metrics.slice(0, 3).map((m) => (
+                      <span
+                        key={m}
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          backgroundColor: getMetricColor(m),
+                          opacity: isActive ? 1 : hasData ? 0.5 : 0.2,
+                        }}
+                      />
+                    ))}
+                  </span>
                   {group.label}
                 </button>
               );
@@ -2058,16 +2112,23 @@ function MultiSeriesChart({
                           else newSet.add(f.key);
                           setVisibleSeries(newSet);
                         }}
-                        className="relative px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                        className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
                         style={
                           isVisible
                             ? { backgroundColor: `${color}22`, color }
                             : {
                                 backgroundColor: "rgba(255,255,255,0.04)",
-                                color: "rgba(255,255,255,0.30)",
+                                color: "rgba(255,255,255,0.35)",
                               }
                         }
                       >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0 transition-opacity"
+                          style={{
+                            backgroundColor: color,
+                            opacity: isVisible ? 1 : 0.35,
+                          }}
+                        />
                         {f.label}
                         {hasPlateau && isVisible && (
                           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400" />
@@ -2089,7 +2150,8 @@ function MultiSeriesChart({
 
       {/* ── Bloc 2 : Graphique ── */}
       <div
-        className="bg-[#181818] border-subtle rounded-2xl relative"
+        ref={chartDivRef}
+        className="bg-[#181818] border-subtle rounded-2xl relative overflow-hidden"
         style={{ height: chartHeight }}
       >
         {/* ── Chart empty state ── */}
@@ -2530,34 +2592,34 @@ function MultiSeriesChart({
           </p>
         </div>
 
-        {/* Drag handle — sur la bordure basse du bloc, centré */}
+        {/* ── Drag handle — ligne épaisse collée au bord bas du bloc ── */}
         <div
           onMouseDown={(e) => {
             e.preventDefault();
             const startY = e.clientY;
-            const startH = chartHeight;
-            const onMove = (ev: MouseEvent) =>
-              setChartHeight(
-                Math.max(120, Math.min(600, startH + ev.clientY - startY)),
-              );
+            const startH = chartHeightRef.current;
+            const el = chartDivRef.current;
+
+            const onMove = (ev: MouseEvent) => {
+              const next = Math.max(160, Math.min(700, startH + ev.clientY - startY));
+              chartHeightRef.current = next;
+              if (el) el.style.height = `${next}px`;
+            };
             const onUp = () => {
+              setChartHeight(chartHeightRef.current);
               window.removeEventListener("mousemove", onMove);
               window.removeEventListener("mouseup", onUp);
             };
             window.addEventListener("mousemove", onMove);
             window.addEventListener("mouseup", onUp);
           }}
-          className="absolute left-1/2 bottom-0 -translate-x-1/2 -translate-y-1/2 z-10 cursor-row-resize group"
+          className="absolute bottom-0 left-0 right-0 h-[10px] cursor-row-resize group flex items-end"
         >
-          <div className="flex h-6 w-16 items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.12] group-hover:border-white/[0.18] transition-all">
-            <GripHorizontal
-              size={12}
-              className="text-white/30 group-hover:text-white/60 transition-colors"
-            />
-          </div>
+          <div className="w-full h-[3px] bg-white/[0.08] group-hover:bg-[#1f8a65]/60 group-active:bg-[#1f8a65] transition-colors duration-150" />
         </div>
       </div>
       {/* end Bloc 2: Graphique */}
+
 
       {/* ── Bloc 3 : Légende Δ% + zones normatives ── */}
       {(visibleSeries.size > 0 || (useAbsoluteAxis && activeNormZones)) && (
@@ -2945,6 +3007,40 @@ function MultiSeriesChart({
           );
         })()}
     </div>
+  );
+
+  return (
+    <>
+      {innerContent}
+
+      {/* ── Modal plein écran ── */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false); }}
+        >
+          <div className="relative w-full max-w-[95vw] h-[92vh] bg-[#181818] rounded-2xl border-[0.3px] border-white/[0.06] flex flex-col overflow-hidden">
+            {/* Header modal */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.05] shrink-0">
+              <p className="text-[11px] font-bold text-white/40 uppercase tracking-[0.14em]">
+                Vue superposée — plein écran
+              </p>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/70 transition-all"
+                title="Fermer (Escape)"
+              >
+                <Minimize2 size={13} />
+              </button>
+            </div>
+            {/* Contenu scrollable */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {innerContent}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -4245,6 +4341,7 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
             { key: "table" as ViewMode, label: "Tableau", Icon: Table2 },
             { key: "charts" as ViewMode, label: "Graphiques", Icon: BarChart2 },
             { key: "overlay" as ViewMode, label: "Superposé", Icon: Layers },
+            { key: "norms" as ViewMode, label: "Normes", Icon: Activity },
           ].map(({ key, label, Icon }) => {
             const canOverlay = filter.selectedMetrics.length > 1;
             const isOverlay = key === "overlay";
@@ -4869,6 +4966,15 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
               );
             })()}
         </>
+      )}
+
+      {/* ── Bloc 6 : NORMS VIEW ── */}
+      {viewMode === "norms" && (
+        <BioNormsPanel
+          submissionId={rows[0]?.submissionId ?? ''}
+          clientProfile={{ sex: clientGender }}
+          bilanDate={rows[0]?.date}
+        />
       )}
 
       {/* ── Modals ── */}

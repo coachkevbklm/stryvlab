@@ -66,23 +66,49 @@ export async function PATCH(
     }
   }
 
+  // Load existing responses to know which block_id each field lives in.
+  // This is critical for bilan submissions that use a real block UUID — writing
+  // to 'csv_import_block' would create cross-block duplicates.
+  const { data: existingResponses } = await db
+    .from('assessment_responses')
+    .select('field_key, block_id')
+    .eq('submission_id', params.submissionId)
+
+  // Map field_key → existing block_id (first occurrence wins)
+  const existingBlockId: Record<string, string> = {}
+  for (const r of existingResponses ?? []) {
+    if (!(r.field_key in existingBlockId)) {
+      existingBlockId[r.field_key] = r.block_id
+    }
+  }
+
+  // Canonical block_id for new fields: prefer the block that holds weight_kg,
+  // otherwise the most common block in this submission, otherwise csv_import_block.
+  const canonicalBlockId = existingBlockId['weight_kg']
+    ?? (existingResponses?.length
+      ? Object.values(existingBlockId).sort((a, b) =>
+          Object.values(existingBlockId).filter(v => v === b).length -
+          Object.values(existingBlockId).filter(v => v === a).length
+        )[0]
+      : 'csv_import_block')
+
   // Upsert or delete each field value
   for (const [fieldKey, value] of Object.entries(values)) {
     if (value === null) {
-      // Remove this field from the submission
+      // Remove this field from the submission across ALL block_ids
       await db
         .from('assessment_responses')
         .delete()
         .eq('submission_id', params.submissionId)
         .eq('field_key', fieldKey)
     } else {
-      // Upsert
+      const blockId = existingBlockId[fieldKey] ?? canonicalBlockId
       const { error: upsertErr } = await db
         .from('assessment_responses')
         .upsert(
           {
             submission_id: params.submissionId,
-            block_id: 'csv_import_block',
+            block_id: blockId,
             field_key: fieldKey,
             value_number: value,
           },

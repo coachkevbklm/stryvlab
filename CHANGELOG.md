@@ -7,6 +7,14 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
+FIX: Create client with status 'inactive' instead of 'active' — prevents false "active" state before invitation is sent
+FIX: Add fallback to generateLink type 'recovery' when 'invite' fails (user already exists in Supabase Auth)
+FIX: Handle Supabase hash error (otp_expired, access_denied) in /client/login with user-friendly message
+FIX: Handle Supabase hash fragment (#access_token) in /client/login — redirect to /client/set-password when type=invite|recovery
+FIX: Support both hash fragment (access_token) and PKCE code flow in /client/set-password via setSession fallback
+FEATURE: Add email confirmation field at signup step 3 — double-entry prevents typos, validated client-side and server-side
+FEATURE: Implement inline email change flow in coach settings — coach enters new email twice, confirmation link sent to new address
+FIX: Rename "Profil" section to "Profil pro" in coach settings for clarity
 FEATURE: Add client archive and hard delete from client detail page
 FEATURE: Superpower Coach Dashboard — hero summary narratif, fil d'alertes priorisées (critical/urgent/info), actions rapides contextuelles, clients segmentés avec sparklines, financier condensé (MRR + revenus + impayés)
 FIX: QuickActions — CTA contextuel toujours visible (fallback "Nouveau client" quand aucune urgence)

@@ -70,7 +70,7 @@ export default async function BilanDetailPage({
             <p className="text-xs text-secondary">{date}</p>
           </div>
           <div className="ml-auto">
-            {submission.status === "completed" ? (
+            {submissionData.status === "completed" ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
                 <CheckCircle2 size={11} />
                 Complété

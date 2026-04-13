@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientCalculatorResults } from "@/lib/db/calculator-results";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Query parameters schema
  */

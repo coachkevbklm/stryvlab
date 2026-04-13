@@ -77,7 +77,7 @@ const GENERAL_FIELDS: FieldConfig[] = [
     label: 'Taille',
     input_type: 'number',
     unit: 'cm',
-    required: false,
+    required: true,
     visible: true,
     min: 100,
     max: 230,
@@ -156,7 +156,7 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     min: 3,
     max: 60,
     step: 0.1,
-    helper: 'Issu de balance à impédance, DEXA ou plis cutanés',
+    helper: 'Issu de balance à impédance, DEXA ou plis cutanés. Si présent, ce champ est prioritaire sur la Masse grasse (kg).',
   },
   {
     key: 'fat_mass_kg',
@@ -181,12 +181,12 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     min: 20,
     max: 150,
     step: 0.1,
-    helper: 'Muscles + os + eau + organes',
+    helper: 'Poids total – masse grasse (muscles + os + eau + organes). Différent de la masse musculaire squelettique.',
     show_if: { field_key: 'measurement_method', operator: 'not_empty' },
   },
   {
     key: 'muscle_mass_kg',
-    label: 'Masse musculaire squelettique',
+    label: 'Masse musculaire',
     input_type: 'number',
     unit: 'kg',
     required: false,
@@ -194,7 +194,33 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     min: 10,
     max: 120,
     step: 0.1,
-    helper: 'Donnée spécifique à certaines balances / DEXA',
+    helper: 'Masse totale de tous les types de muscles. Fourni directement par la balance à impédance, InBody ou DEXA.',
+    show_if: { field_key: 'measurement_method', operator: 'not_empty' },
+  },
+  {
+    key: 'muscle_mass_pct',
+    label: 'Masse musculaire (%)',
+    input_type: 'number',
+    unit: '%',
+    required: false,
+    visible: true,
+    min: 5,
+    max: 70,
+    step: 0.1,
+    helper: 'Pourcentage de masse musculaire totale. Fourni directement par la balance à impédance.',
+    show_if: { field_key: 'measurement_method', operator: 'not_empty' },
+  },
+  {
+    key: 'skeletal_muscle_pct',
+    label: 'Masse musculaire squelettique (%)',
+    input_type: 'number',
+    unit: '%',
+    required: false,
+    visible: true,
+    min: 5,
+    max: 60,
+    step: 0.1,
+    helper: 'Muscles contractiles attachés au squelette uniquement (sous-ensemble de la masse musculaire totale). Fourni par InBody, DEXA ou certaines Tanita.',
     show_if: { field_key: 'measurement_method', operator: 'not_empty' },
   },
   {
@@ -242,6 +268,32 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     step: 0.1,
     show_if: { field_key: 'measurement_method', operator: 'not_empty' },
   },
+  {
+    key: 'metabolic_age',
+    label: 'Âge métabolique',
+    input_type: 'number',
+    unit: 'ans',
+    required: false,
+    visible: false,
+    min: 10,
+    max: 90,
+    step: 1,
+    helper: 'Valeur fournie directement par votre balance impédancemétrique (Tanita, InBody, Withings…). Si non disponible, une estimation sera calculée automatiquement.',
+    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+  },
+  {
+    key: 'bmr_kcal_measured',
+    label: 'BMR mesuré',
+    input_type: 'number',
+    unit: 'kcal',
+    required: false,
+    visible: false,
+    min: 800,
+    max: 4000,
+    step: 1,
+    helper: 'Métabolisme de base lu directement sur la balance impédancemétrique (Tanita, InBody, Withings…). Utilisé à la place des formules estimatives dans le calculateur de macros.',
+    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+  },
 ]
 
 // ------------------------------------------------------------------
@@ -259,10 +311,16 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 40,
     max: 180,
     step: 0.5,
-    helper: 'Au niveau du nombril, à jeun',
+    helper: `📏 Comment mesurer — Tour de taille
+
+• Endroit exact : au niveau du nombril, entre le bas des côtes et le haut des hanches
+• Position : debout, pieds joints, abdomen détendu (ne pas rentrer le ventre)
+• Mètre : posé à plat sur la peau, non serré — glisser un doigt sous le mètre pour vérifier
+• Moment : à jeun le matin, après être allé aux toilettes
+• Respiration : mesurer en expiration normale, pas en apnée`,
   },
   {
-    key: 'hip_cm',
+    key: 'hips_cm',
     label: 'Tour de hanches',
     input_type: 'number',
     unit: 'cm',
@@ -271,6 +329,12 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 50,
     max: 180,
     step: 0.5,
+    helper: `📏 Comment mesurer — Tour de hanches
+
+• Endroit exact : à la saillie maximale des fessiers — généralement 18 à 22 cm sous le nombril
+• Position : debout, pieds joints, jambes légèrement décontractées
+• Mètre : horizontal, parallèle au sol sur tout le tour
+• Moment : le matin, mêmes conditions que les autres mesures`,
   },
   {
     key: 'waist_hip_ratio',
@@ -282,7 +346,7 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 0.5,
     max: 1.5,
     step: 0.01,
-    helper: 'Calculé si taille + hanches renseignées — indicateur de risque métabolique',
+    helper: 'Calculé automatiquement depuis tour de taille ÷ tour de hanches — indicateur de risque métabolique (idéal < 0,85 chez la femme, < 0,90 chez l\'homme)',
   },
   {
     key: 'chest_cm',
@@ -294,10 +358,16 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 50,
     max: 160,
     step: 0.5,
+    helper: `📏 Comment mesurer — Tour de poitrine
+
+• Endroit exact : au niveau des mamelons, à la saillie maximale du torse
+• Position : debout, bras légèrement écartés le temps de passer le mètre, puis ramenés le long du corps
+• Mètre : horizontal, dans le dos et sur la poitrine au même niveau
+• Moment : expiration normale, torse décontracté`,
   },
   {
-    key: 'arm_right_cm',
-    label: 'Bras droit (détendu)',
+    key: 'arm_cm',
+    label: 'Tour de bras (dominant, détendu)',
     input_type: 'number',
     unit: 'cm',
     required: false,
@@ -305,6 +375,62 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 15,
     max: 70,
     step: 0.5,
+    helper: `📏 Comment mesurer — Tour de bras
+
+• Endroit exact : à mi-distance entre l'épaule (acromion) et le coude (olécrâne) — le point le plus large du bras
+• Position : bras pendant le long du corps, complètement détendu — ne pas contracter
+• Bras à mesurer : bras dominant (droitier → bras droit, gaucher → bras gauche)
+• Mètre : posé sans serrer, perpendiculaire à l'axe du bras`,
+  },
+  {
+    key: 'thigh_cm',
+    label: 'Tour de cuisse (dominant, debout)',
+    input_type: 'number',
+    unit: 'cm',
+    required: false,
+    visible: true,
+    min: 30,
+    max: 100,
+    step: 0.5,
+    helper: `📏 Comment mesurer — Tour de cuisse
+
+• Endroit exact : à mi-hauteur entre le pli de l'aine et le dessus de la rotule
+• Position : debout, poids réparti sur les deux jambes, cuisse légèrement décontractée
+• Jambe à mesurer : jambe dominante
+• Mètre : horizontal, sans pincer ni comprimer les tissus`,
+  },
+  {
+    key: 'calf_cm',
+    label: 'Tour de mollet (dominant, maxi)',
+    input_type: 'number',
+    unit: 'cm',
+    required: false,
+    visible: true,
+    min: 20,
+    max: 60,
+    step: 0.5,
+    helper: `📏 Comment mesurer — Tour de mollet
+
+• Endroit exact : à la circonférence maximale du mollet — généralement au tiers supérieur
+• Position : debout, pieds à plat, mollet détendu (ne pas se mettre sur la pointe des pieds)
+• Jambe à mesurer : jambe dominante
+• Mètre : horizontal, au point le plus large`,
+  },
+  {
+    key: 'arm_right_cm',
+    label: 'Bras droit (détendu)',
+    input_type: 'number',
+    unit: 'cm',
+    required: false,
+    visible: false,
+    min: 15,
+    max: 70,
+    step: 0.5,
+    helper: `📏 Comment mesurer — Tour de bras droit détendu
+
+• Endroit exact : à mi-distance entre l'épaule (acromion) et le coude
+• Position : bras pendant le long du corps, complètement détendu
+• Mètre : perpendiculaire à l'axe du bras, sans serrer`,
   },
   {
     key: 'arm_left_cm',
@@ -316,6 +442,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 15,
     max: 70,
     step: 0.5,
+    helper: `📏 Comment mesurer — Tour de bras gauche détendu
+
+• Endroit exact : à mi-distance entre l'épaule (acromion) et le coude
+• Position : bras pendant le long du corps, complètement détendu
+• Mètre : perpendiculaire à l'axe du bras, sans serrer`,
   },
   {
     key: 'arm_right_contracted_cm',
@@ -327,6 +458,27 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 15,
     max: 70,
     step: 0.5,
+    helper: `📏 Comment mesurer — Bras droit contracté
+
+• Endroit exact : à mi-distance entre l'épaule et le coude, à la pointe du biceps
+• Position : bras levé à l'horizontale, coude fléchi à 90°, biceps contracté au maximum
+• Mètre : autour du point le plus saillant du biceps, sans écraser le muscle`,
+  },
+  {
+    key: 'arm_left_contracted_cm',
+    label: 'Bras gauche (contracté)',
+    input_type: 'number',
+    unit: 'cm',
+    required: false,
+    visible: false,
+    min: 15,
+    max: 70,
+    step: 0.5,
+    helper: `📏 Comment mesurer — Bras gauche contracté
+
+• Endroit exact : à mi-distance entre l'épaule et le coude, à la pointe du biceps
+• Position : bras levé à l'horizontale, coude fléchi à 90°, biceps contracté au maximum
+• Mètre : autour du point le plus saillant du biceps, sans écraser le muscle`,
   },
   {
     key: 'forearm_right_cm',
@@ -338,6 +490,27 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 10,
     max: 45,
     step: 0.5,
+    helper: `📏 Comment mesurer — Avant-bras droit
+
+• Endroit exact : à la circumférence maximale de l'avant-bras, juste sous le coude
+• Position : bras tendu, main ouverte et détendue, paume vers le haut
+• Mètre : horizontal, au point le plus large`,
+  },
+  {
+    key: 'forearm_left_cm',
+    label: 'Avant-bras gauche',
+    input_type: 'number',
+    unit: 'cm',
+    required: false,
+    visible: false,
+    min: 10,
+    max: 45,
+    step: 0.5,
+    helper: `📏 Comment mesurer — Avant-bras gauche
+
+• Endroit exact : à la circumférence maximale de l'avant-bras, juste sous le coude
+• Position : bras tendu, main ouverte et détendue, paume vers le haut
+• Mètre : horizontal, au point le plus large`,
   },
   {
     key: 'thigh_right_cm',
@@ -349,6 +522,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 30,
     max: 100,
     step: 0.5,
+    helper: `📏 Comment mesurer — Cuisse droite
+
+• Endroit exact : à mi-hauteur entre le pli de l'aine et le dessus de la rotule
+• Position : debout, poids réparti sur les deux jambes, cuisse légèrement décontractée
+• Mètre : horizontal, sans pincer ni comprimer les tissus`,
   },
   {
     key: 'thigh_left_cm',
@@ -360,6 +538,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 30,
     max: 100,
     step: 0.5,
+    helper: `📏 Comment mesurer — Cuisse gauche
+
+• Endroit exact : à mi-hauteur entre le pli de l'aine et le dessus de la rotule
+• Position : debout, poids réparti sur les deux jambes, cuisse légèrement décontractée
+• Mètre : horizontal, sans pincer ni comprimer les tissus`,
   },
   {
     key: 'calf_right_cm',
@@ -371,6 +554,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 20,
     max: 60,
     step: 0.5,
+    helper: `📏 Comment mesurer — Mollet droit
+
+• Endroit exact : à la circonférence maximale du mollet droit
+• Position : debout, pieds à plat, mollet détendu (pas sur la pointe des pieds)
+• Mètre : horizontal, au point le plus large`,
   },
   {
     key: 'calf_left_cm',
@@ -382,17 +570,28 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 20,
     max: 60,
     step: 0.5,
+    helper: `📏 Comment mesurer — Mollet gauche
+
+• Endroit exact : à la circonférence maximale du mollet gauche
+• Position : debout, pieds à plat, mollet détendu (pas sur la pointe des pieds)
+• Mètre : horizontal, au point le plus large`,
   },
   {
-    key: 'shoulder_width_cm',
-    label: 'Largeur d\'épaules',
+    key: 'shoulder_circumference_cm',
+    label: 'Tour d\'épaules',
     input_type: 'number',
     unit: 'cm',
     required: false,
     visible: false,
-    min: 30,
-    max: 70,
+    min: 80,
+    max: 160,
     step: 0.5,
+    helper: `📏 Comment mesurer — Tour d'épaules
+
+• Endroit exact : autour des épaules au niveau des deltoïdes, en passant sur les pointes des deux épaules
+• Position : debout, bras le long du corps, épaules décontractées (ne pas les remonter)
+• Mètre : horizontal, passant sur les deux acromions (pointes des épaules) et dans le dos
+• Note : différent de la "largeur d'épaules" os-à-os — ici c'est la circonférence`,
   },
   {
     key: 'neck_cm',
@@ -404,7 +603,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 20,
     max: 60,
     step: 0.5,
-    helper: 'Utilisé pour la méthode Navy',
+    helper: `📏 Comment mesurer — Tour de cou (utilisé pour la méthode Navy)
+
+• Endroit exact : juste en dessous de la pomme d'Adam (larynx), au point le plus étroit
+• Position : tête droite, regard à l'horizon, cou détendu
+• Mètre : horizontal, sans serrer — glisser un doigt pour vérifier l'espace`,
   },
   {
     key: 'wrist_cm',
@@ -416,7 +619,11 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 10,
     max: 25,
     step: 0.5,
-    helper: 'Utilisé pour estimer la frame size (ossature)',
+    helper: `📏 Comment mesurer — Tour de poignet (utilisé pour estimer la frame size / ossature)
+
+• Endroit exact : autour du poignet dominant, juste en dessous de l'os du poignet (styloïde)
+• Position : bras tendu, main ouverte, paume vers le bas
+• Mètre : ajusté sans serrer — poignet détendu`,
   },
   // — Plis cutanés (méthode de terrain) —
   {
@@ -486,13 +693,67 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
 // ------------------------------------------------------------------
 // MODULE : Photos
 // ------------------------------------------------------------------
+
+const PHOTO_GUIDE = `📸 Guide photo — pour des résultats cohérents et comparables entre chaque bilan :
+
+• Angle : appareil à hauteur du nombril, perpendiculaire au corps (ni trop haut ni trop bas)
+• Distance : 2 à 3 mètres du sujet — le corps entier doit être visible, pieds compris
+• Lumière : lumière naturelle frontale ou éclairage uniforme — éviter les contre-jours et les ombres dures sur le corps
+• Fond : fond uni neutre (mur blanc, gris ou noir) — pas de miroir, pas de motifs, pas de mobilier
+• Tenue : maillot de bain, sous-vêtements ou tenue de sport minimale — le ventre doit être visible
+• Pose : debout, bras légèrement écartés le long du corps, mains ouvertes et détendues
+• Respiration : expirer normalement avant la prise — ne pas rentrer le ventre, ne pas bloquer la respiration
+• Résolution : photo en portrait (format 9:16 idéal), minimum 1 mégapixel — ne pas utiliser le zoom numérique`
+
 const PHOTOS_FIELDS: FieldConfig[] = [
-  { key: 'photo_front',      label: 'Face avant',      input_type: 'photo_upload', required: false, visible: true  },
-  { key: 'photo_back',       label: 'Face arrière',    input_type: 'photo_upload', required: false, visible: true  },
-  { key: 'photo_side_right', label: 'Profil droit',    input_type: 'photo_upload', required: false, visible: true  },
-  { key: 'photo_side_left',  label: 'Profil gauche',   input_type: 'photo_upload', required: false, visible: false },
-  { key: 'photo_relaxed',    label: 'Pose détendue',   input_type: 'photo_upload', required: false, visible: false },
-  { key: 'photo_contracted', label: 'Pose contractée', input_type: 'photo_upload', required: false, visible: false },
+  {
+    key: 'photo_front',
+    label: 'Face avant',
+    input_type: 'photo_upload',
+    required: false,
+    visible: true,
+    helper: PHOTO_GUIDE,
+  },
+  {
+    key: 'photo_back',
+    label: 'Face arrière',
+    input_type: 'photo_upload',
+    required: false,
+    visible: true,
+    helper: PHOTO_GUIDE,
+  },
+  {
+    key: 'photo_side_right',
+    label: 'Profil droit',
+    input_type: 'photo_upload',
+    required: false,
+    visible: true,
+    helper: PHOTO_GUIDE,
+  },
+  {
+    key: 'photo_side_left',
+    label: 'Profil gauche',
+    input_type: 'photo_upload',
+    required: false,
+    visible: false,
+    helper: PHOTO_GUIDE,
+  },
+  {
+    key: 'photo_relaxed',
+    label: 'Pose détendue',
+    input_type: 'photo_upload',
+    required: false,
+    visible: false,
+    helper: PHOTO_GUIDE,
+  },
+  {
+    key: 'photo_contracted',
+    label: 'Pose contractée',
+    input_type: 'photo_upload',
+    required: false,
+    visible: false,
+    helper: PHOTO_GUIDE,
+  },
 ]
 
 // ------------------------------------------------------------------

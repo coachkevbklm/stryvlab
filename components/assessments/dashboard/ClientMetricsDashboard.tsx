@@ -23,11 +23,11 @@ const TRACKED_FIELDS: {
     unit: "kg",
     color: "#2d9f6f",
   },
-  { key: "muscle_pct", label: "% Musculaire", unit: "%", color: "#3db87a" },
+  { key: "muscle_mass_pct", label: "% Musculaire", unit: "%", color: "#3db87a" },
   { key: "body_water_pct", label: "% Hydrique", unit: "%", color: "#4db6e8" },
   { key: "bone_mass_kg", label: "Masse osseuse", unit: "kg", color: "#9b7cdb" },
   {
-    key: "visceral_fat",
+    key: "visceral_fat_level",
     label: "Graisse viscérale",
     unit: "",
     color: "#e08c3a",

@@ -289,6 +289,7 @@ type FormValues = {
   activeClients: string;
   discoverySource: string;
   email: string;
+  confirmEmail: string;
   password: string;
   confirmPassword: string;
 };
@@ -296,6 +297,12 @@ type FormValues = {
 type AuthCardProps = {
   isLogin: boolean;
   setIsLogin: (v: boolean) => void;
+  isForgotPassword: boolean;
+  setIsForgotPassword: (v: boolean) => void;
+  forgotEmail: string;
+  setForgotEmail: (v: string) => void;
+  forgotStatus: "idle" | "loading" | "sent";
+  handleForgotPassword: (e: React.FormEvent) => void;
   step: number;
   isLoading: boolean;
   error: string | null;
@@ -317,6 +324,12 @@ type AuthCardProps = {
 function AuthFormCard({
   isLogin,
   setIsLogin,
+  isForgotPassword,
+  setIsForgotPassword,
+  forgotEmail,
+  setForgotEmail,
+  forgotStatus,
+  handleForgotPassword,
   step,
   isLoading,
   error,
@@ -375,6 +388,88 @@ function AuthFormCard({
       : step === 2
         ? Users
         : Lock;
+
+  if (isForgotPassword) {
+    return (
+      <div className="relative flex min-h-[520px] flex-col overflow-hidden rounded-2xl bg-[#181818] border-subtle">
+        <div className="flex-1 px-8 pt-9 pb-8 md:px-10 flex flex-col">
+          <button
+            type="button"
+            onClick={() => setIsForgotPassword(false)}
+            className="flex items-center gap-1.5 text-[11px] text-white/35 hover:text-white/60 transition-colors mb-8 self-start"
+          >
+            <ChevronLeft size={13} />
+            Retour à la connexion
+          </button>
+
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.04]">
+            <Mail size={20} className="text-[#1f8a65]" strokeWidth={1.5} />
+          </div>
+          <h2 className="mb-1.5 text-center text-xl font-semibold text-white">
+            Mot de passe oublié
+          </h2>
+          <p className="mx-auto max-w-[280px] text-center text-[11px] text-white/55 leading-relaxed mb-8">
+            Saisissez votre adresse e-mail. Un lien de réinitialisation vous sera envoyé.
+          </p>
+
+          {forgotStatus === "sent" ? (
+            <div className="flex flex-col items-center gap-3 text-center mt-4">
+              <CheckCircle2 size={32} className="text-[#1f8a65]" />
+              <p className="text-white font-semibold text-sm">E-mail envoyé !</p>
+              <p className="text-white/40 text-[12px]">Vérifiez votre boîte mail et cliquez sur le lien reçu.</p>
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="mt-4 text-[11px] text-[#1f8a65] hover:text-[#1f8a65]/80 transition-colors"
+              >
+                Retour à la connexion
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="flex flex-col gap-5">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-1.5">
+                  Adresse e-mail
+                </label>
+                <div className="relative group/input">
+                  <Mail
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                    size={16}
+                    strokeWidth={1.5}
+                  />
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="coach@exemple.com"
+                    className="w-full h-[52px] rounded-xl bg-[#0a0a0a] pl-10 pr-4 text-[14px] font-medium text-white placeholder:text-white/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={forgotStatus === "loading"}
+                className="group/btn flex h-[52px] w-full items-center justify-between rounded-xl bg-[#1f8a65] pl-5 pr-1.5 transition-all hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50"
+              >
+                <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+                  {forgotStatus === "loading" ? "Envoi…" : "Envoyer le lien"}
+                </span>
+                <div className="flex h-[42px] w-[42px] items-center justify-center rounded-lg bg-black/[0.12]">
+                  {forgotStatus === "loading" ? (
+                    <Loader2 size={16} className="text-white animate-spin" />
+                  ) : (
+                    <ArrowRight size={16} className="text-white" />
+                  )}
+                </div>
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex max-h-[calc(100dvh-64px)] xl:max-h-[calc(100dvh-80px)] min-h-[520px] flex-col overflow-hidden rounded-2xl bg-[#181818] border-subtle">
@@ -492,12 +587,13 @@ function AuthFormCard({
                 <div className="pb-1">
                   <div className="mb-1.5 flex items-center justify-between">
                     <FieldLabel>Mot de Passe</FieldLabel>
-                    <a
-                      href="#"
-                      className="text-[10px] font-bold text-[#1f8a65]/70 underline-offset-3 hover:text-[#1f8a65] transition-colors"
+                    <button
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setForgotEmail(formValues.email); }}
+                      className="text-[10px] font-bold text-[#1f8a65]/70 hover:text-[#1f8a65] transition-colors"
                     >
                       Oubliée ?
-                    </a>
+                    </button>
                   </div>
                   <div className="relative group/input">
                     <Lock
@@ -743,7 +839,7 @@ function AuthFormCard({
                 {step === 3 && (
                   <div className="space-y-4 pb-1">
                     <div>
-                      <FieldLabel>Email Pro</FieldLabel>
+                      <FieldLabel>Email de connexion</FieldLabel>
                       <div className="relative group/input">
                         <Mail
                           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
@@ -754,9 +850,28 @@ function AuthFormCard({
                           name="email"
                           type="email"
                           required
-                          placeholder="nom@stryvlab.com"
+                          placeholder="nom@exemple.com"
                           className="pl-10"
                           {...f("email")}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <FieldLabel>Confirmer l&apos;email</FieldLabel>
+                      <div className="relative group/input">
+                        <Mail
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within/input:text-[#1f8a65]"
+                          size={16}
+                          strokeWidth={1.5}
+                        />
+                        <FieldInput
+                          name="confirmEmail"
+                          type="email"
+                          required
+                          placeholder="nom@exemple.com"
+                          className="pl-10"
+                          autoComplete="off"
+                          {...f("confirmEmail")}
                         />
                       </div>
                     </div>
@@ -772,7 +887,7 @@ function AuthFormCard({
                       />
                     </div>
                     <div>
-                      <FieldLabel>Confirmation</FieldLabel>
+                      <FieldLabel>Confirmer le mot de passe</FieldLabel>
                       <FieldInput
                         name="confirmPassword"
                         type="password"
@@ -1107,6 +1222,9 @@ export default function ConnectionPage() {
   const [mounted, setMounted] = useState(false);
 
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState<"idle" | "loading" | "sent">("idle");
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1123,6 +1241,7 @@ export default function ConnectionPage() {
     activeClients: "",
     discoverySource: "",
     email: "",
+    confirmEmail: "",
     password: "",
     confirmPassword: "",
   });
@@ -1164,6 +1283,19 @@ export default function ConnectionPage() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotStatus("loading");
+    const { createClient } = await import("@/utils/supabase/client");
+    const supabase = createClient();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${siteUrl}/auth/reset-password`,
+    });
+    setForgotStatus("sent");
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -1182,6 +1314,11 @@ export default function ConnectionPage() {
       } else {
         if (step < 3) {
           handleNext();
+          setIsLoading(false);
+          return;
+        }
+        if (formValues.email !== formValues.confirmEmail) {
+          setError("Les adresses e-mail ne correspondent pas.");
           setIsLoading(false);
           return;
         }
@@ -1219,6 +1356,12 @@ export default function ConnectionPage() {
   const cardProps = {
     isLogin,
     setIsLogin: setIsLoginWithReset,
+    isForgotPassword,
+    setIsForgotPassword,
+    forgotEmail,
+    setForgotEmail,
+    forgotStatus,
+    handleForgotPassword,
     step,
     isLoading,
     error,

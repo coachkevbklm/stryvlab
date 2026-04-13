@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import {
   LayoutDashboard,
@@ -142,9 +143,9 @@ function Sidebar({
       className={`fixed top-4 left-4 h-[calc(100vh-32px)] bg-[#181818] border-subtle rounded-2xl flex flex-col z-50 transition-all duration-300 ${collapsed ? "w-16" : "w-52"}`}
     >
       {/* Logo */}
-      <div
-        className={`flex items-center gap-3 px-4 py-5 shrink-0 cursor-pointer ${collapsed ? "justify-center" : ""}`}
-        onClick={() => !collapsed && router.push("/dashboard")}
+      <Link
+        href="/dashboard"
+        className={`flex items-center gap-3 px-4 py-5 shrink-0 ${collapsed ? "justify-center" : ""}`}
       >
         <Image
           src="/images/logo.png"
@@ -165,7 +166,7 @@ function Sidebar({
             </span>
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="h-px bg-white/[0.07] mx-3 shrink-0" />
 
@@ -182,20 +183,15 @@ function Sidebar({
               {section.items.map(({ icon: Icon, label, href, match }) => {
                 const active = match(pathname);
                 const disabled = href === "#";
-                return (
-                  <button
-                    key={label}
-                    onClick={() => !disabled && router.push(href)}
-                    disabled={disabled}
-                    title={collapsed ? label : undefined}
-                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150 ${collapsed ? "justify-center" : "w-full"} ${
-                      active
-                        ? "bg-white/[0.08] text-white"
-                        : disabled
-                          ? "text-white/20 cursor-not-allowed"
-                          : "text-white/45 hover:bg-white/[0.05] hover:text-white/80"
-                    }`}
-                  >
+                const cls = `flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150 ${collapsed ? "justify-center" : "w-full"} ${
+                  active
+                    ? "bg-white/[0.08] text-white"
+                    : disabled
+                      ? "text-white/20 cursor-not-allowed pointer-events-none"
+                      : "text-white/45 hover:bg-white/[0.05] hover:text-white/80"
+                }`;
+                const inner = (
+                  <>
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.25 : 1.75}
@@ -219,7 +215,16 @@ function Sidebar({
                         )}
                       </>
                     )}
-                  </button>
+                  </>
+                );
+                return disabled ? (
+                  <span key={label} title={collapsed ? label : undefined} className={cls}>
+                    {inner}
+                  </span>
+                ) : (
+                  <Link key={label} href={href} title={collapsed ? label : undefined} className={cls}>
+                    {inner}
+                  </Link>
                 );
               })}
             </div>

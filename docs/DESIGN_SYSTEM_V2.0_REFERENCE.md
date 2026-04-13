@@ -150,20 +150,27 @@ Tous les espacements sont multiples de 4px.
 | `TooltipProvider delayDuration`           | base-ui utilise `delay`                                 |
 | Nom de l'outil dans le tooltip            | Le nom est déjà affiché sous l'icone                    |
 
-### Bordures très fines — OBLIGATOIRE sur tous les éléments
+### Bordures fines — OBLIGATOIRE sur tous les éléments
 
-Tous les éléments (blocs, cards, inputs, boutons, modals) doivent avoir des bordures très fines, presque imperceptibles, pour une définition subtile.
+Tous les éléments (blocs, cards, inputs, boutons, modals) ont une bordure `border-[0.3px]` pour la définition visuelle.
 
-| Élément          | Classe recommandée                    | Couleur/opacité |
-| ---------------- | ------------------------------------- | --------------- |
-| Blocs principaux | `border-[0.3px] border-white/[0.013]` | 1.3% blanc      |
-| Cards internes   | `border-[0.3px] border-white/[0.01]`  | 1% blanc        |
-| Inputs, selects  | `border-[0.3px] border-white/[0.016]` | 1.6% blanc      |
-| Boutons          | `border-[0.3px] border-white/[0.02]`  | 2% blanc        |
-| Modals           | `border-[0.3px] border-white/[0.013]` | 1.3% blanc      |
-| Tooltips         | `border-[0.3px] border-white/[0.016]` | 1.6% blanc      |
+**Source de vérité** : `app/coach/organisation/page.tsx` et `components/layout/CoachShell.tsx`.
 
-**Règle** : Les bordures sont subtiles et n'ajoutent pas de bruit visuel — elles renforcent la définition sans dominer la hiérarchie par couleur de fond.
+| Élément                    | Classe exacte                          | Notes                              |
+| -------------------------- | -------------------------------------- | ---------------------------------- |
+| Blocs principaux / cards   | `border-[0.3px] border-white/[0.06]`   | Toutes les cartes coach            |
+| Cards stats (`bg-[#181818]`) | `border-[0.3px] border-white/[0.06]` | Même valeur                        |
+| Sidebar / TopBar           | `border-subtle` (= `#2A2A2A`)          | Via token Tailwind, pas inline     |
+| Inputs, selects            | `border-[0.3px] border-white/[0.06]`   | Fond `#0a0a0a`                     |
+| Boutons secondaires        | `border-[0.3px] border-white/[0.06]`   | Avec `bg-white/[0.04]`             |
+| Séparateurs horizontaux    | `border-t-[0.3px] border-white/[0.06]` | Ou `border-b border-white/[0.04]`  |
+| Bordures colorées (accent) | `border-[0.3px] border-[#1f8a65]/20`   | État actif / sélection             |
+| Bordures warning           | `border-[0.3px] border-amber-500/20`   | Blocs warning uniquement           |
+
+**Règle absolue** :
+- Toujours `border-[0.3px]` — jamais `border` (1px, trop épais) ni des opacités sous `0.04` (invisibles sur la plupart des écrans).
+- L'opacité standard est **`/[0.06]`** pour tous les éléments neutres.
+- Ne jamais utiliser `border-white/[0.013]`, `border-white/[0.016]`, `border-white/[0.02]` — ces valeurs sont trop basses et ne s'affichent pas sur écran standard.
 
 ---
 
