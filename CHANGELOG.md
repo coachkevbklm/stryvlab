@@ -7,6 +7,12 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
+FEATURE: Superpower Coach Dashboard — hero summary narratif, fil d'alertes priorisées (critical/urgent/info), actions rapides contextuelles, clients segmentés avec sparklines, financier condensé (MRR + revenus + impayés)
+FIX: QuickActions — CTA contextuel toujours visible (fallback "Nouveau client" quand aucune urgence)
+FIX: FinancialStrip — valeurs en text-3xl conforme spec DS v2.0
+FIX: HeroSummary — séparateur command bar · (interpunct) au lieu de |
+
+FEATURE: Add DELETE /api/clients/[clientId] — archive mode (revoke tokens + status archived) and hard delete mode (cascade FK-safe delete + auth user removal)
 FEATURE: Superpower Coach Dashboard — hero summary, alertes priorisées, clients segmentés avec sparklines, financier condensé
 FEATURE: Client invitation — flux email avec définition de mot de passe (remplace magic link OTP fragile)
 FEATURE: POST /api/clients/[clientId]/invite — génère lien recovery Supabase + envoie email SMTP
