@@ -384,7 +384,7 @@ export async function sendInvoiceEmail(params: SendInvoiceEmailParams) {
   })
 }
 
-// ─── 7. Invitation client (premier accès — définir son mot de passe) ──────────
+// ─── 7. Invitation client (premier accès — définir son mot de passe) ─────────
 
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, clientFirstName, coachName, setupPasswordUrl } = params
@@ -410,6 +410,76 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
         ${hint('Ce lien est valable 1 heure. Si vous n\'avez pas demandé cet accès, ignorez ce message.')}
         ${separator()}
         ${directLink(setupPasswordUrl)}
+      `,
+    }),
+  })
+}
+
+// ─── 8. Réactivation client (accès restauré) ─────────────────────────────────
+
+export interface SendReactivationEmailParams {
+  to: string
+  clientFirstName: string
+  coachName: string | null
+  loginUrl: string
+}
+
+export async function sendReactivationEmail(params: SendReactivationEmailParams) {
+  const { to, clientFirstName, coachName, loginUrl } = params
+
+  const intro = coachName
+    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> a restauré votre accès à STRYV. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
+    : `Votre accès à STRYV a été restauré. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
+
+  const subject = coachName
+    ? `${coachName} a restauré votre accès STRYV`
+    : 'Votre accès STRYV est restauré'
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject,
+    html: emailTemplate({
+      senderLabel: coachName ?? undefined,
+      body: `
+        ${greeting(clientFirstName)}
+        ${bodyText(intro)}
+        ${ctaButton(loginUrl, 'Se connecter')}
+        ${hint('Si vous avez oublié votre mot de passe, utilisez la page de connexion pour le réinitialiser.')}
+      `,
+    }),
+  })
+}
+
+// ─── 9. Bienvenue après création du mot de passe ──────────────────────────────
+
+export interface SendWelcomeEmailParams {
+  to: string
+  clientFirstName: string
+  coachName: string | null
+  loginUrl: string
+}
+
+export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
+  const { to, clientFirstName, coachName, loginUrl } = params
+
+  const intro = coachName
+    ? `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel configuré par <strong style="color:${DS.white};">${coachName}</strong> est maintenant accessible.`
+    : `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel est maintenant accessible.`
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: 'Bienvenue sur STRYV — ton accès est actif',
+    html: emailTemplate({
+      senderLabel: coachName ?? undefined,
+      body: `
+        ${greeting(clientFirstName)}
+        ${bodyText(intro)}
+        ${ctaButton(loginUrl, 'Accéder à mon espace')}
+        ${hint('Conserve ce lien pour te reconnecter à tout moment.')}
+        ${separator()}
+        ${directLink(loginUrl)}
       `,
     }),
   })

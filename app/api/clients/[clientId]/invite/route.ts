@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { sendInvitationEmail } from '@/lib/email/mailer'
+import { sendInvitationEmail, sendReactivationEmail } from '@/lib/email/mailer'
 
 function service() {
   return createServiceClient(
@@ -12,7 +12,6 @@ function service() {
 
 type Params = { params: { clientId: string } }
 
-// POST /api/clients/[clientId]/invite — envoie l'invitation email au client
 export async function POST(req: NextRequest, { params }: Params) {
   const supabase = createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -20,10 +19,9 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const db = service()
 
-  // Vérifier ownership
   const { data: client } = await db
     .from('coach_clients')
-    .select('id, email, first_name, last_name')
+    .select('id, email, first_name, last_name, status')
     .eq('id', params.clientId)
     .eq('coach_id', user.id)
     .single()
@@ -33,28 +31,74 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
 
-  // Générer un lien d'invitation via admin API
-  // type 'invite' = crée le compte Supabase si inexistant + génère un lien signup valable 24h
-  // type 'recovery' échoue si l'user n'existe pas encore — 'invite' est le bon choix pour un premier accès
-  const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-    type: 'invite',
-    email: client.email,
-    options: {
-      redirectTo: `${siteUrl}/client/set-password`,
-    },
-  })
-
-  if (linkError || !linkData?.properties?.action_link) {
-    console.error('generateLink invite error:', linkError)
-    return NextResponse.json({ error: 'Impossible de générer le lien d\'invitation' }, { status: 500 })
-  }
-
-  // Envoyer l'email d'invitation via SMTP Namecheap
   const coachFirstName = (user.user_metadata?.first_name as string | undefined) ?? null
   const coachLastName  = (user.user_metadata?.last_name  as string | undefined) ?? null
   const coachName = coachFirstName
     ? `${coachFirstName}${coachLastName ? ' ' + coachLastName : ''}`
     : null
+
+  // Chercher si le compte Supabase existe déjà pour cet email
+  const { data: existingUsers } = await db.auth.admin.listUsers()
+  const existingUser = existingUsers?.users?.find((u: { email?: string }) => u.email === client.email)
+
+  if (existingUser) {
+    // Compte existant — réactivation : débannir + email "accès restauré"
+    const { error: unbanError } = await db.auth.admin.updateUserById(existingUser.id, {
+      ban_duration: 'none',
+    })
+    if (unbanError) {
+      console.error('unban error:', unbanError)
+      return NextResponse.json({ error: 'Impossible de réactiver le compte' }, { status: 500 })
+    }
+
+    await db
+      .from('coach_clients')
+      .update({ status: 'active' })
+      .eq('id', params.clientId)
+
+    try {
+      await sendReactivationEmail({
+        to: client.email,
+        clientFirstName: client.first_name ?? 'vous',
+        coachName,
+        loginUrl: `${siteUrl}/client/login`,
+      })
+    } catch (emailError) {
+      console.error('Reactivation email failed:', emailError)
+      // Non-bloquant — le compte est réactivé même si l'email échoue
+    }
+
+    return NextResponse.json({ success: true, mode: 'reactivated' })
+  }
+
+  // Nouveau compte — créer sans email Supabase, puis générer lien recovery
+  const { data: created, error: createError } = await db.auth.admin.createUser({
+    email: client.email,
+    email_confirm: true,
+    password: crypto.randomUUID(),
+  })
+
+  if (createError || !created?.user) {
+    console.error('createUser error:', createError)
+    return NextResponse.json({ error: 'Impossible de créer le compte' }, { status: 500 })
+  }
+
+  // generateLink type 'recovery' : génère le lien reset-password SANS envoyer d'email Supabase
+  const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+    type: 'recovery',
+    email: client.email,
+    options: { redirectTo: `${siteUrl}/client/set-password` },
+  })
+
+  if (linkError || !linkData?.properties?.action_link) {
+    console.error('generateLink recovery error:', linkError)
+    return NextResponse.json({ error: 'Impossible de générer le lien d\'invitation' }, { status: 500 })
+  }
+
+  await db
+    .from('coach_clients')
+    .update({ status: 'active' })
+    .eq('id', params.clientId)
 
   try {
     await sendInvitationEmail({
@@ -68,11 +112,5 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Erreur lors de l\'envoi de l\'email' }, { status: 500 })
   }
 
-  // Marquer le client comme actif (invitation envoyée)
-  await db
-    .from('coach_clients')
-    .update({ status: 'active' })
-    .eq('id', params.clientId)
-
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, mode: 'invited' })
 }
