@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
@@ -11,6 +11,24 @@ export default function ClientLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+
+  const [hashError, setHashError] = useState<string | null>(null)
+
+  // Si Supabase redirige ici avec une erreur dans le hash (lien expiré, invalide),
+  // on l'affiche directement pour guider le client.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash
+    if (!hash) return
+    const params = new URLSearchParams(hash.replace(/^#/, ''))
+    const errorCode = params.get('error_code')
+    if (!errorCode) return
+    if (errorCode === 'otp_expired') {
+      setHashError('Ce lien d\'invitation a expiré. Demande à ton coach de t\'en envoyer un nouveau.')
+    } else {
+      setHashError('Ce lien est invalide ou a déjà été utilisé. Demande à ton coach de t\'envoyer une nouvelle invitation.')
+    }
+  }, [])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,6 +54,12 @@ export default function ClientLoginPage() {
         </span>
         <p className="text-xs text-secondary text-center">Ton espace client</p>
       </div>
+
+      {hashError && (
+        <div className="w-full max-w-sm mb-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <p className="text-xs text-red-400 leading-relaxed">{hashError}</p>
+        </div>
+      )}
 
       <div className="bg-surface rounded-card shadow-soft-out p-6 w-full max-w-sm">
         <h2 className="text-base font-bold text-primary mb-1">Connexion</h2>
