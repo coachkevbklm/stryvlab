@@ -69,7 +69,7 @@ export default function HeroSummary({ hero }: Props) {
               </p>
             </div>
             {i < stats.length - 1 && (
-              <span className="text-white/15 text-[11px] ml-2">|</span>
+              <span className="text-white/20 text-[11px] ml-2">·</span>
             )}
           </div>
         ))}

@@ -40,7 +40,7 @@ export default function FinancialStrip({ financial }: Props) {
             <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2">
               {label}
             </p>
-            <p className={`text-2xl font-black tracking-tight ${alert ? 'text-red-400' : 'text-white'}`}>
+            <p className={`text-3xl font-black tracking-tight ${alert ? 'text-red-400' : 'text-white'}`}>
               {value}
             </p>
           </div>

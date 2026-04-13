@@ -31,26 +31,26 @@ export default function QuickActions({ alerts }: Props) {
   const hasCritical = alerts.some(a => a.severity === 'critical');
   const pendingBilans = alerts.filter(a => a.id.startsWith('submission-')).length;
 
-  let contextualAction: { label: string; href: string } | null = null;
+  let contextualAction: { label: string; href: string };
   if (hasCritical) {
     contextualAction = { label: 'Traiter les retards', href: '/coach/comptabilite?filter=overdue' };
   } else if (pendingBilans > 0) {
     contextualAction = { label: `Traiter les bilans (${pendingBilans})`, href: '/coach/assessments?filter=pending' };
+  } else {
+    contextualAction = { label: 'Nouveau client', href: '/coach/clients' };
   }
 
   return (
     <div className="mb-8">
-      {contextualAction && (
-        <button
-          onClick={() => router.push(contextualAction!.href)}
+      <button
+          onClick={() => router.push(contextualAction.href)}
           className="w-full mb-4 flex items-center justify-between px-4 py-3 rounded-xl bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/20 hover:bg-[#1f8a65]/15 transition-colors active:scale-[0.99]"
         >
           <span className="text-[12px] font-bold text-[#1f8a65] uppercase tracking-[0.12em]">
             {contextualAction.label}
           </span>
           <ChevronRight size={14} className="text-[#1f8a65]" strokeWidth={2} />
-        </button>
-      )}
+      </button>
 
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 mb-3">
         Actions rapides
