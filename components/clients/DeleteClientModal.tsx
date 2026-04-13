@@ -74,6 +74,10 @@ export default function DeleteClientModal({ clientId, clientName, onClose, onSuc
               </button>
             </div>
 
+            {error && (
+              <p className="text-[12px] text-red-400 mt-3">{error}</p>
+            )}
+
             <button
               onClick={onClose}
               className="mt-4 w-full py-2 rounded-xl bg-transparent text-[12px] text-white/30 hover:text-white/55 transition-colors"
