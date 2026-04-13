@@ -21,6 +21,25 @@ function SetPasswordForm() {
   const [done, setDone] = useState(false)
 
   useEffect(() => {
+    // Cas 1 : hash fragment — Supabase redirige avec #access_token=...&type=invite|recovery
+    // C'est le cas quand Supabase ignore le redirectTo et utilise son Site URL (/client/login → redirigé ici)
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
+          if (error) {
+            console.error('setSession error:', error.message)
+            setExchangeError(true)
+          }
+          setExchanging(false)
+        })
+        return
+      }
+    }
+
+    // Cas 2 : query param ?code= — flow PKCE standard
     const code = searchParams.get('code')
     if (!code) {
       setExchangeError(true)
@@ -54,6 +73,8 @@ function SetPasswordForm() {
       setLoading(false)
       return
     }
+    // Envoyer l'email de bienvenue (non-bloquant)
+    fetch('/api/client/welcome', { method: 'POST' }).catch(() => {})
     setDone(true)
     setTimeout(() => router.push('/client'), 2000)
   }
