@@ -64,7 +64,9 @@ export default function DashboardPage() {
             setNoClients(json.data.hero.activeClients === 0);
           }
         })
-        .catch(() => {})
+        .catch((_err) => {
+          /* silently fail — dashboard shows empty state */
+        })
         .finally(() => setLoading(false));
     });
   }, [router]);
@@ -72,10 +74,10 @@ export default function DashboardPage() {
   const topBarLeft = useMemo(
     () => (
       <div className="flex flex-col leading-tight">
-        <p className="text-[11px] font-medium text-white/35 uppercase tracking-[0.14em]">
+        <p className="text-[9px] font-medium text-white/30 uppercase tracking-[0.14em]">
           Espace Coach
         </p>
-        <p className="text-[13px] font-semibold text-white/80">
+        <p className="text-[13px] font-semibold text-white">
           Dashboard
         </p>
       </div>
