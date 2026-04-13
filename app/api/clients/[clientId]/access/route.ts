@@ -11,43 +11,42 @@ function service() {
 
 type Params = { params: { clientId: string } }
 
-// DELETE /api/clients/[clientId]/access — révoque l'accès client (status inactive + token révoqué)
-export async function DELETE(_req: NextRequest, { params }: Params) {
+// DELETE /api/clients/[clientId]/access — suspend client: ban Supabase account + status=suspended
+export async function DELETE(req: NextRequest, { params }: Params) {
   const supabase = createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
   const db = service()
 
-  // Vérifier ownership + récupérer user_id pour forcer la déconnexion Supabase
+  // Vérifier ownership
   const { data: client } = await db
     .from('coach_clients')
-    .select('id, user_id')
+    .select('id, email')
     .eq('id', params.clientId)
     .eq('coach_id', user.id)
     .single()
 
   if (!client) return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
 
-  // Passer status à 'inactive'
-  const { error: statusError } = await db
-    .from('coach_clients')
-    .update({ status: 'inactive' })
-    .eq('id', params.clientId)
-
-  if (statusError) return NextResponse.json({ error: statusError.message }, { status: 500 })
-
-  // Révoquer le token d'accès (si existant)
-  await db
-    .from('client_access_tokens')
-    .update({ revoked: true })
-    .eq('client_id', params.clientId)
-    .eq('coach_id', user.id)
-
-  // Forcer la déconnexion Supabase (invalide le JWT actif immédiatement)
-  if (client.user_id) {
-    await db.auth.admin.signOut(client.user_id)
+  // Bannir le compte Supabase si il existe (ban_duration 87600h = ~10 ans = suspension permanente)
+  if (client.email) {
+    const { data: users } = await db.auth.admin.listUsers()
+    const supabaseUser = users?.users?.find((u: { email?: string }) => u.email === client.email)
+    if (supabaseUser) {
+      await db.auth.admin.updateUserById(supabaseUser.id, {
+        ban_duration: '87600h',
+      })
+    }
   }
 
+  // Mettre à jour le statut en DB
+  const { error } = await db
+    .from('coach_clients')
+    .update({ status: 'suspended' })
+    .eq('id', params.clientId)
+    .eq('coach_id', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
