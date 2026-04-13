@@ -38,6 +38,7 @@ import PerformanceDashboard from "@/components/clients/PerformanceDashboard";
 import ProgressionHistory from "@/components/clients/ProgressionHistory";
 import ClientCrmTab from "@/components/crm/ClientCrmTab";
 import ClientFormulasTab from "@/components/crm/ClientFormulasTab";
+import DeleteClientModal from "@/components/clients/DeleteClientModal";
 import MetricsSection from "@/components/clients/MetricsSection";
 import { SubmissionWithClient } from "@/types/assessment";
 import {
@@ -158,6 +159,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -989,6 +991,18 @@ export default function ClientDetailPage() {
                 clientStatus={client?.status ?? "inactive"}
                 clientEmail={client?.email ?? null}
               />
+              {/* Danger zone */}
+              <div className="mt-8 pt-6 border-t-[0.3px] border-white/[0.06]">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/25 mb-3">
+                  Zone dangereuse
+                </p>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="px-4 py-2 rounded-lg bg-white/[0.02] text-[12px] text-red-400/60 hover:text-red-400/90 hover:bg-red-500/[0.06] transition-colors border-[0.3px] border-red-500/10"
+                >
+                  Archiver ou supprimer ce client
+                </button>
+              </div>
             </div>
           )}
 
@@ -1352,6 +1366,17 @@ export default function ClientDetailPage() {
           )}
         </div>
       </div>
+      {showDeleteModal && client && (
+        <DeleteClientModal
+          clientId={clientId}
+          clientName={`${client.first_name} ${client.last_name}`}
+          onClose={() => setShowDeleteModal(false)}
+          onSuccess={() => {
+            setShowDeleteModal(false);
+            router.push("/coach/clients");
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -7,6 +7,7 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
+FEATURE: Add client archive and hard delete from client detail page
 FEATURE: Superpower Coach Dashboard — hero summary narratif, fil d'alertes priorisées (critical/urgent/info), actions rapides contextuelles, clients segmentés avec sparklines, financier condensé (MRR + revenus + impayés)
 FIX: QuickActions — CTA contextuel toujours visible (fallback "Nouveau client" quand aucune urgence)
 FIX: FinancialStrip — valeurs en text-3xl conforme spec DS v2.0
