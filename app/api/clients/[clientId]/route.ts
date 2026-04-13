@@ -93,7 +93,7 @@ export async function DELETE(
 
   const { data: clientRow, error: fetchError } = await service
     .from('coach_clients')
-    .select('id, user_id')
+    .select('id, user_id, email')
     .eq('id', params.clientId)
     .eq('coach_id', user.id)
     .single()
@@ -103,10 +103,11 @@ export async function DELETE(
   }
 
   if (mode === 'archive') {
-    await service
+    const { error: revokeError } = await service
       .from('client_access_tokens')
       .update({ revoked: true })
       .eq('client_id', params.clientId)
+    if (revokeError) console.error('DELETE archive — revoke tokens:', revokeError)
 
     const { error } = await service
       .from('coach_clients')
@@ -168,10 +169,25 @@ export async function DELETE(
   }
 
   const authUserId = (clientRow as Record<string, unknown>).user_id as string | null | undefined
+  const clientEmail = (clientRow as Record<string, unknown>).email as string | null | undefined
+
   if (authUserId) {
+    // Direct delete by auth user ID
     const { error: authDeleteError } = await service.auth.admin.deleteUser(authUserId)
     if (authDeleteError) {
-      console.error('DELETE auth user:', authDeleteError)
+      console.error('DELETE auth user (by id):', authDeleteError)
+    }
+  } else if (clientEmail) {
+    // Fallback: find auth user by email (client invited but never linked user_id)
+    const { data: listData, error: listError } = await service.auth.admin.listUsers()
+    if (!listError && listData) {
+      const authUser = listData.users.find((u) => u.email === clientEmail)
+      if (authUser) {
+        const { error: authDeleteError } = await service.auth.admin.deleteUser(authUser.id)
+        if (authDeleteError) {
+          console.error('DELETE auth user (by email):', authDeleteError)
+        }
+      }
     }
   }
 
