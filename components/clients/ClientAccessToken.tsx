@@ -8,6 +8,7 @@ import {
   Loader2,
   CheckCircle2,
   ShieldOff,
+  RefreshCw,
 } from "lucide-react";
 
 interface Props {
@@ -44,7 +45,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
     setError(null);
     const res = await fetch(`/api/clients/${clientId}/access`, { method: "DELETE" });
     if (res.ok) {
-      setStatus("inactive");
+      setStatus("suspended");
     } else {
       const d = await res.json();
       setError(d.error ?? "Erreur lors de la révocation.");
@@ -54,6 +55,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
   }
 
   const isActive = status === "active";
+  const isSuspended = status === "suspended";
 
   return (
     <>
@@ -64,9 +66,11 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
           <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
             isActive
               ? "bg-[#1f8a65]/15 text-[#1f8a65]"
+              : isSuspended
+              ? "bg-amber-500/15 text-amber-400"
               : "bg-white/[0.06] text-white/40"
           }`}>
-            {isActive ? "Actif" : "Inactif"}
+            {isActive ? "Actif" : isSuspended ? "Suspendu" : "Inactif"}
           </span>
         </div>
 
@@ -100,20 +104,30 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-white/45">
-              {status === "archived"
-                ? "Ce client est archivé. Restaurez-le avant de l'inviter."
+              {isSuspended
+                ? "L'accès de ce client a été suspendu. Vous pouvez le réactiver à tout moment."
                 : "Ce client n'a pas encore accès à son espace. Envoyez-lui une invitation pour qu'il crée son mot de passe."}
             </p>
-            {status !== "archived" && (
-              <button
-                onClick={() => void sendInvitation()}
-                disabled={inviting}
-                className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors w-fit disabled:opacity-50"
-              >
-                {inviting ? <Loader2 size={12} className="animate-spin" /> : invited ? <CheckCircle2 size={12} /> : <Mail size={12} />}
-                {inviting ? "Envoi…" : invited ? "Invitation envoyée !" : "Inviter le client"}
-              </button>
-            )}
+            <button
+              onClick={() => void sendInvitation()}
+              disabled={inviting}
+              className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors w-fit disabled:opacity-50"
+            >
+              {inviting
+                ? <Loader2 size={12} className="animate-spin" />
+                : invited
+                ? <CheckCircle2 size={12} />
+                : isSuspended
+                ? <RefreshCw size={12} />
+                : <Mail size={12} />}
+              {inviting
+                ? "Envoi…"
+                : invited
+                ? (isSuspended ? "Accès restauré !" : "Invitation envoyée !")
+                : isSuspended
+                ? "Restaurer l'accès"
+                : "Inviter le client"}
+            </button>
           </div>
         )}
 
@@ -130,7 +144,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
               <h3 className="font-bold text-white">Couper l&apos;accès client ?</h3>
             </div>
             <p className="text-sm text-white/50 mb-5">
-              Le client sera déconnecté et ne pourra plus accéder à son espace. Vous pourrez le réinviter à tout moment.
+              Le client sera déconnecté et ne pourra plus accéder à son espace. Vous pourrez le réactiver à tout moment.
             </p>
             <div className="flex gap-3">
               <button
@@ -144,7 +158,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
                 disabled={revoking}
                 className="flex-1 py-2.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
               >
-                {revoking ? "Révocation…" : "Couper l'accès"}
+                {revoking ? "Suspension…" : "Couper l'accès"}
               </button>
             </div>
           </div>
