@@ -7,11 +7,15 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
-FIX: Create client with status 'inactive' instead of 'active' — prevents false "active" state before invitation is sent
-FIX: Add fallback to generateLink type 'recovery' when 'invite' fails (user already exists in Supabase Auth)
-FIX: Handle Supabase hash error (otp_expired, access_denied) in /client/login with user-friendly message
-FIX: Handle Supabase hash fragment (#access_token) in /client/login — redirect to /client/set-password when type=invite|recovery
-FIX: Support both hash fragment (access_token) and PKCE code flow in /client/set-password via setSession fallback
+FEATURE: Unified client auth — createUser + generateLink recovery, no dual system
+FEATURE: Client suspension via Supabase ban_duration on access revoke
+FEATURE: sendReactivationEmail — coach restores access, client gets login link
+FEATURE: sendWelcomeEmail — sent after client sets password for the first time
+FEATURE: POST /api/client/welcome — welcome email endpoint called after set-password
+FIX: Remove generateLink type 'invite' — was triggering Supabase built-in email in parallel
+FIX: Create client with status 'inactive' instead of 'active' — prevents false active state before invitation
+FIX: Handle Supabase hash error (otp_expired) in /client/login with user-friendly message
+CHORE: Remove System B — access-token route and magic link internal (/client/access/[token])
 FEATURE: Add email confirmation field at signup step 3 — double-entry prevents typos, validated client-side and server-side
 FEATURE: Implement inline email change flow in coach settings — coach enters new email twice, confirmation link sent to new address
 FIX: Rename "Profil" section to "Profil pro" in coach settings for clarity
