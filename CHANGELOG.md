@@ -1,3 +1,53 @@
+## 2026-04-14
+
+FEATURE: BioNorms — Normes view now displays the most recent directly-entered value per metric across all submissions (bilans + saisies manuelles), not just one bilan
+FEATURE: BioNorms — Each gauge now shows a "Mesuré le JJ/MM" (green) or "Calculé le JJ/MM · formule cliquable" (grey) source badge
+REFACTOR: useBiometrics — now accepts clientId and aggregates latest value per field_key across all completed submissions
+
+
+FIX: MetricsSection SliderBlock — "Du" and "Au" date inputs were bound to wrong array indices (timeRangeDays[0]=Au, [1]=Du); swap fixes both the inverted display and the "Au snaps to today" bug
+
+FIX: MetricsSection TimeRangeSlider — date inputs "Du/Au" no longer collapse range to zero (inverted Math.min/max constraint corrected)
+FIX: MetricsSection TimeRangeSlider — isoDateToDays now parses dates as local time to avoid off-by-one timezone shift
+
+
+
+REFACTOR: MetricsSection overlay — move "Ajouter une note" button out of chart canvas into a dedicated header bar above the chart
+FEATURE: MetricsSection — SliderBlock and TimeRangeSlider now include date inputs (Du / Au) synced bidirectionally with the slider
+FIX: MetricsSection overlay — annotations/phases filtered to visible time window before being passed to MultiSeriesChart (out-of-window annotations were injecting phantom x-axis points, distorting chart)
+FIX: MetricsSection overlay — TimeRangeSlider now uses fixed left/right date labels (same pattern as SliderBlock, no more collision)
+FIX: MetricsSection overlay — inject annotation/phase dates into merged dataset so ReferenceLine always finds an x= match (annotations were visible in list but invisible on chart when no measurement existed on that date)
+FIX: metrics API — normalize all dates to YYYY-MM-DD (submitted_at was ISO timestamp, causing ReferenceLine x= mismatch — annotations invisible on chart)
+FIX: annotations POST route — body field now accepts null (z.nullable) — was rejecting null with "Expected string, received null"
+FIX: annotations routes — Zod error serialized as string (not ZodError object) to avoid React "Objects are not valid as a React child" crash
+FIX: annotations PATCH route — add lab_protocol to event_type enum (was missing, caused silent 400 on edit)
+SCHEMA: program_exercises — add image_url (text) and is_unilateral (boolean) columns
+SCHEMA: client_session_logs — add exercise_notes (jsonb) column for per-exercise client feedback
+SCHEMA: client_set_logs — add side (left/right/bilateral) column for unilateral exercise tracking
+FIX: /api/session-logs POST — verify program_session_id exists before insert to prevent FK constraint violation crash
+FEATURE: SessionLogger — full DS v2.0 dark redesign (#121212 background, white/[0.06] borders, accent #1f8a65)
+FEATURE: SessionLogger — focused one-exercise-at-a-time view with dot navigation and prev/next buttons
+FEATURE: SessionLogger — exercise image/GIF display with collapsible demo (supports .gif unoptimized)
+FEATURE: SessionLogger — RIR target shown inline on all exercises; RIR actual input available on all sets (not just double-progression)
+FEATURE: SessionLogger — unilateral exercise support: auto-detects via is_unilateral flag or name keywords, creates L/R sub-sets per series
+FEATURE: SessionLogger — last performance displayed per set in placeholder ("↩ 80kg × 8") fetched server-side
+FEATURE: SessionLogger — rest timer full-screen modal with animated countdown and skip button
+FEATURE: SessionLogger — per-exercise client feeling note (textarea, persisted in exercise_notes JSONB)
+FEATURE: session/[sessionId]/page.tsx — fetch last set_logs server-side for previous performance hints
+CHORE: client/layout.tsx — add Next.js metadata for PWA (appleWebApp, manifest link, viewport)
+CHORE: public/manifest.json — update background_color and theme_color to #121212 (DS v2.0)
+
+FEATURE: MetricsSection — add bar/line chart type toggle per category (composition/mensurations/bien-être) with localStorage persistence
+FIX: MetricsSection — norms tab now finds most recent submission with both weight_kg and height_cm instead of using rows[0] blindly; tab is disabled with tooltip when no valid submission exists
+FIX: MetricsSection — overlay annotation save now shows API error message inline in form when save fails (was silently swallowing non-ok responses)
+FIX: MetricsSection — slider date labels replaced with fixed left/right layout, no more collision when cursors are close
+FIX: MetricsSection — getDelta now computes first→last value over the full visible window (was computing last minus second-to-last, giving single-step delta)
+FIX: MetricsSection — slider right thumb date no longer hidden when cursors are close — label moves above the track instead of disappearing (both TimeRangeSlider and SliderBlock)
+FIX: /client/auth/callback — handle INITIAL_SESSION with session → done(true) immediately (was falling through to 8s timeout)
+FIX: /client/auth/callback — detect Supabase error params (?error_code / ?error) at mount and redirect immediately with reason param
+FIX: /client/auth/callback — add reason param to all done(false) calls (timeout / no_token / code_exchange_failed) for easier diagnosis in login page URL
+FIX: invite route — use coach_clients.status === 'suspended' instead of last_sign_in_at to decide reactivation vs fresh invite (last_sign_in_at is unreliable — set by OTP verification even when user never completed set-password)
+
 ## 2026-04-12
 
 FEATURE: Add FinancialStrip component — MRR, monthly revenue, pending & overdue payments with EUR formatting
@@ -7,6 +57,31 @@ FIX: Sort active clients by last_activity_at before slice(0,8) in dashboard coac
 
 ## 2026-04-13
 
+FIX: /client/auth/callback — don't error on INITIAL_SESSION without session when recovery hash is present (PASSWORD_RECOVERY fires after INITIAL_SESSION in implicit flow — premature done(false) was causing link_expired redirect)
+REFACTOR: /client/auth/callback — replace Route Handler (server-side, can't read hash fragments) with client-side page that handles both PKCE (?code=) and implicit flow (#access_token=) — exchanges code or listens for PASSWORD_RECOVERY event then redirects to /client/set-password
+FIX: app/client/layout.tsx — remove auth redirect that caused ERR_TOO_MANY_REDIRECTS on /client/login (layout applies to all /client/* routes including login/set-password; middleware handles protection)
+FIX: Add ConditionalClientShell component — renders BottomNav + pb-20 only on authenticated client pages, not on login/set-password/auth routes
+FIX: /client/login — detect implicit flow recovery token (#access_token=...&type=recovery) sent by Supabase to site URL; wait for PASSWORD_RECOVERY event then redirect to /client/set-password
+FIX: /client/set-password — on INITIAL_SESSION without session, don't immediately error if a recovery hash is present (implicit flow delivers PASSWORD_RECOVERY after INITIAL_SESSION)
+FIX: /client/auth/callback — complete rewrite: exchange PKCE code server-side via exchangeCodeForSession, set session cookies on redirect response, forward to /client/set-password; redirect to /client/login?error=link_expired on failure
+FIX: /client/set-password — handle INITIAL_SESSION event in onAuthStateChange (session from server-side cookie exchange); detect ?error=link_expired query param for instant error display; guard SIGNED_OUT against firing after successful update
+FIX: /client/login — handle ?error=link_expired query param from callback route (in addition to existing Supabase hash fragment error handling)
+FIX: invite route — set coach_clients.user_id after createUser (was never set, breaking ban/unban); existing users with last_sign_in_at=null get fresh recovery link instead of broken reactivation email; fix listUsers pagination (perPage: 1000, was truncating at 50)
+FIX: access route — select user_id on coach_clients and use it directly for ban; fall back to email-based lookup with perPage: 1000 to avoid 50-user truncation
+FIX: Add 'suspended' to coach_clients_status_check constraint — was blocking client suspension
+FIX: Client invitation flow — redirectTo now points to /auth/confirm?next=/client/set-password for proper PKCE server-side exchange
+FIX: set-password page — replace exchangeCodeForSession (client-side) with getSession check (session already set by /auth/confirm)
+FIX: Middleware — authenticated clients redirected to /client instead of /dashboard when hitting / or /auth routes
+FIX: /auth/confirm — session cookies now correctly attached to redirect response (were lost on NextResponse.redirect)
+FIX: Client invite — redirectTo now points to /client/auth/callback (dedicated route) — Supabase drops query params from redirectTo, breaking ?next= pattern
+FIX: Add /client/auth/callback route — PKCE exchange server-side with cookies properly attached to redirect response
+FIX: set-password — use onAuthStateChange(PASSWORD_RECOVERY) to detect hash-based recovery session (Supabase implicit flow, not PKCE)
+FIX: /client/auth/callback — simplified to pass-through redirect, hash tokens handled client-side
+
+FEATURE: Client profile identity editing — first_name, last_name, email, phone, date_of_birth editable inline in Profil tab
+FEATURE: Missing email banner on legacy client profiles with Ajouter un email CTA
+FEATURE: Email sync to Supabase Auth on PATCH /api/clients/[clientId] when user_id exists
+FIX: Email required validation on POST /api/clients (API + frontend form)
 FEATURE: Unified client auth — createUser + generateLink recovery, no dual system
 FEATURE: Client suspension via Supabase ban_duration on access revoke
 FEATURE: sendReactivationEmail — coach restores access, client gets login link
