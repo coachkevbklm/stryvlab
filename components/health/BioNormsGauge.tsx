@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { NormEvaluation, NormZone, NormRange, NormReference } from '@/lib/health/bioNorms'
+import type { MetricSource } from '@/lib/health/useBiometrics'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -33,6 +34,12 @@ function formatValue(value: number, unit: string): string {
   if (unit === 'ratio') return value.toFixed(2)
   if (unit === 'niveau (1-30)') return Math.round(value).toString()
   return value.toFixed(1)
+}
+
+function formatShortDate(isoDate: string): string {
+  const parts = isoDate.split('-')
+  if (parts.length < 3) return isoDate
+  return `${parts[2]}/${parts[1]}`
 }
 
 // Déduplique les zones pour la barre (max 5 segments — une zone par type)
@@ -87,7 +94,6 @@ function InfoTooltip({ reference, zone_insight }: InfoTooltipProps) {
             boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
           }}
         >
-          {/* Insight par zone */}
           {zone_insight && (
             <div style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }} className="px-3.5 py-3">
               <p className="text-[11px] text-white/70 leading-[1.65]">
@@ -95,8 +101,6 @@ function InfoTooltip({ reference, zone_insight }: InfoTooltipProps) {
               </p>
             </div>
           )}
-
-          {/* Référence scientifique */}
           <div className="px-3.5 py-2.5">
             <p className="text-[9px] font-medium text-white/25 leading-relaxed">
               {reference.source}
@@ -147,16 +151,79 @@ function ZoneBadge({ zone, label }: { zone: NormZone; label: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// SourceBadge — Mesuré / Calculé avec date et formule cliquable
+// ---------------------------------------------------------------------------
+
+function SourceBadge({ source }: { source: MetricSource }) {
+  const [formulaOpen, setFormulaOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!formulaOpen) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setFormulaOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [formulaOpen])
+
+  if (source.type === 'measured') {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-block w-[5px] h-[5px] rounded-full shrink-0"
+          style={{ backgroundColor: '#1f8a65' }}
+        />
+        <span className="text-[9px] font-medium leading-none" style={{ color: 'rgba(31,138,101,0.8)' }}>
+          Mesuré le {formatShortDate(source.date)}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={ref} className="relative flex items-center gap-1.5">
+      <span className="inline-block w-[5px] h-[5px] rounded-full bg-white/20 shrink-0" />
+      <button
+        type="button"
+        onClick={() => source.formula ? setFormulaOpen(v => !v) : undefined}
+        className={cn(
+          'text-[9px] font-medium leading-none text-white/30 text-left',
+          source.formula && 'underline decoration-dotted underline-offset-2 cursor-pointer hover:text-white/50',
+        )}
+      >
+        Calculé le {formatShortDate(source.date)}
+      </button>
+      {formulaOpen && source.formula && (
+        <div
+          className="absolute left-0 top-5 z-50 rounded-xl px-3 py-2 w-[220px]"
+          style={{
+            background: '#0e0e0e',
+            border: '0.5px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+          }}
+        >
+          <p className="text-[10px] text-white/50 leading-relaxed font-mono">
+            {source.formula}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Public export
 // ---------------------------------------------------------------------------
 
 export interface BioNormsGaugeProps {
   evaluation: NormEvaluation
+  source?: MetricSource
   showSource?: boolean
   className?: string
 }
 
-export function BioNormsGauge({ evaluation, showSource = true, className }: BioNormsGaugeProps) {
+export function BioNormsGauge({ evaluation, source, showSource = true, className }: BioNormsGaugeProps) {
   return (
     <div
       className={cn(
@@ -186,10 +253,13 @@ export function BioNormsGauge({ evaluation, showSource = true, className }: BioN
         <ZoneBadge zone={evaluation.zone} label={evaluation.zone_label_fr} />
       </div>
 
+      {/* Source badge — mesuré ou calculé */}
+      {source && <SourceBadge source={source} />}
+
       {/* Barre segmentée */}
       <SegmentedBar ranges={evaluation.ranges} activeZone={evaluation.zone} />
 
-      {/* Source footer optionnel */}
+      {/* Source footer optionnel (référence scientifique) */}
       {showSource && (
         <p className="text-[9px] text-white/20 leading-none truncate">
           {evaluation.reference.source}
