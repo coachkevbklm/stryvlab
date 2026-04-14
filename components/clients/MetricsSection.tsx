@@ -603,7 +603,7 @@ function formatDateInput(d: string) {
 
 function getDelta(series: { date: string; value: number }[]) {
   if (series.length < 2) return null;
-  return series[series.length - 1].value - series[series.length - 2].value;
+  return series[series.length - 1].value - series[0].value;
 }
 
 function fmtVal(v: number, unit: string) {
@@ -1023,15 +1023,17 @@ function Sparkline({ data }: { data: { date: string; value: number }[] }) {
 function FullChart({
   fieldKey,
   data,
+  chartKind = "line",
 }: {
   fieldKey: string;
   data: { date: string; value: number }[];
+  chartKind?: "bar" | "line";
 }) {
   const field = FIELD_MAP[fieldKey];
   if (!field || data.length === 0) return null;
 
-  const isComposition = field.category === "composition";
-  const ChartComponent = isComposition ? BarChart : AreaChart;
+  const useBar = chartKind === "bar";
+  const ChartComponent = useBar ? BarChart : AreaChart;
 
   const delta = getDelta(data);
   const isNegGood = NEG_GOOD_FIELDS.includes(fieldKey);
@@ -1259,7 +1261,7 @@ function FullChart({
                 strokeWidth={1.5}
               />
             )}
-            {isComposition ? (
+            {useBar ? (
               <Bar
                 dataKey="value"
                 fill="var(--color-value)"
@@ -1570,6 +1572,7 @@ function MultiSeriesChart({
   // ── Saving state ──
   const [savingPhase, setSavingPhase] = useState(false);
   const [savingAnnotation, setSavingAnnotation] = useState(false);
+  const [annotationError, setAnnotationError] = useState<string | null>(null);
 
   // ── Feature 4: Delta on filtered window ──
   // series is already filtered by the parent (filteredSeries) so baseline = first point of filtered window
@@ -1591,27 +1594,32 @@ function MultiSeriesChart({
     return Array.from(dateSet).sort();
   }, [selectedMetrics, series]);
 
-  const merged = useMemo(
-    () =>
-      dates.map((date) => {
-        const row: Record<string, number | string> = { date };
-        selectedMetrics.forEach((k) => {
-          const point = (series[k] ?? []).find((d) => d.date === date);
-          if (point) {
-            const baseline = baselineValues[k];
-            if (baseline !== undefined && baseline !== 0) {
-              row[`__pct_${k}`] =
-                ((point.value - baseline) / Math.abs(baseline)) * 100;
-            } else {
-              row[`__pct_${k}`] = 0;
-            }
+  const merged = useMemo(() => {
+    // Include annotation/phase dates so ReferenceLine x= always finds a match
+    const annotationDates = [
+      ...annotations.map((a) => a.event_date),
+      ...phases.map((p) => p.date_start),
+    ].filter((d) => !dates.includes(d));
+    const allDates = [...dates, ...annotationDates].sort();
+
+    return allDates.map((date) => {
+      const row: Record<string, number | string> = { date };
+      selectedMetrics.forEach((k) => {
+        const point = (series[k] ?? []).find((d) => d.date === date);
+        if (point) {
+          const baseline = baselineValues[k];
+          if (baseline !== undefined && baseline !== 0) {
+            row[`__pct_${k}`] =
+              ((point.value - baseline) / Math.abs(baseline)) * 100;
+          } else {
+            row[`__pct_${k}`] = 0;
           }
-        });
-        return row;
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dates.join(","), selectedMetrics.join(","), baselineValues],
-  );
+        }
+      });
+      return row;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dates.join(","), selectedMetrics.join(","), baselineValues, annotations, phases]);
 
   const deltas = useMemo(() => {
     const d: Record<string, number | null> = {};
@@ -1663,11 +1671,22 @@ function MultiSeriesChart({
 
   const absoluteData = useMemo(() => {
     if (!singleVisibleMetric) return [];
-    return (series[singleVisibleMetric] ?? []).map((d) => ({
+    const dataPoints = (series[singleVisibleMetric] ?? []).map((d) => ({
       date: d.date,
       value: d.value,
     }));
-  }, [singleVisibleMetric, series]);
+    const existingDates = new Set(dataPoints.map((d) => d.date));
+    // Inject annotation/phase dates so ReferenceLine x= always finds a match
+    const extraDates = [
+      ...annotations.map((a) => a.event_date),
+      ...phases.map((p) => p.date_start),
+    ].filter((d) => !existingDates.has(d));
+    const combined = [
+      ...dataPoints,
+      ...extraDates.map((date) => ({ date, value: undefined as unknown as number })),
+    ].sort((a, b) => a.date.localeCompare(b.date));
+    return combined;
+  }, [singleVisibleMetric, series, annotations, phases]);
 
   const absMin =
     absoluteData.length > 0 ? Math.min(...absoluteData.map((d) => d.value)) : 0;
@@ -1738,6 +1757,7 @@ function MultiSeriesChart({
     setContextMenu(null);
     setContextStep("annotation");
     setDragState(null);
+    setAnnotationError(null);
   }
 
   function openEditPhase(phase: TrainingPhase, e: React.MouseEvent) {
@@ -1839,6 +1859,7 @@ function MultiSeriesChart({
   async function handleSaveAnnotation(form: typeof ctxAnnForm) {
     if (!form.label || !form.event_date) return;
     setSavingAnnotation(true);
+    setAnnotationError(null);
     const editingId = contextMenu?.editingId;
     const payload = {
       label: form.label,
@@ -1864,6 +1885,10 @@ function MultiSeriesChart({
               .sort((a, b) => a.event_date.localeCompare(b.event_date)),
           );
           closeContextMenu();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          const msg = typeof err?.error === "string" ? err.error : "Erreur lors de la modification.";
+          setAnnotationError(msg);
         }
       } else {
         const res = await fetch(`/api/clients/${clientId}/annotations`, {
@@ -1879,6 +1904,9 @@ function MultiSeriesChart({
             ),
           );
           closeContextMenu();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          setAnnotationError(err?.error ?? "Erreur lors de l'enregistrement.");
         }
       }
     } finally {
@@ -2149,11 +2177,33 @@ function MultiSeriesChart({
       />
 
       {/* ── Bloc 2 : Graphique ── */}
-      <div
-        ref={chartDivRef}
-        className="bg-[#181818] border-subtle rounded-2xl relative overflow-hidden"
-        style={{ height: chartHeight }}
-      >
+      <div className="bg-[#181818] border-subtle rounded-2xl overflow-hidden flex flex-col">
+        {/* ── Header barre actions ── */}
+        <div className="flex items-center justify-between px-4 h-11 border-b border-white/[0.06] shrink-0">
+          <p className="text-[10px] text-white/30 leading-none">
+            Cliquez sur le graphique pour ancrer une note à une date précise
+          </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const today = new Date().toISOString().split("T")[0];
+              openContextMenu(e, today, null);
+            }}
+            className="flex items-center gap-2 px-3 h-7 rounded-lg bg-white/[0.05] border-[0.3px] border-white/[0.08] hover:bg-white/[0.09] hover:border-white/[0.16] active:scale-[0.97] transition-all"
+          >
+            <PenLine size={12} className="text-[#1f8a65]" />
+            <span className="text-[10px] font-bold text-white/70 uppercase tracking-[0.10em]">
+              Ajouter une note
+            </span>
+          </button>
+        </div>
+
+        {/* ── Zone graphique ── */}
+        <div
+          ref={chartDivRef}
+          className="relative overflow-hidden"
+          style={{ height: chartHeight }}
+        >
         {/* ── Chart empty state ── */}
         {visibleSeries.size > 0 && merged.length === 0 && !useAbsoluteAxis && (
           <div className="mx-5 mt-5 mb-5 rounded-xl bg-white/[0.03] px-5 py-6 text-center">
@@ -2168,21 +2218,6 @@ function MultiSeriesChart({
         )}
 
         <div className="absolute inset-0 px-1 pt-1 pb-8">
-          {/* PenLine button — opens context menu without date */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const today = new Date().toISOString().split("T")[0];
-              openContextMenu(e, today, null);
-            }}
-            className="absolute top-2 right-3 z-10 flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-[#181818] border border-white/[0.10] hover:bg-white/[0.09] hover:border-white/[0.18] transition-all"
-            title="Ajouter une phase, un événement ou une note"
-          >
-            <PenLine size={11} className="text-white/55" />
-            <span className="text-[9px] font-bold text-white/45 uppercase tracking-[0.10em]">
-              Note
-            </span>
-          </button>
 
           <ChartContainer
             config={chartConfig}
@@ -2617,6 +2652,7 @@ function MultiSeriesChart({
         >
           <div className="w-full h-[3px] bg-white/[0.08] group-hover:bg-[#1f8a65]/60 group-active:bg-[#1f8a65] transition-colors duration-150" />
         </div>
+        </div>{/* end zone graphique */}
       </div>
       {/* end Bloc 2: Graphique */}
 
@@ -2867,6 +2903,11 @@ function MultiSeriesChart({
                   />
                 </div>
 
+                {annotationError && (
+                  <p className="text-[10px] text-red-400 leading-snug pt-1">
+                    {annotationError}
+                  </p>
+                )}
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     onClick={closeContextMenu}
@@ -3657,6 +3698,24 @@ function formatThumbDate(days: number): string {
   });
 }
 
+// Convert days-ago offset → YYYY-MM-DD for <input type="date">
+function daysToISODate(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split("T")[0];
+}
+
+// Convert YYYY-MM-DD → days-ago offset (clamped 0–730)
+function isoDateToDays(iso: string): number {
+  // Parse as local date to avoid UTC midnight → off-by-one on local timezones
+  const [year, month, day] = iso.split("-").map(Number);
+  const target = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - target.getTime()) / 86400000);
+  return Math.max(0, Math.min(730, diff));
+}
+
 // Returns a human-readable duration label for the selected range (e.g. "3 mois", "1 an 2 mois")
 function formatRangeDuration(daysStart: number, daysEnd: number): string {
   const diff = Math.abs(daysEnd - daysStart);
@@ -3686,69 +3745,73 @@ function TimeRangeSlider({
   setTimeRangeDays: Dispatch<SetStateAction<TimeRangeDays>>;
 }) {
   const MAX = 730;
-  const leftPct = (timeRangeDays[0] / MAX) * 100;
-  const rightPct = (timeRangeDays[1] / MAX) * 100;
-  // Hide right label when thumbs are too close (avoids collision)
-  const tooClose = rightPct - leftPct < 14;
-
   const rangeLabel = formatRangeDuration(timeRangeDays[0], timeRangeDays[1]);
 
   return (
     <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
-            Période d&apos;analyse
-          </p>
-          <p className="text-[12px] text-white/55 leading-snug mt-0.5">
-            Faites glisser les curseurs pour affiner la fenêtre temporelle du
-            graphique.
-          </p>
-        </div>
-        <span className="text-[11px] font-semibold text-white/70 shrink-0 ml-4 tabular-nums">
+        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+          Période d&apos;analyse
+        </p>
+        <span className="text-[11px] font-semibold text-white/50 shrink-0 tabular-nums">
           {rangeLabel}
         </span>
       </div>
+      {/* Date inputs row */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 flex flex-col gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.14em]">
+            Du
+          </label>
+          <input
+            type="date"
+            value={daysToISODate(timeRangeDays[1])}
+            max={daysToISODate(0)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const days = isoDateToDays(e.target.value);
+              // timeRangeDays[1] = "Du" (furthest in past = largest days-ago value)
+              // Clamp so "Du" never goes more recent than "Au" (timeRangeDays[0])
+              setTimeRangeDays([timeRangeDays[0], Math.max(days, timeRangeDays[0])]);
+            }}
+            className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
+          />
+        </div>
+        <div className="flex-1 flex flex-col gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.14em]">
+            Au
+          </label>
+          <input
+            type="date"
+            value={daysToISODate(timeRangeDays[0])}
+            max={daysToISODate(0)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const days = isoDateToDays(e.target.value);
+              // timeRangeDays[0] = "Au" (most recent = smallest days-ago value)
+              // Clamp so "Au" never goes further in past than "Du" (timeRangeDays[1])
+              setTimeRangeDays([Math.min(days, timeRangeDays[1]), timeRangeDays[1]]);
+            }}
+            className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
+          />
+        </div>
+      </div>
+      {/* Slider */}
       <div className="flex items-center gap-3">
         <Calendar size={13} className="text-white/30 shrink-0" />
-        <div className="relative w-full">
-          <Slider
-            value={timeRangeDays}
-            onValueChange={(value) => {
-              const next = Array.isArray(value)
-                ? [value[0], value[1]]
-                : timeRangeDays;
-              setTimeRangeDays(next as TimeRangeDays);
-            }}
-            min={0}
-            max={MAX}
-            step={1}
-            className="w-full"
-          />
-          {/* Date labels under thumbs — clamped to avoid overflow */}
-          <div className="relative h-5 mt-1.5 select-none pointer-events-none">
-            <span
-              className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
-              style={{
-                left: `${leftPct}%`,
-                transform: thumbLabelTranslate(leftPct),
-              }}
-            >
-              {formatThumbDate(timeRangeDays[0])}
-            </span>
-            {!tooClose && (
-              <span
-                className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
-                style={{
-                  left: `${rightPct}%`,
-                  transform: thumbLabelTranslate(rightPct),
-                }}
-              >
-                {formatThumbDate(timeRangeDays[1])}
-              </span>
-            )}
-          </div>
-        </div>
+        <Slider
+          value={timeRangeDays}
+          onValueChange={(value) => {
+            const next = Array.isArray(value)
+              ? [value[0], value[1]]
+              : timeRangeDays;
+            setTimeRangeDays(next as TimeRangeDays);
+          }}
+          min={0}
+          max={MAX}
+          step={1}
+          className="w-full"
+        />
       </div>
     </div>
   );
@@ -4131,6 +4194,40 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [chartCategory, setChartCategory] =
     useState<ChartCategory>("composition");
+
+  // Chart kind per category — persisted in localStorage
+  const [chartKindByCategory, setChartKindByCategory] = useState<
+    Record<ChartCategory, "bar" | "line">
+  >(() => {
+    if (typeof window === "undefined") {
+      return { composition: "bar", measurements: "line", wellness: "line" };
+    }
+    try {
+      const stored = localStorage.getItem("stryvr_chartKind");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          composition: parsed.composition ?? "bar",
+          measurements: parsed.measurements ?? "line",
+          wellness: parsed.wellness ?? "line",
+        };
+      }
+    } catch {}
+    return { composition: "bar", measurements: "line", wellness: "line" };
+  });
+
+  function toggleChartKind(cat: ChartCategory) {
+    setChartKindByCategory((prev) => {
+      const next = {
+        ...prev,
+        [cat]: prev[cat] === "bar" ? "line" : "bar",
+      };
+      try {
+        localStorage.setItem("stryvr_chartKind", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
   const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [showFilters, setShowFilters] = useState(false);
   const [editingRow, setEditingRow] = useState<MetricRow | null>(null);
@@ -4245,7 +4342,36 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
     return result;
   }, [series, finalDateFrom, finalDateTo]);
 
+  const filteredAnnotations = useMemo(
+    () => annotations.filter((a) => {
+      if (finalDateFrom && a.event_date < finalDateFrom) return false;
+      if (finalDateTo && a.event_date > finalDateTo) return false;
+      return true;
+    }),
+    [annotations, finalDateFrom, finalDateTo],
+  );
+
+  const filteredPhases = useMemo(
+    () => phases.filter((p) => {
+      if (finalDateTo && p.date_start > finalDateTo) return false;
+      if (finalDateFrom && p.date_end && p.date_end < finalDateFrom) return false;
+      return true;
+    }),
+    [phases, finalDateFrom, finalDateTo],
+  );
+
   const hasData = rows.length > 0;
+
+  // For norms: find the most recent submission that has both weight_kg and height_cm
+  const normsSubmissionId = useMemo(() => {
+    for (const row of rows) {
+      if (row.values['weight_kg'] != null && row.values['height_cm'] != null) {
+        return row.submissionId;
+      }
+    }
+    return null;
+  }, [rows]);
+
   const fieldsWithData = FIELDS.filter((f) => (series[f.key]?.length ?? 0) > 0);
   const chartsInCategory = fieldsWithData.filter(
     (f) => f.category === chartCategory,
@@ -4270,61 +4396,64 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
   const SliderBlock = (
     <div className="bg-[#181818] border-subtle rounded-2xl px-5 py-4">
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
-            Période d&apos;analyse
-          </p>
-          <p className="text-[12px] text-white/55 leading-snug mt-0.5">
-            Faites glisser les curseurs pour affiner la fenêtre temporelle du
-            graphique.
-          </p>
-        </div>
-        <span className="text-[11px] font-semibold text-white/70 shrink-0 ml-4 tabular-nums">
+        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">
+          Période d&apos;analyse
+        </p>
+        <span className="text-[11px] font-semibold text-white/50 shrink-0 tabular-nums">
           {formatRangeDuration(timeRangeDays[0], timeRangeDays[1])}
         </span>
       </div>
+      {/* Date inputs row */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 flex flex-col gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.14em]">
+            Du
+          </label>
+          <input
+            type="date"
+            value={daysToISODate(timeRangeDays[1])}
+            max={daysToISODate(0)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const days = isoDateToDays(e.target.value);
+              setTimeRangeDays([timeRangeDays[0], Math.max(days, timeRangeDays[0])]);
+            }}
+            className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
+          />
+        </div>
+        <div className="flex-1 flex flex-col gap-1">
+          <label className="text-[9px] font-bold text-white/30 uppercase tracking-[0.14em]">
+            Au
+          </label>
+          <input
+            type="date"
+            value={daysToISODate(timeRangeDays[0])}
+            max={daysToISODate(0)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const days = isoDateToDays(e.target.value);
+              setTimeRangeDays([Math.min(days, timeRangeDays[1]), timeRangeDays[1]]);
+            }}
+            className="h-8 w-full rounded-lg bg-[#0a0a0a] px-2.5 text-[11px] font-semibold text-white/75 outline-none border-[0.3px] border-white/[0.08] focus:border-white/[0.18] transition-colors [color-scheme:dark] tabular-nums"
+          />
+        </div>
+      </div>
+      {/* Slider */}
       <div className="flex items-center gap-3">
         <Calendar size={13} className="text-white/30 shrink-0" />
-        <div className="relative w-full">
-          <Slider
-            value={timeRangeDays}
-            onValueChange={(value) => {
-              const next = Array.isArray(value)
-                ? [value[0], value[1]]
-                : timeRangeDays;
-              setTimeRangeDays(next as TimeRangeDays);
-            }}
-            min={0}
-            max={730}
-            step={1}
-            className="w-full"
-          />
-          {/* Date labels under thumbs — clamped to avoid overflow */}
-          <div className="relative h-5 mt-1.5 select-none pointer-events-none">
-            <span
-              className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
-              style={{
-                left: `${(timeRangeDays[0] / 730) * 100}%`,
-                transform: thumbLabelTranslate((timeRangeDays[0] / 730) * 100),
-              }}
-            >
-              {formatThumbDate(timeRangeDays[0])}
-            </span>
-            {Math.abs(timeRangeDays[1] - timeRangeDays[0]) > 88 && (
-              <span
-                className="absolute text-[9px] font-bold text-white/75 whitespace-nowrap"
-                style={{
-                  left: `${(timeRangeDays[1] / 730) * 100}%`,
-                  transform: thumbLabelTranslate(
-                    (timeRangeDays[1] / 730) * 100,
-                  ),
-                }}
-              >
-                {formatThumbDate(timeRangeDays[1])}
-              </span>
-            )}
-          </div>
-        </div>
+        <Slider
+          value={timeRangeDays}
+          onValueChange={(value) => {
+            const next = Array.isArray(value)
+              ? [value[0], value[1]]
+              : timeRangeDays;
+            setTimeRangeDays(next as TimeRangeDays);
+          }}
+          min={0}
+          max={730}
+          step={1}
+          className="w-full"
+        />
       </div>
     </div>
   );
@@ -4345,17 +4474,21 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
           ].map(({ key, label, Icon }) => {
             const canOverlay = filter.selectedMetrics.length > 1;
             const isOverlay = key === "overlay";
-            const disabled = isOverlay && !canOverlay;
+            const isNorms = key === "norms";
+            const disabled =
+              (isOverlay && !canOverlay) ||
+              (isNorms && !normsSubmissionId);
+            const disabledTitle = isOverlay
+              ? "Sélectionnez au moins 2 métriques pour activer ce mode"
+              : isNorms
+                ? "Aucune mesure avec poids et taille — requis pour les normes"
+                : undefined;
             return (
               <button
                 key={key}
                 onClick={() => !disabled && setViewMode(key)}
                 disabled={disabled}
-                title={
-                  disabled
-                    ? "Sélectionnez au moins 2 métriques pour activer ce mode"
-                    : undefined
-                }
+                title={disabled ? disabledTitle : undefined}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   viewMode === key
                     ? "bg-[#1f8a65] text-white"
@@ -4707,36 +4840,65 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
       {/* ── Bloc 4 : CHARTS VIEW ── */}
       {!loading && hasData && viewMode === "charts" && (
         <>
-          {/* Sub-tabs: category */}
-          <div className="flex items-center gap-0.5 bg-white/[0.05] rounded-full p-1 self-start">
-            {[
-              { key: "composition" as ChartCategory, label: "Composition" },
-              { key: "measurements" as ChartCategory, label: "Mensurations" },
-              { key: "wellness" as ChartCategory, label: "Bien-être" },
-            ].map((cat) => (
+          {/* Sub-tabs: category + chart kind toggle */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-0.5 bg-white/[0.05] rounded-full p-1">
+              {[
+                { key: "composition" as ChartCategory, label: "Composition" },
+                { key: "measurements" as ChartCategory, label: "Mensurations" },
+                { key: "wellness" as ChartCategory, label: "Bien-être" },
+              ].map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setChartCategory(cat.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    chartCategory === cat.key
+                      ? "bg-[#181818] text-white"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {cat.label}
+                  {fieldsWithData.filter((f) => f.category === cat.key).length >
+                    0 && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded-full ${chartCategory === cat.key ? "bg-white/20 text-white/80" : "bg-white/[0.06] text-white/40"}`}
+                    >
+                      {
+                        fieldsWithData.filter((f) => f.category === cat.key)
+                          .length
+                      }
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Bar / Line toggle */}
+            <div
+              className="flex items-center gap-0.5 bg-white/[0.05] rounded-lg p-0.5"
+              title={chartKindByCategory[chartCategory] === "bar" ? "Passer en linéaire" : "Passer en barres"}
+            >
               <button
-                key={cat.key}
-                onClick={() => setChartCategory(cat.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  chartCategory === cat.key
+                onClick={() => chartKindByCategory[chartCategory] !== "bar" && toggleChartKind(chartCategory)}
+                className={`flex items-center justify-center w-7 h-7 rounded-md transition-all ${
+                  chartKindByCategory[chartCategory] === "bar"
                     ? "bg-[#181818] text-white"
-                    : "text-white/60 hover:text-white"
+                    : "text-white/35 hover:text-white/60"
                 }`}
               >
-                {cat.label}
-                {fieldsWithData.filter((f) => f.category === cat.key).length >
-                  0 && (
-                  <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full ${chartCategory === cat.key ? "bg-white/20 text-white/80" : "bg-white/[0.06] text-white/40"}`}
-                  >
-                    {
-                      fieldsWithData.filter((f) => f.category === cat.key)
-                        .length
-                    }
-                  </span>
-                )}
+                <BarChart2 size={13} />
               </button>
-            ))}
+              <button
+                onClick={() => chartKindByCategory[chartCategory] !== "line" && toggleChartKind(chartCategory)}
+                className={`flex items-center justify-center w-7 h-7 rounded-md transition-all ${
+                  chartKindByCategory[chartCategory] === "line"
+                    ? "bg-[#181818] text-white"
+                    : "text-white/35 hover:text-white/60"
+                }`}
+              >
+                <Activity size={13} />
+              </button>
+            </div>
           </div>
 
           {/* Slider bloc — avant les graphiques */}
@@ -4754,6 +4916,7 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
                   key={f.key}
                   fieldKey={f.key}
                   data={filteredSeries[f.key] ?? []}
+                  chartKind={chartKindByCategory[chartCategory]}
                 />
               ))}
             </div>
@@ -4771,8 +4934,8 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
             rows={filteredRows}
             clientId={clientId}
             clientGender={clientGender}
-            phases={phases}
-            annotations={annotations}
+            phases={filteredPhases}
+            annotations={filteredAnnotations}
             onPhasesChange={setPhases}
             onAnnotationsChange={setAnnotations}
             onAnnotationClick={(id) => {
@@ -4969,11 +5132,10 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
       )}
 
       {/* ── Bloc 6 : NORMS VIEW ── */}
-      {viewMode === "norms" && (
+      {viewMode === "norms" && normsSubmissionId && (
         <BioNormsPanel
-          submissionId={rows[0]?.submissionId ?? ''}
+          clientId={clientId}
           clientProfile={{ sex: clientGender }}
-          bilanDate={rows[0]?.date}
         />
       )}
 
