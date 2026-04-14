@@ -12,12 +12,11 @@ import type { NormEvaluation } from '@/lib/health/bioNorms'
 // ---------------------------------------------------------------------------
 
 interface BioNormsPanelProps {
-  submissionId: string
+  clientId: string
   clientProfile: {
     date_of_birth?: string | null
     sex?: string | null
   }
-  bilanDate?: string
   className?: string
 }
 
@@ -51,12 +50,10 @@ const METRIC_SECTIONS = [
 function GaugeSkeleton() {
   return (
     <div className="bg-white/[0.02] rounded-xl p-4 border-[0.3px] border-white/[0.06] flex flex-col gap-3">
-      {/* Header : label + icone info */}
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-2 w-24" />
         <Skeleton className="h-4 w-4 rounded-md shrink-0" />
       </div>
-      {/* Valeur + badge zone */}
       <div className="flex items-baseline justify-between gap-2">
         <div className="flex items-baseline gap-1.5">
           <Skeleton className="h-5 w-12" />
@@ -64,7 +61,9 @@ function GaugeSkeleton() {
         </div>
         <Skeleton className="h-5 w-16 rounded-md shrink-0" />
       </div>
-      {/* Barre segmentée (5 segments) */}
+      {/* Source badge skeleton */}
+      <Skeleton className="h-2.5 w-28" />
+      {/* Barre segmentée */}
       <div className="flex gap-[3px]">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-[3px] flex-1 rounded-full bg-white/[0.06] animate-pulse" />
@@ -79,9 +78,8 @@ function GaugeSkeleton() {
 // ---------------------------------------------------------------------------
 
 export function BioNormsPanel({
-  submissionId,
+  clientId,
   clientProfile,
-  bilanDate,
   className,
 }: BioNormsPanelProps) {
   const {
@@ -90,38 +88,30 @@ export function BioNormsPanel({
     evaluations,
     criticalAlerts,
     navySuggestion,
+    metricSources,
     applyNavySuggestion,
-  } = useBiometrics(submissionId, clientProfile, bilanDate)
+  } = useBiometrics(clientId, clientProfile)
 
   // --- Loading ---
   if (loading) {
     return (
       <div className={cn('space-y-6', className)}>
-        {/* Section 1 : 4 jauges */}
         <div>
           <Skeleton className="h-2.5 w-36 mb-3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <GaugeSkeleton key={i} />
-            ))}
+            {[1, 2, 3, 4].map((i) => <GaugeSkeleton key={i} />)}
           </div>
         </div>
-        {/* Section 2 : 3 jauges */}
         <div>
           <Skeleton className="h-2.5 w-28 mb-3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => (
-              <GaugeSkeleton key={i} />
-            ))}
+            {[1, 2, 3].map((i) => <GaugeSkeleton key={i} />)}
           </div>
         </div>
-        {/* Section 3 : 2 jauges */}
         <div>
           <Skeleton className="h-2.5 w-24 mb-3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[1, 2].map((i) => (
-              <GaugeSkeleton key={i} />
-            ))}
+            {[1, 2].map((i) => <GaugeSkeleton key={i} />)}
           </div>
         </div>
       </div>
@@ -131,12 +121,7 @@ export function BioNormsPanel({
   // --- Error ---
   if (error) {
     return (
-      <div
-        className={cn(
-          'bg-white/[0.02] rounded-xl p-6 border-[0.3px] border-white/[0.06] text-center',
-          className,
-        )}
-      >
+      <div className={cn('bg-white/[0.02] rounded-xl p-6 border-[0.3px] border-white/[0.06] text-center', className)}>
         <p className="text-[13px] text-red-400">{error}</p>
       </div>
     )
@@ -145,12 +130,7 @@ export function BioNormsPanel({
   // --- Empty ---
   if (evaluations.length === 0) {
     return (
-      <div
-        className={cn(
-          'bg-white/[0.02] rounded-xl p-6 border-[0.3px] border-white/[0.06] text-center',
-          className,
-        )}
-      >
+      <div className={cn('bg-white/[0.02] rounded-xl p-6 border-[0.3px] border-white/[0.06] text-center', className)}>
         <p className="text-[13px] text-white/40">
           Données biométriques insuffisantes pour afficher les normes.
         </p>
@@ -167,14 +147,12 @@ export function BioNormsPanel({
       {/* Alertes critiques */}
       {criticalAlerts.length > 0 && (
         <div className="mb-5 rounded-xl border-[0.3px] border-red-500/20 overflow-hidden">
-          {/* Header */}
           <div className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border-b border-red-500/10">
             <span className="text-red-400 text-[10px]">⚠</span>
             <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-red-400/80">
               {criticalAlerts.length === 1 ? 'Valeur critique détectée' : `${criticalAlerts.length} valeurs critiques détectées`}
             </p>
           </div>
-          {/* Lignes */}
           {criticalAlerts.map((alert, i) => (
             <div
               key={alert.metric_key}
@@ -185,9 +163,7 @@ export function BioNormsPanel({
             >
               <div className="min-w-0">
                 <p className="text-[12px] font-semibold text-white/80 leading-snug">{alert.label_fr}</p>
-                <p className="text-[10px] text-white/40 mt-0.5">
-                  {alert.value} {alert.unit}
-                </p>
+                <p className="text-[10px] text-white/40 mt-0.5">{alert.value} {alert.unit}</p>
               </div>
               <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.08em] text-red-400 bg-red-500/10 px-2 py-1 rounded-md">
                 {alert.zone_label_fr}
@@ -219,7 +195,12 @@ export function BioNormsPanel({
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sectionEvals.map((ev) => (
-                <BioNormsGauge key={ev.metric_key} evaluation={ev} showSource={false} />
+                <BioNormsGauge
+                  key={ev.metric_key}
+                  evaluation={ev}
+                  source={metricSources[ev.metric_key]}
+                  showSource={false}
+                />
               ))}
             </div>
           </div>
