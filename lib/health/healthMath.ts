@@ -78,6 +78,21 @@ export function round1(value: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Formules de dérivation — affichées dans les badges "Calculé" de BioNormsPanel
+// ---------------------------------------------------------------------------
+
+export const DERIVED_FORMULAS: Partial<Record<string, string>> = {
+  bmi:                 'poids ÷ taille²',
+  fat_mass_kg:         'poids × (BF% ÷ 100)',
+  lean_mass_kg:        'poids × (1 − BF% ÷ 100)',
+  body_fat_pct:        'masse grasse ÷ poids × 100',
+  muscle_mass_kg:      'poids × (muscle% ÷ 100)',
+  muscle_mass_pct:     'masse musculaire ÷ poids × 100',
+  waist_height_ratio:  'tour de taille ÷ taille',
+  metabolic_age_delta: 'BMR estimé → âge métabolique (Katch-McArdle / Mifflin)',
+}
+
+// ---------------------------------------------------------------------------
 // Fonctions exportées
 // ---------------------------------------------------------------------------
 
