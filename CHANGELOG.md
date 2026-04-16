@@ -1,5 +1,10 @@
 ## 2026-04-16
 
+FEATURE: ProgramTemplateBuilder — inline muscle picker (primary/secondary) per exercise with 12 MUSCLE_GROUPS slugs
+FEATURE: api/program-templates POST — persist primary_muscles + secondary_muscles in template exercises
+FEATURE: api/program-templates/[templateId] PATCH + duplicate — persist + propagate primary_muscles + secondary_muscles
+FEATURE: api/program-templates/[templateId]/assign — propagate primary_muscles + secondary_muscles to program_exercises on assignment
+
 REFACTOR: lib/client/muscleDetection — primary/secondary split, ExerciseInput interface, DB source priority over regex fallback
 FEATURE: components/client/BodyMap — 3-state visual (primary green / secondary pale green / inactive grey), new props primaryGroups + secondaryGroups
 FEATURE: app/client/programme/page — pass primary_muscles/secondary_muscles from DB to detectMuscleGroups, forward primaryGroups/secondaryGroups to BodyMap
