@@ -1,9 +1,21 @@
 ## 2026-04-16
 
+FEATURE: lib/i18n/clientTranslations.ts — FR/EN/ES dictionary for all client pages (nav, home, programme, logger, recap, bilans, progress, profil, common, greetings) with ct/ctp/cta helpers
+
 FEATURE: ProgramEditor — inline muscle picker (primary/secondary chips) per exercise, persists via PUT /api/programs/[programId]/sessions/[sessionId]/exercises
 FIX: exercises/route.ts POST+PUT — persist primary_muscles and secondary_muscles columns
 
-REFACTOR: BottomNav — DS v2.0 dark, pill capsule #1f8a65 sur item actif, tokens legacy supprimés
+REFACTOR: client/login — DS v2.0 dark, card bg-white/[0.02], inputs bg-[#0a0a0a], CTA bouton accent DS, tokens legacy supprimés
+REFACTOR: client/access/invalid + expired — DS v2.0, logo centré, card dark, bouton neutre
+REFACTOR: client/bilans/[submissionId] — DS v2.0, ClientTopBar, blocs divide-y, badge status inline
+FEATURE: components/client/ClientTopBar — composant topbar réutilisable (section + title + backHref + right slot)
+FEATURE: client/page — état vide "Pas encore de programme" avec card Sparkles accent
+FEATURE: client/progress — ajout card "Message du coach" (dernière annotation) au-dessus de la heatmap
+CHORE: GenesisAssistant — désactivé temporairement (retiré du root layout)
+REFACTOR: client/bilans/page — DS v2.0, deux sections "À remplir" (amber, CTA) + "Historique" (liste compacte), tokens legacy supprimés
+FEATURE: client/page — dashboard accueil : hero séance du jour (CTA commencer), prochaine séance si repos, stats hebdo dots, message coach (dernière annotation), bilans en attente
+FEATURE: components/client/ContextualGreeting — salutation contextuelle selon heure et présence de séance aujourd'hui
+REFACTOR: BottomNav — structure uniforme icône+label, actif en #1f8a65, inactif text-white/35, suppression pill dynamique
 REFACTOR: ClientProfilPage — topbar DS v2.0 + avatar mini initiales, cards bg-white/[0.02], labels section uppercase, hero supprimé
 REFACTOR: ClientLogoutButton — tokens legacy remplacés, modal confirmation DS v2.0 (bg-[#181818], bordures white/[0.06])
 
