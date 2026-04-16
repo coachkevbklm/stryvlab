@@ -40,7 +40,7 @@ export async function POST(
       coach_program_template_sessions (
         id, name, day_of_week, position, notes,
         coach_program_template_exercises (
-          name, sets, reps, rest_sec, rir, notes, position, image_url
+          name, sets, reps, rest_sec, rir, notes, position, image_url, primary_muscles, secondary_muscles
         )
       )
     `,
@@ -129,6 +129,8 @@ export async function POST(
               notes: e.notes,
               position: ei,
               image_url: e.image_url ?? null,
+              primary_muscles: e.primary_muscles ?? [],
+              secondary_muscles: e.secondary_muscles ?? [],
               // Double progression — parsé automatiquement depuis le template
               rep_min: parsed?.rep_min ?? null,
               rep_max: parsed?.rep_max ?? null,

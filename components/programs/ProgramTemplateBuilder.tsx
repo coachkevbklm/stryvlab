@@ -103,6 +103,21 @@ const EQUIPMENT_ITEMS = [
 ];
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+const MUSCLE_GROUPS: { slug: string; label: string }[] = [
+  { slug: 'chest',      label: 'Pectoraux' },
+  { slug: 'shoulders',  label: 'Épaules' },
+  { slug: 'biceps',     label: 'Biceps' },
+  { slug: 'triceps',    label: 'Triceps' },
+  { slug: 'abs',        label: 'Abdos' },
+  { slug: 'back_upper', label: 'Dos (haut)' },
+  { slug: 'back_lower', label: 'Lombaires' },
+  { slug: 'traps',      label: 'Trapèzes' },
+  { slug: 'quads',      label: 'Quadriceps' },
+  { slug: 'hamstrings', label: 'Ischios' },
+  { slug: 'glutes',     label: 'Fessiers' },
+  { slug: 'calves',     label: 'Mollets' },
+]
+
 interface Exercise {
   name: string;
   sets: number;
@@ -113,6 +128,8 @@ interface Exercise {
   image_url: string | null;
   movement_pattern: string | null;
   equipment_required: string[];
+  primary_muscles: string[];
+  secondary_muscles: string[];
 }
 interface Session {
   name: string;
@@ -144,6 +161,8 @@ function emptyExercise(): Exercise {
     image_url: null,
     movement_pattern: null,
     equipment_required: [],
+    primary_muscles: [],
+    secondary_muscles: [],
   };
 }
 function emptySession(): Session {
@@ -212,6 +231,8 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                 image_url: e.image_url ?? null,
                 movement_pattern: e.movement_pattern ?? null,
                 equipment_required: e.equipment_required ?? [],
+                primary_muscles: e.primary_muscles ?? [],
+                secondary_muscles: e.secondary_muscles ?? [],
               })),
           }))
       : [emptySession()],
@@ -643,6 +664,70 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                           />
                         </div>
                       ))}
+                    </div>
+
+                    {/* ── Muscles ── */}
+                    <div className="border-t border-white/[0.06] pt-2 flex flex-col gap-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40">
+                        Muscles principaux
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {MUSCLE_GROUPS.map(({ slug, label }) => {
+                          const active = ex.primary_muscles.includes(slug)
+                          return (
+                            <button
+                              key={slug}
+                              type="button"
+                              onClick={() => {
+                                const next = active
+                                  ? ex.primary_muscles.filter((m) => m !== slug)
+                                  : [...ex.primary_muscles, slug]
+                                const sec = ex.secondary_muscles.filter((m) => m !== slug)
+                                updateExercise(si, ei, { primary_muscles: next, secondary_muscles: sec })
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
+                                active
+                                  ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                                  : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mt-0.5">
+                        Muscles secondaires
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {MUSCLE_GROUPS.map(({ slug, label }) => {
+                          const isPrimary   = ex.primary_muscles.includes(slug)
+                          const isSecondary = ex.secondary_muscles.includes(slug)
+                          return (
+                            <button
+                              key={slug}
+                              type="button"
+                              disabled={isPrimary}
+                              onClick={() => {
+                                const next = isSecondary
+                                  ? ex.secondary_muscles.filter((m) => m !== slug)
+                                  : [...ex.secondary_muscles, slug]
+                                updateExercise(si, ei, { secondary_muscles: next })
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
+                                isPrimary
+                                  ? 'opacity-20 cursor-not-allowed bg-white/[0.02] text-white/20'
+                                  : isSecondary
+                                  ? 'bg-[#1f8a65]/10 text-[#1f8a65]/60 border border-[#1f8a65]/20'
+                                  : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
 
                     {/* Image exercice */}

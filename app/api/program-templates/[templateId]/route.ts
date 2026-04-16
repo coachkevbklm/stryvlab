@@ -14,7 +14,7 @@ const SELECT = `
   coach_program_template_sessions (
     id, name, day_of_week, position, notes,
     coach_program_template_exercises (
-      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required
+      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles
     )
   )
 `
@@ -75,6 +75,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             image_url: e.image_url ?? null,
             movement_pattern: e.movement_pattern ?? null,
             equipment_required: e.equipment_required ?? [],
+            primary_muscles: e.primary_muscles ?? [],
+            secondary_muscles: e.secondary_muscles ?? [],
           }))
         )
       }
@@ -135,7 +137,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .single()
     if (ns && s.coach_program_template_exercises?.length) {
       await db.from('coach_program_template_exercises').insert(
-        s.coach_program_template_exercises.map((e: any) => ({ session_id: ns.id, name: e.name, sets: e.sets, reps: e.reps, rest_sec: e.rest_sec, rir: e.rir, notes: e.notes, position: e.position, image_url: e.image_url ?? null, movement_pattern: e.movement_pattern ?? null, equipment_required: e.equipment_required ?? [] }))
+        s.coach_program_template_exercises.map((e: any) => ({ session_id: ns.id, name: e.name, sets: e.sets, reps: e.reps, rest_sec: e.rest_sec, rir: e.rir, notes: e.notes, position: e.position, image_url: e.image_url ?? null, movement_pattern: e.movement_pattern ?? null, equipment_required: e.equipment_required ?? [], primary_muscles: e.primary_muscles ?? [], secondary_muscles: e.secondary_muscles ?? [] }))
       )
     }
   }
