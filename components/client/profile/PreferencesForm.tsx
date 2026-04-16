@@ -29,7 +29,10 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
     })
     if (res.ok) {
       setSaveState('saved')
-      setTimeout(() => setSaveState('idle'), 2500)
+      // Persist lang to localStorage so ClientI18nProvider picks it up instantly
+      localStorage.setItem('client_lang', prefs.language)
+      // Full page reload to re-render all server components in the new language
+      setTimeout(() => window.location.reload(), 800)
     } else {
       setSaveState('error')
     }
@@ -63,10 +66,10 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
       <button
         onClick={handleSave}
         disabled={saveState === 'saving'}
-        className={`w-full py-2.5 rounded-btn text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-green-500 text-white'
-            : 'bg-accent text-white hover:opacity-90 disabled:opacity-50'
+            ? 'bg-[#1f8a65] text-white'
+            : 'bg-[#1f8a65] text-white hover:bg-[#217356] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
@@ -90,7 +93,7 @@ function ToggleGroup({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-2">{label}</p>
+      <p className="text-[10px] font-bold text-white/55 uppercase tracking-[0.18em] mb-2">{label}</p>
       <div className="flex gap-2 flex-wrap">
         {options.map((o) => (
           <button
@@ -98,8 +101,8 @@ function ToggleGroup({
             onClick={() => onChange(o.value)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               value === o.value
-                ? 'bg-accent text-white shadow-md'
-                : 'bg-surface-light text-secondary hover:text-primary'
+                ? 'bg-[#1f8a65] text-white'
+                : 'bg-white/[0.04] text-white/55 hover:text-white/80'
             }`}
           >
             {o.label}
