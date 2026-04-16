@@ -29,9 +29,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { name, sets, reps, rest_sec, tempo, rir, notes, position } = body
   if (!name) return NextResponse.json({ error: 'name requis' }, { status: 400 })
 
+  const { primary_muscles, secondary_muscles } = body
   const { data, error } = await service()
     .from('program_exercises')
-    .insert({ session_id: params.sessionId, name, sets: sets ?? 3, reps: reps ?? '8-12', rest_sec, tempo, rir, notes, position: position ?? 0 })
+    .insert({ session_id: params.sessionId, name, sets: sets ?? 3, reps: reps ?? '8-12', rest_sec, tempo, rir, notes, position: position ?? 0, primary_muscles: primary_muscles ?? [], secondary_muscles: secondary_muscles ?? [] })
     .select()
     .single()
 
@@ -71,6 +72,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
       notes: e.notes ?? null,
       position: i,
       image_url: e.image_url ?? null,
+      primary_muscles: e.primary_muscles ?? [],
+      secondary_muscles: e.secondary_muscles ?? [],
       // Double progression
       rep_min: e.rep_min ?? null,
       rep_max: e.rep_max ?? null,

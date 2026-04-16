@@ -1,5 +1,12 @@
 ## 2026-04-16
 
+FEATURE: ProgramEditor — inline muscle picker (primary/secondary chips) per exercise, persists via PUT /api/programs/[programId]/sessions/[sessionId]/exercises
+FIX: exercises/route.ts POST+PUT — persist primary_muscles and secondary_muscles columns
+
+REFACTOR: BottomNav — DS v2.0 dark, pill capsule #1f8a65 sur item actif, tokens legacy supprimés
+REFACTOR: ClientProfilPage — topbar DS v2.0 + avatar mini initiales, cards bg-white/[0.02], labels section uppercase, hero supprimé
+REFACTOR: ClientLogoutButton — tokens legacy remplacés, modal confirmation DS v2.0 (bg-[#181818], bordures white/[0.06])
+
 SCHEMA: coach_program_template_exercises + program_exercises — add primary_muscles text[] + secondary_muscles text[]
 FEATURE: muscleDetection — primary/secondary split, DB columns priority over regex fallback, ExerciseInput interface
 FEATURE: BodyMap — 3-state visual: primary (#1f8a65 full) / secondary (#1f8a65 28% opacity) / inactive (grey)
