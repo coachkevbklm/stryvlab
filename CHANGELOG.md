@@ -1,5 +1,10 @@
 ## 2026-04-16
 
+SCHEMA: coach_program_template_exercises + program_exercises — add primary_muscles text[] + secondary_muscles text[]
+FEATURE: muscleDetection — primary/secondary split, DB columns priority over regex fallback, ExerciseInput interface
+FEATURE: BodyMap — 3-state visual: primary (#1f8a65 full) / secondary (#1f8a65 28% opacity) / inactive (grey)
+FEATURE: ProgramTemplateBuilder — inline muscle picker chips per exercise (primary + secondary rows)
+FEATURE: api/program-templates — persist + propagate primary_muscles + secondary_muscles on save and assign
 FEATURE: ProgramTemplateBuilder — inline muscle picker (primary/secondary) per exercise with 12 MUSCLE_GROUPS slugs
 FEATURE: api/program-templates POST — persist primary_muscles + secondary_muscles in template exercises
 FEATURE: api/program-templates/[templateId] PATCH + duplicate — persist + propagate primary_muscles + secondary_muscles
