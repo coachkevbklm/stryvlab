@@ -2,10 +2,54 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import Link from 'next/link'
-import Image from 'next/image'
-import { Dumbbell, Clock, RotateCcw, Play } from 'lucide-react'
+import { Dumbbell, Clock, Layers, Coffee, Timer, Target } from 'lucide-react'
+import BodyMap from '@/components/client/BodyMap'
+import { detectMuscleGroups } from '@/lib/client/muscleDetection'
+import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
 
-const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const DAYS_FULL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+
+function getTodayDow() {
+  const jsDay = new Date().getDay() // 0=Sun
+  return jsDay === 0 ? 7 : jsDay
+}
+
+function getTodayLabel() {
+  const todayDow = getTodayDow()
+  const now = new Date()
+  const day = now.getDate().toString().padStart(2, '0')
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  return { dayName: DAYS_FULL[todayDow - 1], date: `${day}/${month}` }
+}
+
+function estimateDuration(exercises: any[]): number {
+  // Estimation : 45s par set + temps de repos
+  let totalSec = 0
+  for (const ex of exercises) {
+    const sets = ex.sets ?? 3
+    const restSec = ex.rest_sec ?? 90
+    totalSec += sets * 45 + (sets - 1) * restSec
+  }
+  return Math.round(totalSec / 60)
+}
+
+function estimateVolume(exercises: any[]): { sets: number; totalSets: number } {
+  const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0)
+  return { sets: totalSets, totalSets }
+}
+
+function avgRest(exercises: any[]): number | null {
+  const rests = exercises.filter(ex => ex.rest_sec != null).map(ex => ex.rest_sec as number)
+  if (rests.length === 0) return null
+  return Math.round(rests.reduce((a, b) => a + b, 0) / rests.length)
+}
+
+function avgRir(exercises: any[]): number | null {
+  const rirs = exercises.filter(ex => ex.rir != null).map(ex => ex.rir as number)
+  if (rirs.length === 0) return null
+  return Math.round(rirs.reduce((a, b) => a + b, 0) / rirs.length)
+}
 
 export default async function ClientProgrammePage() {
   const supabase = createClient()
@@ -17,10 +61,7 @@ export default async function ClientProgrammePage() {
   )
 
   const client = await resolveClientFromUser(user!.id, user!.email, service, 'id, first_name')
-
-  if (!client) {
-    return <NoProgramPage />
-  }
+  if (!client) return <NoProgramPage />
 
   const { data: programs } = await service
     .from('programs')
@@ -29,7 +70,7 @@ export default async function ClientProgrammePage() {
       program_sessions (
         id, name, day_of_week, position, notes,
         program_exercises (
-          id, name, sets, reps, rest_sec, rir, notes, position
+          id, name, sets, reps, rest_sec, rir, notes, position, primary_muscles, secondary_muscles
         )
       )
     `)
@@ -39,158 +80,218 @@ export default async function ClientProgrammePage() {
     .limit(1)
 
   const program = programs?.[0]
+  if (!program) return <NoProgramPage />
 
-  if (!program) {
-    return (
-      <div className="min-h-screen bg-surface font-sans">
-        <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4">
-          <div className="max-w-lg mx-auto flex items-center justify-between">
-            <h1 className="font-bold text-primary">Mon programme</h1>
-            <Image src="/images/logo.png" alt="STRYV" width={28} height={28} className="w-7 h-7 object-contain opacity-70" />
-          </div>
-        </header>
-        <div className="max-w-lg mx-auto px-6 py-16 text-center">
-          <Dumbbell size={40} className="text-secondary mx-auto mb-4 opacity-30" />
-          <p className="text-sm text-secondary">Ton coach n'a pas encore créé de programme.</p>
-          <p className="text-xs text-secondary/60 mt-1">Il sera visible ici dès qu'il sera prêt.</p>
-        </div>
-      </div>
-    )
-  }
+  const sessions = ((program.program_sessions ?? []) as any[])
+    .sort((a, b) => a.position - b.position)
 
-  const sessions = (program.program_sessions ?? [])
-    .sort((a: any, b: any) => a.position - b.position)
+  const todayDow = getTodayDow()
+  const { dayName, date } = getTodayLabel()
 
-  // Current day highlight (1=Mon…7=Sun)
-  const jsDay = new Date().getDay() // 0=Sun
-  const todayDow = jsDay === 0 ? 7 : jsDay
+  // Session du jour
+  const todaySession = sessions.find((s: any) => s.day_of_week === todayDow) ?? null
+  const todayExercises = todaySession
+    ? ((todaySession.program_exercises ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
+    : []
+
+  // Données pour la carte
+  const durationMin = todaySession ? estimateDuration(todayExercises) : null
+  const { totalSets } = todaySession ? estimateVolume(todayExercises) : { totalSets: 0 }
+  const restAvg = todaySession ? avgRest(todayExercises) : null
+  const rirAvg = todaySession ? avgRir(todayExercises) : null
+  const { primary: primaryGroups, secondary: secondaryGroups } = detectMuscleGroups(
+    todayExercises.map((e: any) => ({
+      name: e.name,
+      primary_muscles:   e.primary_muscles   ?? [],
+      secondary_muscles: e.secondary_muscles ?? [],
+    }))
+  )
 
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4">
+    <div className="min-h-screen bg-[#121212] font-sans pb-10">
+
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <h1 className="font-bold text-primary">{program.name}</h1>
-            <p className="text-xs text-secondary mt-0.5">
-              {program.weeks} semaine{program.weeks > 1 ? 's' : ''} · {sessions.length} séance{sessions.length !== 1 ? 's' : ''}
-              {program.description && ` · ${program.description}`}
-            </p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Programme</p>
+            <p className="text-[13px] font-bold text-white mt-0.5">{program.name}</p>
           </div>
-          <Image src="/images/logo.png" alt="STRYV" width={28} height={28} className="w-7 h-7 object-contain opacity-70" />
+          <div className="text-right">
+            <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">{program.weeks}sem · {sessions.length} séances</p>
+          </div>
         </div>
       </header>
 
-      {/* Day strip */}
-      <div className="max-w-lg mx-auto px-6 pt-4">
-        <div className="flex gap-1.5">
-          {DAYS.map((d, i) => {
+      <main className="max-w-lg mx-auto px-5 py-5 flex flex-col gap-4">
+
+        {/* ── Sélecteur de jour ── */}
+        <div className="flex gap-1">
+          {DAYS_FR.map((d, i) => {
             const dow = i + 1
             const hasSession = sessions.some((s: any) => s.day_of_week === dow)
             const isToday = dow === todayDow
             return (
               <div
                 key={d}
-                className={`flex-1 flex flex-col items-center py-2 rounded-btn text-[10px] font-bold transition-colors ${
+                className={`flex-1 flex flex-col items-center py-2 rounded-lg text-[10px] font-bold transition-colors ${
                   isToday
-                    ? 'bg-accent text-white'
+                    ? 'bg-[#1f8a65] text-white'
                     : hasSession
-                    ? 'bg-surface-light text-primary shadow-soft-in'
-                    : 'text-secondary/40'
+                    ? 'bg-white/[0.04] text-white/50'
+                    : 'text-white/20'
                 }`}
               >
                 <span>{d}</span>
-                {hasSession && <span className={`w-1 h-1 rounded-full mt-1 ${isToday ? 'bg-white' : 'bg-accent'}`} />}
+                {hasSession && (
+                  <span className={`w-1 h-1 rounded-full mt-1 ${isToday ? 'bg-white' : 'bg-[#1f8a65]/50'}`} />
+                )}
               </div>
             )
           })}
         </div>
-      </div>
 
-      <main className="max-w-lg mx-auto px-6 py-5 flex flex-col gap-4">
-        {sessions.map((session: any) => {
-          const exercises = (session.program_exercises ?? [])
-            .sort((a: any, b: any) => a.position - b.position)
-          const isToday = session.day_of_week === todayDow
+        {todaySession ? (
+          <>
+            {/* ── Carte de séance ── */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
 
-          return (
-            <div
-              key={session.id}
-              className={`bg-surface rounded-card shadow-soft-out overflow-hidden ${isToday ? 'ring-2 ring-accent/30' : ''}`}
-            >
-              {/* Session header */}
-              <div className={`px-4 py-3 flex items-center justify-between ${isToday ? 'bg-accent/5' : ''}`}>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-primary text-sm">{session.name}</p>
-                    {isToday && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent text-white">Aujourd'hui</span>
-                    )}
-                  </div>
-                  {session.day_of_week && (
-                    <p className="text-[10px] text-secondary mt-0.5">{DAYS[session.day_of_week - 1]}</p>
-                  )}
-                </div>
+              {/* Header carte */}
+              <div className="px-5 pt-5 pb-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-1">
+                  {dayName} · {date}
+                </p>
+                <h2 className="text-[20px] font-bold text-white leading-tight">{todaySession.name}</h2>
+                <p className="text-[12px] text-white/35 mt-0.5">
+                  {todayExercises.length} exercice{todayExercises.length > 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {/* BodyMap centré */}
+              <div className="px-5 py-4 flex justify-center border-t border-b border-white/[0.04]">
+                <BodyMap primaryGroups={primaryGroups} secondaryGroups={secondaryGroups} />
+              </div>
+
+              {/* Stats pills */}
+              <div className="px-5 py-4 flex gap-2 flex-wrap">
+                {durationMin !== null && (
+                  <StatPill icon={<Clock size={10} />} label={`~${durationMin} min`} />
+                )}
+                <StatPill icon={<Layers size={10} />} label={`${totalSets} séries`} />
+                <StatPill icon={<Dumbbell size={10} />} label={`${todayExercises.length} exercices`} />
+                {restAvg !== null && (
+                  <StatPill icon={<Timer size={10} />} label={`${restAvg}s repos`} />
+                )}
+                {rirAvg !== null && (
+                  <StatPill icon={<Target size={10} />} label={`RIR ${rirAvg}`} />
+                )}
+              </div>
+
+              {/* Liste exercices — disclosure collapsée par défaut */}
+              <ExerciseListDisclosure exercises={todayExercises.map((ex: any) => ({ id: ex.id, name: ex.name, sets: ex.sets, reps: ex.reps }))} />
+
+              {/* CTA */}
+              <div className="px-5 pb-5 pt-3">
                 <Link
-                  href={`/client/programme/session/${session.id}`}
-                  className="flex items-center gap-1.5 bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-btn hover:opacity-90 transition-opacity shadow"
+                  href={`/client/programme/session/${todaySession.id}`}
+                  className="flex items-center justify-between w-full bg-[#1f8a65] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#217356] active:scale-[0.99] transition-all"
                 >
-                  <Play size={10} fill="white" />
-                  Commencer
+                  <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+                    Commencer
+                  </span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.15]">
+                    <Dumbbell size={15} className="text-white" />
+                  </div>
                 </Link>
               </div>
-
-              {/* Exercises */}
-              <div className="divide-y divide-white/30">
-                {exercises.map((ex: any, i: number) => (
-                  <div key={ex.id} className="px-4 py-3 flex items-start gap-3">
-                    <span className="w-5 h-5 rounded-full bg-surface-light text-secondary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-primary">{ex.name}</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        <span className="text-[10px] font-mono font-bold text-accent">
-                          {ex.sets} × {ex.reps}
-                        </span>
-                        {ex.rest_sec && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-secondary">
-                            <Clock size={9} />{ex.rest_sec}s
-                          </span>
-                        )}
-                        {ex.rir !== null && ex.rir !== undefined && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-secondary">
-                            <RotateCcw size={9} />RIR {ex.rir}
-                          </span>
-                        )}
-                      </div>
-                      {ex.notes && (
-                        <p className="text-[10px] text-secondary/70 mt-1 italic">{ex.notes}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-          )
-        })}
+
+            {/* ── Autres séances de la semaine ── */}
+            {sessions.filter((s: any) => s.day_of_week !== todayDow).length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
+                  Cette semaine
+                </p>
+                <div className="flex flex-col gap-2">
+                  {sessions
+                    .filter((s: any) => s.day_of_week !== todayDow)
+                    .map((session: any) => {
+                      const exs = ((session.program_exercises ?? []) as any[])
+                        .sort((a: any, b: any) => a.position - b.position)
+                      return (
+                        <Link
+                          key={session.id}
+                          href={`/client/programme/session/${session.id}`}
+                          className="flex items-center justify-between bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3 hover:bg-white/[0.04] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center w-8">
+                              <span className="text-[9px] font-bold text-white/30 uppercase">
+                                {DAYS_FR[(session.day_of_week ?? 1) - 1]}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-[12px] font-semibold text-white/80">{session.name}</p>
+                              <p className="text-[10px] text-white/30 mt-0.5">{exs.length} exercices · {exs.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)} séries</p>
+                            </div>
+                          </div>
+                          <Dumbbell size={13} className="text-white/20 shrink-0" />
+                        </Link>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* ── Jour de repos ── */
+          <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-10 text-center">
+            <Coffee size={28} className="text-white/20 mx-auto mb-3" />
+            <p className="text-[14px] font-semibold text-white/50">Journée de récupération</p>
+            <p className="text-[11px] text-white/25 mt-1">Profite du repos — ton corps se reconstruit.</p>
+
+            {/* Prochaine séance */}
+            {(() => {
+              const next = sessions.find((s: any) => {
+                const d = s.day_of_week ?? 0
+                return d > todayDow
+              }) ?? sessions[0]
+              if (!next) return null
+              return (
+                <p className="text-[10px] text-white/25 mt-4">
+                  Prochaine séance · <span className="text-white/40">{DAYS_FULL[(next.day_of_week ?? 1) - 1]} — {next.name}</span>
+                </p>
+              )
+            })()}
+          </div>
+        )}
       </main>
+    </div>
+  )
+}
+
+function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-white/[0.04] rounded-lg px-3 py-1.5">
+      <span className="text-white/35">{icon}</span>
+      <span className="text-[11px] font-medium text-white/55">{label}</span>
     </div>
   )
 }
 
 function NoProgramPage() {
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <h1 className="font-bold text-primary">Mon programme</h1>
-          <Image src="/images/logo.png" alt="STRYV" width={28} height={28} className="w-7 h-7 object-contain opacity-70" />
+    <div className="min-h-screen bg-[#121212] font-sans">
+      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
+        <div className="max-w-lg mx-auto">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Programme</p>
+          <p className="text-[13px] font-bold text-white mt-0.5">Mon programme</p>
         </div>
       </header>
-      <div className="max-w-lg mx-auto px-6 py-16 text-center">
-        <Dumbbell size={40} className="text-secondary mx-auto mb-4 opacity-30" />
-        <p className="text-sm text-secondary">Ton coach n'a pas encore créé de programme.</p>
-        <p className="text-xs text-secondary/60 mt-1">Il sera visible ici dès qu'il sera prêt.</p>
+      <div className="max-w-lg mx-auto px-5 py-16 text-center">
+        <Dumbbell size={36} className="text-white/10 mx-auto mb-4" />
+        <p className="text-[13px] text-white/40">Ton coach n'a pas encore créé de programme.</p>
+        <p className="text-[11px] text-white/20 mt-1">Il sera visible ici dès qu'il sera prêt.</p>
       </div>
     </div>
   )
