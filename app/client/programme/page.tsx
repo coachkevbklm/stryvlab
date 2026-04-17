@@ -6,21 +6,19 @@ import { Dumbbell, Clock, Layers, Coffee, Timer, Target } from 'lucide-react'
 import BodyMap from '@/components/client/BodyMap'
 import { detectMuscleGroups } from '@/lib/client/muscleDetection'
 import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
-
-const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-const DAYS_FULL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+import { ct, cta, type ClientLang } from '@/lib/i18n/clientTranslations'
 
 function getTodayDow() {
   const jsDay = new Date().getDay() // 0=Sun
   return jsDay === 0 ? 7 : jsDay
 }
 
-function getTodayLabel() {
+function getTodayLabel(daysFull: string[]) {
   const todayDow = getTodayDow()
   const now = new Date()
   const day = now.getDate().toString().padStart(2, '0')
   const month = (now.getMonth() + 1).toString().padStart(2, '0')
-  return { dayName: DAYS_FULL[todayDow - 1], date: `${day}/${month}` }
+  return { dayName: daysFull[todayDow - 1], date: `${day}/${month}` }
 }
 
 function estimateDuration(exercises: any[]): number {
@@ -61,32 +59,44 @@ export default async function ClientProgrammePage() {
   )
 
   const client = await resolveClientFromUser(user!.id, user!.email, service, 'id, first_name')
-  if (!client) return <NoProgramPage />
+  if (!client) return <NoProgramPage lang="fr" />
 
-  const { data: programs } = await service
-    .from('programs')
-    .select(`
-      id, name, description, weeks, status, created_at,
-      program_sessions (
-        id, name, day_of_week, position, notes,
-        program_exercises (
-          id, name, sets, reps, rest_sec, rir, notes, position, primary_muscles, secondary_muscles
+  const [programsResult, prefsLangResult] = await Promise.all([
+    service.from('programs')
+      .select(`
+        id, name, description, weeks, status, created_at,
+        program_sessions (
+          id, name, day_of_week, position, notes,
+          program_exercises (
+            id, name, sets, reps, rest_sec, rir, notes, position, primary_muscles, secondary_muscles
+          )
         )
-      )
-    `)
-    .eq('client_id', client.id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
+      `)
+      .eq('client_id', client.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1),
+    service.from('client_preferences')
+      .select('language')
+      .eq('client_id', client.id)
+      .maybeSingle(),
+  ])
+  const programs = programsResult?.data
+
+  const rawLang = (prefsLangResult as any)?.data?.language
+  const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? rawLang as ClientLang : 'fr'
+  const daysShort = cta(lang, 'programme.days.short')
+  const daysFull  = cta(lang, 'programme.days.full')
+  const dateLocale = lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB'
 
   const program = programs?.[0]
-  if (!program) return <NoProgramPage />
+  if (!program) return <NoProgramPage lang={lang} />
 
   const sessions = ((program.program_sessions ?? []) as any[])
     .sort((a, b) => a.position - b.position)
 
   const todayDow = getTodayDow()
-  const { dayName, date } = getTodayLabel()
+  const { dayName, date } = getTodayLabel(daysFull)
 
   // Session du jour
   const todaySession = sessions.find((s: any) => s.day_of_week === todayDow) ?? null
@@ -107,6 +117,8 @@ export default async function ClientProgrammePage() {
     }))
   )
 
+  void dateLocale // used for potential future date formatting
+
   return (
     <div className="min-h-screen bg-[#121212] font-sans pb-10">
 
@@ -114,7 +126,7 @@ export default async function ClientProgrammePage() {
       <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Programme</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'programme.section')}</p>
             <p className="text-[13px] font-bold text-white mt-0.5">{program.name}</p>
           </div>
           <div className="text-right">
@@ -127,7 +139,7 @@ export default async function ClientProgrammePage() {
 
         {/* ── Sélecteur de jour ── */}
         <div className="flex gap-1">
-          {DAYS_FR.map((d, i) => {
+          {daysShort.map((d, i) => {
             const dow = i + 1
             const hasSession = sessions.some((s: any) => s.day_of_week === dow)
             const isToday = dow === todayDow
@@ -163,7 +175,7 @@ export default async function ClientProgrammePage() {
                 </p>
                 <h2 className="text-[20px] font-bold text-white leading-tight">{todaySession.name}</h2>
                 <p className="text-[12px] text-white/35 mt-0.5">
-                  {todayExercises.length} exercice{todayExercises.length > 1 ? 's' : ''}
+                  {todayExercises.length} {ct(lang, 'programme.session.exercises')}{todayExercises.length > 1 && lang === 'fr' ? 's' : ''}
                 </p>
               </div>
 
@@ -177,13 +189,13 @@ export default async function ClientProgrammePage() {
                 {durationMin !== null && (
                   <StatPill icon={<Clock size={10} />} label={`~${durationMin} min`} />
                 )}
-                <StatPill icon={<Layers size={10} />} label={`${totalSets} séries`} />
-                <StatPill icon={<Dumbbell size={10} />} label={`${todayExercises.length} exercices`} />
+                <StatPill icon={<Layers size={10} />} label={`${totalSets} ${ct(lang, 'programme.session.sets')}`} />
+                <StatPill icon={<Dumbbell size={10} />} label={`${todayExercises.length} ${ct(lang, 'programme.session.exercises')}`} />
                 {restAvg !== null && (
-                  <StatPill icon={<Timer size={10} />} label={`${restAvg}s repos`} />
+                  <StatPill icon={<Timer size={10} />} label={`${restAvg}s ${ct(lang, 'programme.session.rest')}`} />
                 )}
                 {rirAvg !== null && (
-                  <StatPill icon={<Target size={10} />} label={`RIR ${rirAvg}`} />
+                  <StatPill icon={<Target size={10} />} label={`${ct(lang, 'programme.session.rir')} ${rirAvg}`} />
                 )}
               </div>
 
@@ -197,7 +209,7 @@ export default async function ClientProgrammePage() {
                   className="flex items-center justify-between w-full bg-[#1f8a65] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#217356] active:scale-[0.99] transition-all"
                 >
                   <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-                    Commencer
+                    {ct(lang, 'programme.session.start')}
                   </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.15]">
                     <Dumbbell size={15} className="text-white" />
@@ -210,7 +222,7 @@ export default async function ClientProgrammePage() {
             {sessions.filter((s: any) => s.day_of_week !== todayDow).length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                  Cette semaine
+                  {ct(lang, 'programme.week.label')}
                 </p>
                 <div className="flex flex-col gap-2">
                   {sessions
@@ -227,12 +239,12 @@ export default async function ClientProgrammePage() {
                           <div className="flex items-center gap-3">
                             <div className="flex flex-col items-center w-8">
                               <span className="text-[9px] font-bold text-white/30 uppercase">
-                                {DAYS_FR[(session.day_of_week ?? 1) - 1]}
+                                {daysShort[(session.day_of_week ?? 1) - 1]}
                               </span>
                             </div>
                             <div>
                               <p className="text-[12px] font-semibold text-white/80">{session.name}</p>
-                              <p className="text-[10px] text-white/30 mt-0.5">{exs.length} exercices · {exs.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)} séries</p>
+                              <p className="text-[10px] text-white/30 mt-0.5">{exs.length} {ct(lang, 'programme.session.exercises')} · {exs.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)} {ct(lang, 'programme.session.sets')}</p>
                             </div>
                           </div>
                           <Dumbbell size={13} className="text-white/20 shrink-0" />
@@ -247,8 +259,8 @@ export default async function ClientProgrammePage() {
           /* ── Jour de repos ── */
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-10 text-center">
             <Coffee size={28} className="text-white/20 mx-auto mb-3" />
-            <p className="text-[14px] font-semibold text-white/50">Journée de récupération</p>
-            <p className="text-[11px] text-white/25 mt-1">Profite du repos — ton corps se reconstruit.</p>
+            <p className="text-[14px] font-semibold text-white/50">{ct(lang, 'programme.rest.today')}</p>
+            <p className="text-[11px] text-white/25 mt-1">{ct(lang, 'programme.noProgram.desc')}</p>
 
             {/* Prochaine séance */}
             {(() => {
@@ -259,7 +271,7 @@ export default async function ClientProgrammePage() {
               if (!next) return null
               return (
                 <p className="text-[10px] text-white/25 mt-4">
-                  Prochaine séance · <span className="text-white/40">{DAYS_FULL[(next.day_of_week ?? 1) - 1]} — {next.name}</span>
+                  Prochaine séance · <span className="text-white/40">{daysFull[(next.day_of_week ?? 1) - 1]} — {next.name}</span>
                 </p>
               )
             })()}
@@ -279,19 +291,18 @@ function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
   )
 }
 
-function NoProgramPage() {
+function NoProgramPage({ lang }: { lang: ClientLang }) {
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
       <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
         <div className="max-w-lg mx-auto">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Programme</p>
-          <p className="text-[13px] font-bold text-white mt-0.5">Mon programme</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'programme.section')}</p>
+          <p className="text-[13px] font-bold text-white mt-0.5">{ct(lang, 'programme.noProgram')}</p>
         </div>
       </header>
       <div className="max-w-lg mx-auto px-5 py-16 text-center">
         <Dumbbell size={36} className="text-white/10 mx-auto mb-4" />
-        <p className="text-[13px] text-white/40">Ton coach n'a pas encore créé de programme.</p>
-        <p className="text-[11px] text-white/20 mt-1">Il sera visible ici dès qu'il sera prêt.</p>
+        <p className="text-[13px] text-white/40">{ct(lang, 'programme.noProgram.desc')}</p>
       </div>
     </div>
   )
