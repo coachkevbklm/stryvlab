@@ -1,3 +1,8 @@
+## 2026-04-17
+
+FEATURE: Client app i18n complet (FR/EN/ES) — lib/i18n/clientTranslations.ts + ClientI18nProvider + useClientT() hook, toutes les pages client traduites
+FEATURE: client_preferences.language désormais appliqué live sur toutes les pages au rechargement après sauvegarde
+
 ## 2026-04-16
 
 FEATURE: app/client/profil/LogoutButton.tsx — i18n: useClientT() wired, all logout modal strings replaced with t() calls
