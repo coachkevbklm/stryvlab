@@ -1,5 +1,20 @@
+## 2026-04-18
+
+FEATURE: Program Intelligence Phase 1 — moteur scoring 6 sous-moteurs (balance push/pull, SRA, redondance mécanique, progression RIR, spécificité goal, patterns manquants) — lib/programs/intelligence/scoring.ts
+FEATURE: lib/programs/intelligence/catalog-utils.ts — normalizeMuscleSlug + getStimulusCoeff + resolveExerciseCoeff (runtime derivation pour exercices custom)
+FEATURE: lib/programs/intelligence/types.ts — types centralisés BuilderExercise, BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert
+FEATURE: lib/programs/intelligence/alternatives.ts — scoreAlternatives (5 critères, max 8 alternatives scorées)
+FEATURE: lib/programs/intelligence/index.ts — useProgramIntelligence hook debounce 400ms + exports publics
+FEATURE: components/programs/ProgramIntelligencePanel.tsx — sticky panel 280px avec score animé Framer Motion, radar musculaire, donut patterns, grille subscores, feed alertes (Recharts)
+FEATURE: components/programs/IntelligenceAlertBadge.tsx — alertes inline sous chaque exercice avec dismiss local et bouton alternatives
+FEATURE: components/programs/ExerciseAlternativesDrawer.tsx — drawer alternatives scorées avec 5 filtres rapides + bouton Remplacer
+FEATURE: ProgramTemplateBuilder — is_compound checkbox tri-état (auto/oui/non) + intégration useProgramIntelligence + panel + alertes + alternatives + scapular_elevation dans MOVEMENT_PATTERNS
+FEATURE: ExercisePicker — onSelect expose désormais isCompound depuis le catalogue
+
 ## 2026-04-17
 
+REFACTOR: scripts/generate-exercise-catalog.ts — corrections biomécanique v2 : movementPattern (élévations latérales → lateral_raise, tirage menton → vertical_pull, shrug → scapular_elevation, ext jambe → knee_extension), isCompound (hip thrust avec charge externe → true, oiseau-inverse/tirage-menton → false, nordic conservé true), ajout stimulus_coefficient 0.28–0.95 par pattern × compound (Schoenfeld 2010, Maeo 2021, Pedrosa 2022)
+CHORE: data/exercise-catalog.json — régénéré, 458 exercices, nouveau champ stimulus_coefficient, 0 anomalie audit post-génération
 FEATURE: Client app i18n complet (FR/EN/ES) — lib/i18n/clientTranslations.ts + ClientI18nProvider + useClientT() hook, toutes les pages client traduites
 FEATURE: client_preferences.language désormais appliqué live sur toutes les pages au rechargement après sauvegarde
 

@@ -14,10 +14,15 @@ import {
   X,
   Library,
   Dumbbell,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ExercisePicker from "./ExercisePicker";
+import { useProgramIntelligence } from "@/lib/programs/intelligence";
+import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
+import IntelligenceAlertBadge from "./IntelligenceAlertBadge";
+import ExerciseAlternativesDrawer from "./ExerciseAlternativesDrawer";
 
 const GOALS = [
   { value: "hypertrophy", label: "Hypertrophie" },
@@ -78,6 +83,7 @@ const MOVEMENT_PATTERNS = [
   { value: "elbow_extension", label: "Extension coude (Triceps)" },
   { value: "lateral_raise", label: "Élévation latérale" },
   { value: "carry", label: "Porté (Carry)" },
+  { value: "scapular_elevation", label: "Élévation scapulaire (Shrug)" },
   { value: "core_anti_flex", label: "Gainage anti-flexion" },
   { value: "core_flex", label: "Flexion core" },
   { value: "core_rotation", label: "Rotation core" },
@@ -130,6 +136,7 @@ interface Exercise {
   equipment_required: string[];
   primary_muscles: string[];
   secondary_muscles: string[];
+  is_compound: boolean | undefined;
 }
 interface Session {
   name: string;
@@ -163,6 +170,7 @@ function emptyExercise(): Exercise {
     equipment_required: [],
     primary_muscles: [],
     secondary_muscles: [],
+    is_compound: undefined,
   };
 }
 function emptySession(): Session {
@@ -233,6 +241,7 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                 equipment_required: e.equipment_required ?? [],
                 primary_muscles: e.primary_muscles ?? [],
                 secondary_muscles: e.secondary_muscles ?? [],
+                is_compound: e.is_compound ?? undefined,
               })),
           }))
       : [emptySession()],
@@ -245,7 +254,34 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
     si: number;
     ei: number;
   } | null>(null);
+  const [alternativesTarget, setAlternativesTarget] = useState<{ si: number; ei: number } | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const intelligenceMeta = {
+    goal: meta.goal,
+    level: meta.level,
+    weeks: meta.weeks,
+    frequency: meta.frequency,
+    equipment_archetype: meta.equipment_archetype,
+  };
+  const intelligenceSessions = sessions.map(s => ({
+    name: s.name,
+    day_of_week: s.day_of_week,
+    exercises: s.exercises.map(e => ({
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      rest_sec: e.rest_sec,
+      rir: e.rir,
+      notes: e.notes,
+      movement_pattern: e.movement_pattern,
+      equipment_required: e.equipment_required,
+      primary_muscles: e.primary_muscles,
+      secondary_muscles: e.secondary_muscles,
+      is_compound: e.is_compound,
+    })),
+  }));
+  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta);
 
   async function handleImageUpload(si: number, ei: number, file: File) {
     const key = `${si}-${ei}`;
@@ -370,7 +406,8 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex gap-6 items-start">
+    <div className="flex-1 flex flex-col gap-6">
       {/* ── Meta ── */}
       <div className="bg-[#181818] border-subtle rounded-2xl p-6 flex flex-col gap-5">
         <h3 className="font-bold text-white text-sm flex items-center gap-2">
@@ -860,6 +897,32 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                       </div>
                     </div>
 
+                    {/* Poly-articulaire checkbox */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => updateExercise(si, ei, {
+                          is_compound: ex.is_compound === true ? false : ex.is_compound === false ? undefined : true
+                        })}
+                        className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${
+                          ex.is_compound === true
+                            ? 'bg-[#1f8a65] border-[#1f8a65]'
+                            : ex.is_compound === false
+                            ? 'bg-red-500/20 border-red-500/40'
+                            : 'bg-white/[0.04] border-white/[0.08]'
+                        }`}
+                      >
+                        {ex.is_compound === true && <span className="text-white text-[8px] font-bold">✓</span>}
+                        {ex.is_compound === false && <span className="text-red-400 text-[8px] font-bold">✗</span>}
+                      </button>
+                      <label className="text-[9px] font-semibold text-white/50 uppercase tracking-[0.12em]">
+                        Poly-articulaire
+                        {ex.is_compound === undefined && (
+                          <span className="ml-1 text-white/30 normal-case tracking-normal">(auto)</span>
+                        )}
+                      </label>
+                    </div>
+
                     <input
                       value={ex.notes}
                       onChange={(e) =>
@@ -868,6 +931,22 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                       placeholder="Notes optionnelles"
                       className="bg-transparent text-xs text-white/70 outline-none placeholder:text-white/30 border-t border-white/30 pt-2"
                     />
+
+                    {/* Intelligence alerts */}
+                    <IntelligenceAlertBadge
+                      alerts={alertsFor(si, ei)}
+                      onOpenAlternatives={() => setAlternativesTarget({ si, ei })}
+                    />
+
+                    {/* Bouton alternatives */}
+                    <button
+                      type="button"
+                      onClick={() => setAlternativesTarget({ si, ei })}
+                      className="flex items-center gap-1.5 text-[10px] font-semibold text-white/30 hover:text-[#1f8a65] transition-colors mt-1"
+                    >
+                      <ArrowLeftRight size={10} />
+                      Alternatives
+                    </button>
                   </div>
                 ))}
                 <button
@@ -900,13 +979,14 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
       {/* Exercise picker modal */}
       {pickerTarget && (
         <ExercisePicker
-          onSelect={({ name, gifUrl, movementPattern, equipment }) => {
+          onSelect={({ name, gifUrl, movementPattern, equipment, isCompound }) => {
             const { si, ei } = pickerTarget;
             updateExercise(si, ei, {
               name,
               image_url: gifUrl,
               movement_pattern: movementPattern,
               equipment_required: equipment,
+              is_compound: isCompound,
             });
             setPickerTarget(null);
           }}
@@ -939,6 +1019,32 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
               : "Créer le template"}
         </button>
       </div>
+    </div>
+
+    {/* Panel intelligence sticky */}
+    <ProgramIntelligencePanel
+      result={intelligenceResult}
+      weeks={meta.weeks}
+    />
+
+    {/* Drawer alternatives */}
+    {alternativesTarget && (
+      <ExerciseAlternativesDrawer
+        exercise={intelligenceSessions[alternativesTarget.si]?.exercises[alternativesTarget.ei]}
+        sessionExercises={intelligenceSessions[alternativesTarget.si]?.exercises ?? []}
+        meta={intelligenceMeta}
+        onReplace={(name, gifUrl, movementPattern, equipment) => {
+          updateExercise(alternativesTarget.si, alternativesTarget.ei, {
+            name,
+            image_url: gifUrl,
+            movement_pattern: movementPattern,
+            equipment_required: equipment,
+            is_compound: undefined,
+          });
+        }}
+        onClose={() => setAlternativesTarget(null)}
+      />
+    )}
     </div>
   );
 }

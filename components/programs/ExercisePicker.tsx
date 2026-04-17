@@ -27,6 +27,7 @@ interface Props {
     gifUrl: string;
     movementPattern: string | null;
     equipment: string[];
+    isCompound: boolean;
   }) => void;
   onClose: () => void;
 }
@@ -423,6 +424,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                       gifUrl: exercise.gifUrl,
                       movementPattern: exercise.movementPattern ?? null,
                       equipment: exercise.equipment ?? [],
+                      isCompound: exercise.isCompound ?? false,
                     })
                   }
                   onMouseEnter={() => setHoveredId(exercise.id)}
