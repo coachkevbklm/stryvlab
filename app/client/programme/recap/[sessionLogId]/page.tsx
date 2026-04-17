@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CheckCircle2, Clock, Layers, BarChart2, ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import BodyMap from '@/components/client/BodyMap'
 import { detectMuscleGroups } from '@/lib/client/muscleDetection'
+import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
 
 export default async function SessionRecapPage({ params }: { params: { sessionLogId: string } }) {
   const supabase = createClient()
@@ -19,6 +20,11 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
 
   const client = await resolveClientFromUser(user.id, user.email, service, 'id')
   if (!client) notFound()
+
+  const prefsRes = await service.from('client_preferences').select('language').eq('client_id', client.id).maybeSingle()
+  const rawLang = (prefsRes as any)?.data?.language
+  const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? rawLang as ClientLang : 'fr'
+  const dateLocale = lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB'
 
   // Fetch le session log avec ses sets
   const { data: sessionLog } = await service
@@ -117,7 +123,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Séance terminée</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'recap.section')}</p>
             <p className="text-[13px] font-bold text-white">{sessionLog.session_name}</p>
           </div>
         </div>
@@ -140,25 +146,25 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         {/* ── Stats globales ── */}
         <div className="grid grid-cols-2 gap-2.5">
           <StatCard
-            label="Volume total"
+            label={ct(lang, 'recap.volume')}
             value={totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
             delta={volumeDelta}
             icon={<BarChart2 size={11} />}
           />
           <StatCard
-            label="Reps totales"
+            label={ct(lang, 'recap.perEx.reps')}
             value={String(totalReps)}
             icon={<Layers size={11} />}
           />
           <StatCard
-            label="Sets complétés"
+            label={ct(lang, 'recap.sets')}
             value={String(completedSets.length)}
             sub={`sur ${allSets.length}`}
             icon={<CheckCircle2 size={11} />}
           />
           {avgRestSec !== null && (
             <StatCard
-              label="Repos moyen"
+              label={ct(lang, 'recap.duration')}
               value={avgRestSec >= 60 ? `${Math.floor(avgRestSec / 60)}m${avgRestSec % 60 > 0 ? `${avgRestSec % 60}s` : ''}` : `${avgRestSec}s`}
               icon={<Clock size={11} />}
             />
@@ -175,7 +181,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         {exercises.length > 0 && (
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/[0.05]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">Performance par exercice</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'recap.exercises')}</p>
             </div>
             <div className="divide-y divide-white/[0.04]">
               {exercises.map(({ name, sets }) => {
@@ -230,11 +236,11 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
 
         {/* ── CTA ── */}
         <Link
-          href="/client/progress"
+          href="/client/programme"
           className="flex items-center justify-center gap-2 bg-white/[0.04] border border-white/[0.06] text-white/60 font-semibold py-3.5 rounded-xl hover:bg-white/[0.06] hover:text-white/80 transition-colors text-[12px]"
         >
-          <BarChart2 size={13} />
-          Voir ma progression
+          <ChevronLeft size={13} />
+          {ct(lang, 'recap.backHome')}
         </Link>
       </main>
     </div>
