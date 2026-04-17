@@ -1,4 +1,5 @@
 import catalogData from '@/data/exercise-catalog.json'
+import type { InjuryRestriction } from './types'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -179,4 +180,55 @@ export function resolveExerciseCoeff(exercise: ExerciseInput): number {
     : isCompoundFromMuscles(exercise.primary_muscles)
 
   return getStimulusCoeff(slug, pattern, isComp)
+}
+
+// Maps FR muscle slugs to body_part vocabulary used in restrictions
+export const MUSCLE_TO_BODY_PART: Record<string, string[]> = {
+  'deltoide_anterieur':  ['shoulder_right', 'shoulder_left'],
+  'deltoide_lateral':    ['shoulder_right', 'shoulder_left'],
+  'deltoide_posterieur': ['shoulder_right', 'shoulder_left'],
+  'coiffe_rotateurs':    ['shoulder_right', 'shoulder_left'],
+  'epaules':             ['shoulder_right', 'shoulder_left'],
+  'biceps':              ['elbow_right', 'elbow_left'],
+  'triceps':             ['elbow_right', 'elbow_left'],
+  'avant_bras':          ['elbow_right', 'elbow_left', 'wrist_right', 'wrist_left'],
+  'quadriceps':          ['knee_right', 'knee_left'],
+  'ischio-jambiers':     ['knee_right', 'knee_left', 'hip_right', 'hip_left'],
+  'fessiers':            ['hip_right', 'hip_left'],
+  'lombaires':           ['lower_back'],
+  'erecteurs_spinaux':   ['lower_back', 'upper_back'],
+  'dos':                 ['upper_back', 'lower_back'],
+  'trapeze':             ['upper_back', 'neck'],
+  'rhomboides':          ['upper_back'],
+  'grand_dorsal':        ['upper_back'],
+  'pectoraux':           [],
+  'abdos':               [],
+  'mollets':             ['ankle_right', 'ankle_left'],
+}
+
+const SEVERITY_ORDER: Record<string, number> = { avoid: 3, limit: 2, monitor: 1 }
+
+export function muscleConflictsWithRestriction(
+  muscleSlug: string,
+  restrictions: InjuryRestriction[],
+): { conflicts: true; severity: 'avoid' | 'limit' | 'monitor' } | null {
+  if (restrictions.length === 0) return null
+
+  const bodyParts = MUSCLE_TO_BODY_PART[normalizeMuscleSlug(muscleSlug)] ?? []
+  if (bodyParts.length === 0) return null
+
+  let highestSeverity: 'avoid' | 'limit' | 'monitor' | null = null
+
+  for (const restriction of restrictions) {
+    if (bodyParts.includes(restriction.bodyPart)) {
+      if (
+        highestSeverity === null ||
+        SEVERITY_ORDER[restriction.severity] > SEVERITY_ORDER[highestSeverity]
+      ) {
+        highestSeverity = restriction.severity
+      }
+    }
+  }
+
+  return highestSeverity ? { conflicts: true, severity: highestSeverity } : null
 }

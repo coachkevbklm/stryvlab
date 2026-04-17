@@ -84,3 +84,15 @@ export interface TemplateMeta {
   frequency: number
   equipment_archetype: string
 }
+
+export interface InjuryRestriction {
+  bodyPart: string
+  severity: 'avoid' | 'limit' | 'monitor'
+}
+
+export interface IntelligenceProfile {
+  injuries: InjuryRestriction[]
+  equipment: string[]
+  fitnessLevel?: string
+  goal?: string
+}
