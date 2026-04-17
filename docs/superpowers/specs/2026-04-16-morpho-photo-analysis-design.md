@@ -37,7 +37,7 @@ create table public.morpho_photos (
                          )),
   taken_at               date not null,
   source                 text not null check (source in ('assessment', 'coach_upload', 'client_upload')),
-  assessment_response_id uuid references public.assessment_responses(id) on delete set null,
+  assessment_response_id uuid unique references public.assessment_responses(id) on delete set null,
   notes                  text,
   created_at             timestamptz not null default now()
 );
@@ -62,6 +62,15 @@ create table public.morpho_annotations (
   updated_at        timestamptz not null default now(),
   unique (photo_id, coach_id)
 );
+
+-- Trigger updated_at automatique
+create or replace function public.set_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+create trigger morpho_annotations_updated_at
+  before update on public.morpho_annotations
+  for each row execute function public.set_updated_at();
 ```
 
 ---
@@ -246,7 +255,7 @@ Toutes les composantes respectent DS v2.0 :
 |---------|-------|
 | `fabric` | Canvas d'annotation (Fabric.js v6) |
 | `jspdf` | Export PDF |
-| `openai` | GPT-4o vision — analyse morphologique IA |
+| `openai` | GPT-4o vision — analyse morphologique IA (requiert `OPENAI_API_KEY` en env) |
 
 ---
 
@@ -275,4 +284,5 @@ Toutes les composantes respectent DS v2.0 :
 - L'analyse IA sur 4 photos simultanées peut prendre 10–20s — afficher un état de chargement avec étapes (`Chargement des photos… Analyse en cours… Génération des recommandations…`)
 - `canvas_data` JSONB peut peser 50–200KB par annotation complexe — acceptable, pas de compression nécessaire en Phase 1
 - Les photos client uploadées depuis `/client/morpho` doivent passer par une validation MIME côté serveur (jpeg/png/webp uniquement, 30MB max — aligne sur le bucket existant)
-- `assessment_response_id` sur `morpho_photos` : unique constraint à ajouter pour éviter les doublons lors de la sync répétée
+- `assessment_response_id` sur `morpho_photos` : unique constraint incluse dans le DDL — la sync est idempotente par construction
+- `OPENAI_API_KEY` doit être défini en `.env.local` ET dans les variables Vercel avant déploiement — l'endpoint `/api/morpho/analyze` lève une erreur 500 explicite si la clé est absente (guard au démarrage du handler)
