@@ -2,13 +2,13 @@ import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { resolveClientFromUser } from "@/lib/client/resolve-client";
-import Image from "next/image";
 import ProfilePhotoUpload from "@/components/client/profile/ProfilePhotoUpload";
 import ProfileForm from "@/components/client/profile/ProfileForm";
 import PreferencesForm from "@/components/client/profile/PreferencesForm";
 import NotificationsPanel from "@/components/client/profile/NotificationsPanel";
 import PasswordResetButton from "@/components/client/profile/PasswordResetButton";
 import ClientLogoutButton from "./LogoutButton";
+import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
 
 export const metadata = { title: "Mon profil" };
 
@@ -63,69 +63,90 @@ export default async function ClientProfilPage() {
     notif_program_updated: true,
   };
 
+  const lang: ClientLang = ['fr', 'en', 'es'].includes(preferences.language as string)
+    ? preferences.language as ClientLang
+    : 'fr'
+  const dateLocale = lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB'
+
   const notifications = notifData ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <Image
-            src="/images/logo.png"
-            alt="STRYV"
-            width={32}
-            height={32}
-            className="w-8 h-8 object-contain"
-          />
-          <span className="text-sm font-semibold text-primary">Mon profil</span>
-          <div className="w-8" />
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-6 py-6 flex flex-col gap-6">
-        {/* ── Photo + identité ── */}
-        <section className="bg-surface rounded-card shadow-soft-out p-6 flex flex-col items-center gap-4">
-          <ProfilePhotoUpload
-            currentUrl={client?.profile_photo_url ?? null}
-            initials={initials}
-          />
-          <div className="text-center">
-            <p className="font-bold text-primary text-lg">{fullName}</p>
-            <p className="text-xs text-secondary">{user.email}</p>
-            {client?.status && (
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5 inline-block ${
-                  client.status === "active"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {client.status === "active" ? "Actif" : client.status}
+    <div className="min-h-screen bg-[#121212] font-sans">
+      {/* ── Topbar ── */}
+      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b-[0.3px] border-white/[0.06] px-4 h-14 flex items-center">
+        <div className="flex items-center justify-between w-full max-w-lg mx-auto">
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">
+              {ct(lang, 'profil.section')}
+            </p>
+            <p className="text-[13px] font-semibold text-white leading-tight">
+              {ct(lang, 'profil.title')}
+            </p>
+          </div>
+          {/* Avatar mini */}
+          <div className="w-8 h-8 rounded-full bg-[#1f8a65]/20 border-[0.3px] border-[#1f8a65]/30 flex items-center justify-center shrink-0">
+            {client?.profile_photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={client.profile_photo_url}
+                alt={fullName}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-[11px] font-bold text-[#1f8a65]">
+                {initials}
               </span>
             )}
           </div>
-        </section>
+        </div>
+      </header>
 
-        {/* ── Informations personnelles ── */}
-        <Section title="Informations personnelles">
-          <ProfileForm
-            clientId={client?.id ?? ""}
-            initial={{
-              first_name: client?.first_name ?? "",
-              last_name: client?.last_name ?? "",
-              phone: client?.phone ?? "",
-              goal: client?.goal ?? "",
-              training_goal: client?.training_goal ?? "",
-              fitness_level: client?.fitness_level ?? "",
-              sport_practice: client?.sport_practice ?? "",
-              weekly_frequency: client?.weekly_frequency ?? null,
-            }}
-          />
+      <main className="max-w-lg mx-auto px-4 py-5 flex flex-col gap-4">
+        {/* ── Infos personnelles + photo ── */}
+        <Section title={ct(lang, 'profil.section.info')} icon="👤">
+          <div className="flex flex-col items-center gap-4 pb-2">
+            <ProfilePhotoUpload
+              currentUrl={client?.profile_photo_url ?? null}
+              initials={initials}
+            />
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-white">{fullName}</p>
+              <p className="text-[12px] text-white/40 mt-0.5">{user.email}</p>
+              {client?.status && (
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block ${
+                    client.status === "active"
+                      ? "bg-[#1f8a65]/15 text-[#1f8a65]"
+                      : "bg-white/[0.06] text-white/40"
+                  }`}
+                >
+                  {client.status === "active" ? ct(lang, 'profil.status.active') : client.status}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="border-t-[0.3px] border-white/[0.06] pt-4">
+            <ProfileForm
+              clientId={client?.id ?? ""}
+              initial={{
+                first_name: client?.first_name ?? "",
+                last_name: client?.last_name ?? "",
+                phone: client?.phone ?? "",
+                goal: client?.goal ?? "",
+                training_goal: client?.training_goal ?? "",
+                fitness_level: client?.fitness_level ?? "",
+                sport_practice: client?.sport_practice ?? "",
+                weekly_frequency: client?.weekly_frequency ?? null,
+              }}
+            />
+          </div>
         </Section>
 
         {/* ── Notifications ── */}
         <Section
-          title="Notifications"
+          title={ct(lang, 'profil.section.notif')}
+          icon="🔔"
           badge={unreadCount > 0 ? unreadCount : undefined}
         >
           <NotificationsPanel
@@ -138,8 +159,8 @@ export default async function ClientProfilPage() {
           />
         </Section>
 
-        {/* ── Préférences d'affichage ── */}
-        <Section title="Préférences d'affichage">
+        {/* ── Préférences ── */}
+        <Section title={ct(lang, 'profil.section.prefs')} icon="⚙️">
           <PreferencesForm
             initial={{
               weight_unit: preferences.weight_unit as "kg" | "lbs",
@@ -150,19 +171,17 @@ export default async function ClientProfilPage() {
         </Section>
 
         {/* ── Sécurité ── */}
-        <Section title="Sécurité">
-          <div className="flex flex-col gap-3">
-            <PasswordResetButton email={user.email ?? ""} />
-          </div>
+        <Section title={ct(lang, 'profil.section.security')} icon="🔒">
+          <PasswordResetButton email={user.email ?? ""} />
         </Section>
 
         {/* ── Déconnexion ── */}
         <ClientLogoutButton />
 
-        <p className="text-center text-[10px] text-secondary pb-2">
-          Membre depuis{" "}
+        <p className="text-center text-[10px] text-white/20 pb-2">
+          {ct(lang, 'profil.memberSince')}{" "}
           {new Date(client?.created_at ?? Date.now()).toLocaleDateString(
-            "fr-FR",
+            dateLocale,
             { month: "long", year: "numeric" },
           )}
         </p>
@@ -173,21 +192,24 @@ export default async function ClientProfilPage() {
 
 function Section({
   title,
+  icon,
   badge,
   children,
 }: {
   title: string;
+  icon?: string;
   badge?: number;
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface rounded-card shadow-soft-out p-4">
+    <section className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4">
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-xs font-bold text-secondary uppercase tracking-wide">
+        {icon && <span className="text-[13px]">{icon}</span>}
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 flex-1">
           {title}
         </h2>
         {badge !== undefined && (
-          <span className="w-4 h-4 rounded-full bg-accent text-white text-[9px] font-bold flex items-center justify-center">
+          <span className="w-[18px] h-[18px] rounded-full bg-[#1f8a65] text-white text-[9px] font-bold flex items-center justify-center">
             {badge}
           </span>
         )}

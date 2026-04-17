@@ -1,5 +1,17 @@
 ## 2026-04-16
 
+FEATURE: app/client/profil/LogoutButton.tsx — i18n: useClientT() wired, all logout modal strings replaced with t() calls
+FEATURE: app/client/profil/page.tsx — i18n: ct() wired, lang/dateLocale derived from preferences, all section labels/status/memberSince translated
+FEATURE: app/client/progress/PRsPodium.tsx — i18n: useClientT() imported and wired
+FEATURE: app/client/progress/ProgressHeatmap.tsx — i18n: useClientT() wired, MONTHS and DAY_ABBR derived from ta() at runtime
+FEATURE: app/client/progress/ProgressClientPage.tsx — i18n: useClientT() wired, PERIODS moved inside component, KPI labels/history title/sets label/empty state translated
+
+FEATURE: app/client/bilans/page.tsx — i18n: StatusBadge accepts lang prop, all FR strings replaced with ct/ctp helpers, lang fetched from client_preferences, dateLocale injected
+FEATURE: app/client/programme/session/[sessionId]/SessionLogger.tsx — i18n: useClientT() wired, all FR strings replaced with t() calls (finish, rest, demo, rir, sides, note placeholder)
+FEATURE: app/client/programme/recap/[sessionLogId]/page.tsx — i18n: ct() wired, lang fetched from client_preferences, section/stat labels and CTA translated
+
+FEATURE: app/client/programme/page.tsx — i18n: all hardcoded FR strings replaced with ct/cta helpers, lang fetched from client_preferences, DAYS_FR/DAYS_FULL removed, NoProgramPage accepts lang prop
+
 FEATURE: lib/i18n/clientTranslations.ts — FR/EN/ES dictionary for all client pages (nav, home, programme, logger, recap, bilans, progress, profil, common, greetings) with ct/ctp/cta helpers
 
 FEATURE: ProgramEditor — inline muscle picker (primary/secondary chips) per exercise, persists via PUT /api/programs/[programId]/sessions/[sessionId]/exercises

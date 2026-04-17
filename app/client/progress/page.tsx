@@ -1,9 +1,8 @@
-import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
-import Image from 'next/image'
-import ProgressCharts from '@/components/client/ProgressCharts'
+import ProgressClientPage from './ProgressClientPage'
 
 export const metadata = { title: 'Progression' }
 
@@ -20,19 +19,7 @@ export default async function ClientProgressPage() {
   const client = await resolveClientFromUser(user.id, user.email, service, 'id, first_name')
   if (!client) redirect('/client')
 
-  // Fetch 30-day performance data server-side
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const res = await fetch(`${baseUrl}/api/client/performance?days=30`, {
-    headers: { Cookie: `` }, // SSR fetch — data fetched via service role in API route
-    cache: 'no-store',
-  })
-
-  // Fallback: fetch directly via service client if API call fails (SSR context)
-  const days = 30
-  const since = new Date()
-  since.setDate(since.getDate() - days)
-  const sinceISO = since.toISOString().split('T')[0]
-
+  // Fetch ALL logs (no date filter) — period filtering done client-side
   const { data: sessionLogs } = await service
     .from('client_session_logs')
     .select(`
@@ -47,123 +34,256 @@ export default async function ClientProgressPage() {
         actual_reps,
         actual_weight_kg,
         completed,
-        rpe
+        rpe,
+        rir_actual
       )
     `)
     .eq('client_id', client.id)
-    .gte('logged_at', sinceISO)
     .order('logged_at', { ascending: true })
 
-  const logs = sessionLogs ?? []
+  const logs: SessionLog[] = (sessionLogs ?? []) as SessionLog[]
 
-  // KPIs
-  const completedSessions = logs.filter((l) => l.completed_at).length
-  const allSets = logs.flatMap((l: any) => l.client_set_logs ?? [])
-  const completedSets = allSets.filter((s: any) => s.completed)
-  const totalVolume = completedSets.reduce((sum: number, s: any) => {
-    return sum + (s.actual_reps ?? 0) * (parseFloat(String(s.actual_weight_kg)) || 0)
-  }, 0)
-  const durationsMin = logs
-    .filter((l: any) => l.duration_min != null)
-    .map((l: any) => l.duration_min as number)
-  const avgDuration = durationsMin.length
-    ? Math.round(durationsMin.reduce((a: number, b: number) => a + b, 0) / durationsMin.length)
-    : 0
+  // ── Streak calculation ──────────────────────────────────────────────
+  const sessionDates = Array.from(new Set(logs.map(l => l.logged_at.split('T')[0]))).sort()
+  const { streak, bestStreak } = calculateStreaks(sessionDates)
 
-  // Volume timeline
-  const timelineMap: Record<string, { date: string; volume: number; sessions: number }> = {}
+  // ── Heatmap data (last 84 days = 12 weeks) ──────────────────────────
+  const heatmapData = buildHeatmap(logs)
+
+  // ── PR tracking (all-time max weight per exercise) ──────────────────
+  const allTimePRs = buildPRs(logs)
+
+  // ── Session list with PR flag ────────────────────────────────────────
+  const sessionList = buildSessionList(logs, allTimePRs)
+
+  // ── Dernière annotation coach ────────────────────────────────────────
+  const { data: coachNote } = await service
+    .from('metric_annotations')
+    .select('id, label, note, created_at')
+    .eq('client_id', client.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return (
+    <ProgressClientPage
+      firstName={(client as any).first_name ?? ''}
+      streak={streak}
+      bestStreak={bestStreak}
+      heatmapData={heatmapData}
+      allTimePRs={allTimePRs}
+      sessionList={sessionList}
+      rawLogs={logs}
+      coachNote={coachNote ?? null}
+    />
+  )
+}
+
+// ── Types ─────────────────────────────────────────────────────────────
+
+export interface SetLog {
+  exercise_name: string
+  set_number: number
+  actual_reps: number | null
+  actual_weight_kg: number | string | null
+  completed: boolean
+  rpe: number | null
+  rir_actual: number | null
+}
+
+export interface SessionLog {
+  id: string
+  session_name: string
+  logged_at: string
+  completed_at: string | null
+  duration_min: number | null
+  client_set_logs: SetLog[]
+}
+
+export interface HeatmapDay {
+  date: string        // YYYY-MM-DD
+  volume: number
+  sessions: number
+  level: 0 | 1 | 2 | 3 | 4   // 0=none, 4=max
+}
+
+export interface PREntry {
+  exercise: string
+  maxWeight: number
+  prevMaxWeight: number   // second-best, for delta
+  achievedDate: string
+  sessionCount: number    // how many sessions with this exercise
+}
+
+export interface SessionSummary {
+  id: string
+  name: string
+  date: string            // YYYY-MM-DD
+  volume: number
+  setsCompleted: number
+  durationMin: number | null
+  hasPR: boolean
+  prExercises: string[]
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+function calculateStreaks(sortedDates: string[]): { streak: number; bestStreak: number } {
+  if (!sortedDates.length) return { streak: 0, bestStreak: 0 }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split('T')[0]
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+  let current = 0
+  let best = 0
+  let tempStreak = 1
+
+  // Best streak (scan full history)
+  for (let i = 1; i < sortedDates.length; i++) {
+    const prev = new Date(sortedDates[i - 1])
+    const curr = new Date(sortedDates[i])
+    const diff = (curr.getTime() - prev.getTime()) / 86400000
+    if (diff === 1) {
+      tempStreak++
+    } else {
+      best = Math.max(best, tempStreak)
+      tempStreak = 1
+    }
+  }
+  best = Math.max(best, tempStreak)
+
+  // Current streak (from today or yesterday backward)
+  const lastDate = sortedDates[sortedDates.length - 1]
+  if (lastDate !== todayStr && lastDate !== yesterdayStr) {
+    return { streak: 0, bestStreak: best }
+  }
+
+  current = 1
+  for (let i = sortedDates.length - 2; i >= 0; i--) {
+    const next = new Date(sortedDates[i + 1])
+    const curr = new Date(sortedDates[i])
+    const diff = (next.getTime() - curr.getTime()) / 86400000
+    if (diff === 1) current++
+    else break
+  }
+
+  return { streak: current, bestStreak: best }
+}
+
+function buildHeatmap(logs: SessionLog[]): HeatmapDay[] {
+  // Build a map of date → volume
+  const volumeMap: Record<string, number> = {}
+  const sessionMap: Record<string, number> = {}
+
   for (const log of logs) {
-    const date = log.logged_at
-    if (!timelineMap[date]) timelineMap[date] = { date, volume: 0, sessions: 0 }
-    timelineMap[date].sessions += 1
-    for (const s of (log as any).client_set_logs ?? []) {
+    const date = log.logged_at.split('T')[0]
+    if (!volumeMap[date]) { volumeMap[date] = 0; sessionMap[date] = 0 }
+    sessionMap[date]++
+    for (const s of log.client_set_logs) {
       if (s.completed) {
-        timelineMap[date].volume +=
-          (s.actual_reps ?? 0) * (parseFloat(String(s.actual_weight_kg)) || 0)
+        volumeMap[date] += (s.actual_reps ?? 0) * (parseFloat(String(s.actual_weight_kg)) || 0)
       }
     }
   }
-  const timeline = Object.values(timelineMap).sort((a, b) => a.date.localeCompare(b.date))
 
-  // Exercise progression
-  const exerciseMap: Record<
-    string,
-    { name: string; points: { date: string; maxWeight: number }[] }
-  > = {}
+  // Build 84-day window
+  const days: HeatmapDay[] = []
+  const volumes = Object.values(volumeMap).filter(v => v > 0)
+  const maxVol = volumes.length ? Math.max(...volumes) : 1
+
+  for (let i = 83; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const date = d.toISOString().split('T')[0]
+    const volume = volumeMap[date] ?? 0
+    const sessions = sessionMap[date] ?? 0
+
+    let level: 0 | 1 | 2 | 3 | 4 = 0
+    if (volume > 0) {
+      const ratio = volume / maxVol
+      if (ratio < 0.25) level = 1
+      else if (ratio < 0.5) level = 2
+      else if (ratio < 0.75) level = 3
+      else level = 4
+    }
+
+    days.push({ date, volume, sessions, level })
+  }
+
+  return days
+}
+
+function buildPRs(logs: SessionLog[]): PREntry[] {
+  // Track max weight history per exercise
+  const exerciseHistory: Record<string, { weights: number[]; dates: string[]; count: number }> = {}
+
   for (const log of logs) {
-    for (const s of (log as any).client_set_logs ?? []) {
+    const date = log.logged_at.split('T')[0]
+    const seen = new Set<string>()
+    for (const s of log.client_set_logs) {
       if (!s.completed || !s.actual_weight_kg) continue
       const name = s.exercise_name
-      if (!exerciseMap[name]) exerciseMap[name] = { name, points: [] }
       const weight = parseFloat(String(s.actual_weight_kg))
-      const existing = exerciseMap[name].points.find((p: any) => p.date === log.logged_at)
-      if (existing) {
-        existing.maxWeight = Math.max(existing.maxWeight, weight)
-      } else {
-        exerciseMap[name].points.push({ date: log.logged_at, maxWeight: weight })
-      }
+      if (!weight) continue
+      if (!exerciseHistory[name]) exerciseHistory[name] = { weights: [], dates: [], count: 0 }
+      if (!seen.has(name)) { exerciseHistory[name].count++; seen.add(name) }
+      exerciseHistory[name].weights.push(weight)
+      exerciseHistory[name].dates.push(date)
     }
   }
-  const exerciseProgression = Object.values(exerciseMap)
-    .filter((e) => e.points.length >= 2)
-    .sort((a, b) => b.points.length - a.points.length)
-    .slice(0, 4)
 
-  const kpis = {
-    totalSessions: logs.length,
-    completedSessions,
-    totalSets: completedSets.length,
-    totalVolume: Math.round(totalVolume),
-    avgDuration,
+  const prs: PREntry[] = []
+  for (const [exercise, data] of Object.entries(exerciseHistory)) {
+    if (data.weights.length < 1) continue
+    const sorted = [...data.weights].sort((a, b) => b - a)
+    const maxWeight = sorted[0]
+    const prevMaxWeight = sorted[1] ?? maxWeight
+    // Find date of max weight
+    const maxIdx = data.weights.indexOf(maxWeight)
+    const achievedDate = data.dates[maxIdx] ?? ''
+    prs.push({ exercise, maxWeight, prevMaxWeight, achievedDate, sessionCount: data.count })
   }
 
-  return (
-    <div className="min-h-screen bg-surface font-sans">
-      <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-white/60 px-6 py-4">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain" />
-          <span className="text-sm font-semibold text-primary">Progression</span>
-          <div className="w-8" />
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-6 py-6">
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <KpiCard label="Séances" value={kpis.completedSessions} sub={`sur ${kpis.totalSessions} démarrées`} />
-          <KpiCard label="Sets complétés" value={kpis.totalSets} sub="30 derniers jours" />
-          <KpiCard label="Volume total" value={`${(kpis.totalVolume / 1000).toFixed(1)}t`} sub="kg soulevés" />
-          <KpiCard label="Durée moy." value={kpis.avgDuration ? `${kpis.avgDuration}min` : '—'} sub="par séance" />
-        </div>
-
-        {logs.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <ProgressCharts timeline={timeline} exerciseProgression={exerciseProgression} />
-        )}
-      </main>
-    </div>
-  )
+  // Sort by absolute max weight desc
+  return prs.sort((a, b) => b.maxWeight - a.maxWeight)
 }
 
-function KpiCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
-  return (
-    <div className="bg-surface rounded-card shadow-soft-out p-4">
-      <p className="text-xs text-secondary mb-1">{label}</p>
-      <p className="text-2xl font-bold text-primary font-mono">{value}</p>
-      <p className="text-[10px] text-secondary mt-0.5">{sub}</p>
-    </div>
-  )
-}
+function buildSessionList(logs: SessionLog[], prs: PREntry[]): SessionSummary[] {
+  // Build per-session all-time PRs at the time of that session
+  // For simplicity: flag a session if it contains a set that matches the all-time PR weight for that exercise
+  const prMap: Record<string, number> = {}
+  for (const pr of prs) prMap[pr.exercise] = pr.maxWeight
 
-function EmptyState() {
-  return (
-    <div className="bg-surface rounded-card shadow-soft-out p-8 text-center">
-      <p className="text-3xl mb-3">💪</p>
-      <p className="font-semibold text-primary text-sm mb-1">Pas encore de données</p>
-      <p className="text-xs text-secondary">
-        Logue ta première séance pour voir ta progression ici.
-      </p>
-    </div>
-  )
+  return [...logs]
+    .sort((a, b) => b.logged_at.localeCompare(a.logged_at))
+    .map(log => {
+      const sets = log.client_set_logs
+      const completed = sets.filter(s => s.completed)
+      const volume = completed.reduce((sum, s) =>
+        sum + (s.actual_reps ?? 0) * (parseFloat(String(s.actual_weight_kg)) || 0), 0)
+
+      const prExercises: string[] = []
+      for (const s of completed) {
+        if (!s.actual_weight_kg) continue
+        const w = parseFloat(String(s.actual_weight_kg))
+        if (prMap[s.exercise_name] && w >= prMap[s.exercise_name]) {
+          if (!prExercises.includes(s.exercise_name)) prExercises.push(s.exercise_name)
+        }
+      }
+
+      return {
+        id: log.id,
+        name: log.session_name,
+        date: log.logged_at.split('T')[0],
+        volume: Math.round(volume),
+        setsCompleted: completed.length,
+        durationMin: log.duration_min,
+        hasPR: prExercises.length > 0,
+        prExercises,
+      }
+    })
 }

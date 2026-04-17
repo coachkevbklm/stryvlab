@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { LogOut, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export default function ClientLogoutButton() {
   const router = useRouter()
+  const { t } = useClientT()
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -21,33 +23,33 @@ export default function ClientLogoutButton() {
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className="flex items-center justify-center gap-2 w-full py-3 rounded-card bg-surface shadow-soft-out text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+        className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] text-[13px] font-medium text-red-400 hover:bg-red-500/[0.06] hover:text-red-400 transition-colors"
       >
         <LogOut size={15} />
-        Se déconnecter
+        {t('profil.logout')}
       </button>
 
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface rounded-card shadow-[12px_12px_32px_#c8c8c8,-12px_-12px_32px_#ffffff] p-6 w-full max-w-sm">
-            <h3 className="font-bold text-primary mb-2">Se déconnecter ?</h3>
-            <p className="text-sm text-secondary mb-5">
-              Tu seras redirigé vers la page de connexion.
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#181818] rounded-2xl border-[0.3px] border-white/[0.06] p-6 w-full max-w-sm">
+            <h3 className="font-bold text-white mb-2">{t('profil.logout.confirm.title')}</h3>
+            <p className="text-[13px] text-white/55 mb-5">
+              {t('profil.logout.confirm.desc')}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 py-2.5 rounded-btn bg-surface-light shadow-soft-out text-sm text-secondary hover:text-primary transition-colors font-medium"
+                className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-[13px] text-white/55 hover:text-white/80 transition-colors font-medium"
               >
-                Annuler
+                {t('profil.logout.cancel')}
               </button>
               <button
                 onClick={handleLogout}
                 disabled={loading}
-                className="flex-1 py-2.5 rounded-btn bg-red-500 text-white text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-xl bg-red-500/80 text-white text-[13px] font-bold hover:bg-red-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-                {loading ? 'Déconnexion…' : 'Déconnecter'}
+                {loading && <Loader2 size={14} className="animate-spin" />}
+                {loading ? t('profil.logout.loading') : t('profil.logout.action')}
               </button>
             </div>
           </div>
