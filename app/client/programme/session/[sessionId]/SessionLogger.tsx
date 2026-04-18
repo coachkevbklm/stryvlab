@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
+import ClientAlternativesSheet from '@/components/client/ClientAlternativesSheet'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,7 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
   const [showImage, setShowImage] = useState(true)
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
+  const [altSheetTarget, setAltSheetTarget] = useState<number | null>(null)
 
   // ── Chrono repos ──
   // restElapsed : secondes écoulées depuis le début du chrono (peut dépasser restPrescribed → overtime)
@@ -643,6 +645,15 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
                   >
                     <ArrowLeftRight size={13} />
                   </button>
+                  {currentEx.clientAlternatives && currentEx.clientAlternatives.length > 0 && !swappedNames[currentEx.id] && (
+                    <button
+                      type="button"
+                      onClick={() => setAltSheetTarget(currentExIndex)}
+                      className="text-[10px] font-semibold text-white/30 hover:text-amber-400 transition-colors"
+                    >
+                      Indisponible ?
+                    </button>
+                  )}
                   {currentEx.progressive_overload_enabled && currentEx.rep_min !== null && (
                     <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />
                   )}
@@ -849,6 +860,18 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
           onClose={() => setSwapTarget(null)}
         />
       )}
+
+      {/* ── ClientAlternativesSheet ── */}
+      {altSheetTarget !== null && exercises[altSheetTarget]?.clientAlternatives?.length ? (
+        <ClientAlternativesSheet
+          exerciseName={swappedNames[exercises[altSheetTarget].id] ?? exercises[altSheetTarget].name}
+          alternatives={exercises[altSheetTarget].clientAlternatives!}
+          onSelect={(name) => {
+            setSwappedNames(prev => ({ ...prev, [exercises[altSheetTarget].id]: name }))
+          }}
+          onClose={() => setAltSheetTarget(null)}
+        />
+      ) : null}
 
       {/* ── Bouton Terminer (fixe) ── */}
       <div className="fixed bottom-20 left-0 right-0 px-5 z-40 bg-[#121212] pt-3 pb-2">
