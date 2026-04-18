@@ -1,5 +1,9 @@
 ## 2026-04-18
 
+FEATURE: Template builder pages — remove max-w-3xl, full width layout (px-6)
+FEATURE: Intelligence panel width 280px → 420px — uses full right column
+FEATURE: ProgramIntelligencePanel — 3-col subscores, 4-col KPIs row, radar+donut side by side
+FEATURE: ProgramIntelligencePanel — 2-col internal grid layout: 3-col subscores, 4-col KPIs (1×4), radar+donut side-by-side
 FIX: ProgramIntelligencePanel — gate Recharts charts behind mounted state, fixes invisible PieChart/RadarChart
 FIX: ProgramIntelligencePanel wrapper — max-h + overflow-y-auto, panel content no longer cut off below viewport
 FIX: SessionStats.muscleVolumes — per-session muscle volume map, fixes incorrect bar % in Détail par séance
