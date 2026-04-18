@@ -1,5 +1,6 @@
 ## 2026-04-18
 
+SCHEMA: Add morpho_analyses table with RLS + TypeScript types (Phase 0 Task 1)
 DOCS: Add MorphoPro bridge design specification (Phase 0)
 DOCS: Add studio-lab master plan (Phases 0–4: MorphoPro → UI → Biomechanics → Feedback → Export)
 FIX: scoreAlternatives — back muscle sub-groups (grand_dorsal / trapeze_moyen / rhomboides / trapeze_superieur / lombaires) derived from movementPattern, replaces monolithic 'dos' overlap
