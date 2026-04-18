@@ -131,7 +131,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
       {!collapsed && (
         <>
           {/* Grille 2×3 subscores */}
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {Object.entries(result.subscores).map(([key, val]) => (
               <div key={key} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5">
                 <p className="text-[18px] font-black leading-none" style={{ color: SCORE_COLOR(val) }}>
@@ -146,90 +146,95 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
           {result.programStats.totalSets > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2.5">Volume programme</p>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[16px] font-black text-white leading-none">{result.programStats.totalSets}</p>
+                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.totalSets}</p>
                   <p className="text-[8px] text-white/40 mt-0.5">séries / sem.</p>
                 </div>
                 <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[16px] font-black text-white leading-none">
+                  <p className="text-[15px] font-black text-white leading-none">
                     {result.programStats.totalEstimatedReps >= 1000
                       ? `${(result.programStats.totalEstimatedReps / 1000).toFixed(1)}k`
                       : result.programStats.totalEstimatedReps}
                   </p>
-                  <p className="text-[8px] text-white/40 mt-0.5">reps est. / sem.</p>
+                  <p className="text-[8px] text-white/40 mt-0.5">reps est.</p>
                 </div>
                 <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[16px] font-black text-white leading-none">{result.programStats.totalExercises}</p>
-                  <p className="text-[8px] text-white/40 mt-0.5">exercices uniques</p>
+                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.totalExercises}</p>
+                  <p className="text-[8px] text-white/40 mt-0.5">exercices</p>
                 </div>
                 <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[16px] font-black text-white leading-none">{result.programStats.avgExercisesPerSession}</p>
-                  <p className="text-[8px] text-white/40 mt-0.5">exos / séance moy.</p>
+                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.avgExercisesPerSession}</p>
+                  <p className="text-[8px] text-white/40 mt-0.5">exos/séance</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Radar musculaire */}
-          {mounted && Object.keys(result.distribution).length > 0 && (
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Distribution musculaire</p>
-              <div style={{ width: '100%', height: 160 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="rgba(255,255,255,0.06)" />
-                    <PolarAngleAxis dataKey="muscle" tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.4)' }} />
-                    <Radar
-                      name="Volume"
-                      dataKey="volume"
-                      stroke="#1f8a65"
-                      fill="#1f8a65"
-                      fillOpacity={0.25}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* Donut patterns */}
-          {mounted && donutData.length > 0 && (
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Répartition patterns</p>
-              <div style={{ width: '100%', height: 100 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={28}
-                      outerRadius={44}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {donutData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: '#0f0f0f', border: 'none', borderRadius: 8, fontSize: 10 }}
-                      itemStyle={{ color: 'rgba(255,255,255,0.7)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                {donutData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="text-[9px] text-white/40">{d.name}</span>
+          {/* Radar + Donut side-by-side */}
+          {(mounted && Object.keys(result.distribution).length > 0) || (mounted && donutData.length > 0) ? (
+            <div className="grid grid-cols-2 gap-2">
+              {/* Radar musculaire */}
+              {mounted && Object.keys(result.distribution).length > 0 && (
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Distribution</p>
+                  <div style={{ width: '100%', height: 150 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                        <PolarAngleAxis dataKey="muscle" tick={{ fontSize: 7, fill: 'rgba(255,255,255,0.4)' }} />
+                        <Radar
+                          name="Volume"
+                          dataKey="volume"
+                          stroke="#1f8a65"
+                          fill="#1f8a65"
+                          fillOpacity={0.25}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Donut patterns */}
+              {mounted && donutData.length > 0 && (
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Patterns</p>
+                  <div style={{ width: '100%', height: 100 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={24}
+                          outerRadius={40}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {donutData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ background: '#0f0f0f', border: 'none', borderRadius: 8, fontSize: 10 }}
+                          itemStyle={{ color: 'rgba(255,255,255,0.7)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
+                    {donutData.map((d, i) => (
+                      <div key={d.name} className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                        <span className="text-[8px] text-white/40">{d.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          ) : null}
 
           {/* Stats par séance */}
           {result.programStats.sessionsStats.length > 0 && (
