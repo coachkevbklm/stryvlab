@@ -1,5 +1,9 @@
 ## 2026-04-18
 
+FIX: ProgramIntelligencePanel — gate Recharts charts behind mounted state, fixes invisible PieChart/RadarChart
+FIX: ProgramIntelligencePanel wrapper — max-h + overflow-y-auto, panel content no longer cut off below viewport
+FIX: SessionStats.muscleVolumes — per-session muscle volume map, fixes incorrect bar % in Détail par séance
+FIX: Muscle bar % now relative to total session volume — SessionStats.muscleVolumes tracks per-session muscle volumes, bars scale correctly per session
 FIX: Intelligence panel wrapper scrollable with max-h — content no longer overflows viewport
 FIX: Gate Recharts charts behind mounted state in ProgramIntelligencePanel — fixes invisible PieChart/RadarChart on SSR hydration
 FEATURE: ProgramIntelligencePanel — section KPIs globaux (séries/sem, reps est., exercices uniques, moy. exos/séance)
