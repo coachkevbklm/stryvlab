@@ -14,7 +14,7 @@ const SELECT = `
   coach_program_template_sessions (
     id, name, day_of_week, position, notes,
     coach_program_template_exercises (
-      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles
+      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id
     )
   )
 `
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
           equipment_required: e.equipment_required ?? [],
           primary_muscles: e.primary_muscles ?? [],
           secondary_muscles: e.secondary_muscles ?? [],
+          group_id: e.group_id ?? null,
         }))
       )
     }

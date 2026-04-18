@@ -137,6 +137,7 @@ interface Exercise {
   primary_muscles: string[];
   secondary_muscles: string[];
   is_compound: boolean | undefined;
+  group_id?: string;
 }
 interface Session {
   name: string;
@@ -171,6 +172,7 @@ function emptyExercise(): Exercise {
     primary_muscles: [],
     secondary_muscles: [],
     is_compound: undefined,
+    group_id: undefined,
   };
 }
 function emptySession(): Session {
