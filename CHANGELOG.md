@@ -1,5 +1,37 @@
 ## 2026-04-18
 
+FIX: Intelligence panel wrapper scrollable with max-h — content no longer overflows viewport
+FIX: Gate Recharts charts behind mounted state in ProgramIntelligencePanel — fixes invisible PieChart/RadarChart on SSR hydration
+FEATURE: ProgramIntelligencePanel — section KPIs globaux (séries/sem, reps est., exercices uniques, moy. exos/séance)
+FEATURE: ProgramIntelligencePanel — section Détail par séance avec barres musculaires top-3 et pills patterns
+FEATURE: IntelligenceResult.programStats — ProgramStats + SessionStats calculés dans buildIntelligenceResult
+FIX: buildIntelligenceResult filters out unnamed placeholder exercises — prevents phantom scores and spurious MISSING_PATTERN alerts on empty templates
+FIX: ProgramIntelligencePanel sticky layout — wrapper uses top-[96px] to account for topbar height, panel no longer scrolls behind navbar
+FIX: Recharts ResponsiveContainer wrapped in explicit div with fixed dimensions — fixes invisible PieChart/RadarChart in flex column
+FIX: Add equipment to PATCH /api/clients/[clientId] allowlist — RestrictionsWidget equipment toggle was silently ignored
+FEATURE: scoreSRA uses IntelligenceProfile.fitnessLevel when provided, overriding meta.level for SRA window modulation
+SCHEMA: Add coach_custom_exercises table with RLS (per-coach isolation, UNIQUE coach_id+slug)
+FEATURE: GET/POST /api/exercises/custom — coach custom exercise persistence with slug derivation + 409 conflict guard
+FEATURE: ExercisePicker loads coach custom exercises from API on mount, merges with static catalog, shows Perso badge
+FEATURE: ExerciseAlternativesDrawer — tab switcher Alternatives/Créer + inline custom exercise creation form (POST /api/exercises/custom)
+FEATURE: ExerciseSwapSheet — client mobile bottom sheet for temporary exercise swap during session (scoreAlternatives, never persisted)
+FEATURE: SessionLogger — swap button per exercise, swapped name display, ExerciseSwapSheet integration
+FEATURE: ProgramIntelligencePanel onAlertClick prop emits (sessionIndex, exerciseIndex)
+FEATURE: ProgramTemplateBuilder alert click scrolls to and highlights target exercise card (2s ring highlight, exerciseRefs map)
+SCHEMA: Add body_part/severity to metric_annotations, equipment text[] to coach_clients
+FEATURE: GET /api/clients/[clientId]/intelligence-profile — aggregate injuries + equipment into IntelligenceProfile
+FEATURE: Extend POST /api/clients/[clientId]/annotations schema with body_part + severity fields
+FEATURE: GET/POST /api/client/restrictions — client-authenticated injury restrictions CRUD
+FEATURE: DELETE /api/client/restrictions/[annotationId] — client-authenticated restriction delete
+FEATURE: scoreSpecificity accepts IntelligenceProfile, emits INJURY_CONFLICT alerts (critical/warning/info) with injury score penalty
+FEATURE: scoreCompleteness accepts IntelligenceProfile, emits EQUIPMENT_MISMATCH alerts, filters required patterns by available equipment
+FEATURE: buildIntelligenceResult + useProgramIntelligence accept optional IntelligenceProfile param (backward compatible)
+FEATURE: components/clients/RestrictionsWidget.tsx — coach-facing restrictions + equipment selector (DS v2.0)
+FEATURE: components/client/ClientRestrictionsSection.tsx — client-facing restrictions form with severity radio (DS v2.0)
+FEATURE: Wire RestrictionsWidget into /coach/clients/[clientId] Profil tab
+FEATURE: Wire ClientRestrictionsSection into /client/profil page
+FEATURE: ProgramTemplateBuilder accepts clientId prop, fetches IntelligenceProfile, shows "Profil client appliqué" chip
+FEATURE: Program Intelligence Phase 2A Task 2 — InjuryRestriction + IntelligenceProfile types, MUSCLE_TO_BODY_PART mapping, muscleConflictsWithRestriction helper — lib/programs/intelligence/types.ts + catalog-utils.ts (5 tests Vitest passants)
 FEATURE: Program Intelligence Phase 1 — moteur scoring 6 sous-moteurs (balance push/pull, SRA, redondance mécanique, progression RIR, spécificité goal, patterns manquants) — lib/programs/intelligence/scoring.ts
 FEATURE: lib/programs/intelligence/catalog-utils.ts — normalizeMuscleSlug + getStimulusCoeff + resolveExerciseCoeff (runtime derivation pour exercices custom)
 FEATURE: lib/programs/intelligence/types.ts — types centralisés BuilderExercise, BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert
