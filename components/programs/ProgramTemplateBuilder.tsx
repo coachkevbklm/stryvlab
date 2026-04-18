@@ -1045,7 +1045,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
     </div>
 
     {/* Panel intelligence — colonne droite fixe */}
-    <div className="w-[280px] shrink-0 sticky top-[96px] self-start flex flex-col gap-2 max-h-[calc(100vh-112px)] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+    <div className="w-[420px] shrink-0 sticky top-[96px] self-start flex flex-col gap-2 max-h-[calc(100vh-112px)] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
       {intelligenceProfile && (intelligenceProfile.injuries.length > 0 || intelligenceProfile.equipment.length > 0) && (
         <div className="flex items-center gap-1">
           <span className="text-[10px] font-semibold text-[#1f8a65] bg-[#1f8a65]/10 px-2 py-0.5 rounded-full">
