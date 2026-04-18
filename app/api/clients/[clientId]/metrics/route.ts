@@ -84,7 +84,8 @@ export async function GET(
   const rows: { submissionId: string; date: string; values: Record<string, number> }[] = []
 
   for (const sub of submissions ?? []) {
-    const date: string = sub.bilan_date ?? sub.submitted_at ?? sub.created_at
+    const rawDate: string = sub.bilan_date ?? sub.submitted_at ?? sub.created_at
+    const date: string = rawDate.split('T')[0]
     const values: Record<string, number> = {}
     for (const resp of (sub.assessment_responses ?? []) as RespRow[]) {
       if (resp.value_number == null) continue

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { insertClientNotification } from '@/lib/notifications/insert-client-notification'
+import { z } from 'zod'
 
 function service() {
   return createServiceClient(
@@ -11,6 +12,24 @@ function service() {
 }
 
 type Params = { params: { logId: string } }
+
+const setLogUpdateSchema = z.object({
+  id: z.string().uuid(),
+  actual_reps: z.number().int().nonnegative().nullable().optional(),
+  actual_weight_kg: z.number().nonnegative().nullable().optional(),
+  completed: z.boolean().optional(),
+  rpe: z.number().min(0).max(10).nullable().optional(),
+  rir_actual: z.number().int().min(0).max(10).nullable().optional(),
+  notes: z.string().nullable().optional(),
+  side: z.enum(['left', 'right', 'bilateral']).optional(),
+})
+
+const patchBodySchema = z.object({
+  completed: z.boolean().optional(),
+  duration_min: z.number().int().nonnegative().optional(),
+  notes: z.string().nullable().optional(),
+  set_logs: z.array(setLogUpdateSchema).optional(),
+})
 
 // PATCH /api/session-logs/[logId] — mettre à jour (compléter, durée, sets)
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -25,13 +44,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .single()
   if (!client) return NextResponse.json({ error: 'Profil client introuvable' }, { status: 404 })
 
-  const body = await req.json()
-  const { completed, duration_min, notes, set_logs } = body
+  const raw = await req.json()
+  const parsed = patchBodySchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 })
+  }
+  const { completed, duration_min, notes, set_logs } = parsed.data
 
   const db = service()
 
   // Mettre à jour le session log
-  const patch: any = {}
+  const patch: Record<string, unknown> = {}
   if (notes !== undefined) patch.notes = notes
   if (duration_min !== undefined) patch.duration_min = duration_min
   if (completed) patch.completed_at = new Date().toISOString()
@@ -41,7 +64,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       .from('client_session_logs')
       .update(patch)
       .eq('id', params.logId)
-      .eq('client_id', client.id)
+      .eq('client_id', (client as { id: string }).id)
   }
 
   // Double progression — évaluation automatique quand la séance est complétée
@@ -75,25 +98,30 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (coachId) {
       await insertClientNotification(db, {
         coachId,
-        clientId:  client.id,
-        type:      'session_reminder',
-        message:   `${clientName} a complété la séance "${log?.session_name ?? 'Séance'}".`,
+        clientId: (client as { id: string }).id,
+        type:     'session_reminder',
+        message:  `${clientName} a complété la séance "${log?.session_name ?? 'Séance'}".`,
       })
     }
   }
 
-  // Upsert des set logs
-  if (Array.isArray(set_logs)) {
-    for (const s of set_logs) {
-      if (s.id) {
-        await db.from('client_set_logs').update({
-          actual_reps: s.actual_reps,
-          actual_weight_kg: s.actual_weight_kg,
-          completed: s.completed,
-          rpe: s.rpe,
-          notes: s.notes,
-        }).eq('id', s.id)
-      }
+  // Bulk update set logs — une seule requête par upsert au lieu de N requêtes
+  if (Array.isArray(set_logs) && set_logs.length > 0) {
+    const validSets = set_logs.filter(s => s.id)
+    if (validSets.length > 0) {
+      await db.from('client_set_logs').upsert(
+        validSets.map(s => ({
+          id: s.id,
+          actual_reps: s.actual_reps ?? null,
+          actual_weight_kg: s.actual_weight_kg ?? null,
+          completed: s.completed ?? false,
+          rpe: s.rpe ?? null,
+          rir_actual: s.rir_actual ?? null,
+          notes: s.notes ?? null,
+          side: s.side ?? null,
+        })),
+        { onConflict: 'id' }
+      )
     }
   }
 

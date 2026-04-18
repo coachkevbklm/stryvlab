@@ -2,7 +2,74 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-18 (Client Alternatives Tasks 5-7 Complete)
+> Dernière mise à jour : 2026-04-18 (Alternatives Scoring Refactor Tasks 1-5 Complete)
+
+---
+
+## 2026-04-18 — Alternatives Scoring Refactor — Back Sub-Groups & Deduplication (Tasks 1-5)
+
+**Ce qui a été fait :**
+
+1. **`lib/programs/intelligence/catalog-utils.ts`** — back muscle sub-group expansion
+   - Ajout `DOS_SUBGROUPS_BY_PATTERN: Record<string, string[]>` constant
+     - `vertical_pull` → `['grand_dorsal', 'dos_large']`
+     - `horizontal_pull` → `['trapeze_moyen', 'rhomboides', 'dos_large']`
+     - `scapular_elevation` → `['trapeze_superieur', 'dos_large']`
+     - `hip_hinge` → `['lombaires', 'erecteurs_spinaux', 'dos_large']`
+     - `core_anti_flex` → `['lombaires', 'erecteurs_spinaux', 'dos_large']`
+     - `carry` → `['trapeze_superieur', 'dos_large']`
+     - default (unknown) → `['dos_large']` (generic same-group marker)
+   - Export `expandMusclesForScoring(muscles: string[], movementPattern: string | null): string[]`
+   - Remplace `'dos'` par sub-groups sans régénérer le catalogue (runtime expansion)
+   - `dos_large` agit comme marqueur "même groupe large" — deux exercices avec ONLY `dos_large` overlap reçoivent un score partiel (8 pts) au lieu de 30 pts
+
+2. **`lib/programs/intelligence/alternatives.ts`** — refactor scoreAlternatives
+   - Import `expandMusclesForScoring` depuis catalog-utils
+   - Remplace `originalMuscles = new Set(primary_muscles.map(normalizeMuscleSlug))` par `originalMusclesExpanded = new Set(expandMusclesForScoring(primary_muscles, pattern))`
+   - Même refactor pour candidats : `candidateMusclesExpanded = expandMusclesForScoring(candidate.muscles, candidate.movementPattern)`
+   - Overlap computation uses expanded muscles sets
+   - Détection `hasOnlyDosLarge = overlap.length > 0 && overlap.every(m === 'dos_large')`
+   - Si `hasOnlyDosLarge` : score += 8 (crédit partiel), sinon score += min(30, overlap.length * 15)
+   - Label `'Remplace mécaniquement'` et `'Angle complémentaire'` nécessitent maintenant `hasRealOverlap = overlap.length > 0 && !hasOnlyDosLarge`
+   - Déduplication par prefix nom : boucle sur résultats triés, garde les 3 premiers mots en lowercase comme clé
+   - Limite max 6 résultats (au lieu de 8) après dédup
+
+3. **`tests/lib/intelligence/catalog-utils.test.ts`** — ajout 8 tests pour expandMusclesForScoring
+   - `vertical_pull + dos` → contains `grand_dorsal, dos_large`, not `dos`
+   - `horizontal_pull + dos` → contains `trapeze_moyen, rhomboides, dos_large`
+   - `scapular_elevation + dos` → contains `trapeze_superieur, dos_large`
+   - `hip_hinge + dos` → contains `lombaires, erecteurs_spinaux, dos_large`
+   - `null pattern + dos` → fallback `['dos_large']`
+   - Non-back muscles pass through unchanged
+   - Empty array returns empty
+   - Total : 22 tests (7 existants + 8 nouveaux) tous PASS
+
+4. **`tests/lib/intelligence/alternatives.test.ts`** — création fichier
+   - 4 tests scoreAlternatives avec back sub-groups
+   - Test 1 : traction (vertical_pull) n'étiquète pas shrug (scapular_elevation) comme "Remplace mécaniquement"
+   - Test 2 : traction vs traction > traction vs row (pattern bonus + overlap bonus)
+   - Test 3 : max 6 alternatives par exercice
+   - Test 4 : pas de doublons name prefix dans résultats
+   - Tous PASS
+
+5. **`CHANGELOG.md`** — mise à jour
+   - FIX: scoreAlternatives — back muscle sub-groups derived from movementPattern
+   - FIX: scoreAlternatives — deduplicate by name prefix, max 6 results
+   - FIX: ExerciseAlternativesDrawer — label requires true sub-group overlap
+
+**Points de vigilance :**
+- `dos_large` est utilisé dans 2 contextes : (1) fallback quand pattern unknown, (2) marqueur "même groupe musculaire large mais fonctionnellement différent"
+- Overlap avec ONLY `dos_large` = 8 pts (crédit partiel). Ex: traction (grand_dorsal) vs shrug (trapeze_superieur) → overlap = `[dos_large]` → score += 8
+- Deux exercices avec grand_dorsal + dos_large vs un avec trapeze_moyen + dos_large → overlap sur grand_dorsal = `[grand_dorsal, dos_large]` → score += 30 (pas juste 8)
+- `expandMusclesForScoring` n'affecte que les muscles avec slug `'dos'` — tous les autres muscles passe à travers inchangés (biceps, triceps, lombaires restent comme-est)
+- Déduplication par "first 3 words" de nom en lowercase — "Tirage Vertical Poulie" et "Tirage Vertical Poulie Haute" sont dédoublés (prefix = "tirage vertical poulie"), keeper = le plus haut score
+- Max 6 au lieu de 8 : acceptable car dédup élimine bruit de variantes, conserve les meilleurs candidats
+
+**Next Steps — Program Intelligence Phase 3 :**
+- [ ] Supersets — détecter paires superset avec même group_id, scorer SRA/imbalance
+- [ ] Prédictions sets/reps/RIR depuis historique client_set_logs
+- [ ] Timeline RIR par semaine quand builder supporte données hebdomadaires
+- [ ] Afficher label qualitatif avec badge couleur (95+ vert, 85-94 vert clair, 75-84 jaune, <75 gris)
 
 ---
 

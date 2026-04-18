@@ -1,5 +1,8 @@
 ## 2026-04-18
 
+FIX: scoreAlternatives — back muscle sub-groups (grand_dorsal / trapeze_moyen / rhomboides / trapeze_superieur / lombaires) derived from movementPattern, replaces monolithic 'dos' overlap
+FIX: scoreAlternatives — deduplicate candidates by name prefix (first 3 words), max 6 results returned
+FIX: ExerciseAlternativesDrawer — 'Remplace mécaniquement' label now requires true sub-group overlap, not dos_large-only match
 FEATURE: ClientAlternativesSheet + SessionLogger.Indisponible? button — client sees coach-pre-configured alternatives bottom sheet
 FEATURE: Session page server fetch — load coach_template_exercise_alternatives, pass clientAlternatives to SessionLogger
 FEATURE: Système A client exercise alternatives — coach pre-configures up to 3 per exercise in template builder

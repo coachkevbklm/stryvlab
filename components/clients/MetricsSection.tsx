@@ -2390,6 +2390,7 @@ function MultiSeriesChart({
                   stroke={getMetricColor(singleVisibleMetric!)}
                   strokeWidth={2}
                   dot={false}
+                  connectNulls
                   activeDot={{ r: 4, style: { cursor: "pointer" } }}
                   isAnimationActive
                   animationDuration={500}
@@ -2576,6 +2577,7 @@ function MultiSeriesChart({
                           />
                         );
                       }}
+                      connectNulls
                       activeDot={{ r: 4, style: { cursor: "pointer" } }}
                       isAnimationActive
                       animationDuration={500}

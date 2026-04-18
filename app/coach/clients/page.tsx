@@ -312,6 +312,12 @@ export default function CoachClientsPage() {
     setSubmitting(true);
     setError(null);
 
+    if (!form.email.trim()) {
+      setError("L'email est obligatoire.");
+      setSubmitting(false);
+      return;
+    }
+
     const res = await fetch("/api/clients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -772,6 +778,7 @@ export default function CoachClientsPage() {
                       />
                       <input
                         type="email"
+                        required
                         placeholder="jean@email.com"
                         value={form.email}
                         onChange={(e) => setField("email", e.target.value)}

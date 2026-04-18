@@ -49,13 +49,16 @@ export async function PATCH(
   const allowed = [
     'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender', 'notes', 'status',
     'training_goal', 'fitness_level', 'sport_practice', 'weekly_frequency', 'equipment_category',
+    'equipment',
   ]
   const update: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) update[key] = body[key]
   }
 
-  const { data, error } = await serviceClient()
+  const service = serviceClient()
+
+  const { data, error } = await service
     .from('coach_clients')
     .update(update)
     .eq('id', params.clientId)
@@ -66,6 +69,17 @@ export async function PATCH(
   if (error || !data) {
     console.error('PATCH /api/clients/[id]:', error)
     return NextResponse.json({ error: 'Mise à jour impossible' }, { status: 500 })
+  }
+
+  // Sync email in Supabase Auth if client has an active account
+  if ('email' in update && update.email && data.user_id) {
+    const { error: authError } = await service.auth.admin.updateUserById(data.user_id, {
+      email: update.email as string,
+    })
+    if (authError) {
+      console.error('PATCH /api/clients/[id] — sync auth email:', authError)
+      // Non-blocking: DB is updated, Auth sync failure is logged only
+    }
   }
 
   return NextResponse.json({ client: data })

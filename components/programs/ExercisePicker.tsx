@@ -19,6 +19,7 @@ interface CatalogEntry {
   equipment: string[];
   isCompound: boolean;
   muscles: string[];
+  source?: 'catalog' | 'custom';
 }
 
 interface Props {
@@ -94,27 +95,60 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  const [customExercises, setCustomExercises] = useState<CatalogEntry[]>([])
+
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     searchRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    fetch('/api/exercises/custom')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Array<{
+        id: string; name: string; slug: string;
+        muscle_group: string | null; movement_pattern: string | null;
+        equipment: string[]; is_compound: boolean; muscles: string[];
+      }>) => {
+        setCustomExercises(data.map(e => ({
+          id: e.id,
+          name: e.name,
+          slug: e.slug,
+          gifUrl: '',
+          muscleGroup: e.muscle_group ?? 'custom',
+          exerciseType: 'exercise' as const,
+          pattern: e.movement_pattern ? [e.movement_pattern] : [],
+          movementPattern: e.movement_pattern,
+          equipment: e.equipment,
+          isCompound: e.is_compound,
+          muscles: e.muscles,
+          source: 'custom' as const,
+        })))
+      })
+      .catch(() => {})
+  }, [])
+
+  const allExercises = useMemo<CatalogEntry[]>(() => [
+    ...catalog.map(e => ({ ...e, source: 'catalog' as const })),
+    ...customExercises,
+  ], [customExercises])
+
   // All unique values for filter dropdowns
   const allPatterns = useMemo(() => {
     const s = new Set<string>();
-    catalog.forEach((e) => e.pattern.forEach((p) => s.add(p)));
+    allExercises.forEach((e) => e.pattern.forEach((p) => s.add(p)));
     return Array.from(s).sort();
-  }, []);
+  }, [allExercises]);
 
   const allEquipment = useMemo(() => {
     const s = new Set<string>();
-    catalog.forEach((e) => e.equipment.forEach((eq) => s.add(eq)));
+    allExercises.forEach((e) => e.equipment.forEach((eq) => s.add(eq)));
     return Array.from(s).sort();
-  }, []);
+  }, [allExercises]);
 
   const filtered = useMemo(() => {
-    let results = catalog;
+    let results = allExercises;
 
     if (search.trim()) {
       const q = search
@@ -164,6 +198,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
     filterEquipment,
     filterCompound,
     filterType,
+    allExercises,
   ]);
 
   const activeFiltersCount = [
@@ -462,9 +497,16 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
 
                   {/* Info */}
                   <div className="p-2 flex flex-col gap-1">
-                    <p className="text-[11px] font-semibold text-white leading-tight line-clamp-2">
-                      {exercise.name}
-                    </p>
+                    <div className="flex items-start gap-1">
+                      <p className="text-[11px] font-semibold text-white leading-tight line-clamp-2 flex-1">
+                        {exercise.name}
+                      </p>
+                      {exercise.source === 'custom' && (
+                        <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1f8a65]/15 text-[#1f8a65]">
+                          Perso
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {exercise.exerciseType === "pedagogique" ? (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.04] text-white/80">

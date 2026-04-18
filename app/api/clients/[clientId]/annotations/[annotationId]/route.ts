@@ -13,7 +13,7 @@ function serviceClient() {
 const updateSchema = z.object({
   label: z.string().min(1).max(200).optional(),
   body: z.string().max(5000).optional().nullable(),
-  event_type: z.enum(['program_change', 'injury', 'travel', 'nutrition', 'note']).optional(),
+  event_type: z.enum(['program_change', 'injury', 'travel', 'nutrition', 'note', 'lab_protocol']).optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
@@ -27,7 +27,7 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = updateSchema.safeParse(await req.json())
-  if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
+  if (!body.success) return NextResponse.json({ error: body.error.issues.map((i) => i.message).join(', ') }, { status: 400 })
 
   const db = serviceClient()
   const { data, error } = await db

@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
 function SetPasswordForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [exchanging, setExchanging] = useState(true)
@@ -21,19 +20,61 @@ function SetPasswordForm() {
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    const code = searchParams.get('code')
-    if (!code) {
+    // If the callback route flagged a link error via query param, show error immediately.
+    if (new URLSearchParams(window.location.search).get('error') === 'link_expired') {
       setExchangeError(true)
       setExchanging(false)
       return
     }
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        console.error('exchangeCodeForSession error:', error.message)
-        setExchangeError(true)
+
+    // The callback route exchanges the PKCE code server-side and sets session cookies
+    // before redirecting here. The Supabase browser client reads those cookies and
+    // fires INITIAL_SESSION with the established session.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[set-password] auth event:', event, 'session:', !!session)
+
+      if (event === 'INITIAL_SESSION') {
+        // INITIAL_SESSION fires on page load with whatever session is in storage.
+        if (session) {
+          setExchanging(false) // Session established — show the form
+        } else {
+          // No session yet. If there's a recovery token in the hash (implicit flow),
+          // wait for the PASSWORD_RECOVERY event instead of erroring immediately.
+          const hasRecoveryToken =
+            typeof window !== 'undefined' &&
+            window.location.hash.includes('type=recovery') &&
+            window.location.hash.includes('access_token=')
+          if (!hasRecoveryToken) {
+            setExchangeError(true)
+            setExchanging(false)
+          }
+          // Otherwise: keep waiting — PASSWORD_RECOVERY will fire next.
+        }
+      } else if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+        setExchanging(false)
+      } else if (event === 'SIGNED_OUT') {
+        if (!done) {
+          setExchangeError(true)
+          setExchanging(false)
+        }
       }
-      setExchanging(false)
     })
+
+    // Safety timeout: if Supabase fires no event within 6s, something went wrong.
+    const timeout = setTimeout(() => {
+      setExchanging(prev => {
+        if (prev) {
+          setExchangeError(true)
+          return false
+        }
+        return prev
+      })
+    }, 6000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
@@ -50,6 +91,7 @@ function SetPasswordForm() {
     setLoading(true)
     const { error: updateError } = await supabase.auth.updateUser({ password })
     if (updateError) {
+      console.error('[set-password] updateUser error:', updateError.message)
       setError('Impossible de définir le mot de passe. Le lien a peut-être expiré.')
       setLoading(false)
       return

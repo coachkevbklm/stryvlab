@@ -27,6 +27,7 @@ import {
   Save,
   Tag,
   CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import { ChevronLeft } from "lucide-react";
@@ -40,6 +41,7 @@ import ClientCrmTab from "@/components/crm/ClientCrmTab";
 import ClientFormulasTab from "@/components/crm/ClientFormulasTab";
 import DeleteClientModal from "@/components/clients/DeleteClientModal";
 import MetricsSection from "@/components/clients/MetricsSection";
+import RestrictionsWidget from "@/components/clients/RestrictionsWidget";
 import { SubmissionWithClient } from "@/types/assessment";
 import {
   rankTemplates as rankTemplatesFull,
@@ -75,6 +77,11 @@ type Tab =
   | "performance";
 
 type ProfileEdit = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string;
   training_goal: string;
   fitness_level: string;
   sport_practice: string;
@@ -148,6 +155,11 @@ export default function ClientDetailPage() {
   const [tab, setTab] = useState<Tab>("profil");
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<ProfileEdit>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    date_of_birth: "",
     training_goal: "",
     fitness_level: "",
     sport_practice: "",
@@ -437,6 +449,13 @@ export default function ClientDetailPage() {
   // ── Profile edit ──────────────────────────────────────────────────────
   function openProfileEdit() {
     setProfileDraft({
+      first_name: client?.first_name ?? "",
+      last_name: client?.last_name ?? "",
+      email: client?.email ?? "",
+      phone: client?.phone ?? "",
+      date_of_birth: client?.date_of_birth
+        ? client.date_of_birth.slice(0, 10)
+        : "",
       training_goal: client?.training_goal ?? "",
       fitness_level: client?.fitness_level ?? "",
       sport_practice: client?.sport_practice ?? "",
@@ -455,6 +474,11 @@ export default function ClientDetailPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          first_name: profileDraft.first_name.trim() || null,
+          last_name: profileDraft.last_name.trim() || null,
+          email: profileDraft.email.trim() || null,
+          phone: profileDraft.phone.trim() || null,
+          date_of_birth: profileDraft.date_of_birth || null,
           training_goal: profileDraft.training_goal || null,
           fitness_level: profileDraft.fitness_level || null,
           sport_practice: profileDraft.sport_practice || null,
@@ -656,6 +680,24 @@ export default function ClientDetailPage() {
         >
           {tab === "profil" && (
             <div className="flex flex-col gap-4">
+              {/* Banner email manquant — clients legacy */}
+              {!client.email && (
+                <div className="flex items-center justify-between gap-3 bg-amber-500/10 border-[0.3px] border-amber-500/20 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+                    <p className="text-xs text-amber-300 font-medium">
+                      Email manquant — ce client ne peut pas être invité sur la plateforme.
+                    </p>
+                  </div>
+                  <button
+                    onClick={openProfileEdit}
+                    className="text-xs text-amber-400 hover:text-amber-300 font-bold shrink-0 transition-colors"
+                  >
+                    Ajouter un email
+                  </button>
+                </div>
+              )}
+
               <div className="bg-[#181818] border-subtle rounded-xl p-6">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-bold text-white">Informations</h2>
@@ -832,6 +874,81 @@ export default function ClientDetailPage() {
                 {editingProfile && (
                   <div className="mt-5 flex flex-col gap-4">
                     <div className="h-px bg-white/[0.07]" />
+
+                    {/* Identité */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
+                          Prénom
+                        </label>
+                        <input
+                          type="text"
+                          value={profileDraft.first_name}
+                          onChange={(e) =>
+                            setProfileDraft((d) => ({ ...d, first_name: e.target.value }))
+                          }
+                          placeholder="Jean"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none placeholder:text-white/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
+                          Nom
+                        </label>
+                        <input
+                          type="text"
+                          value={profileDraft.last_name}
+                          onChange={(e) =>
+                            setProfileDraft((d) => ({ ...d, last_name: e.target.value }))
+                          }
+                          placeholder="Dupont"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none placeholder:text-white/20"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={profileDraft.email}
+                          onChange={(e) =>
+                            setProfileDraft((d) => ({ ...d, email: e.target.value }))
+                          }
+                          placeholder="jean@exemple.com"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none placeholder:text-white/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
+                          Téléphone
+                        </label>
+                        <input
+                          type="tel"
+                          value={profileDraft.phone}
+                          onChange={(e) =>
+                            setProfileDraft((d) => ({ ...d, phone: e.target.value }))
+                          }
+                          placeholder="+33 6 12 34 56 78"
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none placeholder:text-white/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
+                          Date de naissance
+                        </label>
+                        <input
+                          type="date"
+                          value={profileDraft.date_of_birth}
+                          onChange={(e) =>
+                            setProfileDraft((d) => ({ ...d, date_of_birth: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 bg-[#0a0a0a] border-input rounded-lg text-xs text-white outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-white/[0.07]" />
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div>
                         <label className="text-[10px] font-bold text-white/45 uppercase tracking-wider block mb-1.5">
@@ -991,6 +1108,11 @@ export default function ClientDetailPage() {
                 clientStatus={client?.status ?? "inactive"}
                 clientEmail={client?.email ?? null}
               />
+              {/* Restrictions physiques + équipement */}
+              <div className="mt-4">
+                <RestrictionsWidget clientId={clientId} />
+              </div>
+
               {/* Danger zone */}
               <div className="mt-8 pt-6 border-t-[0.3px] border-white/[0.06]">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/25 mb-3">

@@ -28,12 +28,13 @@ function makeQueryBuilder(result: { data: unknown; error: unknown } = { data: nu
     _result: result,
   }
   const chainMethods = ['select', 'insert', 'update', 'upsert', 'delete',
-    'eq', 'neq', 'in', 'order', 'limit']
+    'eq', 'neq', 'in', 'is', 'order', 'limit', 'gte', 'lte', 'contains']
   for (const m of chainMethods) {
     builder[m] = vi.fn().mockReturnValue(builder)
   }
-  // .single() returns a Promise resolving to _result
+  // .single() and .maybeSingle() return a Promise resolving to _result
   builder.single = vi.fn().mockImplementation(() => Promise.resolve(builder._result))
+  builder.maybeSingle = vi.fn().mockImplementation(() => Promise.resolve(builder._result))
   // Make the builder itself thenable (for `await db.from(...).select(...)`)
   builder.then = (resolve: (v: unknown) => void) => Promise.resolve(builder._result).then(resolve)
   builder.catch = (reject: (e: unknown) => void) => Promise.resolve(builder._result).catch(reject)

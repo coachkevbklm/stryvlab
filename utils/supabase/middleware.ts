@@ -104,10 +104,26 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Un user authentifié sur la home ou les routes /auth :
+  // - si c'est un client (profil dans coach_clients) → /client
+  // - si c'est un coach → /dashboard
+  // Ne jamais envoyer un client vers /dashboard
   if ((isAuthRoute || isHomePage) && user) {
-    // already logged in — skip login/home, go straight to dashboard
+    console.log('[middleware] authenticated user on', pathname, '— user id:', user.id)
+    const serviceSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { cookies: { getAll() { return [] }, setAll() {} } }
+    )
+    const { data: clientRecord } = await serviceSupabase
+      .from('coach_clients')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    console.log('[middleware] clientRecord:', clientRecord ? 'found' : 'not found', '— redirecting to:', clientRecord ? '/client' : '/dashboard')
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = clientRecord ? '/client' : '/dashboard'
     return NextResponse.redirect(url)
   }
 

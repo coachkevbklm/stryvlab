@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Prénom et nom obligatoires' }, { status: 400 })
   }
 
+  if (!email || !email.trim()) {
+    return NextResponse.json({ error: 'Email obligatoire' }, { status: 400 })
+  }
+
   const { data, error } = await serviceClient()
     .from('coach_clients')
     .insert({

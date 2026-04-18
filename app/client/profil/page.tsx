@@ -8,6 +8,7 @@ import PreferencesForm from "@/components/client/profile/PreferencesForm";
 import NotificationsPanel from "@/components/client/profile/NotificationsPanel";
 import PasswordResetButton from "@/components/client/profile/PasswordResetButton";
 import ClientLogoutButton from "./LogoutButton";
+import ClientRestrictionsSection from "@/components/client/ClientRestrictionsSection";
 import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
 
 export const metadata = { title: "Mon profil" };
@@ -141,6 +142,11 @@ export default async function ClientProfilPage() {
               }}
             />
           </div>
+        </Section>
+
+        {/* ── Restrictions physiques ── */}
+        <Section title="Restrictions physiques" icon="🚫">
+          <ClientRestrictionsSection />
         </Section>
 
         {/* ── Notifications ── */}

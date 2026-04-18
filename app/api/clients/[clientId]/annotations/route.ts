@@ -23,8 +23,10 @@ async function verifyOwnership(db: ReturnType<typeof serviceClient>, clientId: s
 const createSchema = z.object({
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   label: z.string().min(1).max(200),
-  body: z.string().max(5000).optional(),
+  body: z.string().max(5000).nullable().optional(),
   event_type: z.enum(['program_change', 'injury', 'travel', 'nutrition', 'note', 'lab_protocol']),
+  body_part: z.string().max(50).optional().nullable(),
+  severity: z.enum(['avoid', 'limit', 'monitor']).optional().nullable(),
 })
 
 export async function GET(
@@ -64,7 +66,7 @@ export async function POST(
   if (!owns) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = createSchema.safeParse(await req.json())
-  if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
+  if (!body.success) return NextResponse.json({ error: body.error.issues.map((i) => i.message).join(', ') }, { status: 400 })
 
   const { data, error } = await db
     .from('metric_annotations')

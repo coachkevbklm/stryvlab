@@ -246,7 +246,11 @@ export function useBiometrics(
       }
 
       const derivedResult = deriveMetrics(inputs)
-      const evals = evaluateAll(derivedResult, age_at_measurement ?? 0, sex)
+      const evals = evaluateAll(
+        { ...derivedResult, metabolic_age_source: derivedResult.metabolic_age_source },
+        age_at_measurement ?? 0,
+        sex,
+      )
       const sources = buildMetricSources(latestMeasured, derivedResult)
 
       setDerived(derivedResult)

@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { z } from 'zod'
+
+const setLogSchema = z.object({
+  exercise_id: z.string().uuid().nullable().optional(),
+  exercise_name: z.string().min(1),
+  set_number: z.number().int().positive(),
+  side: z.enum(['left', 'right', 'bilateral']).optional().default('bilateral'),
+  planned_reps: z.union([z.string(), z.number()]).nullable().optional(),
+  actual_reps: z.number().int().nonnegative().nullable().optional(),
+  actual_weight_kg: z.number().nonnegative().nullable().optional(),
+  completed: z.boolean().optional().default(false),
+  rpe: z.number().min(0).max(10).nullable().optional(),
+  rir_actual: z.number().int().min(0).max(10).nullable().optional(),
+  notes: z.string().nullable().optional(),
+  rest_sec_actual: z.number().int().nonnegative().nullable().optional(),
+})
+
+const postBodySchema = z.object({
+  session_name: z.string().min(1),
+  program_session_id: z.string().uuid().nullable().optional(),
+  exercise_notes: z.record(z.string(), z.string()).optional(),
+  set_logs: z.array(setLogSchema).optional(),
+})
 
 function service() {
   return createServiceClient(
@@ -23,18 +46,60 @@ export async function POST(req: NextRequest) {
     .single()
   if (!client) return NextResponse.json({ error: 'Profil client introuvable' }, { status: 404 })
 
-  const body = await req.json()
-  const { program_session_id, session_name, set_logs } = body
-  if (!session_name) return NextResponse.json({ error: 'session_name requis' }, { status: 400 })
+  const raw = await req.json()
+  const parsed = postBodySchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 })
+  }
+  const { program_session_id, session_name, set_logs, exercise_notes } = parsed.data
 
   const db = service()
 
-  // Créer le session log
-  const { data: sessionLog, error: slError } = await db
+  // Vérifier que program_session_id existe encore (évite la FK constraint violation)
+  let resolvedSessionId: string | null = program_session_id ?? null
+  if (resolvedSessionId) {
+    const { data: sessionExists } = await db
+      .from('program_sessions')
+      .select('id')
+      .eq('id', resolvedSessionId)
+      .maybeSingle()
+    if (!sessionExists) resolvedSessionId = null
+  }
+
+  // Créer le session log — avec double fallback sur program_session_id
+  let sessionLog: { id: string } | null = null
+  let slError: { message: string } | null = null
+
+  const firstTry = await db
     .from('client_session_logs')
-    .insert({ client_id: client.id, program_session_id, session_name })
+    .insert({
+      client_id: client.id,
+      program_session_id: resolvedSessionId,
+      session_name,
+      exercise_notes: exercise_notes ?? {},
+    })
     .select()
     .single()
+
+  if (firstTry.error && resolvedSessionId !== null) {
+    // La FK a échoué malgré la vérification (race condition ou session supprimée entre-temps)
+    // On retente sans program_session_id
+    const secondTry = await db
+      .from('client_session_logs')
+      .insert({
+        client_id: client.id,
+        program_session_id: null,
+        session_name,
+        exercise_notes: exercise_notes ?? {},
+      })
+      .select()
+      .single()
+    sessionLog = secondTry.data
+    slError = secondTry.error
+  } else {
+    sessionLog = firstTry.data
+    slError = firstTry.error
+  }
 
   if (slError || !sessionLog) return NextResponse.json({ error: slError?.message }, { status: 500 })
 
@@ -50,7 +115,10 @@ export async function POST(req: NextRequest) {
       actual_weight_kg: s.actual_weight_kg ?? null,
       completed: s.completed ?? false,
       rpe: s.rpe ?? null,
+      rir_actual: s.rir_actual ?? null,
+      side: s.side ?? null,
       notes: s.notes ?? null,
+      rest_sec_actual: s.rest_sec_actual ?? null,
     }))
     await db.from('client_set_logs').insert(rows)
   }

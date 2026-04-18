@@ -1,5 +1,5 @@
 import catalogData from '@/data/exercise-catalog.json'
-import { normalizeMuscleSlug, getStimulusCoeff } from './catalog-utils'
+import { normalizeMuscleSlug, getStimulusCoeff, expandMusclesForScoring } from './catalog-utils'
 import type { BuilderExercise } from './types'
 
 interface CatalogEntry {
@@ -48,11 +48,16 @@ export function scoreAlternatives(
 ): AlternativeScore[] {
   const availableEquipment = ARCHETYPE_EQUIPMENT[context.equipmentArchetype] ?? ARCHETYPE_EQUIPMENT.commercial_gym
   const originalPattern = original.movement_pattern ?? ''
-  const originalMuscles = new Set(original.primary_muscles.map(normalizeMuscleSlug))
+
+  // Expand original muscles for better discrimination (especially back sub-groups)
+  const originalMusclesExpanded = new Set(
+    expandMusclesForScoring(original.primary_muscles, originalPattern)
+  )
+
   const originalCoeff = getStimulusCoeff(
     original.name.toLowerCase().replace(/\s+/g, '-'),
     originalPattern,
-    (original.is_compound ?? originalMuscles.size >= 2),
+    (original.is_compound ?? original.primary_muscles.length >= 2),
   )
 
   // Patterns déjà présents dans la session (pour détecter la redondance)
@@ -75,10 +80,16 @@ export function scoreAlternatives(
     // Même pattern primaire (+40)
     if (candidate.movementPattern === originalPattern) score += 40
 
-    // Muscles primaires communs (+30)
-    const candidateMuscles = new Set(candidate.muscles.map(normalizeMuscleSlug))
-    const overlap = Array.from(originalMuscles).filter(m => candidateMuscles.has(m))
-    if (overlap.length > 0) score += Math.min(30, overlap.length * 15)
+    // Muscles primaires communs — via sub-groups pour 'dos' (+30 max)
+    const candidateMusclesExpanded = new Set(
+      expandMusclesForScoring(candidate.muscles, candidate.movementPattern)
+    )
+    const overlap = Array.from(originalMusclesExpanded).filter(m => candidateMusclesExpanded.has(m))
+    // dos_large-only overlap (different back sub-groups) = partial credit only
+    const hasOnlyDosLarge = overlap.length > 0 && overlap.every(m => m === 'dos_large')
+    if (overlap.length > 0) {
+      score += hasOnlyDosLarge ? 8 : Math.min(30, overlap.length * 15)
+    }
 
     // Équipement compatible (+20) — déjà filtré au-dessus, bonus pour équipement similaire
     const sameEquip = original.equipment_required.some(eq => candidate.equipment.includes(eq))
@@ -93,16 +104,27 @@ export function scoreAlternatives(
 
     if (score <= 0) continue
 
-    // Label qualitatif
+    // Label qualitatif — requires real overlap, not just dos_large
     let label = 'Alternative'
-    if (candidate.movementPattern === originalPattern && overlap.length >= 1) label = 'Remplace mécaniquement'
-    else if (candidate.movementPattern !== originalPattern && overlap.length >= 1) label = 'Angle complémentaire'
+    const hasRealOverlap = overlap.length > 0 && !hasOnlyDosLarge
+    if (candidate.movementPattern === originalPattern && hasRealOverlap) label = 'Remplace mécaniquement'
+    else if (candidate.movementPattern !== originalPattern && hasRealOverlap) label = 'Angle complémentaire'
     else if (!sameEquip && hasEquipment) label = 'Alternative équipement'
 
     scored.push({ entry: candidate, score, label })
   }
 
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8) // max 8 alternatives retournées au drawer
+  // Deduplicate by name prefix (first 3 words) — keeps highest scoring variant
+  const sorted = scored.sort((a, b) => b.score - a.score)
+  const seenPrefixes = new Set<string>()
+  const deduped: AlternativeScore[] = []
+  for (const alt of sorted) {
+    const prefix = alt.entry.name.toLowerCase().split(/\s+/).slice(0, 3).join(' ')
+    if (!seenPrefixes.has(prefix)) {
+      seenPrefixes.add(prefix)
+      deduped.push(alt)
+    }
+    if (deduped.length >= 6) break
+  }
+  return deduped
 }

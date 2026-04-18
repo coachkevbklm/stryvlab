@@ -1,4 +1,5 @@
 # MorphoPro — Espace Photo & Analyse Morphologique
+
 **Date :** 2026-04-16
 **Statut :** Approuvé — prêt pour implémentation
 **Scope :** Phase 1 complète — galerie, comparaison, canvas annoté, analyse IA GPT-4o vision
@@ -8,6 +9,7 @@
 ## 1. Contexte & Objectif
 
 Construire un espace photo/morpho de niveau expert intégré à la fiche client coach. L'objectif est de permettre au coach de :
+
 - Centraliser toutes les photos morphologiques d'un client (issues des bilans, uploadées directement, ou envoyées par le client)
 - Comparer visuellement l'évolution (avant/après) avec jusqu'à 4 photos simultanées
 - Annoter les photos directement dans un canvas (lignes, angles, mesures, calques persistés)
@@ -109,10 +111,12 @@ create trigger morpho_annotations_updated_at
 **Librairie :** Fabric.js (gestion calques, sérialisation JSON, export)
 
 **Toolbar gauche (outils) :**
+
 - Sélection (curseur)
 - Ligne droite
 - Courbe libre (path)
 - Rectangle
+- Stylo (dessin libre)
 - Cercle / Ellipse
 - Point / Marqueur (avec label optionnel)
 - Texte libre
@@ -122,16 +126,19 @@ create trigger morpho_annotations_updated_at
 - Gomme
 
 **Toolbar droite (calques & style) :**
+
 - Liste des calques avec toggle visibilité, ordre drag & drop
 - Couleur (color picker)
 - Épaisseur du trait (slider 1–10px)
 - Opacité de l'objet sélectionné
 
 **Contrôles canvas :**
+
 - Undo / Redo illimité (stack en mémoire, réinitialisé à la fermeture)
 - Zoom + pan (molette + drag)
 
 **Actions :**
+
 - **Sauvegarder** → POST `/api/morpho/annotations` avec `canvas_data` (JSON Fabric.js) + génération thumbnail PNG
 - **Exporter PNG** → `canvas.toDataURL()` → download
 - **Exporter PDF** → jsPDF avec métadonnées (nom client, date, position)
@@ -147,6 +154,7 @@ create trigger morpho_annotations_updated_at
 **Déclenchement :** depuis la barre flottante galerie, depuis le canvas, ou depuis un bouton dédié sur chaque card.
 
 **Contenu du panel :**
+
 - **Score global** : jauge 0–100 avec zone colorée (rouge < 50, orange 50–75, vert > 75)
 - **Drapeaux par zone** : épaules / bassin / colonne / genoux / chevilles — badge rouge/orange/vert
 - **Points d'attention** : liste priorisée, chaque item cliquable (scroll vers la zone sur la photo si annoté)
@@ -159,32 +167,38 @@ create trigger morpho_annotations_updated_at
 ## 5. API Layer
 
 ### `POST /api/morpho/photos/sync`
+
 - Auth coach, `clientId` en body
 - Indexe les `assessment_responses` existantes avec `storage_path` non null → crée `morpho_photos` avec `source='assessment'`
 - Idempotent (ON CONFLICT DO NOTHING)
 
 ### `POST /api/morpho/photos/upload`
+
 - Auth coach, ownership check client
 - Body : `{ clientId, position, takenAt, notes? }`
 - Génère signed upload URL Supabase Storage → retourne à l'UI
 - Crée `morpho_photos` avec `source='coach_upload'`
 
 ### `POST /api/client/morpho/upload`
+
 - Auth client
 - Body : `{ position, takenAt }`
 - `coach_id` résolu depuis `coach_clients`
 - Crée `morpho_photos` avec `source='client_upload'`
 
 ### `GET /api/morpho/photos`
+
 - Query params : `clientId`, `position?`, `from?`, `to?`, `source?`
 - Retourne `morpho_photos` + signed URLs (1h) + `morpho_annotations` associées (présence + thumbnail)
 
 ### `POST /api/morpho/annotations`
+
 - Body : `{ photoId, canvasData, thumbnailBase64? }`
 - Upload thumbnail vers Storage si fourni
 - Upsert `morpho_annotations` sur `(photo_id, coach_id)`
 
 ### `POST /api/morpho/analyze`
+
 - Body : `{ photoIds: string[], clientContext: { age, sex, goal, injuries[] } }`
 - Récupère signed URLs des photos (max 4)
 - Appelle **OpenAI GPT-4o** avec vision via `lib/morpho/buildAnalysisPrompt.ts`
@@ -197,6 +211,7 @@ create trigger morpho_annotations_updated_at
 ## 6. Prompt IA — `lib/morpho/buildAnalysisPrompt.ts`
 
 Le prompt injecte :
+
 1. **Contexte client** : âge, sexe, objectif, historique blessures
 2. **Positions des photos** fournies
 3. **Pipeline MorphoPro 5 couches** : Ingestion/Normalisation → Safety Guard → Vecteurs de Force → Scoring Best-Fit → Ordonnancement
@@ -241,6 +256,7 @@ Le prompt injecte :
 ## 8. Design System
 
 Toutes les composantes respectent DS v2.0 :
+
 - Background `#121212`, cards `bg-white/[0.02]`, accent `#1f8a65`
 - Bordures `border-[0.3px] border-white/[0.06]`
 - Badges drapeaux : rouge `text-red-400 bg-red-500/10`, orange `text-amber-400 bg-amber-500/10`, vert `text-[#1f8a65] bg-[#1f8a65]/10`
@@ -251,10 +267,10 @@ Toutes les composantes respectent DS v2.0 :
 
 ## 9. Dépendances à ajouter
 
-| Package | Usage |
-|---------|-------|
-| `fabric` | Canvas d'annotation (Fabric.js v6) |
-| `jspdf` | Export PDF |
+| Package  | Usage                                                                       |
+| -------- | --------------------------------------------------------------------------- |
+| `fabric` | Canvas d'annotation (Fabric.js v6)                                          |
+| `jspdf`  | Export PDF                                                                  |
 | `openai` | GPT-4o vision — analyse morphologique IA (requiert `OPENAI_API_KEY` en env) |
 
 ---

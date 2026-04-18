@@ -182,6 +182,38 @@ export function resolveExerciseCoeff(exercise: ExerciseInput): number {
   return getStimulusCoeff(slug, pattern, isComp)
 }
 
+// ─── Back muscle sub-groups by movement pattern ────────────────────────────────
+// The catalog stores 'dos' monolithically. At scoring time, expandMusclesForScoring
+// maps 'dos' to richer sub-groups based on movementPattern to improve alternative
+// discrimination (e.g. traction vs row vs shrug vs hip-hinge all use 'dos' in catalog).
+const DOS_SUBGROUPS_BY_PATTERN: Record<string, string[]> = {
+  vertical_pull:      ['grand_dorsal', 'dos_large'],
+  horizontal_pull:    ['trapeze_moyen', 'rhomboides', 'dos_large'],
+  scapular_elevation: ['trapeze_superieur', 'dos_large'],
+  hip_hinge:          ['lombaires', 'erecteurs_spinaux', 'dos_large'],
+  core_anti_flex:     ['lombaires', 'erecteurs_spinaux', 'dos_large'],
+  carry:              ['trapeze_superieur', 'dos_large'],
+}
+
+/**
+ * Expands muscle slugs for scoring purposes.
+ * When 'dos' is present, replaces it with functional sub-groups derived from movementPattern.
+ * Other muscles are kept as-is (after normalization).
+ */
+export function expandMusclesForScoring(muscles: string[], movementPattern: string | null): string[] {
+  const result: string[] = []
+  for (const m of muscles) {
+    const norm = normalizeMuscleSlug(m)
+    if (norm === 'dos') {
+      const subgroups = DOS_SUBGROUPS_BY_PATTERN[movementPattern ?? ''] ?? ['dos_large']
+      result.push(...subgroups)
+    } else {
+      result.push(norm)
+    }
+  }
+  return result
+}
+
 // Maps FR muscle slugs to body_part vocabulary used in restrictions
 export const MUSCLE_TO_BODY_PART: Record<string, string[]> = {
   'deltoide_anterieur':  ['shoulder_right', 'shoulder_left'],

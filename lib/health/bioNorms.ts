@@ -966,6 +966,8 @@ export function evaluateAll(
     waist_height_ratio?: number | null
     // metabolic_age_estimated : valeur absolue (on calcule le delta ici)
     metabolic_age_estimated?: number | null
+    // Source requise pour n'afficher l'âge métabolique que si mesuré par balance
+    metabolic_age_source?: 'measured' | 'estimated_katch' | 'estimated_mifflin' | 'unavailable'
   },
   age: number,
   sex: Sex,
@@ -988,11 +990,13 @@ export function evaluateAll(
     }
   }
 
-  // Âge métabolique — évalué en delta (metabolic_age_estimated - age chronologique)
+  // Âge métabolique — affiché uniquement si mesuré par balance impédancemétrique
+  // Les estimations BMR (Katch-McArdle / Mifflin) ne sont pas affichées dans les normes
   if (
     data.metabolic_age_estimated !== null &&
     data.metabolic_age_estimated !== undefined &&
-    !isNaN(data.metabolic_age_estimated)
+    !isNaN(data.metabolic_age_estimated) &&
+    data.metabolic_age_source === 'measured'
   ) {
     const delta = data.metabolic_age_estimated - age
     const evaluation = evaluateMetric('metabolic_age_delta', delta, age, sex)

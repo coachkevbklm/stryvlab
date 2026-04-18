@@ -1,5 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
+export interface ResolvedClient {
+  id: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  [key: string]: unknown
+}
+
 /**
  * Resolve a coach_clients row from auth user.
  * 1. Try user_id match (normal login)
@@ -10,12 +18,14 @@ export async function resolveClientFromUser(
   email: string | undefined,
   service: SupabaseClient,
   select = 'id'
-) {
-  let { data: client } = await service
+): Promise<ResolvedClient | null> {
+  const { data: clientById } = await service
     .from('coach_clients')
     .select(select)
     .eq('user_id', userId)
     .single()
+
+  let client = clientById as unknown as ResolvedClient | null
 
   if (!client && email) {
     const { data: byEmail } = await service
@@ -26,11 +36,12 @@ export async function resolveClientFromUser(
       .single()
 
     if (byEmail) {
+      const resolved = byEmail as unknown as ResolvedClient
       await service
         .from('coach_clients')
         .update({ user_id: userId })
-        .eq('id', (byEmail as any).id)
-      client = byEmail
+        .eq('id', resolved.id)
+      client = resolved
     }
   }
 

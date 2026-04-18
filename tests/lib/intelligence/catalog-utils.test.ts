@@ -4,6 +4,7 @@ import {
   normalizeMuscleSlug,
   isCompoundFromMuscles,
   resolveExerciseCoeff,
+  expandMusclesForScoring,
 } from '@/lib/programs/intelligence/catalog-utils'
 
 describe('normalizeMuscleSlug', () => {
@@ -98,5 +99,51 @@ describe('resolveExerciseCoeff', () => {
       is_compound: false,
     })
     expect(coeff).toBe(0.55)
+  })
+})
+
+describe('expandMusclesForScoring', () => {
+  it('expands dos on vertical_pull to grand_dorsal + dos_large', () => {
+    const result = expandMusclesForScoring(['dos', 'biceps'], 'vertical_pull')
+    expect(result).toContain('grand_dorsal')
+    expect(result).toContain('dos_large')
+    expect(result).toContain('biceps')
+    expect(result).not.toContain('dos')
+  })
+
+  it('expands dos on horizontal_pull to trapeze_moyen + rhomboides + dos_large', () => {
+    const result = expandMusclesForScoring(['dos', 'biceps'], 'horizontal_pull')
+    expect(result).toContain('trapeze_moyen')
+    expect(result).toContain('rhomboides')
+    expect(result).toContain('dos_large')
+    expect(result).not.toContain('dos')
+  })
+
+  it('expands dos on scapular_elevation to trapeze_superieur + dos_large', () => {
+    const result = expandMusclesForScoring(['dos'], 'scapular_elevation')
+    expect(result).toContain('trapeze_superieur')
+    expect(result).toContain('dos_large')
+    expect(result).not.toContain('dos')
+  })
+
+  it('expands dos on hip_hinge to lombaires + erecteurs_spinaux + dos_large', () => {
+    const result = expandMusclesForScoring(['dos'], 'hip_hinge')
+    expect(result).toContain('lombaires')
+    expect(result).toContain('erecteurs_spinaux')
+    expect(result).toContain('dos_large')
+  })
+
+  it('falls back to dos_large for unknown pattern', () => {
+    const result = expandMusclesForScoring(['dos'], null)
+    expect(result).toEqual(['dos_large'])
+  })
+
+  it('passes through non-back muscles unchanged', () => {
+    const result = expandMusclesForScoring(['quadriceps', 'fessiers'], 'squat_pattern')
+    expect(result).toEqual(['quadriceps', 'fessiers'])
+  })
+
+  it('handles empty array', () => {
+    expect(expandMusclesForScoring([], 'vertical_pull')).toEqual([])
   })
 })

@@ -16,7 +16,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__abdominaux-a-la-barre",
@@ -36,7 +37,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__bear-plank-avec-kickback",
@@ -56,7 +58,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__cercles-jambes-tendues",
@@ -75,7 +78,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__chinese-plank-planche-chinoise-exercice-abdos",
@@ -94,7 +98,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__ciseaux",
@@ -113,7 +118,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__cocon-abdominaux",
@@ -132,7 +138,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-a-la-poulie-pour-les-obliques",
@@ -151,7 +158,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-au-sol-exercice-musculation",
@@ -170,7 +178,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-avec-jambes-verticales",
@@ -189,7 +198,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-debout-avec-elastique",
@@ -208,7 +218,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-lateral-sur-banc-a-lombaires",
@@ -227,7 +238,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-machine-abdos",
@@ -246,7 +258,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-papillon-butterfly-sit-ups",
@@ -265,7 +278,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-poulie-haute-exercice-musculation",
@@ -284,7 +298,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-sangle-suspension-trx",
@@ -303,7 +318,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__crunch-swiss-ball-exercice-musculation",
@@ -322,7 +338,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__dead-bug",
@@ -341,7 +358,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__dragon-flag",
@@ -360,7 +378,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__exercice-abdos-bicyclette",
@@ -379,7 +398,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__exercice-v-ups-gainage-renforcement-core-abdominaux",
@@ -398,7 +418,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__flexions-des-obliques-banc-lombaire-45-exercice-musculation",
@@ -417,7 +438,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__flexions-laterales-haltere",
@@ -436,7 +458,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__flexions-laterales-poulie-basse",
@@ -455,7 +478,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__gainage-ours-bear-plank",
@@ -474,7 +498,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__hollow-hold",
@@ -493,7 +518,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__jackknife-sur-swiss-ball",
@@ -513,7 +539,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__mountain-climber-exercice-musculation",
@@ -532,7 +559,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-abdos-swiss-ball",
@@ -552,7 +580,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-abdos",
@@ -571,7 +600,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-avec-sangles-de-suspension",
@@ -591,7 +621,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-inversee-abdos",
@@ -610,7 +641,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-laterale-avec-rotation",
@@ -629,7 +661,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__planche-laterale-obliques",
@@ -648,7 +681,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__releve-de-genoux-suspendu-exercice-musculation",
@@ -667,7 +701,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__releve-de-jambes-assis",
@@ -686,7 +721,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__releve-de-jambes-suspendu",
@@ -705,7 +741,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__releve-jambes-chaise-romaine-abdominaux",
@@ -724,7 +761,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__rotation-buste-barre",
@@ -743,7 +781,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__rotation-buste-debout-poulie",
@@ -762,7 +801,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__rotation-buste-elastique-pallof-press",
@@ -782,7 +822,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__rotation-buste-landmine",
@@ -801,7 +842,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__rotations-abdos-obliques-suspendu",
@@ -820,7 +862,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__rotations-russes-obliques",
@@ -839,7 +882,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__roulette-abdominaux",
@@ -858,7 +902,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__russian-twist-avec-developpe-epaule",
@@ -878,7 +923,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__russian-twist-poulie",
@@ -897,7 +943,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__sit-up-avec-medecine-ball",
@@ -917,7 +964,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__sit-up-avec-medicine-ball-contre-un-mur",
@@ -936,7 +984,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__sit-up-decline",
@@ -955,7 +1004,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.32
   },
   {
     "id": "abdos__sits-up-chaise-romaine",
@@ -974,7 +1024,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "abdos__touche-talon-alternes",
@@ -993,7 +1044,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__windmill",
@@ -1013,7 +1065,8 @@
     "isCompound": false,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "abdos__zercher-carry",
@@ -1033,7 +1086,8 @@
     "isCompound": true,
     "muscles": [
       "abdos"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "biceps__chin-up-traction-supination",
@@ -1053,7 +1107,8 @@
     "muscles": [
       "biceps",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "biceps__curl-allonge-a-la-poulie",
@@ -1072,7 +1127,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-au-pupitre-barre-ez-larry-scott",
@@ -1092,7 +1148,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-avec-elastique",
@@ -1111,7 +1168,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-avec-sangles-de-suspension",
@@ -1130,7 +1188,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-barre",
@@ -1149,7 +1208,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-biceps-alterne-sur-banc-incline",
@@ -1168,7 +1228,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-biceps-avec-halteres-alterne",
@@ -1187,7 +1248,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-biceps-poulie-basse",
@@ -1206,7 +1268,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-biceps-prise-pronation-bande-elastique",
@@ -1225,7 +1288,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-concentre",
@@ -1244,7 +1308,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.63
   },
   {
     "id": "biceps__curl-haltere-debout-banc-incline",
@@ -1263,7 +1328,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-haltere-incline",
@@ -1282,7 +1348,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-haltere-prise-marteau-pupitre",
@@ -1301,7 +1368,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-haltere-prise-neutre",
@@ -1320,7 +1388,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-incline-poulie",
@@ -1339,7 +1408,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-inverse-barre",
@@ -1358,7 +1428,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-poulie-en-position-squat",
@@ -1378,7 +1449,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "biceps__curl-poulie-vis-a-vis",
@@ -1397,7 +1469,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-pupitre-machine-prechargee",
@@ -1416,7 +1489,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-pupitre-poulie",
@@ -1435,7 +1509,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-unilateral-avec-sangles-de-suspension",
@@ -1454,7 +1529,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__curl-zottman",
@@ -1473,7 +1549,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__drag-curl-halteres-assis",
@@ -1492,7 +1569,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__drag-curl-smith-machine",
@@ -1512,7 +1590,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "biceps__drag-curl",
@@ -1531,7 +1610,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.63
   },
   {
     "id": "biceps__sled-pull",
@@ -1551,7 +1631,8 @@
     "isCompound": true,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "biceps__spider-curl",
@@ -1570,7 +1651,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.63
   },
   {
     "id": "biceps__waiter-curl",
@@ -1589,7 +1671,8 @@
     "isCompound": false,
     "muscles": [
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "dos__bent-over-row-avec-halteres",
@@ -1609,7 +1692,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__bent-over-row-prise-disque",
@@ -1629,7 +1713,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__bird-dog",
@@ -1649,7 +1734,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__chin-up-traction-supination",
@@ -1669,7 +1755,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__extension-lombaire-a-la-machine",
@@ -1689,7 +1776,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "dos__extension-lombaire-au-banc-45",
@@ -1709,7 +1797,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "dos__extension-lombaire-sur-ballon-de-gym",
@@ -1729,7 +1818,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "dos__musculation-pull-over-assis-machine",
@@ -1749,7 +1839,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "dos__oiseau-inverse-avec-sangles-de-suspension",
@@ -1765,11 +1856,12 @@
     "equipment": [
       "trx"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "dos__overhead-shrug",
@@ -1781,7 +1873,7 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "scapular_elevation",
     "equipment": [
       "barbell"
     ],
@@ -1789,7 +1881,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__pull-over-barre (1)",
@@ -1809,7 +1902,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__pull-over-barre",
@@ -1829,7 +1923,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "dos__pull-over-poulie",
@@ -1849,7 +1944,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__pullover-avec-deux-halteres",
@@ -1869,7 +1965,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__pullover-haltere",
@@ -1889,7 +1986,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__renegade-row",
@@ -1910,7 +2008,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.88
   },
   {
     "id": "dos__rowing-assis-machine-hammer-strenght",
@@ -1931,7 +2030,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-assis-machine-prise-pronation",
@@ -1952,7 +2052,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-avec-sangles-de-suspension",
@@ -1973,7 +2074,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-barre-t-landmine",
@@ -1995,7 +2097,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.88
   },
   {
     "id": "dos__rowing-barre",
@@ -2016,7 +2119,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.88
   },
   {
     "id": "dos__rowing-buste-penche-avec-elastique",
@@ -2037,7 +2141,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-haltere-un-bras",
@@ -2058,7 +2163,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-halteres-banc-incline-prise-neutre",
@@ -2079,7 +2185,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-horizontal-bande-elastique",
@@ -2100,7 +2207,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-smith-machine",
@@ -2122,7 +2230,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-t-bar-machine",
@@ -2143,7 +2252,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-unilateral-avec-elastique",
@@ -2164,7 +2274,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__rowing-unilateral-landmine-meadows-row",
@@ -2185,7 +2296,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__seal-row-halteres",
@@ -2205,7 +2317,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.88
   },
   {
     "id": "dos__shrug-barre",
@@ -2217,7 +2330,7 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "scapular_elevation",
     "equipment": [
       "barbell"
     ],
@@ -2225,7 +2338,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__shrug-machine-mollets",
@@ -2237,7 +2351,7 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "scapular_elevation",
     "equipment": [
       "machine"
     ],
@@ -2245,7 +2359,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__shrug-poulie-haussement-epaules",
@@ -2257,7 +2372,7 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "scapular_elevation",
     "equipment": [
       "cable"
     ],
@@ -2265,7 +2380,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__shrugs-avec-halteres",
@@ -2277,7 +2393,7 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "scapular_elevation",
     "equipment": [
       "dumbbell"
     ],
@@ -2285,7 +2401,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__sled-pull",
@@ -2306,7 +2423,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "dos__souleve-de-terre-avec-machine",
@@ -2329,7 +2447,8 @@
       "fessiers",
       "ischio-jambiers",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "dos__souleve-de-terre",
@@ -2352,7 +2471,8 @@
       "fessiers",
       "ischio-jambiers",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "dos__superman",
@@ -2372,7 +2492,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "dos__tirage-avant-iso-laterale-hammer-strength",
@@ -2392,7 +2513,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__tirage-horizontal-poulie",
@@ -2412,7 +2534,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__tirage-horizontal-prise-large",
@@ -2432,7 +2555,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "dos__tirage-incline-poulie-haute",
@@ -2452,7 +2576,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__tirage-vertical-poitrine",
@@ -2472,7 +2597,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__tirage-vertical-prise-inversee",
@@ -2492,7 +2618,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__tirage-vertical-prise-serree",
@@ -2512,7 +2639,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.74
   },
   {
     "id": "dos__traction-assiste-elastique",
@@ -2533,7 +2661,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-assistee-avec-banc",
@@ -2553,7 +2682,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-assistee-machine",
@@ -2574,7 +2704,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-australienne-rowing-poids-du-corps",
@@ -2595,7 +2726,8 @@
       "dos",
       "biceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-lestee",
@@ -2615,7 +2747,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-musculation-dos",
@@ -2635,7 +2768,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__traction-prise-neutre",
@@ -2655,7 +2789,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "dos__tractions-australiennes-avec-sangles-de-suspension",
@@ -2675,7 +2810,8 @@
     "muscles": [
       "dos",
       "biceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.92
   },
   {
     "id": "epaules__croix-de-fer-halteres",
@@ -2694,7 +2830,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__developpe-arnold-exercice-musculation",
@@ -2714,7 +2851,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaule-avec-kettlebell",
@@ -2734,7 +2872,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaule-halteres",
@@ -2754,7 +2893,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaule-unilateral-avec-elastique",
@@ -2774,7 +2914,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaules-a-la-machine-shoulder-press",
@@ -2794,7 +2935,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "epaules__developpe-epaules-assis-avec-elastique",
@@ -2814,7 +2956,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaules-assis-dumbbell-z-press",
@@ -2834,7 +2977,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaules-avec-elastique",
@@ -2854,7 +2998,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-epaules-smith-machine",
@@ -2875,7 +3020,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "epaules__developpe-epaules-unilateral-landmine",
@@ -2895,7 +3041,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-landmine",
@@ -2915,7 +3062,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-militaire-exercice-musculation",
@@ -2935,7 +3083,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__developpe-nuque-barre-guidee",
@@ -2955,7 +3104,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__ecarte-arriere-elastique",
@@ -2974,7 +3124,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__elevation-en-y-a-la-poulie",
@@ -2986,14 +3137,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "cable"
     ],
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-frontale-allongee-a-la-barre",
@@ -3012,7 +3164,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-frontale-banc-incline",
@@ -3031,7 +3184,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-frontale-poulie-basse",
@@ -3050,7 +3204,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-laterale-a-la-poulie-en-inclinaison",
@@ -3062,14 +3217,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "cable"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-laterale-incline-haltere",
@@ -3081,14 +3237,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "dumbbell"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-laterale-landmine-exercice-musculation",
@@ -3100,14 +3257,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "landmine"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-laterale-machine",
@@ -3119,14 +3277,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "machine"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevation-laterales-avec-kettlebell",
@@ -3138,14 +3297,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "kettlebell"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevations-frontales-exercice-musculation",
@@ -3164,7 +3324,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevations-laterales-exercice-musculation",
@@ -3176,14 +3337,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "bodyweight"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevations-laterales-poulie",
@@ -3195,14 +3357,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "cable"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__elevations-laterales-unilaterale-poulie",
@@ -3214,14 +3377,15 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "lateral_raise",
     "equipment": [
       "cable"
     ],
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "epaules__extension-horizontale-de-epaule-elastique",
@@ -3240,7 +3404,8 @@
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__face-pull-couche-a-la-poulie",
@@ -3259,7 +3424,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__face-pull",
@@ -3278,7 +3444,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__handstand-push-up",
@@ -3297,7 +3464,8 @@
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__oiseau-a-la-poulie-a-45",
@@ -3316,7 +3484,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__oiseau-assis-sur-banc",
@@ -3335,7 +3504,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__oiseau-avec-elastique",
@@ -3354,7 +3524,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__oiseau-inverse-avec-sangles-de-suspension",
@@ -3370,10 +3541,11 @@
     "equipment": [
       "trx"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__passage-depaule-avec-elastique",
@@ -3392,7 +3564,8 @@
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.75
   },
   {
     "id": "epaules__pec-deck-inverse",
@@ -3411,7 +3584,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__pike-push-up",
@@ -3430,7 +3604,8 @@
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__presse-epaule-exercice-musculation",
@@ -3449,7 +3624,8 @@
     "isCompound": true,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__rotation-externe-epaule-haltere",
@@ -3468,7 +3644,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__rotation-externe-epaule-poulie",
@@ -3487,7 +3664,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__rotation-externe-vertical-epaule-haltere",
@@ -3506,7 +3684,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__rotation-interne-a-90-a-la-poulie",
@@ -3525,7 +3704,8 @@
     "isCompound": false,
     "muscles": [
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.6
   },
   {
     "id": "epaules__russian-twist-avec-developpe-epaule",
@@ -3546,7 +3726,8 @@
     "muscles": [
       "epaules",
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.28
   },
   {
     "id": "epaules__thruster-kettlebell",
@@ -3569,7 +3750,8 @@
       "triceps",
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__thruster-landmine",
@@ -3592,7 +3774,8 @@
       "triceps",
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__thruster",
@@ -3615,7 +3798,8 @@
       "triceps",
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "epaules__tirage-menton-avec-elastique",
@@ -3627,16 +3811,17 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "vertical_pull",
     "equipment": [
       "band"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "epaules",
       "biceps",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__tirage-menton-avec-kettlebell",
@@ -3648,16 +3833,17 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "vertical_pull",
     "equipment": [
       "kettlebell"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "epaules",
       "biceps",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "epaules__tirage-menton-machine-guidee",
@@ -3669,16 +3855,17 @@
     "pattern": [
       "pull"
     ],
-    "movementPattern": "horizontal_pull",
+    "movementPattern": "vertical_pull",
     "equipment": [
       "machine"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "epaules",
       "biceps",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.4
   },
   {
     "id": "fessiers__barbell-curtsy-lunge",
@@ -3697,7 +3884,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__bear-plank-avec-kickback",
@@ -3717,7 +3905,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "fessiers__bird-dog",
@@ -3736,7 +3925,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "fessiers__bonne-mauvaise-position-bassin-squat",
@@ -3757,7 +3947,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__bonne-mauvaise-position-genoux-squat",
@@ -3778,7 +3969,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__box-pistol-squat",
@@ -3799,7 +3991,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__cossack-squat",
@@ -3820,7 +4013,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__deadlift-vue-avant",
@@ -3839,7 +4033,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__deadlift-vue-de-dos",
@@ -3858,7 +4053,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__donkey-kick",
@@ -3877,7 +4073,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__exercice-squat-vue-profil",
@@ -3898,7 +4095,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__extension-de-jambe-unilateral-machine-dips-assistes",
@@ -3910,14 +4108,15 @@
     "pattern": [
       "push"
     ],
-    "movementPattern": "horizontal_push",
+    "movementPattern": "knee_extension",
     "equipment": [
       "machine"
     ],
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "fessiers__extension-hanche-machine",
@@ -3936,7 +4135,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__extension-hanche-poulie-basse",
@@ -3955,7 +4155,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__extension-lombaire-au-banc-45",
@@ -3974,7 +4175,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__extension-lombaire-avec-elastique",
@@ -3993,7 +4195,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__fente-avant-barre-femme",
@@ -4014,7 +4217,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "fessiers__fente-avant-barre-vue-profil-homme",
@@ -4035,7 +4239,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__fentes-avant-exercice-musculation",
@@ -4056,7 +4261,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "fessiers__fentes-avant-kettlebell",
@@ -4077,7 +4283,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "fessiers__fentes-croisees",
@@ -4098,7 +4305,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__fentes-marchees-avec-sandbag",
@@ -4120,7 +4328,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "fessiers__fire-hydratant",
@@ -4139,7 +4348,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__front-squat-avec-halteres",
@@ -4160,7 +4370,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__glute-ham-developer-ghd",
@@ -4179,7 +4390,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.78
   },
   {
     "id": "fessiers__good-morning-elastique",
@@ -4198,7 +4410,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "fessiers__good-morning-exercice",
@@ -4217,7 +4430,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__hack-squat-assis",
@@ -4238,7 +4452,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "fessiers__hack-squat-flexion-complete",
@@ -4259,7 +4474,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__hack-squat-inverse",
@@ -4280,7 +4496,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__hack-squat",
@@ -4301,7 +4518,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__hip-thrust-a-la-machine",
@@ -4317,11 +4535,12 @@
     "equipment": [
       "machine"
     ],
-    "isCompound": false,
+    "isCompound": true,
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__hip-thrust-a-la-smith-machine",
@@ -4338,11 +4557,12 @@
       "smith",
       "machine"
     ],
-    "isCompound": false,
+    "isCompound": true,
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__hip-thrust-avec-sangles-de-suspension",
@@ -4362,7 +4582,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__hip-thrust-barre-unilateral",
@@ -4382,7 +4603,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__hip-thrust-machine-leg-extension",
@@ -4399,11 +4621,12 @@
     "equipment": [
       "machine"
     ],
-    "isCompound": false,
+    "isCompound": true,
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__hip-thrusts-a-genoux-avec-elastique",
@@ -4423,7 +4646,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__hips-thrust",
@@ -4442,7 +4666,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__homme-faisant-un-squat-avec-barre",
@@ -4463,7 +4688,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__hyperextension-inversee-ballon-gym",
@@ -4483,7 +4709,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "fessiers__kettlebell-swing",
@@ -4502,7 +4729,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__leg-press-sur-le-cote",
@@ -4521,7 +4749,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "fessiers__marche-avec-elastique",
@@ -4541,7 +4770,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "fessiers__montees-sur-banc-exercice-musculation",
@@ -4560,7 +4790,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__montees-sur-banc-lateral-avec-halteres",
@@ -4579,7 +4810,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__montees-sur-banc-laterales-avec-barre-barbell-bench-lateral-step-up",
@@ -4598,7 +4830,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__pin-squat",
@@ -4619,7 +4852,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__pistol-squat-assiste",
@@ -4640,7 +4874,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__planche-inversee-abdos",
@@ -4659,7 +4894,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "fessiers__position-bassin-souleve-de-terre",
@@ -4679,7 +4915,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__presse-a-cuisse-exercice-musculation",
@@ -4698,7 +4935,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "fessiers__presse-a-cuisse-sur-le-cote",
@@ -4717,7 +4955,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "fessiers__presse-a-cuisses-verticale",
@@ -4736,7 +4975,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "fessiers__pull-through-a-la-poulie",
@@ -4755,7 +4995,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__pull-through",
@@ -4774,7 +5015,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__rack-pull",
@@ -4793,7 +5035,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__reeves-deadlift",
@@ -4812,7 +5055,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__reverse-hyperextension",
@@ -4831,7 +5075,8 @@
     "isCompound": false,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "fessiers__sled-push-hyrox",
@@ -4850,7 +5095,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "fessiers__souleve-de-terre-a-la-trap-bar",
@@ -4870,7 +5116,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-avec-deficit",
@@ -4890,7 +5137,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-avec-elastique",
@@ -4910,7 +5158,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-avec-machine",
@@ -4930,7 +5179,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-jambes-tendues",
@@ -4950,7 +5200,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "fessiers__souleve-de-terre-roumain-kettlebell",
@@ -4970,7 +5221,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "fessiers__souleve-de-terre-roumain-landmine",
@@ -4990,7 +5242,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "fessiers__souleve-de-terre-roumain",
@@ -5010,7 +5263,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "fessiers__souleve-de-terre-sumo-haltere",
@@ -5030,7 +5284,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-sumo-kettlebell",
@@ -5050,7 +5305,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-sumo-landmine",
@@ -5070,7 +5326,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-sumo",
@@ -5090,7 +5347,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre-valise-a-un-bras",
@@ -5111,7 +5369,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__souleve-de-terre",
@@ -5131,7 +5390,8 @@
     "muscles": [
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__squat-avec-rotation-du-tronc",
@@ -5152,7 +5412,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-avec-sangles-de-suspension",
@@ -5173,7 +5434,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-barre-devant-front",
@@ -5194,7 +5456,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-bulgare-halteres-exercice-musculation",
@@ -5215,7 +5478,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "fessiers__squat-goblet-exercice-musculation",
@@ -5236,7 +5500,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-goblet-kettlebell",
@@ -5257,7 +5522,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-landmine",
@@ -5278,7 +5544,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-pistol",
@@ -5299,7 +5566,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-saute-exercice-musculation-jambes",
@@ -5320,7 +5588,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__squat-sumo-avec-haltere",
@@ -5341,7 +5610,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "fessiers__thruster-kettlebell",
@@ -5363,7 +5633,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "fessiers__thruster",
@@ -5385,7 +5656,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "fessiers__zercher-deadlift",
@@ -5404,7 +5676,8 @@
     "isCompound": true,
     "muscles": [
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "fessiers__zercher-squat",
@@ -5425,7 +5698,8 @@
       "fessiers",
       "quadriceps",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__extension-lombaire-au-banc-45",
@@ -5444,7 +5718,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.48
   },
   {
     "id": "ischio-jambiers__fente-avant-barre-femme",
@@ -5463,7 +5738,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "ischio-jambiers__fentes-avant-kettlebell",
@@ -5482,7 +5758,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "ischio-jambiers__front-squat-avec-halteres",
@@ -5501,7 +5778,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__glute-ham-developer-ghd",
@@ -5522,7 +5800,8 @@
       "ischio-jambiers",
       "fessiers",
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.78
   },
   {
     "id": "ischio-jambiers__good-morning-elastique",
@@ -5541,7 +5820,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "ischio-jambiers__good-morning-exercice",
@@ -5560,7 +5840,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__homme-faisant-un-squat-avec-barre",
@@ -5579,7 +5860,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__kettlebell-back-squat",
@@ -5598,7 +5880,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__kettlebell-swing",
@@ -5617,7 +5900,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "ischio-jambiers__leg-curl-allonge",
@@ -5637,7 +5921,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-assis-machine",
@@ -5657,7 +5942,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.63
   },
   {
     "id": "ischio-jambiers__leg-curl-avec-elastique-musculation",
@@ -5678,7 +5964,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-avec-elastique",
@@ -5699,7 +5986,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-avec-sangles-de-suspension",
@@ -5720,7 +6008,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-ballon-gym",
@@ -5741,7 +6030,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-decline-haltere",
@@ -5762,7 +6052,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-inverse-machine-tirage-vertical",
@@ -5782,7 +6073,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__leg-curl-unilateral-debout-machine",
@@ -5802,7 +6094,8 @@
     "isCompound": false,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.55
   },
   {
     "id": "ischio-jambiers__marche-du-fermier-avec-kettlebells",
@@ -5821,7 +6114,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "ischio-jambiers__nordic-hamstring-curl-avec-elastique",
@@ -5844,7 +6138,8 @@
       "ischio-jambiers",
       "fessiers",
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.78
   },
   {
     "id": "ischio-jambiers__presse-a-cuisses-inclinee",
@@ -5863,7 +6158,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "ischio-jambiers__presse-a-cuisses-verticale",
@@ -5882,7 +6178,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "ischio-jambiers__rack-pull",
@@ -5901,7 +6198,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__reeves-deadlift",
@@ -5923,7 +6221,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-a-la-trap-bar",
@@ -5945,7 +6244,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-avec-deficit",
@@ -5967,7 +6267,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-avec-elastique",
@@ -5989,7 +6290,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-avec-machine",
@@ -6011,7 +6313,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-jambes-tendues",
@@ -6033,7 +6336,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-roumain-kettlebell",
@@ -6055,7 +6359,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-roumain-landmine",
@@ -6077,7 +6382,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-sumo-kettlebell",
@@ -6099,7 +6405,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-sumo-landmine",
@@ -6121,7 +6428,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-sumo",
@@ -6143,7 +6451,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-valise-a-un-bras",
@@ -6166,7 +6475,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__souleve-de-terre",
@@ -6188,7 +6498,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "ischio-jambiers__squat-avec-rotation-du-tronc",
@@ -6207,7 +6518,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__squat-goblet-kettlebell",
@@ -6226,7 +6538,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__squat-pistol",
@@ -6245,7 +6558,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__squat-sumo-avec-haltere",
@@ -6264,7 +6578,8 @@
     "isCompound": true,
     "muscles": [
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "ischio-jambiers__zercher-deadlift",
@@ -6286,7 +6601,8 @@
       "fessiers",
       "dos",
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "mollets__extension-des-mollets-donkey",
@@ -6305,7 +6621,8 @@
     "isCompound": true,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.5
   },
   {
     "id": "mollets__extension-mollets-assis-barre",
@@ -6324,7 +6641,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.5
   },
   {
     "id": "mollets__extension-mollets-assis-machine-smith",
@@ -6344,7 +6662,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extension-mollets-assis-machine",
@@ -6363,7 +6682,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extension-mollets-barre-debout",
@@ -6382,7 +6702,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.5
   },
   {
     "id": "mollets__extension-mollets-debout-machine",
@@ -6401,7 +6722,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.5
   },
   {
     "id": "mollets__extension-mollets-presse-45",
@@ -6421,7 +6743,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extension-mollets-smith-machine",
@@ -6441,7 +6764,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extension-mollets-sur-marche",
@@ -6460,7 +6784,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extensions-des-mollets-avec-partenaire",
@@ -6479,7 +6804,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "mollets__extensions-mollets-hack-squat",
@@ -6498,7 +6824,8 @@
     "isCompound": false,
     "muscles": [
       "mollets"
-    ]
+    ],
+    "stimulus_coefficient": 0.38
   },
   {
     "id": "pectoraux__developpe-couche-halteres-exercice-musculation",
@@ -6519,7 +6846,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-couche-prise-inversee",
@@ -6540,7 +6868,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-couche-smith-machine",
@@ -6562,7 +6891,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "pectoraux__developpe-couche",
@@ -6583,7 +6913,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-decline-barre",
@@ -6604,7 +6935,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-decline-halteres",
@@ -6625,7 +6957,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-incline-barre",
@@ -6646,7 +6979,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-incline-halteres-exercice-musculation",
@@ -6667,7 +7001,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-incline-machine-convergente-exercice-musculation",
@@ -6688,7 +7023,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "pectoraux__developpe-incline-poulie",
@@ -6709,7 +7045,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__developpe-landmine-pectoraux",
@@ -6730,7 +7067,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "pectoraux__developpe-machine-assis-pectoraux",
@@ -6751,7 +7089,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "pectoraux__dips-pectoraux",
@@ -6772,7 +7111,8 @@
       "pectoraux",
       "triceps",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "pectoraux__ecarte-a-la-poulie-vis-a-vis-haute-a-genoux",
@@ -6791,7 +7131,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecarte-couche-haltere",
@@ -6810,7 +7151,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecarte-poulie-vis-a-vis-exercice-musculation-pectoraux",
@@ -6829,7 +7171,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecarte-poulie-vis-a-vis-exercice-musculation",
@@ -6848,7 +7191,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecarte-unilateral-a-la-poulie",
@@ -6867,7 +7211,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecartes-decline-avec-halteres",
@@ -6886,7 +7231,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecartes-incline-avec-halteres",
@@ -6905,7 +7251,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecartes-poulie-vis-a-vis",
@@ -6924,7 +7271,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__ecartes-unilateral-landmine-pectoraux",
@@ -6943,7 +7291,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__hex-press-a-la-smith-machine",
@@ -6960,10 +7309,11 @@
       "smith",
       "machine"
     ],
-    "isCompound": true,
+    "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__hyght-dumbell-fly",
@@ -6982,7 +7332,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__pec-deck-butterfly-exercice-musculation",
@@ -7001,7 +7352,8 @@
     "isCompound": false,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "pectoraux__pompe-musculation",
@@ -7020,7 +7372,8 @@
     "isCompound": true,
     "muscles": [
       "pectoraux"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "quadriceps__air-squat",
@@ -7041,7 +7394,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__belt-squat",
@@ -7062,7 +7416,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__cossack-squat",
@@ -7083,7 +7438,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__croix-de-fer-halteres",
@@ -7102,7 +7458,8 @@
     "isCompound": false,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.35
   },
   {
     "id": "quadriceps__extension-de-jambe-unilateral-machine-dips-assistes",
@@ -7114,14 +7471,15 @@
     "pattern": [
       "push"
     ],
-    "movementPattern": "horizontal_push",
+    "movementPattern": "knee_extension",
     "equipment": [
       "machine"
     ],
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "quadriceps__fente-avant-barre-femme",
@@ -7142,7 +7500,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "quadriceps__fentes-arriere-landmine",
@@ -7163,7 +7522,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__fentes-avant-exercice-musculation",
@@ -7184,7 +7544,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "quadriceps__fentes-avant-kettlebell",
@@ -7205,7 +7566,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "quadriceps__fentes-croisees",
@@ -7226,7 +7588,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__fentes-marchees-avec-sandbag",
@@ -7248,7 +7611,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "quadriceps__front-squat-avec-halteres",
@@ -7269,7 +7633,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__front-squat-kettlebell",
@@ -7290,7 +7655,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__hack-squat-assis",
@@ -7311,7 +7677,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__hack-squat-inverse",
@@ -7332,7 +7699,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__hack-squat",
@@ -7353,7 +7721,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__homme-faisant-un-squat-avec-barre",
@@ -7374,7 +7743,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__jefferson-squat",
@@ -7395,7 +7765,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__kettlebell-back-squat",
@@ -7416,7 +7787,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__leg-extension-exercice-musculation",
@@ -7435,7 +7807,8 @@
     "isCompound": false,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "quadriceps__leg-extension-iso-lateral-unilateral-hammer-strenght",
@@ -7454,7 +7827,8 @@
     "isCompound": false,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "quadriceps__marche-du-fermier-avec-kettlebells",
@@ -7473,7 +7847,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "quadriceps__montees-sur-banc-exercice-musculation",
@@ -7492,7 +7867,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__montees-sur-banc-lateral-avec-halteres",
@@ -7511,7 +7887,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__montees-sur-banc-laterales-avec-barre-barbell-bench-lateral-step-up",
@@ -7530,7 +7907,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__overhead-squat-avec-elastique",
@@ -7552,7 +7930,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__overhead-squat-halteres",
@@ -7574,7 +7953,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__overhead-squat",
@@ -7596,7 +7976,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__pendulum-squat",
@@ -7617,7 +7998,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__pin-squat",
@@ -7638,7 +8020,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__presse-a-cuisse-exercice-musculation",
@@ -7658,7 +8041,8 @@
     "muscles": [
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__presse-a-cuisse-sur-le-cote",
@@ -7678,7 +8062,8 @@
     "muscles": [
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__presse-a-cuisses-inclinee",
@@ -7698,7 +8083,8 @@
     "muscles": [
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__presse-a-cuisses-verticale",
@@ -7718,7 +8104,8 @@
     "muscles": [
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__presse-cuisse-iso-laterale-hammer-stenght",
@@ -7738,7 +8125,8 @@
     "muscles": [
       "quadriceps",
       "fessiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__safety-bar-squat",
@@ -7759,7 +8147,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__sissy-squat-machine-bodyweight-supported-squat",
@@ -7780,7 +8169,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "quadriceps__sissy-squat",
@@ -7801,7 +8191,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.45
   },
   {
     "id": "quadriceps__sled-push-hyrox",
@@ -7820,7 +8211,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.65
   },
   {
     "id": "quadriceps__souleve-de-terre-a-la-trap-bar",
@@ -7842,7 +8234,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__souleve-de-terre-roumain-kettlebell",
@@ -7864,7 +8257,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 1
   },
   {
     "id": "quadriceps__souleve-de-terre-sumo-kettlebell",
@@ -7886,7 +8280,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__souleve-de-terre-sumo-landmine",
@@ -7908,7 +8303,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__souleve-de-terre-sumo",
@@ -7930,7 +8326,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__souleve-de-terre-valise-a-un-bras",
@@ -7953,7 +8350,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__souleve-de-terre",
@@ -7975,7 +8373,8 @@
       "fessiers",
       "ischio-jambiers",
       "dos"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__split-squat-avec-elastique",
@@ -7996,7 +8395,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__split-squat-avec-sangles-de-suspension",
@@ -8017,7 +8417,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__split-squat-smith-machine",
@@ -8039,7 +8440,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__squat-avec-bande-elastique",
@@ -8060,7 +8462,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-avec-rotation-du-tronc",
@@ -8081,7 +8484,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-avec-sangles-de-suspension",
@@ -8102,7 +8506,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-bande-elastique",
@@ -8123,7 +8528,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-barre-devant-front",
@@ -8144,7 +8550,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-bulgare-halteres-exercice-musculation",
@@ -8165,7 +8572,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.98
   },
   {
     "id": "quadriceps__squat-goblet-exercice-musculation",
@@ -8186,7 +8594,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-goblet-kettlebell",
@@ -8207,7 +8616,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-landmine",
@@ -8228,7 +8638,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-pistol",
@@ -8249,7 +8660,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-pistolet-avec-sangle-de-suspension",
@@ -8271,7 +8683,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-saute-exercice-musculation-jambes",
@@ -8292,7 +8705,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-smith-machine-exercice-musculation",
@@ -8314,7 +8728,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.72
   },
   {
     "id": "quadriceps__squat-statique-contre-mur-exercice-chaise",
@@ -8335,7 +8750,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-sumo-avec-haltere",
@@ -8356,7 +8772,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__squat-sur-banc",
@@ -8377,7 +8794,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "quadriceps__thruster-kettlebell",
@@ -8399,7 +8817,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "quadriceps__thruster-landmine",
@@ -8421,7 +8840,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "quadriceps__thruster",
@@ -8443,7 +8863,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "quadriceps__zercher-deadlift",
@@ -8462,7 +8883,8 @@
     "isCompound": true,
     "muscles": [
       "quadriceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.95
   },
   {
     "id": "quadriceps__zercher-squat",
@@ -8483,7 +8905,8 @@
       "quadriceps",
       "fessiers",
       "ischio-jambiers"
-    ]
+    ],
+    "stimulus_coefficient": 0.9
   },
   {
     "id": "triceps__barre-front",
@@ -8502,7 +8925,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.6
   },
   {
     "id": "triceps__developpe-couche-prise-serree-smith-machine",
@@ -8524,7 +8948,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "triceps__dips-assis-machine-avec-poids",
@@ -8545,7 +8970,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "triceps__dips-assis-machine-matrix",
@@ -8566,7 +8992,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "triceps__dips-assiste-machine",
@@ -8587,7 +9014,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.68
   },
   {
     "id": "triceps__dips-aux-anneaux",
@@ -8609,7 +9037,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__dips-entre-deux-bancs",
@@ -8630,7 +9059,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__dips-pectoraux",
@@ -8651,7 +9081,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__dips-sur-banc",
@@ -8672,7 +9103,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__dips-sur-une-chaise",
@@ -8693,7 +9125,8 @@
       "triceps",
       "pectoraux",
       "epaules"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__extension-horizontale-poulie",
@@ -8712,7 +9145,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-banc-incline-halteres",
@@ -8731,7 +9165,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-derriere-tete-avec-elastique",
@@ -8750,7 +9185,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.52
   },
   {
     "id": "triceps__extension-triceps-haltere-un-bras",
@@ -8769,7 +9205,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-incline-poulie-basse",
@@ -8788,7 +9225,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-machine-technogym",
@@ -8807,7 +9245,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-poulie-haute-corde",
@@ -8826,7 +9265,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-poulie-haute",
@@ -8845,7 +9285,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-triceps-verticale-elastique",
@@ -8864,7 +9305,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-verticale-assis-barre",
@@ -8883,7 +9325,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extension-verticale-triceps-poulie-basse",
@@ -8902,7 +9345,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-concentres-des-triceps-poulie",
@@ -8921,7 +9365,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-des-triceps-assis-avec-haltere",
@@ -8940,7 +9385,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-des-triceps-avec-sangles-de-suspension",
@@ -8959,7 +9405,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-triceps-couche-halteres",
@@ -8978,7 +9425,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-triceps-decline-halteres",
@@ -8997,7 +9445,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-triceps-incline-smith-machine",
@@ -9017,7 +9466,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__extensions-triceps-planche",
@@ -9037,7 +9487,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.3
   },
   {
     "id": "triceps__extensions-verticales-a-deux-mains-avec-haltere",
@@ -9056,7 +9507,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__handstand-push-up",
@@ -9075,7 +9527,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.8
   },
   {
     "id": "triceps__kickback-alterne-assis",
@@ -9094,7 +9547,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__kickback-debout-avec-halteres",
@@ -9113,7 +9567,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__kickback",
@@ -9132,7 +9587,8 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   },
   {
     "id": "triceps__pompe-musculation",
@@ -9151,7 +9607,8 @@
     "isCompound": true,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.82
   },
   {
     "id": "triceps__tate-press",
@@ -9170,6 +9627,7 @@
     "isCompound": false,
     "muscles": [
       "triceps"
-    ]
+    ],
+    "stimulus_coefficient": 0.42
   }
 ]
