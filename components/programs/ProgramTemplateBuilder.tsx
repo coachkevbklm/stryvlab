@@ -15,6 +15,7 @@ import {
   Library,
   Dumbbell,
   ArrowLeftRight,
+  Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -662,316 +663,327 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
                   <div
                     key={ei}
                     ref={el => { exerciseRefs.current[`${si}-${ei}`] = el }}
-                    className={`bg-[#0a0a0a] rounded-2xl p-3 flex flex-col gap-2 transition-all duration-300 ${highlightKey === `${si}-${ei}` ? 'ring-1 ring-[#1f8a65]/60 ring-offset-1 ring-offset-[#121212]' : ''}`}
+                    className={`bg-[#0a0a0a] rounded-2xl p-3 grid grid-cols-[140px_1fr] gap-4 transition-all duration-300 ${highlightKey === `${si}-${ei}` ? 'ring-1 ring-[#1f8a65]/60 ring-offset-1 ring-offset-[#121212]' : ''}`}
                   >
-                    <div className="flex items-center gap-2">
-                      <input
-                        value={ex.name}
-                        onChange={(e) =>
-                          updateExercise(si, ei, { name: e.target.value })
-                        }
-                        placeholder="Nom de l'exercice *"
-                        className="flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/40"
-                      />
-                      <button
-                        onClick={() => removeExercise(si, ei)}
-                        className="text-white/70 hover:text-red-400"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        {
-                          label: "Séries",
-                          key: "sets",
-                          type: "number",
-                          min: 1,
-                        },
-                        { label: "Reps", key: "reps", type: "text" },
-                        {
-                          label: "Repos (s)",
-                          key: "rest_sec",
-                          type: "number",
-                          min: 0,
-                        },
-                        {
-                          label: "RIR",
-                          key: "rir",
-                          type: "number",
-                          min: 0,
-                          max: 5,
-                        },
-                      ].map(({ label, key, type, min, max }) => (
-                        <div key={key}>
-                          <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">
-                            {label}
+                    {/* LEFT COLUMN: Image + metadata */}
+                    <div className="flex flex-col gap-2">
+                      {/* Image section — constrained square */}
+                      <div>
+                        {ex.image_url ? (
+                          <div className="relative rounded-xl overflow-hidden group w-[140px] h-[140px]">
+                            <Image
+                              src={ex.image_url}
+                              alt={ex.name || "Exercice"}
+                              width={140}
+                              height={140}
+                              className="w-full h-full object-cover rounded-xl"
+                              unoptimized={ex.image_url.endsWith(".gif")}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateExercise(si, ei, { image_url: null })
+                              }
+                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Supprimer l'image"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-[140px] h-[140px] bg-white/[0.04] rounded-xl flex flex-col items-center justify-center">
+                            <ImagePlus size={20} className="text-white/30 mb-1" />
+                            <span className="text-[8px] text-white/30 text-center px-1">Ajouter image</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add/import buttons */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPickerTarget({ si, ei })}
+                          className="flex items-center justify-center gap-1 text-[8px] font-semibold text-[#1f8a65] hover:opacity-80 transition-opacity bg-[#1f8a65]/10 px-2 py-1 rounded-lg"
+                        >
+                          <Library size={10} />
+                          Biblio
+                        </button>
+                        <input
+                          ref={(el) => {
+                            fileInputRefs.current[`${si}-${ei}`] = el;
+                          }}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleImageUpload(si, ei, f);
+                            e.target.value = "";
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={uploadingKey === `${si}-${ei}`}
+                          onClick={() =>
+                            fileInputRefs.current[`${si}-${ei}`]?.click()
+                          }
+                          className="flex items-center justify-center gap-1 text-[8px] text-white/60 hover:text-white transition-colors disabled:opacity-50 bg-white/[0.03] hover:bg-white/[0.05] px-2 py-1 rounded-lg"
+                        >
+                          {uploadingKey === `${si}-${ei}` ? (
+                            <>
+                              <Loader2 size={10} className="animate-spin" />
+                              <span>Upload…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={10} />
+                              <span>Importer</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Pattern & equipment */}
+                      <div className="border-t border-white/[0.06] pt-2 flex flex-col gap-1.5">
+                        <div>
+                          <label className="text-[8px] font-bold text-white/50 uppercase block mb-1">
+                            Pattern
                           </label>
-                          <input
-                            type={type}
-                            min={min}
-                            max={max}
-                            value={(ex as any)[key] ?? ""}
+                          <select
+                            value={ex.movement_pattern ?? ""}
                             onChange={(e) =>
                               updateExercise(si, ei, {
-                                [key]:
-                                  type === "number"
-                                    ? e.target.value
-                                      ? parseFloat(e.target.value)
-                                      : null
-                                    : e.target.value,
+                                movement_pattern: e.target.value || null,
                               })
                             }
-                            className="w-full bg-[#0a0a0a] rounded-xl px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
-                          />
+                            className="w-full bg-[#0a0a0a] rounded-lg px-1.5 py-0.5 text-[8px] text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
+                          >
+                            {MOVEMENT_PATTERNS.map((p) => (
+                              <option key={p.value} value={p.value}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* ── Muscles ── */}
-                    <div className="border-t border-white/[0.06] pt-2 flex flex-col gap-1.5">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40">
-                        Muscles principaux
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {MUSCLE_GROUPS.map(({ slug, label }) => {
-                          const active = ex.primary_muscles.includes(slug)
-                          return (
-                            <button
-                              key={slug}
-                              type="button"
-                              onClick={() => {
-                                const next = active
-                                  ? ex.primary_muscles.filter((m) => m !== slug)
-                                  : [...ex.primary_muscles, slug]
-                                const sec = ex.secondary_muscles.filter((m) => m !== slug)
-                                updateExercise(si, ei, { primary_muscles: next, secondary_muscles: sec })
-                              }}
-                              className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
-                                active
-                                  ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                                  : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          )
-                        })}
+                        <div>
+                          <label className="text-[8px] font-bold text-white/50 uppercase block mb-1">
+                            Équipement
+                          </label>
+                          <div className="flex flex-wrap gap-0.5 bg-[#0a0a0a] rounded-lg px-1.5 py-0.5 min-h-[20px]">
+                            {EQUIPMENT_ITEMS.map((eq) => {
+                              const checked = ex.equipment_required.includes(
+                                eq.value,
+                              );
+                              return (
+                                <button
+                                  key={eq.value}
+                                  type="button"
+                                  onClick={() =>
+                                    updateExercise(si, ei, {
+                                      equipment_required: checked
+                                        ? ex.equipment_required.filter(
+                                            (v) => v !== eq.value,
+                                          )
+                                        : [...ex.equipment_required, eq.value],
+                                    })
+                                  }
+                                  className={`text-[7px] px-1 py-0.5 rounded-full font-medium transition-colors ${
+                                    checked
+                                      ? "bg-[#1f8a65] text-white"
+                                      : "bg-white/[0.04] text-white/50 hover:text-white/70"
+                                  }`}
+                                >
+                                  {eq.label.slice(0, 3)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
 
-                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mt-0.5">
-                        Muscles secondaires
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {MUSCLE_GROUPS.map(({ slug, label }) => {
-                          const isPrimary   = ex.primary_muscles.includes(slug)
-                          const isSecondary = ex.secondary_muscles.includes(slug)
-                          return (
-                            <button
-                              key={slug}
-                              type="button"
-                              disabled={isPrimary}
-                              onClick={() => {
-                                const next = isSecondary
-                                  ? ex.secondary_muscles.filter((m) => m !== slug)
-                                  : [...ex.secondary_muscles, slug]
-                                updateExercise(si, ei, { secondary_muscles: next })
-                              }}
-                              className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
-                                isPrimary
-                                  ? 'opacity-20 cursor-not-allowed bg-white/[0.02] text-white/20'
-                                  : isSecondary
-                                  ? 'bg-[#1f8a65]/10 text-[#1f8a65]/60 border border-[#1f8a65]/20'
-                                  : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Image exercice */}
-                    <div className="border-t border-white/30 pt-2">
-                      {ex.image_url ? (
-                        <div className="relative rounded overflow-hidden group inline-block w-full">
-                          <Image
-                            src={ex.image_url}
-                            alt={ex.name || "Exercice"}
-                            width={0}
-                            height={0}
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            className="w-full h-auto rounded"
-                            unoptimized={ex.image_url.endsWith(".gif")}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateExercise(si, ei, { image_url: null })
-                            }
-                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Supprimer l'image"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setPickerTarget({ si, ei })}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-[#1f8a65] hover:opacity-80 transition-opacity bg-[#1f8a65]/10 px-2.5 py-1.5 rounded-xl"
-                          >
-                            <Library size={12} />
-                            Bibliothèque
-                          </button>
-                          <span className="text-white/40 text-[10px]">ou</span>
-                          <input
-                            ref={(el) => {
-                              fileInputRefs.current[`${si}-${ei}`] = el;
-                            }}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) handleImageUpload(si, ei, f);
-                              e.target.value = "";
-                            }}
-                          />
-                          <button
-                            type="button"
-                            disabled={uploadingKey === `${si}-${ei}`}
-                            onClick={() =>
-                              fileInputRefs.current[`${si}-${ei}`]?.click()
-                            }
-                            className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors disabled:opacity-50"
-                          >
-                            {uploadingKey === `${si}-${ei}` ? (
-                              <>
-                                <Loader2 size={12} className="animate-spin" />
-                                Upload…
-                              </>
-                            ) : (
-                              <>
-                                <ImagePlus size={12} />
-                                Importer
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Matching metadata */}
-                    <div className="border-t border-white/30 pt-2 grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">
-                          Pattern mouvement
-                        </label>
-                        <select
-                          value={ex.movement_pattern ?? ""}
-                          onChange={(e) =>
-                            updateExercise(si, ei, {
-                              movement_pattern: e.target.value || null,
-                            })
-                          }
-                          className="w-full bg-[#0a0a0a] rounded-xl px-2 py-1 text-xs text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
+                      {/* Poly-articulaire */}
+                      <div className="border-t border-white/[0.06] pt-2 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => updateExercise(si, ei, {
+                            is_compound: ex.is_compound === true ? false : ex.is_compound === false ? undefined : true
+                          })}
+                          className={`w-3 h-3 rounded border transition-colors shrink-0 flex items-center justify-center ${
+                            ex.is_compound === true
+                              ? 'bg-[#1f8a65] border-[#1f8a65]'
+                              : ex.is_compound === false
+                              ? 'bg-red-500/20 border-red-500/40'
+                              : 'bg-white/[0.04] border-white/[0.08]'
+                          }`}
                         >
-                          {MOVEMENT_PATTERNS.map((p) => (
-                            <option key={p.value} value={p.value}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">
-                          Équipement requis
+                          {ex.is_compound === true && <span className="text-white text-[6px] font-bold">✓</span>}
+                          {ex.is_compound === false && <span className="text-red-400 text-[6px] font-bold">✗</span>}
+                        </button>
+                        <label className="text-[8px] font-semibold text-white/40 uppercase">
+                          Polyart.
                         </label>
-                        <div className="flex flex-wrap gap-1 bg-[#0a0a0a] rounded-xl px-2 py-1 min-h-[28px]">
-                          {EQUIPMENT_ITEMS.map((eq) => {
-                            const checked = ex.equipment_required.includes(
-                              eq.value,
-                            );
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: Name, sets/reps, muscles, notes, actions */}
+                    <div className="flex flex-col gap-2">
+                      {/* Exercise name + delete */}
+                      <div className="flex items-center gap-2 -mt-1">
+                        <input
+                          value={ex.name}
+                          onChange={(e) =>
+                            updateExercise(si, ei, { name: e.target.value })
+                          }
+                          placeholder="Nom de l'exercice *"
+                          className="flex-1 bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/40"
+                        />
+                        <button
+                          onClick={() => removeExercise(si, ei)}
+                          className="text-white/70 hover:text-red-400 shrink-0"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      {/* Sets, Reps, Rest, RIR — 2x2 grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          {
+                            label: "Séries",
+                            key: "sets",
+                            type: "number",
+                            min: 1,
+                          },
+                          { label: "Reps", key: "reps", type: "text" },
+                          {
+                            label: "Repos (s)",
+                            key: "rest_sec",
+                            type: "number",
+                            min: 0,
+                          },
+                          {
+                            label: "RIR",
+                            key: "rir",
+                            type: "number",
+                            min: 0,
+                            max: 5,
+                          },
+                        ].map(({ label, key, type, min, max }) => (
+                          <div key={key}>
+                            <label className="text-[9px] font-bold text-white/60 uppercase block mb-0.5">
+                              {label}
+                            </label>
+                            <input
+                              type={type}
+                              min={min}
+                              max={max}
+                              value={(ex as any)[key] ?? ""}
+                              onChange={(e) =>
+                                updateExercise(si, ei, {
+                                  [key]:
+                                    type === "number"
+                                      ? e.target.value
+                                        ? parseFloat(e.target.value)
+                                        : null
+                                      : e.target.value,
+                                })
+                              }
+                              className="w-full bg-[#0a0a0a] rounded-xl px-2 py-1 text-xs font-mono text-white outline-none focus:ring-1 focus:ring-[#1f8a65]/40"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Muscles */}
+                      <div className="border-t border-white/[0.06] pt-2 flex flex-col gap-1.5">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40">
+                          Muscles principaux
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {MUSCLE_GROUPS.map(({ slug, label }) => {
+                            const active = ex.primary_muscles.includes(slug)
                             return (
                               <button
-                                key={eq.value}
+                                key={slug}
                                 type="button"
-                                onClick={() =>
-                                  updateExercise(si, ei, {
-                                    equipment_required: checked
-                                      ? ex.equipment_required.filter(
-                                          (v) => v !== eq.value,
-                                        )
-                                      : [...ex.equipment_required, eq.value],
-                                  })
-                                }
-                                className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium transition-colors ${
-                                  checked
-                                    ? "bg-[#1f8a65] text-white"
-                                    : "bg-[#0a0a0a] text-white/70 hover:text-white"
+                                onClick={() => {
+                                  const next = active
+                                    ? ex.primary_muscles.filter((m) => m !== slug)
+                                    : [...ex.primary_muscles, slug]
+                                  const sec = ex.secondary_muscles.filter((m) => m !== slug)
+                                  updateExercise(si, ei, { primary_muscles: next, secondary_muscles: sec })
+                                }}
+                                className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
+                                  active
+                                    ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                                    : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
                                 }`}
                               >
-                                {eq.label}
+                                {label}
                               </button>
-                            );
+                            )
+                          })}
+                        </div>
+
+                        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mt-1">
+                          Muscles secondaires
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {MUSCLE_GROUPS.map(({ slug, label }) => {
+                            const isPrimary   = ex.primary_muscles.includes(slug)
+                            const isSecondary = ex.secondary_muscles.includes(slug)
+                            return (
+                              <button
+                                key={slug}
+                                type="button"
+                                disabled={isPrimary}
+                                onClick={() => {
+                                  const next = isSecondary
+                                    ? ex.secondary_muscles.filter((m) => m !== slug)
+                                    : [...ex.secondary_muscles, slug]
+                                  updateExercise(si, ei, { secondary_muscles: next })
+                                }}
+                                className={`px-2 py-0.5 rounded-md text-[9px] font-semibold transition-colors ${
+                                  isPrimary
+                                    ? 'opacity-20 cursor-not-allowed bg-white/[0.02] text-white/20'
+                                    : isSecondary
+                                    ? 'bg-[#1f8a65]/10 text-[#1f8a65]/60 border border-[#1f8a65]/20'
+                                    : 'bg-white/[0.04] text-white/35 hover:text-white/60 hover:bg-white/[0.07]'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            )
                           })}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Poly-articulaire checkbox */}
-                    <div className="flex items-center gap-2 mt-1">
+                      {/* Notes */}
+                      <input
+                        value={ex.notes}
+                        onChange={(e) =>
+                          updateExercise(si, ei, { notes: e.target.value })
+                        }
+                        placeholder="Notes optionnelles"
+                        className="bg-transparent text-xs text-white/70 outline-none placeholder:text-white/30 border-t border-white/[0.06] pt-2"
+                      />
+
+                      {/* Intelligence alerts */}
+                      <IntelligenceAlertBadge
+                        alerts={alertsFor(si, ei)}
+                        onOpenAlternatives={() => setAlternativesTarget({ si, ei })}
+                      />
+
+                      {/* Bouton alternatives */}
                       <button
                         type="button"
-                        onClick={() => updateExercise(si, ei, {
-                          is_compound: ex.is_compound === true ? false : ex.is_compound === false ? undefined : true
-                        })}
-                        className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${
-                          ex.is_compound === true
-                            ? 'bg-[#1f8a65] border-[#1f8a65]'
-                            : ex.is_compound === false
-                            ? 'bg-red-500/20 border-red-500/40'
-                            : 'bg-white/[0.04] border-white/[0.08]'
-                        }`}
+                        onClick={() => setAlternativesTarget({ si, ei })}
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-white/30 hover:text-[#1f8a65] transition-colors"
                       >
-                        {ex.is_compound === true && <span className="text-white text-[8px] font-bold">✓</span>}
-                        {ex.is_compound === false && <span className="text-red-400 text-[8px] font-bold">✗</span>}
+                        <ArrowLeftRight size={10} />
+                        Alternatives
                       </button>
-                      <label className="text-[9px] font-semibold text-white/50 uppercase tracking-[0.12em]">
-                        Poly-articulaire
-                        {ex.is_compound === undefined && (
-                          <span className="ml-1 text-white/30 normal-case tracking-normal">(auto)</span>
-                        )}
-                      </label>
                     </div>
-
-                    <input
-                      value={ex.notes}
-                      onChange={(e) =>
-                        updateExercise(si, ei, { notes: e.target.value })
-                      }
-                      placeholder="Notes optionnelles"
-                      className="bg-transparent text-xs text-white/70 outline-none placeholder:text-white/30 border-t border-white/30 pt-2"
-                    />
-
-                    {/* Intelligence alerts */}
-                    <IntelligenceAlertBadge
-                      alerts={alertsFor(si, ei)}
-                      onOpenAlternatives={() => setAlternativesTarget({ si, ei })}
-                    />
-
-                    {/* Bouton alternatives */}
-                    <button
-                      type="button"
-                      onClick={() => setAlternativesTarget({ si, ei })}
-                      className="flex items-center gap-1.5 text-[10px] font-semibold text-white/30 hover:text-[#1f8a65] transition-colors mt-1"
-                    >
-                      <ArrowLeftRight size={10} />
-                      Alternatives
-                    </button>
                   </div>
                 ))}
                 <button

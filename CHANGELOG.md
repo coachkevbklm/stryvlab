@@ -1,5 +1,9 @@
 ## 2026-04-18
 
+FEATURE: Exercise card layout refactored to 2-column grid: image left (constrained 140px square), exercise info right
+FIX: Exercise image sizes now constrained to 140×140px square, no longer full column width
+FEATURE: Add group_id field to BuilderExercise type for superset grouping
+FEATURE: Create superset-scoring.test.ts with group_id acceptance and SRA tests
 FEATURE: Template builder pages — remove max-w-3xl, full width layout (px-6)
 FEATURE: Intelligence panel width 280px → 420px — uses full right column
 FEATURE: ProgramIntelligencePanel — 3-col subscores, 4-col KPIs row, radar+donut side by side
