@@ -94,7 +94,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 **Next Steps — Phase 0 Implementation:**
 
 - [ ] Spawn subagents for Phase 0 tasks (1 per major component)
-- [ ] Task 1: Database migration + RLS
+- [x] Task 1: Database migration + RLS
 - [ ] Task 2: API routes (analyze, latest, analyses, job-status)
 - [ ] Task 3: Async job + OpenAI Vision integration
 - [ ] Task 4: Scoring integration (morpho stimulus adjustments)
@@ -103,6 +103,59 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 - [ ] Commit + CHANGELOG + project-state update
 
 **Timeline Phase 0:** 1.5–2 weeks (2026-04-18 → ~2026-05-02)
+
+---
+
+## 2026-04-18 — MorphoPro Bridge Phase 0 Task 1 — Database Migration
+
+**Ce qui a été fait :**
+
+1. **`supabase/migrations/20260418_morpho_analyses.sql`** — migration appliquée
+   - Table `morpho_analyses` : versioned client morphology + OpenAI Vision payloads
+   - Colonnes : id (UUID PK), client_id (FK), assessment_submission_id (nullable FK), created_at, updated_at, analysis_date (DATE)
+   - JSONB fields : raw_payload (unprocessed OpenAI), body_composition, dimensions, asymmetries, stimulus_adjustments
+   - Job tracking : status (pending/completed/failed), job_id (n8n), error_message, analyzed_by (UUID)
+   - Indexes : (client_id, analysis_date DESC), (client_id) WHERE status='completed', (status)
+   - Constraint UNIQUE : (assessment_submission_id, analysis_date)
+   - Trigger : set_updated_at() on UPDATE
+
+2. **RLS Policies** :
+   - Coach SELECT/INSERT/UPDATE : `client_id IN (SELECT id FROM coach_clients WHERE coach_id = auth.uid())`
+   - Client SELECT : `client_id IN (SELECT id FROM coach_clients WHERE user_id = auth.uid())`
+   - Isolation multi-tenant complète
+
+3. **`lib/morphology/types.ts`** — TypeScript types
+   - `MorphoAnalysis` : database row interface
+   - `MorphoRawPayload` : OpenAI Vision output structure (body_fat_pct, dimensions, asymmetries, etc.)
+   - `MorphoStimulusAdjustments` : pattern → coefficient multiplier (0.8–1.2)
+   - `MorphoJobStatus`, `MorphoAnalysisRequest`, `MorphoAnalysisResponse`, `MorphoTimelineEntry` : API contracts
+
+4. **`lib/morphology/index.ts`** — public API export
+   - Export all types for use in API routes + scoring integration
+
+**Points d'Architecture :**
+
+- JSONB fields are untyped at DB level — validation happens at app layer (Zod) or via OpenAI contract
+- `assessment_submission_id` est nullable — analysis peut être indépendante ou liée à un bilan
+- `job_id` stocke le n8n job ID — polling depuis coach UI pour l'async job tracking
+- Stimulus adjustments : Range 0.8–1.2 par pattern, appliquées en multiplicateur sur base coefficients (préserve calibration)
+- L'updated_at trigger nécessite la fonction `set_updated_at()` créée dans une migration antérieure (20260402_assessment_system.sql)
+
+**Points de Vigilance :**
+
+- La migration utilise `IF NOT EXISTS` — idempotent, safe sur redéploiement
+- RLS policies usent `auth.uid()` — nécessite Supabase authenticated context (role `authenticated`)
+- L'index partiel `(client_id) WHERE status='completed'` accélère les queries "latest analysis" pour le coach
+- UNIQUE constraint sur `(assessment_submission_id, analysis_date)` : permet un seul morpho par bilan/date combo (NULL assessment_submission_id ne viole pas UNIQUE)
+- Le trigger `DROP TRIGGER IF EXISTS` avant CREATE est safe pour les reruns
+
+**Next Steps — Phase 0 Task 2 (API Routes) :**
+
+- [ ] POST `/api/clients/[clientId]/morpho/analyze` — créer morpho_analyses row, queue n8n job
+- [ ] GET `/api/clients/[clientId]/morpho/latest` — latest completed analysis + body_composition
+- [ ] GET `/api/clients/[clientId]/morpho/analyses` — timeline complète (pagination)
+- [ ] GET `/api/morpho/job-status?job_id=...` — poll async job completion
+- [ ] Validation Zod sur payloads, gestion d'erreur explicite
 
 ---
 
