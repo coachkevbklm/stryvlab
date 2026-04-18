@@ -69,20 +69,31 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   // For each exercise, find coach-configured alternatives
   let alternativesMap: Record<string, string[]> = {}
   if (templateId && exercises?.length) {
-    const { data: templateExercises } = await service
-      .from('coach_program_template_exercises')
-      .select(`
-        name,
-        coach_template_exercise_alternatives (name, position)
-      `)
-      .eq('template_session_id', templateId)
+    // Fetch all sessions in the template
+    const { data: templateSessions } = await service
+      .from('coach_program_template_sessions')
+      .select('id')
+      .eq('template_id', templateId)
 
-    if (templateExercises) {
-      for (const te of templateExercises) {
-        const alts = ((te as any).coach_template_exercise_alternatives ?? [])
-          .sort((a: any, b: any) => a.position - b.position)
-          .map((a: any) => a.name as string)
-        if (alts.length > 0) alternativesMap[te.name] = alts
+    if (templateSessions && templateSessions.length > 0) {
+      const sessionIds = templateSessions.map((s: any) => s.id)
+
+      // Fetch exercises in those sessions with alternatives
+      const { data: templateExercises } = await service
+        .from('coach_program_template_exercises')
+        .select(`
+          name,
+          coach_template_exercise_alternatives (name, position)
+        `)
+        .in('session_id', sessionIds)
+
+      if (templateExercises) {
+        for (const te of templateExercises) {
+          const alts = ((te as any).coach_template_exercise_alternatives ?? [])
+            .sort((a: any, b: any) => a.position - b.position)
+            .map((a: any) => a.name as string)
+          if (alts.length > 0) alternativesMap[te.name] = alts
+        }
       }
     }
   }
