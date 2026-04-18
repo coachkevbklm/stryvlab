@@ -1,5 +1,6 @@
 ## 2026-04-19
 
+FEATURE: NavigatorPane — composant arborescence séances/exercices avec collapse/expand et state activeSessionIndex/activeExerciseKey
 REFACTOR: ProgramTemplateBuilder — merge clientId useEffects into single Promise.all fetch
 FEATURE: intelligence debounce réduit 400ms → 300ms dans useProgramIntelligence
 FEATURE: ProgramTemplateBuilder — fetch morpho/latest au mount + morphoAdjustments passé à useProgramIntelligence
