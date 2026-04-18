@@ -1,5 +1,11 @@
 ## 2026-04-18
 
+FEATURE: Add morpho parsing and stimulus adjustment helper functions (Phase 0 Task 2)
+FEATURE: parseMorphoResponses — extract metrics from OpenAI Vision text (body fat %, dimensions, asymmetries)
+FEATURE: estimateMuscleFromBiometrics — estimate muscle mass from weight + body fat percentage
+FEATURE: calculateStimulusAdjustments — derive per-pattern stimulus coefficients based on asymmetries (0.8–1.2 range)
+FEATURE: applyMorphoAdjustment — apply morpho adjustments to base stimulus coefficients
+TESTS: 42 tests passing (24 parse + 18 adjustments) covering parsing, estimation, and adjustment logic
 SCHEMA: Add morpho_analyses table with RLS + TypeScript types (Phase 0 Task 1)
 DOCS: Add MorphoPro bridge design specification (Phase 0)
 DOCS: Add studio-lab master plan (Phases 0–4: MorphoPro → UI → Biomechanics → Feedback → Export)

@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-18 (Studio-Lab Master Plan Designed & Documented)
+> Dernière mise à jour : 2026-04-18 (Phase 0 Task 2: Helper Functions Completed)
 
 ---
 
@@ -25,7 +25,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
 
-**Status:** ✅ All phases designed + spec'd. Ready to implement Phase 0.
+**Status:** ✅ All phases designed + spec'd. Phase 0 Task 1–2 complete. Task 3 in progress (async job + OpenAI Vision).
 
 **Master Plan:** `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
 
@@ -93,9 +93,9 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Next Steps — Phase 0 Implementation:**
 
-- [ ] Spawn subagents for Phase 0 tasks (1 per major component)
+- [x] Spawn subagents for Phase 0 tasks (1 per major component)
 - [x] Task 1: Database migration + RLS
-- [ ] Task 2: API routes (analyze, latest, analyses, job-status)
+- [x] Task 2: Helper functions (parsing + stimulus adjustments)
 - [ ] Task 3: Async job + OpenAI Vision integration
 - [ ] Task 4: Scoring integration (morpho stimulus adjustments)
 - [ ] Task 5: Coach UI (Profil tab, [Analyser] button)
@@ -103,6 +103,76 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 - [ ] Commit + CHANGELOG + project-state update
 
 **Timeline Phase 0:** 1.5–2 weeks (2026-04-18 → ~2026-05-02)
+
+---
+
+## 2026-04-18 — Phase 0 Task 2: Helper Functions
+
+**Ce qui a été fait :**
+
+1. **`lib/morpho/parse.ts`** — parsing OpenAI Vision responses
+   - `parseMorphoResponses(visionResults)`: extract metrics from text (body_fat_pct, dimensions, asymmetries)
+   - Regex patterns: "18% body fat", "body fat: 22%", "waist: 78cm", "arm difference: 1.2cm", posture notes
+   - Handles both "value % metric" and "metric: value %" orderings
+   - Multi-line parsing (combines multiple photo angles)
+   - `estimateMuscleFromBiometrics(weight, bodyFatPct)`: Katch-McArdle formula (lean × 0.85)
+
+2. **`lib/morpho/adjustments.ts`** — stimulus coefficient adjustments
+   - `calculateStimulusAdjustments(morpho, clientMeta)`: returns Record<pattern, coeff> (0.8–1.2)
+   - Rules (all verified with tests):
+     - Arm asymmetry >2cm → unilateral_push/pull = 1.15
+     - Shoulder imbalance >2cm → horizontal_push = 0.90, horizontal_pull = 1.10
+     - Long arms (ratio >0.40) → vertical_pull ≥1.12, horizontal_pull ≥1.05
+     - Short arms (ratio <0.36) → horizontal_push ≥1.10, vertical_push ≥1.08
+   - All coefficients clamped to [0.8, 1.2]
+   - Uses `Math.max()` when multiple rules apply (takes highest)
+   - `applyMorphoAdjustment(baseCoeff, adjustmentCoeff)`: multiply with clamping [0.4, 1.2]
+
+3. **`tests/lib/morpho/parse.test.ts`** — 24 tests (all PASS)
+   - Body fat extraction (%, both orderings, decimals)
+   - Dimension extraction (waist, hips, chest, arms, legs, thighs, calves)
+   - Asymmetry extraction (arm, leg, shoulder, hip, posture)
+   - Multi-response combining
+   - Edge cases (missing data, zero weight, negative inputs, body fat >100%)
+   - Linear scaling verification
+   - Coverage: 7/9 extraction patterns + 4 estimator edge cases + scaling tests
+
+4. **`tests/lib/morpho/adjustments.test.ts`** — 18 tests (all PASS)
+   - Base case: 1.0 all patterns (no asymmetry)
+   - Threshold tests: >2cm triggers, 2cm exactly doesn't, <2cm doesn't
+   - Arm asymmetry boost verification (1.15)
+   - Shoulder imbalance dual adjustment (0.9 + 1.1)
+   - Long arms ratio detection (>0.40)
+   - Short arms ratio detection (<0.36)
+   - Exact threshold boundaries (0.40, 0.36)
+   - Missing/zero height handling (no crash, stays 1.0)
+   - Clamping verification (0.8–1.2 always)
+   - Multiple rules interaction (max() application)
+   - All patterns returned in output
+   - applyMorphoAdjustment tests (multiply, clamp, typical ranges)
+
+**Points de vigilance :**
+
+- `parseMorphoResponses` uses alternation regex `(regex1|regex2)` with two capture groups — uses `|| operator to fall back from group 1 to group 2
+- Threshold boundaries are strict: `>2` not `>=2`, `<0.36` not `<=0.36` — matches Phase 0 spec asymmetry thresholds
+- `Math.max()` is used to prevent lower adjustments when multiple rules match (e.g., long arms boosts pull to 1.12, unilateral rule would be 1.0 max, so pull stays 1.12)
+- Clamping happens AFTER all rule application (not per-rule) to allow interaction
+- `estimateMuscleFromBiometrics` returns 0 for invalid inputs (weight ≤0, body_fat outside [0,100]) — safer than throwing
+- All tests verify both positive and edge case behavior (exact threshold, just inside/outside, extreme values)
+
+**Commit:**
+- feat(morpho): add parsing and stimulus adjustment helper functions
+- 42 tests passing (parse 24 + adjustments 18)
+- Zero TypeScript errors
+- Atomic commit with full explanation
+
+**Next Steps — Task 3 (Async Job + OpenAI Vision Integration) :**
+- [ ] `lib/morpho/job.ts` — async analyzeMorphoJob() function
+- [ ] `lib/openai/vision.ts` — OpenAI Vision API client
+- [ ] `app/api/morpho/analyze/route.ts` — POST trigger (coach initiates)
+- [ ] `app/api/morpho/status/[analysisId]/route.ts` — GET job status (polling)
+- [ ] `app/api/morpho/callback/route.ts` — webhook receiver from n8n
+- [ ] Tests: 6 job orchestration tests + 4 OpenAI integration tests
 
 ---
 
