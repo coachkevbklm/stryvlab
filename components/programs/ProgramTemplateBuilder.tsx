@@ -260,6 +260,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
   const [error, setError] = useState("");
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [intelligenceProfile, setIntelligenceProfile] = useState<IntelligenceProfile | undefined>(undefined);
+  const [morphoAdjustments, setMorphoAdjustments] = useState<Record<string, number> | undefined>(undefined);
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -268,6 +269,18 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
     fetch(`/api/clients/${clientId}/intelligence-profile`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setIntelligenceProfile(data) })
+      .catch(() => {})
+  }, [clientId]);
+
+  useEffect(() => {
+    if (!clientId) return
+    fetch(`/api/clients/${clientId}/morpho/latest`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.data?.stimulus_adjustments) {
+          setMorphoAdjustments(data.data.stimulus_adjustments)
+        }
+      })
       .catch(() => {})
   }, [clientId]);
   const [pickerTarget, setPickerTarget] = useState<{
@@ -301,7 +314,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       is_compound: e.is_compound,
     })),
   }));
-  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile);
+  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile, morphoAdjustments);
 
   function handleAlertClick(sessionIndex: number, exerciseIndex: number) {
     const key = `${sessionIndex}-${exerciseIndex}`

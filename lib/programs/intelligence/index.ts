@@ -41,7 +41,7 @@ export function useProgramIntelligence(
     timerRef.current = setTimeout(() => {
       const next = buildIntelligenceResult(sessions, meta, profile, morphoStimulusAdjustments)
       setResult(next)
-    }, 400)
+    }, 300)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
