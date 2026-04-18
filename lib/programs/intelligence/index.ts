@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { buildIntelligenceResult } from './scoring'
-import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise } from './types'
+import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise, IntelligenceProfile } from './types'
 
-export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise }
+export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise, IntelligenceProfile }
 export { scoreAlternatives } from './alternatives'
 export type { AlternativeScore } from './alternatives'
 export { resolveExerciseCoeff } from './catalog-utils'
+export { scoreSuperset } from './scoring'
 
 const EMPTY_RESULT: IntelligenceResult = {
   globalScore: 0,
@@ -19,11 +20,13 @@ const EMPTY_RESULT: IntelligenceResult = {
   missingPatterns: [],
   redundantPairs: [],
   sraMap: [],
+  programStats: { totalSets: 0, totalEstimatedReps: 0, totalExercises: 0, avgExercisesPerSession: 0, sessionsStats: [] },
 }
 
 export function useProgramIntelligence(
   sessions: BuilderSession[],
   meta: TemplateMeta,
+  profile?: IntelligenceProfile,
 ): {
   result: IntelligenceResult
   alertsFor: (sessionIdx: number, exerciseIdx: number) => IntelligenceAlert[]
@@ -35,14 +38,14 @@ export function useProgramIntelligence(
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      const next = buildIntelligenceResult(sessions, meta)
+      const next = buildIntelligenceResult(sessions, meta, profile)
       setResult(next)
-    }, 400) // debounce 400ms
+    }, 400)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [sessions, meta])
+  }, [sessions, meta, profile])
 
   function alertsFor(sessionIdx: number, exerciseIdx: number): IntelligenceAlert[] {
     return result.alerts.filter(

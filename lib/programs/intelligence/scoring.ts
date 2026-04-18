@@ -142,12 +142,37 @@ export function scoreSRA(
   const effectiveLevel = profile?.fitnessLevel ?? meta.level
   const levelMult = SRA_LEVEL_MULTIPLIER[effectiveLevel] ?? 1.0
 
+  // Collapse grouped exercises into combined slots before building the muscle map.
+  // For each session, exercises sharing a group_id are merged into one virtual exercise
+  // that holds the union of their primary muscles. Standalone exercises pass through unchanged.
+  function collapseGroups(exercises: BuilderExercise[]): BuilderExercise[] {
+    const seen = new Map<string, BuilderExercise>()
+    const out: BuilderExercise[] = []
+    for (const ex of exercises) {
+      if (!ex.group_id) {
+        out.push(ex)
+        continue
+      }
+      if (seen.has(ex.group_id)) {
+        const existing = seen.get(ex.group_id)!
+        existing.primary_muscles = Array.from(new Set([...existing.primary_muscles, ...ex.primary_muscles]))
+        existing.secondary_muscles = Array.from(new Set([...existing.secondary_muscles, ...ex.secondary_muscles]))
+      } else {
+        const slot: BuilderExercise = { ...ex, primary_muscles: [...ex.primary_muscles], secondary_muscles: [...ex.secondary_muscles] }
+        seen.set(ex.group_id, slot)
+        out.push(slot)
+      }
+    }
+    return out
+  }
+
   // Construit une map muscle → [{sessionIndex, dayOfWeek}]
   const muscleSessionMap: Record<string, { sessionIndex: number; day: number | null }[]> = {}
 
   sessions.forEach((session, si) => {
+    const collapsed = collapseGroups(session.exercises)
     const muscles = new Set<string>()
-    for (const ex of session.exercises) {
+    for (const ex of collapsed) {
       ex.primary_muscles.map(normalizeMuscleSlug).forEach(m => muscles.add(m))
     }
     muscles.forEach(muscle => {
@@ -210,6 +235,51 @@ export function scoreSRA(
     : clampScore(100 - (violations / totalChecks) * 100)
 
   return { score, alerts, sraMap }
+}
+
+// ─── 2b. Superset imbalance detection ─────────────────────────────────────────
+
+export function scoreSuperset(
+  sessions: BuilderSession[],
+): { score: number; alerts: IntelligenceAlert[] } {
+  const alerts: IntelligenceAlert[] = []
+
+  sessions.forEach((session, si) => {
+    const groupMap = new Map<string, BuilderExercise[]>()
+    for (const ex of session.exercises) {
+      if (ex.group_id) {
+        if (!groupMap.has(ex.group_id)) groupMap.set(ex.group_id, [])
+        groupMap.get(ex.group_id)!.push(ex)
+      }
+    }
+
+    groupMap.forEach((exs, groupId) => {
+      if (exs.length < 2) return
+
+      // Check if any two exercises in the group share primary muscles (agonist-agonist)
+      for (let a = 0; a < exs.length; a++) {
+        for (let b = a + 1; b < exs.length; b++) {
+          const musclesA = new Set(exs[a].primary_muscles.map(normalizeMuscleSlug))
+          const musclesB = new Set(exs[b].primary_muscles.map(normalizeMuscleSlug))
+          const overlap = Array.from(musclesA).filter(m => musclesB.has(m))
+
+          if (overlap.length > 0) {
+            alerts.push({
+              severity: 'warning',
+              code: 'SUPERSET_IMBALANCE',
+              title: `Superset agoniste — ${exs[a].name} + ${exs[b].name}`,
+              explanation: `Deux exercices du même superset ciblent les mêmes muscles (${overlap.join(', ')}). Pas d'antagoniste pour la récupération.`,
+              suggestion: `Envisagez un partenaire antagoniste (ex: pressing + tirage) pour une meilleure récupération.`,
+              sessionIndex: si,
+            })
+            return // One alert per group
+          }
+        }
+      }
+    })
+  })
+
+  return { score: 100, alerts }
 }
 
 // ─── 3. Redondance mécanique ──────────────────────────────────────────────────
