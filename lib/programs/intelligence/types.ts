@@ -88,6 +88,7 @@ export interface BuilderExercise {
   primary_muscles: string[]   // slugs FR : 'fessiers', 'quadriceps', etc.
   secondary_muscles: string[]
   is_compound?: boolean       // checkbox coach — undefined = auto-dérivé
+  group_id?: string           // superset group identifier
 }
 
 export interface BuilderSession {
