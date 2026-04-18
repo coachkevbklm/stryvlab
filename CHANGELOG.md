@@ -1,3 +1,9 @@
+## 2026-04-19
+
+REFACTOR: ProgramTemplateBuilder — merge clientId useEffects into single Promise.all fetch
+FEATURE: intelligence debounce réduit 400ms → 300ms dans useProgramIntelligence
+FEATURE: ProgramTemplateBuilder — fetch morpho/latest au mount + morphoAdjustments passé à useProgramIntelligence
+
 ## 2026-04-18
 
 FEATURE: Phase 0 MorphoPro Bridge — implémentation complète (Tasks 3–9)
