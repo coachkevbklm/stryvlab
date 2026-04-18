@@ -1,5 +1,7 @@
 ## 2026-04-18
 
+DOCS: Add MorphoPro bridge design specification (Phase 0)
+DOCS: Add studio-lab master plan (Phases 0–4: MorphoPro → UI → Biomechanics → Feedback → Export)
 FIX: scoreAlternatives — back muscle sub-groups (grand_dorsal / trapeze_moyen / rhomboides / trapeze_superieur / lombaires) derived from movementPattern, replaces monolithic 'dos' overlap
 FIX: scoreAlternatives — deduplicate candidates by name prefix (first 3 words), max 6 results returned
 FIX: ExerciseAlternativesDrawer — 'Remplace mécaniquement' label now requires true sub-group overlap, not dos_large-only match

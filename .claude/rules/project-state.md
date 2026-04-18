@@ -2,9 +2,111 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-18 (Alternatives Scoring Refactor Tasks 1-5 Complete)
+> Dernière mise à jour : 2026-04-18 (Studio-Lab Master Plan Designed & Documented)
 
 ---
+
+## 🚀 VISION : Programme Generation Studio-Lab System
+
+**Goal:** Transform programme builder into an optimal, transparent, morphology-aware tool with rule-based scoring and performance feedback.
+
+**Architecture:**
+```
+MorphoPro Bridge (Phase 0) [OpenAI Vision → morpho data + stimulus adjustments]
+         ↓
+Phase 1 UI [Dual-pane studio-lab builder, real-time intelligence, Lab Mode]
+         ↓
+Phase 2 Biomechanics [Rule-based scoring engine, profile integration, alerts]
+         ↓
+Phase 3 Feedback Loops [Auto-adjust from client performance, morpho progression tracking]
+         ↓
+Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
+```
+
+**Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
+
+**Status:** ✅ All phases designed + spec'd. Ready to implement Phase 0.
+
+**Master Plan:** `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
+
+**Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
+
+---
+
+## 2026-04-18 — Studio-Lab Redesign — Master Plan Documented
+
+**Ce qui a été fait :**
+
+1. **Brainstorming Phase 0–4** (2026-04-18)
+   - Confirmed strategy: **MorphoPro Bridge (backend-only) FIRST** before Phase 1 UI redesign
+   - Confirmed OpenAI Vision API (not custom ML) for morpho photo analysis
+   - Confirmed rule-based scoring (not generative AI)
+   - Confirmed async job queue for MorphoPro (non-blocking coach UX)
+
+2. **Phase 0 Design** (MorphoPro Bridge)
+   - `morpho_analyses` table: versioned morpho per client (history timeline)
+   - API routes: analyze, latest, analyses timeline, job-status polling
+   - Async job: `analyzeMorphoJob()` orchestrates OpenAI Vision → parsing → stimulus adjustments
+   - Scoring integration: `buildIntelligenceResult()` accepts morpho + applies stimulus adjustments
+   - Coach workflow: Profil tab → `[Analyser Morpho]` button → job queued → results shown (~30s)
+
+3. **Phase 1 Design** (UI Redesign Studio-Lab)
+   - Dual-pane layout: Navigator (16%) | Editor (54%) | Intelligence Panel (30%, modular)
+   - Lab Mode visible by default (variants, biomechanics debug, rule transparency, morpho controls)
+   - Real-time intelligence updates (debounce 300ms as coach edits)
+   - Modular Intelligence Panel (dock left/right, float, minimize, fullscreen)
+   - DS v2.0 studio-grade (dark theme, tight spacing, accent colors)
+
+4. **Phase 2 Design** (Biomechanics Engine)
+   - 6 scoring subscores: SRA, Balance, Specificity, Progression, Redundancy, Completeness
+   - Client profile integration: injuries (body_part + severity), equipment, fitness level
+   - Morpho integration: stimulus adjustments applied to specificity + redundancy
+   - Real-time alerts (critical, warning, info levels)
+   - Rule transparency (why each score = X/100)
+
+5. **Phase 3 Design** (Performance Feedback Loops)
+   - RIR + completion rate tracking from client logs
+   - Auto-recommendations: volume ±1 set, intensity ±5%, exercise swaps, recovery extension
+   - Morpho-performance correlation (body comp changes → program outcome)
+   - Coach review + approval before applying auto-adjust
+
+6. **Phase 4 Design** (Export & Webhooks)
+   - Programme export: PDF, CSV, JSON, app-native format
+   - Webhook triggers: programme completed, client performance update, morpho analysis done
+   - Analytics dashboard: adherence, performance trends, morpho progression
+
+7. **Documentation**
+   - Master plan: `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
+   - Phase 0 spec: `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
+   - Phase 1 UI design: embedded in master plan + brainstorming output
+   - Timeline: ~9–10 weeks total
+
+**Points d'Architecture :**
+
+- **MorphoPro First:** Stimulus adjustments derived from morpho are needed for Phase 1 scoring to be optimal. Do Phase 0 before Phase 1.
+- **OpenAI Vision:** Photo analysis via OpenAI API (not custom ML). Parsed into structured metrics (body_fat_pct, dimensions, asymmetries).
+- **Async Job Queue:** Coach triggers analysis → job queued → results async (non-blocking). No timeout risk.
+- **Stimulus Range:** 0.8–1.2 per pattern. Morpho becomes a modifier on base coefficients (preserves calibration).
+- **Real-Time Scoring:** Phase 1 scores update live as coach edits (debounce 300ms). Continuous feedback loop.
+- **Lab Mode Visible:** Studio-lab tool should expose internals. Coach can toggle off if distracting.
+- **Rule-Based Scoring:** NO generative AI for program logic. Research-backed formulas (SRA windows, stimulus coeff, balance ratios, etc.).
+
+**Next Steps — Phase 0 Implementation:**
+
+- [ ] Spawn subagents for Phase 0 tasks (1 per major component)
+- [ ] Task 1: Database migration + RLS
+- [ ] Task 2: API routes (analyze, latest, analyses, job-status)
+- [ ] Task 3: Async job + OpenAI Vision integration
+- [ ] Task 4: Scoring integration (morpho stimulus adjustments)
+- [ ] Task 5: Coach UI (Profil tab, [Analyser] button)
+- [ ] Test end-to-end: coach analyzes morpho → see results → scores updated
+- [ ] Commit + CHANGELOG + project-state update
+
+**Timeline Phase 0:** 1.5–2 weeks (2026-04-18 → ~2026-05-02)
+
+---
+
+## 2026-04-18 — Alternatives Scoring Refactor — Back Sub-Groups & Deduplication (Tasks 1-5)
 
 ## 2026-04-18 — Alternatives Scoring Refactor — Back Sub-Groups & Deduplication (Tasks 1-5)
 
