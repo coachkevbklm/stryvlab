@@ -1,5 +1,7 @@
 ## 2026-04-18
 
+FEATURE: ClientAlternativesSheet + SessionLogger.Indisponible? button — client sees coach-pre-configured alternatives bottom sheet
+FEATURE: Session page server fetch — load coach_template_exercise_alternatives, pass clientAlternatives to SessionLogger
 FEATURE: Système A client exercise alternatives — coach pre-configures up to 3 per exercise in template builder
 SCHEMA: Add coach_template_exercise_alternatives table with RLS for alternatives management
 FEATURE: API GET/POST/DELETE /program-templates/[id]/exercises/[id]/alternatives
