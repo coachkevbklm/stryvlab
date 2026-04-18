@@ -1,5 +1,17 @@
 ## 2026-04-18
 
+FEATURE: Phase 0 MorphoPro Bridge — implémentation complète (Tasks 3–9)
+FEATURE: lib/morpho/analyze.ts — analyzePhotoWithOpenAI (gpt-4o), getPhotoUrlsFromSubmission, getLatestClientBiometrics
+FEATURE: jobs/morpho/analyzeMorphoJob.ts — orchestrateur async (photos → Vision → parse → ajustements → DB)
+FEATURE: API POST /api/clients/[clientId]/morpho/analyze — déclenche job, rate limit 1/24h, 202 Accepted
+FEATURE: API GET /api/clients/[clientId]/morpho/latest — dernière analyse complète (coach + client auth)
+FEATURE: API GET /api/clients/[clientId]/morpho/analyses — timeline paginée (coach only)
+FEATURE: API POST /api/clients/[clientId]/morpho/job-status — polling statut job par job_id
+FEATURE: scoring.ts buildIntelligenceResult accepte morphoStimulusAdjustments (4e param optionnel)
+FEATURE: scoreSpecificity applique ajustements morpho au coefficient de stimulus par pattern
+FEATURE: useProgramIntelligence hook accepte morphoStimulusAdjustments (4e param optionnel, backward compatible)
+FEATURE: MorphoAnalysisSection — composant UI coach avec bouton Analyser + polling + affichage résultats DS v2.0
+FEATURE: Page /coach/clients/[clientId] onglet Profil intègre MorphoAnalysisSection
 FEATURE: Add morpho parsing and stimulus adjustment helper functions (Phase 0 Task 2)
 FEATURE: parseMorphoResponses — extract metrics from OpenAI Vision text (body fat %, dimensions, asymmetries)
 FEATURE: estimateMuscleFromBiometrics — estimate muscle mass from weight + body fat percentage

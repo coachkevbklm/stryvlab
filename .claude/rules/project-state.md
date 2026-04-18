@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-18 (Phase 0 Task 2: Helper Functions Completed)
+> Dernière mise à jour : 2026-04-18 (Phase 0 MorphoPro Bridge — Implémentation Complète)
 
 ---
 
@@ -25,11 +25,48 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
 
-**Status:** ✅ All phases designed + spec'd. Phase 0 Task 1–2 complete. Task 3 in progress (async job + OpenAI Vision).
+**Status:** ✅ Phase 0 entièrement implémentée. Prête pour Phase 1 (UI Studio-Lab).
 
 **Master Plan:** `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
 
 **Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
+
+---
+
+## 2026-04-18 — Phase 0 MorphoPro Bridge — Implémentation Complète
+
+**Ce qui a été fait :**
+
+1. **`supabase/migrations/20260418_morpho_analyses.sql`** — table morpho_analyses + RLS
+   - Colonnes : id, client_id, assessment_submission_id, analysis_date, raw_payload, body_composition, dimensions, asymmetries, stimulus_adjustments, status, job_id, error_message, analyzed_by
+   - RLS : coach SELECT/INSERT/UPDATE (via coach_clients.coach_id), client SELECT (via coach_clients.user_id)
+   - Indexes : (client_id, analysis_date DESC), (client_id) WHERE status='completed'
+
+2. **`lib/morpho/parse.ts`** — parseMorphoResponses + estimateMuscleFromBiometrics (42 tests)
+3. **`lib/morpho/adjustments.ts`** — calculateStimulusAdjustments + applyMorphoAdjustment (règles asymétries bras/épaule/membres)
+4. **`lib/morpho/analyze.ts`** — analyzePhotoWithOpenAI (gpt-4o), getPhotoUrlsFromSubmission, getLatestClientBiometrics
+5. **`jobs/morpho/analyzeMorphoJob.ts`** — orchestrateur async : photos → Vision → parse → ajustements → DB
+6. **4 routes API** :
+   - `POST /api/clients/[clientId]/morpho/analyze` — déclenche job, rate limit 1/24h
+   - `GET /api/clients/[clientId]/morpho/latest` — dernière analyse complète
+   - `GET /api/clients/[clientId]/morpho/analyses` — timeline paginée
+   - `POST /api/clients/[clientId]/morpho/job-status` — polling par job_id
+7. **Scoring** : `buildIntelligenceResult` accepte `morphoStimulusAdjustments` optionnel → `scoreSpecificity` applique les ajustements morpho au coeff de stimulus
+8. **`components/clients/MorphoAnalysisSection.tsx`** — bouton Analyser + polling + affichage body_composition + asymétries (DS v2.0)
+9. **`/coach/clients/[clientId]` onglet Profil** intègre MorphoAnalysisSection
+
+**Points de vigilance :**
+- Job queue : `setImmediate` (MVP) — remplacer par Inngest ou Bull en production pour la robustesse
+- OpenAI Vision : modèle `gpt-4o` (gpt-4-vision est déprécié depuis Dec 2024)
+- Rate limit DB-based : pas de Redis — un seul processus à la fois acceptable en Phase 0
+- `morphoStimulusAdjustments` pris en compte uniquement dans `scoreSpecificity` — `scoreRedundancy` reste sans ajustement morpho (Phase 2)
+- Les erreurs TypeScript existantes (Stripe, BodyFatCalculator) sont pré-existantes, hors périmètre Phase 0
+
+**Next Steps — Phase 1 UI Studio-Lab :**
+- [ ] Refactor ProgramTemplateBuilder vers layout dual-pane (Navigator 16% | Editor 54% | Intelligence 30%)
+- [ ] Lab Mode visible par défaut (variants, transparence biomécanique, contrôles morpho)
+- [ ] Intelligence Panel temps réel (debounce 300ms)
+- [ ] MorphoAnalysisSection : connecter stimulus_adjustments → useProgramIntelligence dans ProgramTemplateBuilder
 
 ---
 

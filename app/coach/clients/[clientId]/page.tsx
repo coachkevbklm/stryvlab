@@ -42,6 +42,7 @@ import ClientFormulasTab from "@/components/crm/ClientFormulasTab";
 import DeleteClientModal from "@/components/clients/DeleteClientModal";
 import MetricsSection from "@/components/clients/MetricsSection";
 import RestrictionsWidget from "@/components/clients/RestrictionsWidget";
+import { MorphoAnalysisSection } from "@/components/clients/MorphoAnalysisSection";
 import { SubmissionWithClient } from "@/types/assessment";
 import {
   rankTemplates as rankTemplatesFull,
@@ -1111,6 +1112,11 @@ export default function ClientDetailPage() {
               {/* Restrictions physiques + équipement */}
               <div className="mt-4">
                 <RestrictionsWidget clientId={clientId} />
+              </div>
+
+              {/* Analyse morphologique */}
+              <div className="mt-4 pt-4 border-t-[0.3px] border-white/[0.06]">
+                <MorphoAnalysisSection clientId={clientId} />
               </div>
 
               {/* Danger zone */}

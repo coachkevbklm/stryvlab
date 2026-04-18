@@ -27,6 +27,7 @@ export function useProgramIntelligence(
   sessions: BuilderSession[],
   meta: TemplateMeta,
   profile?: IntelligenceProfile,
+  morphoStimulusAdjustments?: Record<string, number>,
 ): {
   result: IntelligenceResult
   alertsFor: (sessionIdx: number, exerciseIdx: number) => IntelligenceAlert[]
@@ -38,14 +39,14 @@ export function useProgramIntelligence(
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      const next = buildIntelligenceResult(sessions, meta, profile)
+      const next = buildIntelligenceResult(sessions, meta, profile, morphoStimulusAdjustments)
       setResult(next)
     }, 400)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [sessions, meta, profile])
+  }, [sessions, meta, profile, morphoStimulusAdjustments])
 
   function alertsFor(sessionIdx: number, exerciseIdx: number): IntelligenceAlert[] {
     return result.alerts.filter(

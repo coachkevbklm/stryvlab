@@ -435,6 +435,7 @@ export function scoreSpecificity(
   sessions: BuilderSession[],
   meta: TemplateMeta,
   profile?: IntelligenceProfile,
+  morphoStimulusAdjustments?: Record<string, number>,
 ): { score: number; alerts: IntelligenceAlert[] } {
   const alerts: IntelligenceAlert[] = []
   const allExercises = sessions.flatMap(s => s.exercises)
@@ -474,10 +475,12 @@ export function scoreSpecificity(
     })
   }
 
-  // Moyenne pondérée par stimCoeff
+  // Moyenne pondérée par stimCoeff (avec ajustement morpho si disponible)
   let totalWeight = 0, weightedSum = 0
   allExercises.forEach((ex) => {
-    const coeff = getCoeff(ex)
+    const baseCoeff = getCoeff(ex)
+    const morphoAdj = morphoStimulusAdjustments?.[ex.movement_pattern ?? ''] ?? 1.0
+    const coeff = Math.max(0.4, Math.min(1.2, baseCoeff * morphoAdj))
     const specificity = exerciseSpecificityScore(ex, meta.goal)
     weightedSum += specificity * coeff
     totalWeight += coeff
@@ -638,6 +641,7 @@ export function buildIntelligenceResult(
   sessions: BuilderSession[],
   meta: TemplateMeta,
   profile?: IntelligenceProfile,
+  morphoStimulusAdjustments?: Record<string, number>,
 ): IntelligenceResult {
   // Filtrer les exercices sans nom — les placeholders vides ne doivent pas influencer le scoring
   const filteredSessions = sessions.map(s => ({
@@ -673,7 +677,7 @@ export function buildIntelligenceResult(
   const sraResult = scoreSRA(filteredSessions, meta, profile)
   const redundancyResult = scoreRedundancy(filteredSessions)
   const progressionResult = scoreProgression(filteredSessions, meta)
-  const specificityResult = scoreSpecificity(filteredSessions, meta, profile)
+  const specificityResult = scoreSpecificity(filteredSessions, meta, profile, morphoStimulusAdjustments)
   const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
 
   const subscores = {

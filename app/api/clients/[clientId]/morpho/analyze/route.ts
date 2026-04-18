@@ -1,0 +1,145 @@
+// POST /api/clients/[clientId]/morpho/analyze
+// Déclenche une analyse morphologique via OpenAI Vision (async)
+
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createClient as createServerClient } from '@/utils/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { analyzeMorphoJob } from '@/jobs/morpho/analyzeMorphoJob'
+
+function service() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+const bodySchema = z.object({
+  submission_id: z.string().uuid().optional(),
+})
+
+type Params = { params: { clientId: string } }
+
+export async function POST(req: NextRequest, { params }: Params) {
+  const supabase = createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
+  const db = service()
+
+  // Vérifier ownership coach → client
+  const { data: client } = await db
+    .from('coach_clients')
+    .select('id')
+    .eq('id', params.clientId)
+    .eq('coach_id', user.id)
+    .single()
+
+  if (!client) {
+    return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
+  }
+
+  // Parser le body (submission_id optionnel)
+  const bodyResult = bodySchema.safeParse(await req.json().catch(() => ({})))
+  if (!bodyResult.success) {
+    return NextResponse.json({ error: bodyResult.error.message }, { status: 400 })
+  }
+
+  // Trouver la soumission (spécifiée ou la plus récente complète)
+  let submissionId: string | null = null
+  if (bodyResult.data.submission_id) {
+    const { data: sub } = await db
+      .from('assessment_submissions')
+      .select('id')
+      .eq('id', bodyResult.data.submission_id)
+      .eq('client_id', params.clientId)
+      .single()
+    if (!sub) {
+      return NextResponse.json({ error: 'Soumission introuvable' }, { status: 404 })
+    }
+    submissionId = sub.id
+  } else {
+    const { data: sub } = await db
+      .from('assessment_submissions')
+      .select('id')
+      .eq('client_id', params.clientId)
+      .eq('status', 'completed')
+      .order('bilan_date', { ascending: false })
+      .limit(1)
+      .single()
+    if (!sub) {
+      return NextResponse.json({ error: 'Aucun bilan complété trouvé' }, { status: 422 })
+    }
+    submissionId = sub.id
+  }
+
+  // Vérifier que la soumission contient des photos
+  const { count: photoCount } = await db
+    .from('assessment_responses')
+    .select('*', { count: 'exact', head: true })
+    .eq('submission_id', submissionId)
+    .eq('field_type', 'photo')
+
+  if (!photoCount || photoCount === 0) {
+    return NextResponse.json({ error: 'Aucune photo dans ce bilan' }, { status: 422 })
+  }
+
+  // Rate limit : max 1 analyse par client par jour
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { data: recent } = await db
+    .from('morpho_analyses')
+    .select('id')
+    .eq('client_id', params.clientId)
+    .gte('created_at', since)
+    .limit(1)
+    .single()
+
+  if (recent) {
+    return NextResponse.json(
+      { error: 'Maximum 1 analyse par client par 24h' },
+      { status: 429 }
+    )
+  }
+
+  // Créer l'enregistrement morpho_analyses avec status=pending
+  const jobId = `job_${Date.now()}_${params.clientId.slice(0, 8)}`
+  const analysisDate = new Date().toISOString().split('T')[0]
+
+  const { data: morphoAnalysis, error: insertError } = await db
+    .from('morpho_analyses')
+    .insert({
+      client_id: params.clientId,
+      assessment_submission_id: submissionId,
+      analysis_date: analysisDate,
+      status: 'pending',
+      job_id: jobId,
+      analyzed_by: user.id,
+    })
+    .select('id, job_id')
+    .single()
+
+  if (insertError || !morphoAnalysis) {
+    return NextResponse.json({ error: 'Erreur création analyse' }, { status: 500 })
+  }
+
+  // Démarrer le job async (fire and forget)
+  // TODO: Remplacer par une vraie queue (Inngest, Bull) en production
+  const morphoId = morphoAnalysis.id
+  setImmediate(() => {
+    analyzeMorphoJob(morphoId).catch((err: unknown) => {
+      console.error('[morpho/analyze] Erreur job async:', err)
+    })
+  })
+
+  return NextResponse.json(
+    {
+      job_id: morphoAnalysis.job_id,
+      morpho_analysis_id: morphoAnalysis.id,
+      status: 'queued',
+      eta_seconds: 30,
+    },
+    { status: 202 }
+  )
+}
