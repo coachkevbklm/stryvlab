@@ -16,7 +16,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   const client = await resolveClientFromUser(user!.id, user!.email, service)
   if (!client) notFound()
 
-  // Fetch session with exercises + colonnes double progression
+  // Fetch session avec exercices + colonnes double progression + image + unilatéral
   const { data: session } = await service
     .from('program_sessions')
     .select(`
@@ -24,7 +24,8 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       program_id,
       program_exercises (
         id, name, sets, reps, rest_sec, rir, notes, position,
-        target_rir, current_weight_kg, rep_min, rep_max, weight_increment_kg
+        target_rir, current_weight_kg, rep_min, rep_max, weight_increment_kg,
+        image_url, is_unilateral
       )
     `)
     .eq('id', params.sessionId)
@@ -32,8 +33,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
 
   if (!session) notFound()
 
-  // Vérifier que cette session appartient bien à un programme actif du client
-  // et récupérer le flag progressive_overload_enabled
+  // Vérifier que la session appartient à un programme actif du client
   const { data: program } = await service
     .from('programs')
     .select('id, progressive_overload_enabled')
@@ -51,13 +51,90 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
     .map((ex: any) => ({
       ...ex,
       progressive_overload_enabled: progressionEnabled,
+      // Détection unilatéral : flag DB OU nom contient un mot-clé unilatéral
+      is_unilateral: ex.is_unilateral ||
+        /unilat[eé]ral|single|alterné|alternée|1 bras|1 jambe|un bras|une jambe/i.test(ex.name ?? ''),
+      clientAlternatives: [],  // Will be populated below
     }))
+
+  // Fetch the template_id for this session's program to get coach-pre-configured alternatives
+  const { data: sessionData } = await service
+    .from('program_sessions')
+    .select('program_id, programs!inner(template_id)')
+    .eq('id', params.sessionId)
+    .single()
+
+  const templateId = (sessionData as any)?.programs?.template_id as string | null
+
+  // For each exercise, find coach-configured alternatives
+  let alternativesMap: Record<string, string[]> = {}
+  if (templateId && exercises?.length) {
+    const { data: templateExercises } = await service
+      .from('coach_program_template_exercises')
+      .select(`
+        name,
+        coach_template_exercise_alternatives (name, position)
+      `)
+      .eq('template_session_id', templateId)
+
+    if (templateExercises) {
+      for (const te of templateExercises) {
+        const alts = ((te as any).coach_template_exercise_alternatives ?? [])
+          .sort((a: any, b: any) => a.position - b.position)
+          .map((a: any) => a.name as string)
+        if (alts.length > 0) alternativesMap[te.name] = alts
+      }
+    }
+  }
+
+  // Fetch historique de la dernière séance pour cet exercice (par nom, derniers set_logs)
+  // On récupère les set_logs de la dernière session_log pour chaque exercice de cette séance
+  const exerciseNames = exercises.map((ex: any) => ex.name)
+
+  let lastPerformance: Record<string, { weight: number | null; reps: number | null; side?: string | null }[]> = {}
+
+  if (exerciseNames.length > 0) {
+    // Dernière session log du client (hors session actuelle en cours)
+    // Filtre via client_session_logs pour garantir l'isolation par client
+    const { data: lastLogs } = await service
+      .from('client_set_logs')
+      .select('exercise_name, set_number, actual_weight_kg, actual_reps, side, completed, client_session_logs!inner(client_id)')
+      .eq('completed', true)
+      .eq('client_session_logs.client_id', client.id)
+      .in('exercise_name', exerciseNames)
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    if (lastLogs) {
+      // Garder uniquement les sets les plus récents par exercice (première occurrence = plus récente)
+      const seen = new Set<string>()
+      for (const log of lastLogs) {
+        const key = `${log.exercise_name}__${log.set_number}__${log.side ?? 'bilateral'}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          if (!lastPerformance[log.exercise_name]) lastPerformance[log.exercise_name] = []
+          lastPerformance[log.exercise_name].push({
+            weight: log.actual_weight_kg,
+            reps: log.actual_reps,
+            side: log.side,
+          })
+        }
+      }
+    }
+  }
+
+  // Add clientAlternatives to each exercise
+  const exercisesWithAlternatives = exercises.map((ex: any) => ({
+    ...ex,
+    clientAlternatives: alternativesMap[ex.name] ?? [],
+  }))
 
   return (
     <SessionLogger
       clientId={client.id}
       session={{ id: session.id, name: session.name }}
-      exercises={exercises}
+      exercises={exercisesWithAlternatives}
+      lastPerformance={lastPerformance}
     />
   )
 }

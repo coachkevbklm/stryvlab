@@ -6,9 +6,10 @@ import Image from 'next/image'
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Circle,
   Loader2, AlertCircle, RefreshCw, TrendingUp,
-  Clock, ChevronUp, X, MessageSquare, Flag
+  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import ExerciseSwapSheet from './ExerciseSwapSheet'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ interface Exercise {
   rep_min: number | null
   rep_max: number | null
   progressive_overload_enabled: boolean
+  clientAlternatives?: string[]  // coach-pre-configured alternatives
 }
 
 interface SetLog {
@@ -133,6 +135,8 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({})
   const [showNoteInput, setShowNoteInput] = useState<string | null>(null)
   const [showImage, setShowImage] = useState(true)
+  const [swapTarget, setSwapTarget] = useState<string | null>(null)
+  const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
 
   // ── Chrono repos ──
   // restElapsed : secondes écoulées depuis le début du chrono (peut dépasser restPrescribed → overtime)
@@ -390,6 +394,11 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
     }
   }
 
+  function handleSwap(exerciseId: string, newName: string) {
+    setSwappedNames(prev => ({ ...prev, [exerciseId]: newName }))
+    setSwapTarget(null)
+  }
+
   if (!currentEx) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
@@ -624,7 +633,16 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-[15px] font-bold text-white leading-tight">{currentEx.name}</h2>
+                  <h2 className="text-[15px] font-bold text-white leading-tight">
+                    {swappedNames[currentEx.id] ?? currentEx.name}
+                  </h2>
+                  <button
+                    onClick={() => setSwapTarget(currentEx.id)}
+                    className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                    title="Remplacer temporairement"
+                  >
+                    <ArrowLeftRight size={13} />
+                  </button>
                   {currentEx.progressive_overload_enabled && currentEx.rep_min !== null && (
                     <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />
                   )}
@@ -822,6 +840,15 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
           </button>
         )}
       </main>
+
+      {swapTarget && (
+        <ExerciseSwapSheet
+          exercise={exercises.find(e => e.id === swapTarget)!}
+          allExercises={exercises}
+          onSwap={(newName) => handleSwap(swapTarget, newName)}
+          onClose={() => setSwapTarget(null)}
+        />
+      )}
 
       {/* ── Bouton Terminer (fixe) ── */}
       <div className="fixed bottom-20 left-0 right-0 px-5 z-40 bg-[#121212] pt-3 pb-2">
