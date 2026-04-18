@@ -1,5 +1,6 @@
 ## 2026-04-19
 
+FEATURE: ExerciseCard — extract exercise card into standalone component at components/programs/studio/ExerciseCard.tsx (2-column layout, self-contained)
 FEATURE: NavigatorPane — composant arborescence séances/exercices avec collapse/expand et state activeSessionIndex/activeExerciseKey
 REFACTOR: ProgramTemplateBuilder — merge clientId useEffects into single Promise.all fetch
 FEATURE: intelligence debounce réduit 400ms → 300ms dans useProgramIntelligence
