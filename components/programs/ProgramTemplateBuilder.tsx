@@ -266,22 +266,15 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
 
   useEffect(() => {
     if (!clientId) return
-    fetch(`/api/clients/${clientId}/intelligence-profile`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setIntelligenceProfile(data) })
-      .catch(() => {})
-  }, [clientId]);
-
-  useEffect(() => {
-    if (!clientId) return
-    fetch(`/api/clients/${clientId}/morpho/latest`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.data?.stimulus_adjustments) {
-          setMorphoAdjustments(data.data.stimulus_adjustments)
-        }
-      })
-      .catch(() => {})
+    Promise.all([
+      fetch(`/api/clients/${clientId}/intelligence-profile`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/clients/${clientId}/morpho/latest`).then(r => r.ok ? r.json() : null),
+    ]).then(([profile, morpho]) => {
+      if (profile) setIntelligenceProfile(profile)
+      if (morpho?.data?.stimulus_adjustments) {
+        setMorphoAdjustments(morpho.data.stimulus_adjustments)
+      }
+    }).catch(() => {})
   }, [clientId]);
   const [pickerTarget, setPickerTarget] = useState<{
     si: number;
