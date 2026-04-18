@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -19,7 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ExercisePicker from "./ExercisePicker";
-import { useProgramIntelligence } from "@/lib/programs/intelligence";
+import { useProgramIntelligence, type IntelligenceProfile } from "@/lib/programs/intelligence";
 import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
 import IntelligenceAlertBadge from "./IntelligenceAlertBadge";
 import ExerciseAlternativesDrawer from "./ExerciseAlternativesDrawer";
@@ -186,9 +186,10 @@ function emptySession(): Session {
 interface Props {
   initial?: any; // template existant pour l'édition
   templateId?: string;
+  clientId?: string;
 }
 
-export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
+export default function ProgramTemplateBuilder({ initial, templateId, clientId }: Props) {
   const router = useRouter();
   const isEdit = !!templateId;
 
@@ -250,6 +251,17 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [intelligenceProfile, setIntelligenceProfile] = useState<IntelligenceProfile | undefined>(undefined);
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
+  const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!clientId) return
+    fetch(`/api/clients/${clientId}/intelligence-profile`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setIntelligenceProfile(data) })
+      .catch(() => {})
+  }, [clientId]);
   const [pickerTarget, setPickerTarget] = useState<{
     si: number;
     ei: number;
@@ -281,7 +293,17 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
       is_compound: e.is_compound,
     })),
   }));
-  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta);
+  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile);
+
+  function handleAlertClick(sessionIndex: number, exerciseIndex: number) {
+    const key = `${sessionIndex}-${exerciseIndex}`
+    const el = exerciseRefs.current[key]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setHighlightKey(key)
+      setTimeout(() => setHighlightKey(null), 2000)
+    }
+  }
 
   async function handleImageUpload(si: number, ei: number, file: File) {
     const key = `${si}-${ei}`;
@@ -637,7 +659,8 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
                 {session.exercises.map((ex, ei) => (
                   <div
                     key={ei}
-                    className="bg-[#0a0a0a] rounded-2xl p-3 flex flex-col gap-2"
+                    ref={el => { exerciseRefs.current[`${si}-${ei}`] = el }}
+                    className={`bg-[#0a0a0a] rounded-2xl p-3 flex flex-col gap-2 transition-all duration-300 ${highlightKey === `${si}-${ei}` ? 'ring-1 ring-[#1f8a65]/60 ring-offset-1 ring-offset-[#121212]' : ''}`}
                   >
                     <div className="flex items-center gap-2">
                       <input
@@ -1021,11 +1044,21 @@ export default function ProgramTemplateBuilder({ initial, templateId }: Props) {
       </div>
     </div>
 
-    {/* Panel intelligence sticky */}
-    <ProgramIntelligencePanel
-      result={intelligenceResult}
-      weeks={meta.weeks}
-    />
+    {/* Panel intelligence — colonne droite fixe */}
+    <div className="w-[280px] shrink-0 sticky top-[96px] self-start flex flex-col gap-2 max-h-[calc(100vh-112px)] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+      {intelligenceProfile && (intelligenceProfile.injuries.length > 0 || intelligenceProfile.equipment.length > 0) && (
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] font-semibold text-[#1f8a65] bg-[#1f8a65]/10 px-2 py-0.5 rounded-full">
+            Profil client appliqué
+          </span>
+        </div>
+      )}
+      <ProgramIntelligencePanel
+        result={intelligenceResult}
+        weeks={meta.weeks}
+        onAlertClick={handleAlertClick}
+      />
+    </div>
 
     {/* Drawer alternatives */}
     {alternativesTarget && (
