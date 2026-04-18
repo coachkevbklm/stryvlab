@@ -50,7 +50,7 @@ export default async function EditProgramTemplatePage({ params }: { params: { te
           <h1 className="text-xl font-bold text-white">Modifier — {template.name}</h1>
         </div>
       </header>
-      <main className="max-w-3xl mx-auto px-8 py-6">
+      <main className="px-6 py-6">
         <ProgramTemplateBuilder initial={template} templateId={params.templateId} />
       </main>
     </div>

@@ -28,7 +28,7 @@ export default function NewProgramTemplatePage() {
 
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
-      <main className="max-w-3xl mx-auto px-8 py-6">
+      <main className="px-6 py-6">
         <ProgramTemplateBuilder />
       </main>
     </div>
