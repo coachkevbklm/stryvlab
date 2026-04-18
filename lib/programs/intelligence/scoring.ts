@@ -1,8 +1,9 @@
-import { resolveExerciseCoeff, normalizeMuscleSlug } from './catalog-utils'
+import { resolveExerciseCoeff, normalizeMuscleSlug, muscleConflictsWithRestriction } from './catalog-utils'
 import type {
   BuilderSession, BuilderExercise, TemplateMeta,
   IntelligenceAlert, IntelligenceResult, MuscleDistribution,
-  PatternDistribution, SRAPoint, RedundantPair,
+  PatternDistribution, SRAPoint, RedundantPair, IntelligenceProfile,
+  ProgramStats, SessionStats,
 } from './types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -134,10 +135,12 @@ export function scoreBalance(
 export function scoreSRA(
   sessions: BuilderSession[],
   meta: TemplateMeta,
+  profile?: IntelligenceProfile,
 ): { score: number; alerts: IntelligenceAlert[]; sraMap: SRAPoint[] } {
   const alerts: IntelligenceAlert[] = []
   const sraMap: SRAPoint[] = []
-  const levelMult = SRA_LEVEL_MULTIPLIER[meta.level] ?? 1.0
+  const effectiveLevel = profile?.fitnessLevel ?? meta.level
+  const levelMult = SRA_LEVEL_MULTIPLIER[effectiveLevel] ?? 1.0
 
   // Construit une map muscle → [{sessionIndex, dayOfWeek}]
   const muscleSessionMap: Record<string, { sessionIndex: number; day: number | null }[]> = {}
@@ -361,11 +364,45 @@ function exerciseSpecificityScore(ex: BuilderExercise, goal: string): number {
 export function scoreSpecificity(
   sessions: BuilderSession[],
   meta: TemplateMeta,
+  profile?: IntelligenceProfile,
 ): { score: number; alerts: IntelligenceAlert[] } {
   const alerts: IntelligenceAlert[] = []
   const allExercises = sessions.flatMap(s => s.exercises)
 
   if (allExercises.length === 0) return { score: 100, alerts }
+
+  // Injury conflict alerts (per exercise)
+  if (profile && profile.injuries.length > 0) {
+    const SEVERITY_ORDER: Record<string, number> = { avoid: 3, limit: 2, monitor: 1 }
+    allExercises.forEach((ex) => {
+      const si = sessions.findIndex(s => s.exercises.includes(ex))
+      const ei = sessions[si]?.exercises.indexOf(ex) ?? -1
+      const allMuscles = [...ex.primary_muscles, ...ex.secondary_muscles]
+
+      let worstConflict: { conflicts: true; severity: 'avoid' | 'limit' | 'monitor' } | null = null
+      for (const muscle of allMuscles) {
+        const conflict = muscleConflictsWithRestriction(muscle, profile.injuries)
+        if (conflict) {
+          if (!worstConflict || SEVERITY_ORDER[conflict.severity] > SEVERITY_ORDER[worstConflict.severity]) {
+            worstConflict = conflict
+          }
+        }
+      }
+
+      if (worstConflict) {
+        const severityLabel = worstConflict.severity === 'avoid' ? 'évitée' : worstConflict.severity === 'limit' ? 'limitée' : 'surveillée'
+        alerts.push({
+          severity: worstConflict.severity === 'avoid' ? 'critical' : worstConflict.severity === 'limit' ? 'warning' : 'info',
+          code: 'INJURY_CONFLICT',
+          title: `Conflit blessure — ${ex.name}`,
+          explanation: `Cet exercice sollicite une zone ${severityLabel} selon le profil client.`,
+          suggestion: 'Voir les alternatives pour éviter cette zone musculaire.',
+          sessionIndex: si >= 0 ? si : undefined,
+          exerciseIndex: ei >= 0 ? ei : undefined,
+        })
+      }
+    })
+  }
 
   // Moyenne pondérée par stimCoeff
   let totalWeight = 0, weightedSum = 0
@@ -390,14 +427,34 @@ export function scoreSpecificity(
   })
 
   const avgSpecificity = totalWeight === 0 ? 0.65 : weightedSum / totalWeight
-  return { score: clampScore(avgSpecificity * 100), alerts }
+  const avoidConflicts = alerts.filter(a => a.code === 'INJURY_CONFLICT' && a.severity === 'critical').length
+  const limitConflicts = alerts.filter(a => a.code === 'INJURY_CONFLICT' && a.severity === 'warning').length
+  const injuryPenalty = Math.min(40, avoidConflicts * 30 + limitConflicts * 15)
+  return { score: clampScore(avgSpecificity * 100 - injuryPenalty), alerts }
 }
 
 // ─── 6. Patterns manquants ────────────────────────────────────────────────────
 
+// Equipment slugs that support each movement pattern (for equipment-aware completeness)
+const PATTERN_EQUIPMENT_REQUIREMENTS: Record<string, string[]> = {
+  horizontal_push:  ['barre', 'halteres', 'machine', 'cables', 'smith'],
+  vertical_push:    ['barre', 'halteres', 'machine', 'smith'],
+  horizontal_pull:  ['barre', 'halteres', 'machine', 'cables', 'trx'],
+  vertical_pull:    ['barre', 'halteres', 'machine', 'cables', 'trx', 'poulie'],
+  squat_pattern:    ['barre', 'halteres', 'machine', 'smith', 'kettlebell'],
+  hip_hinge:        ['barre', 'halteres', 'machine', 'kettlebell'],
+  elbow_flexion:    ['barre', 'halteres', 'machine', 'cables', 'elastiques'],
+  elbow_extension:  ['barre', 'halteres', 'machine', 'cables', 'elastiques'],
+  lateral_raise:    ['halteres', 'machine', 'cables'],
+  carry:            ['halteres', 'kettlebell', 'barre'],
+  knee_flexion:     ['machine', 'cables'],
+  calf_raise:       ['machine', 'barre', 'halteres'],
+}
+
 export function scoreCompleteness(
   sessions: BuilderSession[],
   meta: TemplateMeta,
+  profile?: IntelligenceProfile,
 ): { score: number; alerts: IntelligenceAlert[]; missingPatterns: string[] } {
   const alerts: IntelligenceAlert[] = []
   const required = REQUIRED_PATTERNS[meta.goal] ?? REQUIRED_PATTERNS.maintenance
@@ -405,7 +462,37 @@ export function scoreCompleteness(
     sessions.flatMap(s => s.exercises.map(ex => ex.movement_pattern).filter(Boolean))
   )
 
-  const missing = required.filter(p => !presentPatterns.has(p))
+  // Filter out patterns that can't be done with available equipment
+  const effectiveRequired = profile && profile.equipment.length > 0
+    ? required.filter(pattern => {
+        const needed = PATTERN_EQUIPMENT_REQUIREMENTS[pattern]
+        if (!needed) return true
+        return needed.some(eq => profile.equipment.includes(eq))
+      })
+    : required
+
+  const missing = effectiveRequired.filter(p => !presentPatterns.has(p))
+
+  // Equipment mismatch alerts: exercises in program that need unavailable equipment
+  if (profile && profile.equipment.length > 0) {
+    sessions.forEach((session, si) => {
+      session.exercises.forEach((ex, ei) => {
+        if (ex.equipment_required.length === 0) return
+        const hasEquipment = ex.equipment_required.some(eq => profile.equipment.includes(eq))
+        if (!hasEquipment) {
+          alerts.push({
+            severity: 'warning',
+            code: 'EQUIPMENT_MISMATCH',
+            title: `Équipement manquant — ${ex.name}`,
+            explanation: `Cet exercice nécessite : ${ex.equipment_required.join(', ')}. Équipement disponible : ${profile.equipment.join(', ')}.`,
+            suggestion: "Voir les alternatives compatibles avec l'équipement disponible.",
+            sessionIndex: si,
+            exerciseIndex: ei,
+          })
+        }
+      })
+    })
+  }
 
   // Exemple d'exercice suggéré par pattern manquant
   const PATTERN_EXAMPLES: Record<string, string> = {
@@ -433,9 +520,9 @@ export function scoreCompleteness(
     })
   })
 
-  const score = required.length === 0
+  const score = effectiveRequired.length === 0
     ? 100
-    : clampScore(((required.length - missing.length) / required.length) * 100)
+    : clampScore(((effectiveRequired.length - missing.length) / effectiveRequired.length) * 100)
 
   return { score, alerts, missingPatterns: missing }
 }
@@ -480,8 +567,24 @@ function buildNarrative(subscores: IntelligenceResult['subscores'], alerts: Inte
 export function buildIntelligenceResult(
   sessions: BuilderSession[],
   meta: TemplateMeta,
+  profile?: IntelligenceProfile,
 ): IntelligenceResult {
-  if (sessions.length === 0 || sessions.every(s => s.exercises.length === 0)) {
+  // Filtrer les exercices sans nom — les placeholders vides ne doivent pas influencer le scoring
+  const filteredSessions = sessions.map(s => ({
+    ...s,
+    exercises: s.exercises.filter(e => e.name.trim() !== ''),
+  }))
+
+  const emptyProgramStats: ProgramStats = {
+    totalSets: 0,
+    totalEstimatedReps: 0,
+    totalExercises: 0,
+    avgExercisesPerSession: 0,
+    sessionsStats: [],
+  }
+
+  const hasExercises = filteredSessions.some(s => s.exercises.length > 0)
+  if (!hasExercises) {
     return {
       globalScore: 0,
       globalNarrative: "Ajoutez des exercices pour voir l'analyse.",
@@ -492,15 +595,16 @@ export function buildIntelligenceResult(
       missingPatterns: [],
       redundantPairs: [],
       sraMap: [],
+      programStats: emptyProgramStats,
     }
   }
 
-  const balanceResult = scoreBalance(sessions, meta)
-  const sraResult = scoreSRA(sessions, meta)
-  const redundancyResult = scoreRedundancy(sessions)
-  const progressionResult = scoreProgression(sessions, meta)
-  const specificityResult = scoreSpecificity(sessions, meta)
-  const completenessResult = scoreCompleteness(sessions, meta)
+  const balanceResult = scoreBalance(filteredSessions, meta)
+  const sraResult = scoreSRA(filteredSessions, meta, profile)
+  const redundancyResult = scoreRedundancy(filteredSessions)
+  const progressionResult = scoreProgression(filteredSessions, meta)
+  const specificityResult = scoreSpecificity(filteredSessions, meta, profile)
+  const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
 
   const subscores = {
     balance: balanceResult.score,
@@ -531,7 +635,7 @@ export function buildIntelligenceResult(
 
   // Distribution musculaire (volume pondéré par groupe)
   const distribution: MuscleDistribution = {}
-  for (const session of sessions) {
+  for (const session of filteredSessions) {
     for (const ex of session.exercises) {
       const vol = weightedVolume(ex)
       ex.primary_muscles.forEach(m => {
@@ -543,7 +647,7 @@ export function buildIntelligenceResult(
 
   // Distribution patterns (volume brut)
   const patternDistribution: PatternDistribution = { push: 0, pull: 0, legs: 0, core: 0 }
-  for (const session of sessions) {
+  for (const session of filteredSessions) {
     for (const ex of session.exercises) {
       const p = getPattern(ex)
       const vol = ex.sets
@@ -552,6 +656,57 @@ export function buildIntelligenceResult(
       else if (LEGS_PATTERNS.has(p)) patternDistribution.legs += vol
       else if (CORE_PATTERNS.has(p)) patternDistribution.core += vol
     }
+  }
+
+  // ─── Stats programme ──────────────────────────────────────────────────────────
+  function parseRepsLow(reps: string): number {
+    return parseInt(reps.split('-')[0] ?? '0') || 0
+  }
+
+  const sessionsStats: SessionStats[] = filteredSessions.map(session => {
+    const exs = session.exercises
+    const totalSets = exs.reduce((acc, e) => acc + e.sets, 0)
+    const estimatedReps = exs.reduce((acc, e) => acc + e.sets * parseRepsLow(e.reps), 0)
+    const patterns = Array.from(new Set(exs.map(e => e.movement_pattern).filter((p): p is string => !!p)))
+
+    const muscleVolumes: Record<string, number> = {}
+    for (const ex of exs) {
+      const vol = weightedVolume(ex)
+      ex.primary_muscles.forEach(m => {
+        const norm = normalizeMuscleSlug(m)
+        muscleVolumes[norm] = (muscleVolumes[norm] ?? 0) + vol
+      })
+    }
+
+    const topMuscles = Object.entries(muscleVolumes)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([m]) => m)
+
+    return {
+      name: session.name,
+      exerciseCount: exs.length,
+      totalSets,
+      estimatedReps,
+      patterns,
+      topMuscles,
+      muscleVolumes,
+    }
+  })
+
+  const totalSets = sessionsStats.reduce((acc, s) => acc + s.totalSets, 0)
+  const totalEstimatedReps = sessionsStats.reduce((acc, s) => acc + s.estimatedReps, 0)
+  const totalExercises = new Set(filteredSessions.flatMap(s => s.exercises.map(e => e.name))).size
+  const avgExercisesPerSession = filteredSessions.length > 0
+    ? Math.round(filteredSessions.reduce((acc, s) => acc + s.exercises.length, 0) / filteredSessions.length)
+    : 0
+
+  const programStats: ProgramStats = {
+    totalSets,
+    totalEstimatedReps,
+    totalExercises,
+    avgExercisesPerSession,
+    sessionsStats,
   }
 
   return {
@@ -564,5 +719,6 @@ export function buildIntelligenceResult(
     missingPatterns: completenessResult.missingPatterns,
     redundantPairs: redundancyResult.redundantPairs,
     sraMap: sraResult.sraMap,
+    programStats,
   }
 }

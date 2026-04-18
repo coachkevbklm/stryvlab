@@ -37,6 +37,24 @@ export interface PatternDistribution {
   core: number
 }
 
+export interface SessionStats {
+  name: string
+  exerciseCount: number
+  totalSets: number
+  estimatedReps: number
+  patterns: string[]          // slugs uniques présents dans la séance
+  topMuscles: string[]        // 3 groupes musculaires les plus sollicités (slugs FR)
+  muscleVolumes: Record<string, number>  // slug FR → weighted volume in THIS session
+}
+
+export interface ProgramStats {
+  totalSets: number           // total séries sur toute la semaine
+  totalEstimatedReps: number  // total reps estimées (sets × repsLow)
+  totalExercises: number      // exercices uniques (par nom)
+  avgExercisesPerSession: number
+  sessionsStats: SessionStats[]
+}
+
 export interface IntelligenceResult {
   globalScore: number
   globalNarrative: string
@@ -54,6 +72,7 @@ export interface IntelligenceResult {
   missingPatterns: MovementPattern[]
   redundantPairs: RedundantPair[]
   sraMap: SRAPoint[]
+  programStats: ProgramStats
 }
 
 // Exercice tel que stocké dans le builder (coach_program_template_exercises)

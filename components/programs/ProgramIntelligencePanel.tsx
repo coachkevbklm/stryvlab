@@ -237,12 +237,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2.5">Détail par séance</p>
               <div className="flex flex-col gap-3">
                 {result.programStats.sessionsStats.map((s, i) => {
-                  // Barres musculaires : volume relatif dans la séance
-                  const totalSessionVol = s.topMuscles.length > 0
-                    ? Object.entries(result.distribution)
-                        .filter(([m]) => s.topMuscles.includes(m))
-                        .reduce((acc, [, v]) => acc + v, 0)
-                    : 0
+                  const sessionTotalVol = Object.values(s.muscleVolumes).reduce((a, b) => a + b, 0)
 
                   return (
                     <div key={i} className="border-t border-white/[0.04] pt-2.5 first:border-0 first:pt-0">
@@ -262,20 +257,20 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
                       {s.topMuscles.length > 0 && (
                         <div className="flex flex-col gap-1 mb-1.5">
                           {s.topMuscles.map(muscle => {
-                            const vol = result.distribution[muscle] ?? 0
-                            const pct = totalSessionVol > 0 ? Math.round((vol / totalSessionVol) * 100) : 0
+                            const vol = s.muscleVolumes[muscle] ?? 0
+                            const pct = sessionTotalVol > 0 ? Math.round((vol / sessionTotalVol) * 100) : 0
                             return (
                               <div key={muscle} className="flex items-center gap-1.5">
-                                <span className="text-[8px] text-white/35 w-[52px] shrink-0 truncate">
+                                <span className="text-[9px] text-white/35 w-[56px] shrink-0 truncate">
                                   {MUSCLE_LABEL_FR[muscle] ?? muscle}
                                 </span>
                                 <div className="flex-1 h-1 bg-white/[0.04] rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full bg-[#1f8a65]"
-                                    style={{ width: `${pct}%`, opacity: 0.6 + pct / 250 }}
+                                    style={{ width: `${pct}%` }}
                                   />
                                 </div>
-                                <span className="text-[8px] text-white/25 font-mono w-6 text-right">{pct}%</span>
+                                <span className="text-[9px] text-white/25 font-mono w-7 text-right">{pct}%</span>
                               </div>
                             )
                           })}
@@ -288,13 +283,13 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
                           {s.patterns.slice(0, 4).map(p => (
                             <span
                               key={p}
-                              className="text-[7.5px] font-medium text-white/30 bg-white/[0.03] px-1.5 py-0.5 rounded"
+                              className="text-[9px] font-medium text-white/35 bg-white/[0.04] px-1.5 py-0.5 rounded"
                             >
                               {PATTERN_LABEL_FR[p] ?? p}
                             </span>
                           ))}
                           {s.patterns.length > 4 && (
-                            <span className="text-[7.5px] text-white/20">+{s.patterns.length - 4}</span>
+                            <span className="text-[9px] text-white/20">+{s.patterns.length - 4}</span>
                           )}
                         </div>
                       )}
