@@ -1,5 +1,9 @@
 ## 2026-04-18
 
+FEATURE: Système A client exercise alternatives — coach pre-configures up to 3 per exercise in template builder
+SCHEMA: Add coach_template_exercise_alternatives table with RLS for alternatives management
+FEATURE: API GET/POST/DELETE /program-templates/[id]/exercises/[id]/alternatives
+FEATURE: ExerciseClientAlternatives component — inline coach UI in template builder (edit mode)
 FEATURE: Exercise card layout refactored to 2-column grid: image left (constrained 140px square), exercise info right
 FIX: Exercise image sizes now constrained to 140×140px square, no longer full column width
 FEATURE: Add group_id field to BuilderExercise type for superset grouping
