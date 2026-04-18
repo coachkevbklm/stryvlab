@@ -24,6 +24,7 @@ import { useProgramIntelligence, type IntelligenceProfile } from "@/lib/programs
 import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
 import IntelligenceAlertBadge from "./IntelligenceAlertBadge";
 import ExerciseAlternativesDrawer from "./ExerciseAlternativesDrawer";
+import ExerciseClientAlternatives from "./ExerciseClientAlternatives";
 
 const GOALS = [
   { value: "hypertrophy", label: "Hypertrophie" },
@@ -139,6 +140,7 @@ interface Exercise {
   secondary_muscles: string[];
   is_compound: boolean | undefined;
   group_id?: string;
+  dbId?: string;
 }
 interface Session {
   name: string;
@@ -174,6 +176,7 @@ function emptyExercise(): Exercise {
     secondary_muscles: [],
     is_compound: undefined,
     group_id: undefined,
+    dbId: undefined,
   };
 }
 function emptySession(): Session {
@@ -246,6 +249,8 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
                 primary_muscles: e.primary_muscles ?? [],
                 secondary_muscles: e.secondary_muscles ?? [],
                 is_compound: e.is_compound ?? undefined,
+                group_id: e.group_id ?? undefined,
+                dbId: e.id ?? undefined,
               })),
           }))
       : [emptySession()],
@@ -967,6 +972,14 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
                         placeholder="Notes optionnelles"
                         className="bg-transparent text-xs text-white/70 outline-none placeholder:text-white/30 border-t border-white/[0.06] pt-2"
                       />
+
+                      {/* Alternatives client (mode édition uniquement) */}
+                      {isEdit && templateId && ex.dbId && (
+                        <ExerciseClientAlternatives
+                          templateId={templateId}
+                          exerciseId={ex.dbId}
+                        />
+                      )}
 
                       {/* Intelligence alerts */}
                       <IntelligenceAlertBadge
