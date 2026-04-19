@@ -1,5 +1,8 @@
 ## 2026-04-19
 
+FEATURE: Add DockContext for shell refactor — manage open clients and active client state
+FIX: POST alternatives route returned 401 Unauthorized — Supabase many-to-one relation is object not array, removed erroneous [0] index access in getCoachAndVerifyOwnership
+FIX: Movement pattern dropdown labels truncated — restored full French labels in ExerciseCard (e.g. 'Poussée horizontale' instead of 'Poussée horiz.')
 SCHEMA: Add session_mode column to coach_program_templates (day | cycle)
 FEATURE: Add Jours/Cycle session mode toggle in EditorPane header
 FEATURE: Auto-sort sessions by day_of_week in day mode (orderedSessions derived value)

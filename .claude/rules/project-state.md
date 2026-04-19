@@ -35,6 +35,30 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 ---
 
+## 2026-04-19 — Shell Refactor Phase 1 Task 1: DockContext
+
+**Ce qui a été fait :**
+
+1. **`components/layout/DockContext.tsx`** — nouveau context React pour la gestion des clients ouverts
+   - Type `OpenClient { id, firstName, lastName }`
+   - État centralisé : `openClients[]`, `activeClientId`
+   - Méthodes : `openClient(client)`, `closeClient(clientId)`, `setActiveClient(clientId)`
+   - Provider wrappant la navigation, hook public `useDock()`
+   - Logique déduplication : `openClient` ne crée pas de doublon si le client est déjà ouvert
+   - Pas d'affichage UI pour la dock elle-même — structure de base pour Task 2-3
+
+**Points de vigilance :**
+- `activeClientId` devient `null` quand on ferme le client actif — aucun fallback automatique au premier client
+- Le contexte expose `useCallback` stables — OK pour la réactivité perf
+- Initialisation provider sans clients ouverts — comportement vide intentionnel (dock vide au démarrage)
+
+**Next Steps — Task 2-3 (Shell UI) :**
+- [ ] `components/shell/LeftDock.tsx` — dock vertical permanent gauche (sections: clients, recents, search, settings)
+- [ ] `components/shell/BottomDock.tsx` — dock horizontal contextuel bas (tabs: client actif, alternative actions)
+- [ ] `app/coach/layout.tsx` — wrapping DockProvider, layouts shell 2-dock
+
+---
+
 ## 2026-04-19 — Session & Exercise Reordering
 
 **Ce qui a été fait :**
