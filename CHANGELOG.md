@@ -1,5 +1,12 @@
 ## 2026-04-19
 
+SCHEMA: Add session_mode column to coach_program_templates (day | cycle)
+FEATURE: Add Jours/Cycle session mode toggle in EditorPane header
+FEATURE: Auto-sort sessions by day_of_week in day mode (orderedSessions derived value)
+FEATURE: Drag-and-drop exercises intra + inter session via @dnd-kit in EditorPane
+FEATURE: Drag-and-drop session reordering in NavigatorPane (cycle mode only)
+FEATURE: Up/down arrows on sessions (cycle mode) and exercises (all modes, intra + inter session)
+FEATURE: Scroll-to + highlight on destination element after any reorder action
 FEATURE: Auto-scroll + highlight on element reorder — moveExercise scrolls to destination with smooth behavior, highlights for 1.2s; moveSession scrolls to first exercise of moved session
 FEATURE: NavigatorPane — sortable session rows via SortableContext + useSortable in cycle mode; up/down arrow buttons per session; handleDragEnd in ProgramTemplateBuilder handles nav-session-* ids; onMoveSession + sessionMode props wired
 

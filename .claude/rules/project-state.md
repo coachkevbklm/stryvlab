@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-19 (Phase 1 UI Studio-Lab — Implémentation Complète)
+> Dernière mise à jour : 2026-04-19 (Phase 2 Biomechanics Engine — Implémentation Complète)
 
 ---
 
@@ -25,13 +25,118 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
 
-**Status:** ✅ Phase 0 entièrement implémentée. ✅ Phase 1 UI Studio-Lab entièrement implémentée. Prête pour Phase 2 (Biomechanics Engine).
+**Status:** ✅ Phase 0 entièrement implémentée. ✅ Phase 1 UI Studio-Lab entièrement implémentée. ✅ Phase 2 Biomechanics Engine entièrement implémentée. Prête pour Phase 3 (Feedback Loops).
 
 **Master Plan:** `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
 
 **Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
 
 **Phase 1 Plan:** `docs/superpowers/plans/2026-04-19-studio-lab-ui-redesign.md`
+
+---
+
+## 2026-04-19 — Session & Exercise Reordering
+
+**Ce qui a été fait :**
+
+1. **`supabase/migrations/20260419_template_session_mode.sql`** — colonne `session_mode` sur `coach_program_templates`
+   - Type `text CHECK ('day', 'cycle')`, default `'day'`
+   - Templates existants non affectés (migration `IF NOT EXISTS`)
+
+2. **`components/programs/ProgramTemplateBuilder.tsx`** — logique de réorganisation centrale
+   - `TemplateMeta.session_mode: 'day' | 'cycle'` — persisté dans le payload de save
+   - `orderedSessions` (useMemo) : tri automatique lun→dim en mode Jour, ordre libre en mode Cycle
+   - `rawSessionIndex(orderedSi)` : traduit l'index d'affichage vers l'index brut pour toutes les mutations
+   - `moveSession(fromSi, toSi)` : no-op si `session_mode !== 'cycle'`
+   - `moveExercise(fromSi, fromEi, toSi, toEi)` : intra + inter-séance, scroll + highlight post-move
+   - `DndContext` (PointerSensor, distance=5) wrapping tout le layout
+   - `handleDragEnd` : 3 cas — ex-over-ex, ex-over-session-container, nav-session-over-nav-session
+
+3. **`components/programs/studio/EditorPane.tsx`** — UI d'édition
+   - Toggle `Jours | Cycle` dans la meta row
+   - Mode Jour : pills jours de semaine visibles, flèches séances masquées
+   - Mode Cycle : badge `S{si+1}`, flèches ↑↓ sur chaque séance, pills jours masquées
+   - Exercices : `DroppableSession` + `SortableContext` par séance, `dragId` passé à `ExerciseCard`
+
+4. **`components/programs/studio/ExerciseCard.tsx`** — carte exercice
+   - `useSortable({ id: dragId })` — drag handle `GripVertical` (toujours visible)
+   - Flèches ↑↓ (`onMoveUp`, `onMoveDown`) — désactivées aux bornes absolues (premier/dernier exercice global)
+   - Inter-séance : flèche ↑ en haut d'une séance → fin de la séance précédente ; flèche ↓ en bas → début de la séance suivante
+
+5. **`components/programs/studio/NavigatorPane.tsx`** — colonne de navigation
+   - `SortableSessionRow` : `useSortable` par séance, drag handle + flèches ↑↓ en mode Cycle
+   - `SortableContext` wrapping toutes les séances
+   - Synchronisation bidirectionnelle avec EditorPane via state central
+
+**Points de vigilance :**
+- `orderedSessions` est en lecture seule pour le rendu — toutes les mutations passent par `rawSessionIndex()` pour retrouver l'index brut dans `sessions`
+- `moveSession` contient un guard `if (meta.session_mode !== 'cycle') return` — jamais appelé en mode Jour même si les props sont câblés
+- `PointerSensor` avec `activationConstraint: { distance: 5 }` empêche les drags accidentels sur les inputs/boutons dans ExerciseCard
+- Le scroll post-move utilise `setTimeout(..., 50)` pour laisser le state React se propager avant de lire les refs DOM
+- En mode Jour, changer le `day_of_week` d'une séance la repositionne automatiquement dans `orderedSessions` — pas besoin de drag dans ce mode
+
+**Next Steps — Phase 3 Performance Feedback Loops :**
+- [ ] RIR + completion rate tracking depuis `client_set_logs`
+- [ ] Auto-recommandations volume ±1 set, intensité ±5%
+- [ ] SRA Heatmap semaines réelles (Phase 3)
+
+---
+
+## 2026-04-19 — Phase 2 Biomechanics Engine — Implémentation Complète
+
+**Ce qui a été fait :**
+
+1. **`lib/programs/intelligence/scoring.ts`** — `scoreRedundancy` avec morpho asymmetry bypass
+   - Signature étendue : `scoreRedundancy(sessions, morphoStimulusAdjustments?)`
+   - `isUnilateral(ex)` helper : détecte pattern `unilateral_*` OU regex `/unilatéral|unilateral|single|1 bras|1 jambe/i`
+   - Si morpho a un boost `unilateral_{direction}` > 1.0 et exactement un des deux exercices est unilatéral → pas de redondance (travail asymétrique ciblé)
+   - `buildIntelligenceResult` propage `morphoStimulusAdjustments` à `scoreRedundancy`
+
+2. **`lib/programs/intelligence/types.ts`** — nouveau type `SRAHeatmapWeek`
+   - `SRAHeatmapWeek { week: number; muscles: { name: string; fatigue: number }[] }`
+   - `LabOverrides = Record<string, number>` alias de type
+   - `IntelligenceResult.sraHeatmap: SRAHeatmapWeek[]` ajouté
+
+3. **`lib/programs/intelligence/scoring.ts`** — `scoreSRA` exporte `sraHeatmap`
+   - Calcul 4 semaines identiques (programme répété) : fatigue = `totalWeightedVolume / (sraWindow × 0.003)` clampé 0–100
+   - Facteur empirique 0.003 : ~1 set composé ≈ 0.3% de fatigue normalisée sur la fenêtre SRA
+
+4. **`lib/programs/intelligence/index.ts`** — `useLabOverrides` hook
+   - `useLabOverrides()` → `{ overrides, setOverride, resetOverrides }` (useCallback stable)
+   - `useProgramIntelligence` 5ème paramètre `labOverrides?` : merge `{ ...morpho, ...lab }` (lab prend priorité)
+   - Re-exports : `LabOverrides`, `SRAHeatmapWeek`, `useLabOverrides`
+
+5. **`components/programs/studio/LabModeSection.tsx`** — SRA Heatmap + Lab Overrides UI
+   - Section SRA Heatmap : table muscles × S1-S4, couleurs `bg-red-500/25` (>60), `bg-amber-500/20` (>30), `bg-white/[0.03]`
+   - Section Lab Overrides : sliders 0.5–1.5 step 0.05 par pattern présent, accent `#8b5cf6` quand ≠ 1.0, bouton Reset
+
+6. **`components/programs/studio/EditorPane.tsx`** + **`ProgramTemplateBuilder.tsx`**
+   - Wiring complet : `useLabOverrides` → `useProgramIntelligence` → `EditorPane` → `LabModeSection`
+   - `presentPatterns` calculé depuis les sessions avant passage à `LabModeSection`
+
+7. **Alertes enrichies** (Task 5)
+   - `PUSH_PULL_IMBALANCE` : affiche `${pushSets} sets push / ${pullSets} sets pull` + suggestion avec delta sets exact
+   - `SRA_VIOLATION critical` : muscle capitalisé, `minimum requis : Xh pour niveau ${effectiveLevel}`, suggestion avec heures manquantes
+   - `SRA_VIOLATION warning` : ajout `Manque : Xh.` dans l'explication
+   - `REDUNDANT_EXERCISES` : affiche `${exA.sets} + ${exB.sets} = ${combinedSets} sets`
+
+8. **`tests/lib/intelligence/biomechanics-phase2.test.ts`** — 9 tests (tous PASS)
+   - 4 tests `scoreRedundancy` avec morpho : bypass unilatéral, pas de bypass sans morpho, redondance bilatérale inchangée
+   - 5 tests SRA Heatmap : 4 semaines identiques, fatigue > 0, clamp 100, vide sans exercices
+
+**Points de vigilance :**
+- Le bypass redondance morpho compare `pA === pB` PUIS vérifie `unilateral_${direction}` — la direction est extraite du suffixe du pattern (`_push`, `_pull`, etc.)
+- Facteur 0.003 heatmap est empirique — calibré pour que ~10 sets composés ≈ 30% de fatigue sur une fenêtre SRA typique (48h)
+- `LabOverrides` prend toujours la priorité sur `morphoStimulusAdjustments` dans le merge (`{ ...morpho, ...lab }`)
+- `SRAHeatmapWeek` représente la même semaine répétée × 4 — pas des semaines de progression distinctes (Phase 3 cible des données hebdomadaires réelles)
+- Les alertes enrichies ne changent aucune signature — uniquement les strings de message
+
+**Next Steps — Phase 3 Performance Feedback Loops :**
+- [ ] RIR + completion rate tracking depuis `client_set_logs` — détecter stagnation, overtraining, under-stimulation
+- [ ] Auto-recommandations : volume ±1 set, intensité ±5%, swap exercice, extension récupération
+- [ ] Morpho-performance correlation : delta body comp → program outcome
+- [ ] Coach review + approval avant application auto-adjust
+- [ ] SRA Heatmap semaines réelles (weeks × sessions) quand le builder supporte les données hebdomadaires distinctes
 
 ---
 
@@ -79,12 +184,12 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 - Les erreurs TS pré-existantes (`stripe/webhook`, `BodyFatCalculator`, `CarbCyclingCalculator`) sont hors périmètre Phase 1
 - `EditorPane` reçoit toutes les callbacks d'édition (setMeta, setSessions) depuis le builder parent
 
-**Next Steps — Phase 2 Biomechanics Engine :**
-- [ ] 6 scoring subscores affinés : SRA, Balance, Specificity, Progression, Redundancy, Completeness
-- [ ] Client profile integration : injuries (body_part + severity), equipment → alertes INJURY_CONFLICT, EQUIPMENT_MISMATCH
-- [ ] Morpho integration : stimulus adjustments dans `scoreRedundancy` (actuellement seulement `scoreSpecificity`)
-- [ ] Alertes en temps réel (critical, warning, info) — améliorer la qualité des messages
-- [ ] Rule transparency améliorée dans LabModeSection (lien vers la règle exacte appliquée)
+**Next Steps — Phase 3 Performance Feedback Loops :**
+- [ ] RIR + completion rate tracking depuis `client_set_logs` — détecter stagnation, overtraining, under-stimulation
+- [ ] Auto-recommandations : volume ±1 set, intensité ±5%, swap exercice, extension récupération
+- [ ] Morpho-performance correlation : delta body comp → program outcome
+- [ ] Coach review + approval avant application auto-adjust
+- [ ] SRA Heatmap : semaines réelles (weeks × sessions) quand le builder supporte les données hebdomadaires distinctes
 
 ---
 
