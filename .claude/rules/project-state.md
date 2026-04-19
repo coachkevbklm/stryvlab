@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-18 (Phase 0 MorphoPro Bridge — Implémentation Complète)
+> Dernière mise à jour : 2026-04-19 (Phase 1 UI Studio-Lab — Implémentation Complète)
 
 ---
 
@@ -25,11 +25,66 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
 
-**Status:** ✅ Phase 0 entièrement implémentée. Prête pour Phase 1 (UI Studio-Lab).
+**Status:** ✅ Phase 0 entièrement implémentée. ✅ Phase 1 UI Studio-Lab entièrement implémentée. Prête pour Phase 2 (Biomechanics Engine).
 
 **Master Plan:** `docs/superpowers/plans/2026-04-18-programme-generation-studio-lab-master-plan.md`
 
 **Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
+
+**Phase 1 Plan:** `docs/superpowers/plans/2026-04-19-studio-lab-ui-redesign.md`
+
+---
+
+## 2026-04-19 — Phase 1 UI Studio-Lab — Implémentation Complète
+
+**Ce qui a été fait :**
+
+1. **`lib/programs/intelligence/index.ts`** — debounce réduit de 400ms → 300ms dans `useProgramIntelligence`
+
+2. **`components/programs/studio/NavigatorPane.tsx`** — arborescence séances/exercices
+   - Props : `sessions`, `activeSessionIndex`, `activeExerciseKey`, `onSelectSession`, `onSelectExercise`, `onAddSession`
+   - Collapse/expand par session, highlight sur exercice actif
+   - DS v2.0 : `bg-[#121212]`, `bg-white/[0.02]` cards, accent `#1f8a65`
+
+3. **`components/programs/studio/ExerciseCard.tsx`** — carte exercice extraite (autoportante)
+   - Exporte `ExerciseData` interface
+   - Layout `grid-cols-[140px_1fr]` : image 140×140 + pattern/equipment/polyart | nom + sets/reps/RIR + muscles + notes + alertes + alternatives
+   - Intègre `IntelligenceAlertBadge` et `ExerciseClientAlternatives`
+
+4. **`components/programs/studio/LabModeSection.tsx`** — mode lab transparent
+   - Visible par défaut (toggle), accent violet `#8b5cf6`
+   - Debug subscores 2×3 grid, 6 explications règles bioméchaniques
+   - Badge connexion morpho (date de la dernière analyse)
+
+5. **`components/programs/studio/IntelligencePanelShell.tsx`** — panel modulaire
+   - Modes : `'docked' | 'floating' | 'minimized'`
+   - Float : `motion.div` Framer Motion drag libre (`dragMomentum={false}`)
+   - Minimized : barre compacte fixe `bottom-6 right-6` avec score colorisé
+   - Wraps `ProgramIntelligencePanel` en mode docked
+
+6. **`components/programs/studio/EditorPane.tsx`** — pane éditeur complet
+   - Sticky sub-header : nom template + bouton Save + sélects (goal/level/equipment/frequency/weeks)
+   - Sessions scrollables avec day picker, `ExerciseCard`, `LabModeSection` par session
+
+7. **`components/programs/ProgramTemplateBuilder.tsx`** — refactorisé vers layout dual-pane
+   - `react-resizable-panels` v4 (`Group`/`Panel`/`Separator`) — prop `orientation` (pas `direction`)
+   - Layout : `Navigator (16%) | PanelResizeHandle | Editor (54%) | PanelResizeHandle | IntelligencePanelShell (30%)`
+   - Fetch unifié `Promise.all([intelligence-profile, morpho/latest])` au mount
+   - `morphoAdjustments` passé en 4e param à `useProgramIntelligence`
+
+**Points de vigilance :**
+- `react-resizable-panels` v4 : le prop s'appelle `orientation` (pas `direction`) sur `Group`. `id` et `order` sont supprimés des `Panel`. Exports : `Group`, `Panel`, `Separator` (plus `PanelGroup`, `PanelResizeHandle`)
+- `LabModeSection` utilise l'accent violet `#8b5cf6` — distinct de l'accent vert coach `#1f8a65`
+- `IntelligencePanelShell` mode floating : les coordonnées initiales sont `right:24 top:80` (fixed). Drag Framer Motion avec `dragMomentum={false}` pour précision.
+- Les erreurs TS pré-existantes (`stripe/webhook`, `BodyFatCalculator`, `CarbCyclingCalculator`) sont hors périmètre Phase 1
+- `EditorPane` reçoit toutes les callbacks d'édition (setMeta, setSessions) depuis le builder parent
+
+**Next Steps — Phase 2 Biomechanics Engine :**
+- [ ] 6 scoring subscores affinés : SRA, Balance, Specificity, Progression, Redundancy, Completeness
+- [ ] Client profile integration : injuries (body_part + severity), equipment → alertes INJURY_CONFLICT, EQUIPMENT_MISMATCH
+- [ ] Morpho integration : stimulus adjustments dans `scoreRedundancy` (actuellement seulement `scoreSpecificity`)
+- [ ] Alertes en temps réel (critical, warning, info) — améliorer la qualité des messages
+- [ ] Rule transparency améliorée dans LabModeSection (lien vers la règle exacte appliquée)
 
 ---
 

@@ -1,5 +1,9 @@
 ## 2026-04-19
 
+REFACTOR: ProgramTemplateBuilder — refactor vers layout dual-pane (Navigator 16% | Editor 54% | Intelligence 30%) via react-resizable-panels v4
+FEATURE: EditorPane — pane éditeur avec sticky meta-header, sessions scrollables, ExerciseCard + LabModeSection par session
+FEATURE: IntelligencePanelShell — panel modulaire dock/float/minimize avec Framer Motion drag
+FEATURE: LabModeSection — rule transparency + subscore debug + morpho status badge
 FEATURE: ExerciseCard — extract exercise card into standalone component at components/programs/studio/ExerciseCard.tsx (2-column layout, self-contained)
 FEATURE: NavigatorPane — composant arborescence séances/exercices avec collapse/expand et state activeSessionIndex/activeExerciseKey
 REFACTOR: ProgramTemplateBuilder — merge clientId useEffects into single Promise.all fetch
