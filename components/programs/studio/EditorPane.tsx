@@ -82,6 +82,7 @@ interface Props {
   onOpenAlternatives: (si: number, ei: number) => void
   onToggleSuperset: (si: number, ei: number) => void
   onMoveSession: (fromSi: number, toSi: number) => void
+  onMoveExercise: (fromSi: number, fromEi: number, toSi: number, toEi: number) => void
   supersetGroupColors: Record<string, string>
   onSave: () => void
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
@@ -114,6 +115,7 @@ export default function EditorPane({
   onOpenAlternatives,
   onToggleSuperset,
   onMoveSession,
+  onMoveExercise,
   supersetGroupColors,
   onSave,
   exerciseRefSetter,
@@ -313,6 +315,23 @@ export default function EditorPane({
                     onOpenAlternatives={() => onOpenAlternatives(si, ei)}
                     onToggleSuperset={() => onToggleSuperset(si, ei)}
                     exerciseRef={exerciseRefSetter(`${si}-${ei}`)}
+                    isFirst={si === 0 && ei === 0}
+                    isLast={si === sessions.length - 1 && ei === session.exercises.length - 1}
+                    onMoveUp={() => {
+                      if (ei > 0) {
+                        onMoveExercise(si, ei, si, ei - 1)
+                      } else if (si > 0) {
+                        const prevSessionExCount = sessions[si - 1].exercises.length
+                        onMoveExercise(si, ei, si - 1, prevSessionExCount)
+                      }
+                    }}
+                    onMoveDown={() => {
+                      if (ei < session.exercises.length - 1) {
+                        onMoveExercise(si, ei, si, ei + 1)
+                      } else if (si < sessions.length - 1) {
+                        onMoveExercise(si, ei, si + 1, 0)
+                      }
+                    }}
                   />
                 ))}
                 <button

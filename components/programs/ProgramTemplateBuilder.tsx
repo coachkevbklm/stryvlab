@@ -668,6 +668,9 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
             onOpenAlternatives={(si, ei) => setAlternativesTarget({ si: rawSessionIndex(si), ei })}
             onToggleSuperset={(si, ei) => toggleSuperset(rawSessionIndex(si), ei)}
             onMoveSession={(fromSi, toSi) => moveSession(rawSessionIndex(fromSi), rawSessionIndex(toSi))}
+            onMoveExercise={(fromSi, fromEi, toSi, toEi) =>
+              moveExercise(rawSessionIndex(fromSi), fromEi, rawSessionIndex(toSi), toEi)
+            }
             supersetGroupColors={supersetGroupColors}
             onSave={handleSave}
             exerciseRefSetter={exerciseRefSetter}

@@ -4,10 +4,10 @@
 import { useRef } from 'react'
 import Image from 'next/image'
 import {
-  Trash2, ImagePlus, Upload, Tag, Dumbbell,
+  Trash2, Upload, Library, Link2, Link2Off, ChevronUp, ChevronDown,
 } from 'lucide-react'
 import IntelligenceAlertBadge from '@/components/programs/IntelligenceAlertBadge'
-import ExerciseClientAlternatives from '@/components/programs/ExerciseClientAlternatives'
+import ExerciseClientAlternatives, { type ExerciseClientAlternativesHandle } from '@/components/programs/ExerciseClientAlternatives'
 import type { IntelligenceAlert } from '@/lib/programs/intelligence'
 
 const MOVEMENT_PATTERNS = [
@@ -32,30 +32,30 @@ const MOVEMENT_PATTERNS = [
 ]
 
 const EQUIPMENT_ITEMS = [
-  { value: 'bodyweight', label: 'BW' },
-  { value: 'band', label: 'Élas.' },
-  { value: 'dumbbell', label: 'Halt.' },
+  { value: 'bodyweight', label: 'Poids corps' },
+  { value: 'band', label: 'Élastique' },
+  { value: 'dumbbell', label: 'Haltère' },
   { value: 'barbell', label: 'Barre' },
-  { value: 'kettlebell', label: 'KB' },
-  { value: 'machine', label: 'Mach.' },
+  { value: 'kettlebell', label: 'Kettlebell' },
+  { value: 'machine', label: 'Machine' },
   { value: 'cable', label: 'Poulie' },
   { value: 'smith', label: 'Smith' },
   { value: 'trx', label: 'TRX' },
-  { value: 'ez_bar', label: 'EZ' },
-  { value: 'trap_bar', label: 'Trap' },
+  { value: 'ez_bar', label: 'Barre EZ' },
+  { value: 'trap_bar', label: 'Trap Bar' },
 ]
 
 const MUSCLE_GROUPS = [
-  { slug: 'chest', label: 'Pecto.' },
+  { slug: 'chest', label: 'Pectoraux' },
   { slug: 'shoulders', label: 'Épaules' },
   { slug: 'biceps', label: 'Biceps' },
   { slug: 'triceps', label: 'Triceps' },
   { slug: 'abs', label: 'Abdos' },
-  { slug: 'back_upper', label: 'Dos (H)' },
+  { slug: 'back_upper', label: 'Dos haut' },
   { slug: 'back_lower', label: 'Lombaires' },
   { slug: 'traps', label: 'Trapèzes' },
-  { slug: 'quads', label: 'Quads' },
-  { slug: 'hamstrings', label: 'Ischio.' },
+  { slug: 'quads', label: 'Quadriceps' },
+  { slug: 'hamstrings', label: 'Ischios' },
   { slug: 'glutes', label: 'Fessiers' },
   { slug: 'calves', label: 'Mollets' },
 ]
@@ -85,13 +85,24 @@ interface Props {
   isUploading: boolean
   alerts: IntelligenceAlert[]
   templateId?: string
+  supersetGroupColor?: string
   onUpdate: (patch: Partial<ExerciseData>) => void
   onRemove: () => void
   onImageUpload: (file: File) => void
   onPickExercise: () => void
+  onPickExerciseForAlternative?: (addFn: (name: string) => Promise<void>) => void
   onOpenAlternatives: () => void
+  onToggleSuperset?: () => void
   exerciseRef: (el: HTMLDivElement | null) => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  isFirst?: boolean
+  isLast?: boolean
 }
+
+const SUPERSET_COLORS = [
+  '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316',
+]
 
 export default function ExerciseCard({
   exercise,
@@ -101,219 +112,301 @@ export default function ExerciseCard({
   isUploading,
   alerts,
   templateId,
+  supersetGroupColor,
   onUpdate,
   onRemove,
   onImageUpload,
   onPickExercise,
+  onPickExerciseForAlternative,
   onOpenAlternatives,
+  onToggleSuperset,
   exerciseRef,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const altRef = useRef<ExerciseClientAlternativesHandle>(null)
+  const isInSuperset = !!exercise.group_id
 
   return (
     <div
       ref={exerciseRef}
       className={[
-        'rounded-xl border-[0.3px] bg-white/[0.02] p-3 transition-all duration-200',
+        'rounded-xl border-[0.3px] bg-white/[0.02] transition-all duration-200',
         isHighlighted
           ? 'border-[#1f8a65]/60 ring-1 ring-[#1f8a65]/30'
+          : isInSuperset
+          ? 'border-transparent'
           : 'border-white/[0.06]',
       ].join(' ')}
+      style={isInSuperset && supersetGroupColor ? {
+        borderColor: `${supersetGroupColor}40`,
+        boxShadow: `inset 3px 0 0 ${supersetGroupColor}`,
+      } : undefined}
     >
-      <div className="grid grid-cols-[140px_1fr] gap-4">
-        {/* Left column: image + pattern + equipment */}
-        <div className="flex flex-col gap-2">
-          {/* Image */}
-          <div
-            className="relative w-[140px] h-[140px] rounded-lg overflow-hidden bg-white/[0.03] border-[0.3px] border-white/[0.06] cursor-pointer group"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {exercise.image_url ? (
-              <Image
-                src={exercise.image_url}
-                alt={exercise.name}
-                fill
-                className="object-cover"
-                unoptimized={exercise.image_url.endsWith('.gif')}
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                <ImagePlus size={18} className="text-white/20" />
-                <span className="text-[9px] text-white/20">Image</span>
-              </div>
-            )}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Upload size={16} className="text-white" />
-            </div>
-            {isUploading && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-[#1f8a65] border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => {
-              const f = e.target.files?.[0]
-              if (f) onImageUpload(f)
-              e.target.value = ''
-            }}
-          />
-
-          {/* Movement pattern */}
-          <select
-            value={exercise.movement_pattern ?? ''}
-            onChange={e => onUpdate({ movement_pattern: e.target.value || null })}
-            className="w-full rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 px-2 py-1.5 outline-none"
-          >
-            {MOVEMENT_PATTERNS.map(p => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-
-          {/* Equipment pills */}
-          <div className="flex flex-wrap gap-1">
-            {EQUIPMENT_ITEMS.map(eq => {
-              const active = exercise.equipment_required.includes(eq.value)
-              return (
-                <button
-                  key={eq.value}
-                  onClick={() => onUpdate({
-                    equipment_required: active
-                      ? exercise.equipment_required.filter(v => v !== eq.value)
-                      : [...exercise.equipment_required, eq.value],
-                  })}
-                  className={[
-                    'rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors',
-                    active
-                      ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                      : 'bg-white/[0.03] text-white/30 hover:text-white/50',
-                  ].join(' ')}
-                >
-                  {eq.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Polyarticulaire toggle */}
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={exercise.is_compound === true}
-              onChange={e => onUpdate({ is_compound: e.target.checked ? true : undefined })}
-              className="w-3 h-3 rounded accent-[#1f8a65]"
-            />
-            <span className="text-[9px] text-white/40">Polyart.</span>
-          </label>
+      {/* Superset badge */}
+      {isInSuperset && (
+        <div
+          className="flex items-center gap-1.5 px-3 py-1 border-b-[0.3px] border-white/[0.04]"
+          style={{ borderBottomColor: `${supersetGroupColor}20` }}
+        >
+          <Link2 size={9} style={{ color: supersetGroupColor ?? '#f59e0b' }} />
+          <span className="text-[9px] font-semibold" style={{ color: supersetGroupColor ?? '#f59e0b' }}>
+            SUPERSET
+          </span>
         </div>
+      )}
 
-        {/* Right column: name, sets/reps, muscles, notes */}
-        <div className="flex flex-col gap-2 min-w-0">
-          {/* Name + delete + pick */}
-          <div className="flex items-center gap-2">
+      <div className="p-3">
+        <div className="grid grid-cols-[120px_1fr] gap-3">
+          {/* Left column: image + pattern + equipment */}
+          <div className="flex flex-col gap-2">
+            {/* Image — primary CTA: opens catalogue if no image */}
+            <div className="relative w-[120px] h-[120px] rounded-lg overflow-hidden bg-white/[0.03] border-[0.3px] border-white/[0.06] group">
+              {exercise.image_url ? (
+                <>
+                  <Image
+                    src={exercise.image_url}
+                    alt={exercise.name}
+                    fill
+                    className="object-cover"
+                    unoptimized={exercise.image_url.endsWith('.gif')}
+                  />
+                  {/* Hover overlay: upload */}
+                  <div
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={14} className="text-white" />
+                    <span className="text-[9px] text-white/70">Changer</span>
+                  </div>
+                </>
+              ) : (
+                /* No image: primary CTA = open catalogue */
+                <button
+                  type="button"
+                  onClick={onPickExercise}
+                  className="w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-white/[0.04] transition-colors"
+                >
+                  <Library size={20} className="text-[#1f8a65]/60" />
+                  <span className="text-[9px] font-medium text-[#1f8a65]/60 leading-tight text-center px-2">
+                    Choisir depuis le catalogue
+                  </span>
+                </button>
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-[#1f8a65] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
             <input
-              value={exercise.name}
-              onChange={e => onUpdate({ name: e.target.value })}
-              placeholder={`Exercice ${ei + 1}`}
-              className="flex-1 bg-transparent text-[13px] font-medium text-white placeholder:text-white/20 outline-none"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) onImageUpload(f)
+                e.target.value = ''
+              }}
             />
-            <button
-              onClick={onPickExercise}
-              title="Choisir depuis le catalogue"
-              className="p-1 rounded-md text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
-            >
-              <Tag size={13} />
-            </button>
-            <button
-              onClick={onRemove}
-              className="p-1 rounded-md text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
 
-          {/* Sets / Reps / Rest / RIR */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {[
-              { label: 'Séries', value: String(exercise.sets), key: 'sets', type: 'number' },
-              { label: 'Reps', value: exercise.reps, key: 'reps', type: 'text' },
-              { label: 'Repos (s)', value: exercise.rest_sec != null ? String(exercise.rest_sec) : '', key: 'rest_sec', type: 'number' },
-              { label: 'RIR', value: exercise.rir != null ? String(exercise.rir) : '', key: 'rir', type: 'number' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="block text-[9px] text-white/30 mb-0.5">{f.label}</label>
-                <input
-                  type={f.type}
-                  value={f.value}
-                  onChange={e => {
-                    const v = e.target.value
-                    if (f.key === 'sets') onUpdate({ sets: Number(v) || 1 })
-                    else if (f.key === 'reps') onUpdate({ reps: v })
-                    else if (f.key === 'rest_sec') onUpdate({ rest_sec: v ? Number(v) : null })
-                    else if (f.key === 'rir') onUpdate({ rir: v ? Number(v) : null })
-                  }}
-                  className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 px-2 py-1 outline-none font-mono"
-                />
-              </div>
-            ))}
-          </div>
+            {/* Movement pattern */}
+            <select
+              value={exercise.movement_pattern ?? ''}
+              onChange={e => onUpdate({ movement_pattern: e.target.value || null })}
+              className="w-full rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 px-2 py-1.5 outline-none"
+            >
+              {MOVEMENT_PATTERNS.map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
 
-          {/* Primary muscles */}
-          <div>
-            <label className="block text-[9px] text-white/30 mb-1">Muscles primaires</label>
+            {/* Equipment pills */}
             <div className="flex flex-wrap gap-1">
-              {MUSCLE_GROUPS.map(m => {
-                const active = exercise.primary_muscles.includes(m.slug)
+              {EQUIPMENT_ITEMS.map(eq => {
+                const active = exercise.equipment_required.includes(eq.value)
                 return (
                   <button
-                    key={m.slug}
+                    key={eq.value}
                     onClick={() => onUpdate({
-                      primary_muscles: active
-                        ? exercise.primary_muscles.filter(s => s !== m.slug)
-                        : [...exercise.primary_muscles, m.slug],
+                      equipment_required: active
+                        ? exercise.equipment_required.filter(v => v !== eq.value)
+                        : [...exercise.equipment_required, eq.value],
                     })}
                     className={[
                       'rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors',
                       active
                         ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                        : 'bg-white/[0.03] text-white/25 hover:text-white/50',
+                        : 'bg-white/[0.03] text-white/30 hover:text-white/50',
                     ].join(' ')}
                   >
-                    {m.label}
+                    {eq.label}
                   </button>
                 )
               })}
             </div>
+
+            {/* Compound toggle */}
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={exercise.is_compound === true}
+                onChange={e => onUpdate({ is_compound: e.target.checked ? true : undefined })}
+                className="w-3 h-3 rounded accent-[#1f8a65]"
+              />
+              <span className="text-[9px] text-white/40">Poly-articulaire</span>
+            </label>
           </div>
 
-          {/* Notes */}
-          <textarea
-            value={exercise.notes}
-            onChange={e => onUpdate({ notes: e.target.value })}
-            placeholder="Notes coach..."
-            rows={2}
-            className="w-full bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/60 placeholder:text-white/20 px-2 py-1.5 outline-none resize-none"
-          />
+          {/* Right column: name, sets/reps, muscles, notes */}
+          <div className="flex flex-col gap-2 min-w-0">
+            {/* Name row: input + catalogue button + superset + delete */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <input
+                value={exercise.name}
+                onChange={e => onUpdate({ name: e.target.value })}
+                placeholder={`Exercice ${ei + 1}`}
+                className="flex-1 min-w-0 bg-transparent text-[13px] font-medium text-white placeholder:text-white/20 outline-none"
+              />
+              {/* Catalogue button — always visible, primary action */}
+              <button
+                onClick={onPickExercise}
+                title="Choisir depuis le catalogue"
+                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded-md bg-[#1f8a65]/10 text-[#1f8a65]/70 hover:bg-[#1f8a65]/20 hover:text-[#1f8a65] transition-colors"
+              >
+                <Library size={11} />
+                <span className="text-[9px] font-semibold hidden sm:inline">Catalogue</span>
+              </button>
+              {/* Superset toggle */}
+              {onToggleSuperset && (
+                <button
+                  onClick={onToggleSuperset}
+                  title={isInSuperset ? 'Retirer du superset' : 'Grouper en superset avec l\'exercice suivant'}
+                  className={[
+                    'shrink-0 p-1 rounded-md transition-colors',
+                    isInSuperset
+                      ? 'text-amber-400 hover:bg-amber-500/10'
+                      : 'text-white/20 hover:text-white/50 hover:bg-white/[0.04]',
+                  ].join(' ')}
+                >
+                  {isInSuperset ? <Link2 size={12} /> : <Link2Off size={12} />}
+                </button>
+              )}
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  onClick={onMoveUp}
+                  disabled={isFirst}
+                  className="p-1 rounded text-white/20 hover:text-white/50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  title="Monter"
+                >
+                  <ChevronUp size={11} />
+                </button>
+                <button
+                  onClick={onMoveDown}
+                  disabled={isLast}
+                  className="p-1 rounded text-white/20 hover:text-white/50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  title="Descendre"
+                >
+                  <ChevronDown size={11} />
+                </button>
+              </div>
+              <button
+                onClick={onRemove}
+                className="shrink-0 p-1 rounded-md text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
 
-          {/* Intelligence alerts + alternatives */}
-          {alerts.length > 0 && (
-            <IntelligenceAlertBadge
-              alerts={alerts}
-              onOpenAlternatives={onOpenAlternatives}
-            />
-          )}
+            {/* Sets / Reps / Rest / RIR */}
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { label: 'Séries', value: String(exercise.sets), key: 'sets', type: 'number' },
+                { label: 'Reps', value: exercise.reps, key: 'reps', type: 'text' },
+                { label: 'Repos', value: exercise.rest_sec != null ? String(exercise.rest_sec) : '', key: 'rest_sec', type: 'number' },
+                { label: 'RIR', value: exercise.rir != null ? String(exercise.rir) : '', key: 'rir', type: 'number' },
+              ].map(f => (
+                <div key={f.key} className="min-w-0">
+                  <label className="block text-[9px] text-white/30 mb-0.5 truncate">{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={f.value}
+                    onChange={e => {
+                      const v = e.target.value
+                      if (f.key === 'sets') onUpdate({ sets: Number(v) || 1 })
+                      else if (f.key === 'reps') onUpdate({ reps: v })
+                      else if (f.key === 'rest_sec') onUpdate({ rest_sec: v ? Number(v) : null })
+                      else if (f.key === 'rir') onUpdate({ rir: v ? Number(v) : null })
+                    }}
+                    className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 px-1.5 py-1 outline-none font-mono"
+                  />
+                </div>
+              ))}
+            </div>
 
-          {/* Client alternatives (edit mode) */}
-          {templateId && exercise.dbId && (
-            <ExerciseClientAlternatives
-              templateId={templateId}
-              exerciseId={exercise.dbId}
+            {/* Primary muscles */}
+            <div>
+              <label className="block text-[9px] text-white/30 mb-1">Muscles primaires</label>
+              <div className="flex flex-wrap gap-1">
+                {MUSCLE_GROUPS.map(m => {
+                  const active = exercise.primary_muscles.includes(m.slug)
+                  return (
+                    <button
+                      key={m.slug}
+                      onClick={() => onUpdate({
+                        primary_muscles: active
+                          ? exercise.primary_muscles.filter(s => s !== m.slug)
+                          : [...exercise.primary_muscles, m.slug],
+                      })}
+                      className={[
+                        'rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors',
+                        active
+                          ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                          : 'bg-white/[0.03] text-white/25 hover:text-white/50',
+                      ].join(' ')}
+                    >
+                      {m.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <textarea
+              value={exercise.notes}
+              onChange={e => onUpdate({ notes: e.target.value })}
+              placeholder="Notes coach..."
+              rows={2}
+              className="w-full bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/60 placeholder:text-white/20 px-2 py-1.5 outline-none resize-none"
             />
-          )}
+
+            {/* Intelligence alerts */}
+            {alerts.length > 0 && (
+              <IntelligenceAlertBadge
+                alerts={alerts}
+                onOpenAlternatives={onOpenAlternatives}
+              />
+            )}
+
+            {/* Client alternatives (edit mode) */}
+            {templateId && exercise.dbId && (
+              <ExerciseClientAlternatives
+                ref={altRef}
+                templateId={templateId}
+                exerciseId={exercise.dbId}
+                onRequestAddFromCatalog={() => {
+                  onPickExerciseForAlternative?.(
+                    (name) => altRef.current?.addAlternative(name) ?? Promise.resolve()
+                  )
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
