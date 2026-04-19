@@ -126,3 +126,7 @@ export interface SRAHeatmapWeek {
     fatigue: number     // 0–100
   }[]
 }
+
+// Lab Mode overrides — coach can override stimulus coefficient per movement pattern
+// Merged on top of morphoStimulusAdjustments (labOverrides takes priority)
+export type LabOverrides = Record<string, number>

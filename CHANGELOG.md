@@ -1,5 +1,7 @@
 ## 2026-04-19
 
+FEATURE: useLabOverrides hook — coach can override stimulus coefficients per pattern in Lab Mode
+FEATURE: useProgramIntelligence — accepts labOverrides (5th param), merged with morpho adjustments
 FEATURE: scoreSRA — export sraHeatmap (SRAHeatmapWeek[]) with 4-week fatigue per muscle (0–100, empirical factor 0.003)
 FEATURE: types.ts — add SRAHeatmapWeek interface + sraHeatmap field to IntelligenceResult
 FEATURE: buildIntelligenceResult — propagate sraHeatmap from scoreSRA result

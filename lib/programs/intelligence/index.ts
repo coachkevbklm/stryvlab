@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { buildIntelligenceResult } from './scoring'
-import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise, IntelligenceProfile } from './types'
+import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise, IntelligenceProfile, LabOverrides } from './types'
 
-export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise, IntelligenceProfile }
+export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise, IntelligenceProfile, LabOverrides }
 export { scoreAlternatives } from './alternatives'
 export type { AlternativeScore } from './alternatives'
 export { resolveExerciseCoeff } from './catalog-utils'
@@ -24,11 +24,30 @@ const EMPTY_RESULT: IntelligenceResult = {
   programStats: { totalSets: 0, totalEstimatedReps: 0, totalExercises: 0, avgExercisesPerSession: 0, sessionsStats: [] },
 }
 
+// ─── Lab Mode Overrides ───────────────────────────────────────────────────────
+
+export function useLabOverrides() {
+  const [overrides, setOverrides] = useState<Record<string, number>>({})
+
+  const setOverride = useCallback((pattern: string, value: number) => {
+    setOverrides(prev => ({ ...prev, [pattern]: value }))
+  }, [])
+
+  const resetOverrides = useCallback(() => {
+    setOverrides({})
+  }, [])
+
+  return { overrides, setOverride, resetOverrides }
+}
+
+// ─── Program Intelligence ─────────────────────────────────────────────────────
+
 export function useProgramIntelligence(
   sessions: BuilderSession[],
   meta: TemplateMeta,
   profile?: IntelligenceProfile,
   morphoStimulusAdjustments?: Record<string, number>,
+  labOverrides?: Record<string, number>,
 ): {
   result: IntelligenceResult
   alertsFor: (sessionIdx: number, exerciseIdx: number) => IntelligenceAlert[]
@@ -40,14 +59,18 @@ export function useProgramIntelligence(
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      const next = buildIntelligenceResult(sessions, meta, profile, morphoStimulusAdjustments)
+      const effectiveAdjustments = (morphoStimulusAdjustments || labOverrides)
+        ? { ...(morphoStimulusAdjustments ?? {}), ...(labOverrides ?? {}) }
+        : undefined
+
+      const next = buildIntelligenceResult(sessions, meta, profile, effectiveAdjustments)
       setResult(next)
     }, 300)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [sessions, meta, profile, morphoStimulusAdjustments])
+  }, [sessions, meta, profile, morphoStimulusAdjustments, labOverrides])
 
   function alertsFor(sessionIdx: number, exerciseIdx: number): IntelligenceAlert[] {
     return result.alerts.filter(
