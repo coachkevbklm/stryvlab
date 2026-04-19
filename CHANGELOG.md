@@ -1,5 +1,8 @@
 ## 2026-04-19
 
+FEATURE: Auto-scroll + highlight on element reorder — moveExercise scrolls to destination with smooth behavior, highlights for 1.2s; moveSession scrolls to first exercise of moved session
+FEATURE: NavigatorPane — sortable session rows via SortableContext + useSortable in cycle mode; up/down arrow buttons per session; handleDragEnd in ProgramTemplateBuilder handles nav-session-* ids; onMoveSession + sessionMode props wired
+
 FEATURE: Drag-and-drop exercise reordering via @dnd-kit — intra-session + inter-session; GripVertical handle in ExerciseCard; DroppableSession + SortableContext in EditorPane; DndContext + sensors in ProgramTemplateBuilder
 
 FEATURE: ProgramTemplateBuilder — session_mode ('day'|'cycle') added to TemplateMeta + initial state; orderedSessions sorts by day_of_week in day mode; rawSessionIndex maps ordered→raw indices; moveSession + moveExercise functions added
