@@ -299,6 +299,11 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       next.splice(toSi, 0, moved)
       return next
     })
+    // Scroll to moved session's first exercise
+    setTimeout(() => {
+      const el = exerciseRefs.current[`${toSi}-0`]
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   function moveExercise(
@@ -312,6 +317,16 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       next[toSi].exercises.splice(toEi, 0, moved)
       return next
     })
+    // Scroll to destination after state update
+    setTimeout(() => {
+      const key = `${toSi}-${toEi}`
+      const el = exerciseRefs.current[key]
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        setHighlightKey(key)
+        setTimeout(() => setHighlightKey(null), 1200)
+      }
+    }, 50)
   }
 
   const [saving, setSaving] = useState(false);
