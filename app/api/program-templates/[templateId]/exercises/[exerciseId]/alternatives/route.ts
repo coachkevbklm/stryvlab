@@ -28,7 +28,9 @@ async function getCoachAndVerifyOwnership(
     .single()
 
   if (!data) return null
-  const coachId = (data as any).coach_program_template_sessions[0]?.coach_program_templates?.coach_id
+  // Supabase returns a FK many-to-one relation as an object, not an array
+  const session = (data as any).coach_program_template_sessions
+  const coachId = session?.coach_program_templates?.coach_id
   if (coachId !== user.id) return null
   return user
 }
