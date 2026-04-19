@@ -2,6 +2,8 @@
 'use client'
 
 import { Plus, Loader2, Save, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 import ExerciseCard, { type ExerciseData } from './ExerciseCard'
 import type { IntelligenceResult, IntelligenceAlert } from '@/lib/programs/intelligence'
 
@@ -86,6 +88,8 @@ interface Props {
   supersetGroupColors: Record<string, string>
   onSave: () => void
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
+  makeExDragId: (si: number, ei: number) => string
+  sessionDropId: (si: number) => string
 }
 
 export default function EditorPane({
@@ -119,6 +123,8 @@ export default function EditorPane({
   supersetGroupColors,
   onSave,
   exerciseRefSetter,
+  makeExDragId,
+  sessionDropId,
 }: Props) {
   const presentPatterns = Array.from(new Set(
     sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter((p): p is string => !!p))
@@ -295,45 +301,51 @@ export default function EditorPane({
 
             {/* Exercises */}
             {session.open && (
-              <div className="p-4 space-y-3">
-                {session.exercises.map((ex, ei) => (
-                  <ExerciseCard
-                    key={ei}
-                    exercise={ex}
-                    si={si}
-                    ei={ei}
-                    isHighlighted={highlightKey === `${si}-${ei}`}
-                    isUploading={uploadingKey === `${si}-${ei}`}
-                    alerts={alertsFor(si, ei)}
-                    templateId={templateId}
-                    supersetGroupColor={ex.group_id ? supersetGroupColors[ex.group_id] : undefined}
-                    onUpdate={patch => onUpdateExercise(si, ei, patch)}
-                    onRemove={() => onRemoveExercise(si, ei)}
-                    onImageUpload={file => onImageUpload(si, ei, file)}
-                    onPickExercise={() => onPickExercise(si, ei)}
-                    onPickExerciseForAlternative={addFn => onPickExerciseForAlternative(si, ei, addFn)}
-                    onOpenAlternatives={() => onOpenAlternatives(si, ei)}
-                    onToggleSuperset={() => onToggleSuperset(si, ei)}
-                    exerciseRef={exerciseRefSetter(`${si}-${ei}`)}
-                    isFirst={si === 0 && ei === 0}
-                    isLast={si === sessions.length - 1 && ei === session.exercises.length - 1}
-                    onMoveUp={() => {
-                      if (ei > 0) {
-                        onMoveExercise(si, ei, si, ei - 1)
-                      } else if (si > 0) {
-                        const prevSessionExCount = sessions[si - 1].exercises.length
-                        onMoveExercise(si, ei, si - 1, prevSessionExCount)
-                      }
-                    }}
-                    onMoveDown={() => {
-                      if (ei < session.exercises.length - 1) {
-                        onMoveExercise(si, ei, si, ei + 1)
-                      } else if (si < sessions.length - 1) {
-                        onMoveExercise(si, ei, si + 1, 0)
-                      }
-                    }}
-                  />
-                ))}
+              <DroppableSession id={sessionDropId(si)} className="p-4 space-y-3">
+                <SortableContext
+                  items={session.exercises.map((_, ei) => makeExDragId(si, ei))}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {session.exercises.map((ex, ei) => (
+                    <ExerciseCard
+                      key={ei}
+                      dragId={makeExDragId(si, ei)}
+                      exercise={ex}
+                      si={si}
+                      ei={ei}
+                      isHighlighted={highlightKey === `${si}-${ei}`}
+                      isUploading={uploadingKey === `${si}-${ei}`}
+                      alerts={alertsFor(si, ei)}
+                      templateId={templateId}
+                      supersetGroupColor={ex.group_id ? supersetGroupColors[ex.group_id] : undefined}
+                      onUpdate={patch => onUpdateExercise(si, ei, patch)}
+                      onRemove={() => onRemoveExercise(si, ei)}
+                      onImageUpload={file => onImageUpload(si, ei, file)}
+                      onPickExercise={() => onPickExercise(si, ei)}
+                      onPickExerciseForAlternative={addFn => onPickExerciseForAlternative(si, ei, addFn)}
+                      onOpenAlternatives={() => onOpenAlternatives(si, ei)}
+                      onToggleSuperset={() => onToggleSuperset(si, ei)}
+                      exerciseRef={exerciseRefSetter(`${si}-${ei}`)}
+                      isFirst={si === 0 && ei === 0}
+                      isLast={si === sessions.length - 1 && ei === session.exercises.length - 1}
+                      onMoveUp={() => {
+                        if (ei > 0) {
+                          onMoveExercise(si, ei, si, ei - 1)
+                        } else if (si > 0) {
+                          const prevSessionExCount = sessions[si - 1].exercises.length
+                          onMoveExercise(si, ei, si - 1, prevSessionExCount)
+                        }
+                      }}
+                      onMoveDown={() => {
+                        if (ei < session.exercises.length - 1) {
+                          onMoveExercise(si, ei, si, ei + 1)
+                        } else if (si < sessions.length - 1) {
+                          onMoveExercise(si, ei, si + 1, 0)
+                        }
+                      }}
+                    />
+                  ))}
+                </SortableContext>
                 <button
                   onClick={() => onAddExercise(si)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-[0.3px] border-dashed border-white/[0.08] text-white/30 hover:text-white/60 hover:border-white/[0.15] transition-colors text-[11px]"
@@ -341,7 +353,7 @@ export default function EditorPane({
                   <Plus size={12} />
                   Ajouter un exercice
                 </button>
-              </div>
+              </DroppableSession>
             )}
           </div>
         ))}
@@ -358,4 +370,11 @@ export default function EditorPane({
       </div>
     </div>
   )
+}
+
+function DroppableSession({
+  id, children, className,
+}: { id: string; children: React.ReactNode; className?: string }) {
+  const { setNodeRef } = useDroppable({ id })
+  return <div ref={setNodeRef} className={className}>{children}</div>
 }

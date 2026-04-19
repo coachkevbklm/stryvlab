@@ -4,8 +4,10 @@
 import { useRef } from 'react'
 import Image from 'next/image'
 import {
-  Trash2, Upload, Library, Link2, Link2Off, ChevronUp, ChevronDown,
+  Trash2, Upload, Library, Link2, Link2Off, ChevronUp, ChevronDown, GripVertical,
 } from 'lucide-react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import IntelligenceAlertBadge from '@/components/programs/IntelligenceAlertBadge'
 import ExerciseClientAlternatives, { type ExerciseClientAlternativesHandle } from '@/components/programs/ExerciseClientAlternatives'
 import type { IntelligenceAlert } from '@/lib/programs/intelligence'
@@ -78,6 +80,7 @@ export interface ExerciseData {
 }
 
 interface Props {
+  dragId: string
   exercise: ExerciseData
   si: number
   ei: number
@@ -105,6 +108,7 @@ const SUPERSET_COLORS = [
 ]
 
 export default function ExerciseCard({
+  dragId,
   exercise,
   si,
   ei,
@@ -130,9 +134,32 @@ export default function ExerciseCard({
   const altRef = useRef<ExerciseClientAlternativesHandle>(null)
   const isInSuperset = !!exercise.group_id
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: dragId })
+
+  const dragStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+
   return (
     <div
-      ref={exerciseRef}
+      ref={(el) => { setNodeRef(el); exerciseRef(el) }}
+      style={{
+        ...dragStyle,
+        ...(isInSuperset && supersetGroupColor ? {
+          borderColor: `${supersetGroupColor}40`,
+          boxShadow: `inset 3px 0 0 ${supersetGroupColor}`,
+        } : {}),
+      }}
       className={[
         'rounded-xl border-[0.3px] bg-white/[0.02] transition-all duration-200',
         isHighlighted
@@ -141,10 +168,6 @@ export default function ExerciseCard({
           ? 'border-transparent'
           : 'border-white/[0.06]',
       ].join(' ')}
-      style={isInSuperset && supersetGroupColor ? {
-        borderColor: `${supersetGroupColor}40`,
-        boxShadow: `inset 3px 0 0 ${supersetGroupColor}`,
-      } : undefined}
     >
       {/* Superset badge */}
       {isInSuperset && (
@@ -264,8 +287,16 @@ export default function ExerciseCard({
 
           {/* Right column: name, sets/reps, muscles, notes */}
           <div className="flex flex-col gap-2 min-w-0">
-            {/* Name row: input + catalogue button + superset + delete */}
+            {/* Name row: drag handle + input + catalogue button + superset + delete */}
             <div className="flex items-center gap-1.5 min-w-0">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 text-white/20 hover:text-white/50 transition-colors shrink-0"
+                title="Déplacer"
+              >
+                <GripVertical size={13} />
+              </div>
               <input
                 value={exercise.name}
                 onChange={e => onUpdate({ name: e.target.value })}

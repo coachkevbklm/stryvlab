@@ -17,6 +17,14 @@ import {
   ArrowLeftRight,
   Upload,
 } from "lucide-react";
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core'
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ExercisePicker from "./ExercisePicker";
@@ -130,6 +138,12 @@ const MUSCLE_GROUPS: { slug: string; label: string }[] = [
   { slug: 'glutes',     label: 'Fessiers' },
   { slug: 'calves',     label: 'Mollets' },
 ]
+
+function makeExId(si: number, ei: number) { return `ex-${si}-${ei}` }
+function parseExId(id: string): { si: number; ei: number } {
+  const parts = id.split('-')
+  return { si: Number(parts[1]), ei: Number(parts[2]) }
+}
 
 interface Exercise {
   name: string;
@@ -310,6 +324,10 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
   const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { overrides: labOverrides, setOverride: onOverrideChange, resetOverrides: onOverrideReset } = useLabOverrides()
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
+
   useEffect(() => {
     if (!clientId) return
     Promise.all([
@@ -364,6 +382,28 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       setHighlightKey(key)
       setTimeout(() => setHighlightKey(null), 2000)
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+
+    if (activeId.startsWith('ex-') && overId.startsWith('ex-')) {
+      const from = parseExId(activeId)
+      const to = parseExId(overId)
+      moveExercise(rawSessionIndex(from.si), from.ei, rawSessionIndex(to.si), to.ei)
+      return
+    }
+
+    if (activeId.startsWith('ex-') && overId.startsWith('session-')) {
+      const from = parseExId(activeId)
+      const toSi = Number(overId.replace('session-', ''))
+      const toEi = orderedSessions[toSi].exercises.length
+      moveExercise(rawSessionIndex(from.si), from.ei, rawSessionIndex(toSi), toEi)
     }
   }
 
@@ -613,6 +653,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
   }, [])
 
   return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
     <div className="h-[calc(100vh-96px)] flex flex-col bg-[#121212] overflow-hidden">
       {/* Dual-pane layout */}
       <div ref={containerRef} className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
@@ -671,6 +712,8 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
             onMoveExercise={(fromSi, fromEi, toSi, toEi) =>
               moveExercise(rawSessionIndex(fromSi), fromEi, rawSessionIndex(toSi), toEi)
             }
+            makeExDragId={makeExId}
+            sessionDropId={(si) => `session-${si}`}
             supersetGroupColors={supersetGroupColors}
             onSave={handleSave}
             exerciseRefSetter={exerciseRefSetter}
@@ -745,5 +788,6 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
         />
       )}
     </div>
+    </DndContext>
   );
 }
