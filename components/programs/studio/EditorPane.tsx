@@ -4,7 +4,7 @@
 import { Plus, Loader2, Save, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import ExerciseCard, { type ExerciseData } from './ExerciseCard'
 import LabModeSection from './LabModeSection'
-import type { IntelligenceResult, IntelligenceAlert } from '@/lib/programs/intelligence'
+import type { IntelligenceResult, IntelligenceAlert, SRAHeatmapWeek } from '@/lib/programs/intelligence'
 
 const GOALS = [
   { value: 'hypertrophy', label: 'Hypertrophie' },
@@ -79,6 +79,10 @@ interface Props {
   onOpenAlternatives: (si: number, ei: number) => void
   onSave: () => void
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
+  sraHeatmap?: SRAHeatmapWeek[]
+  labOverrides?: Record<string, number>
+  onOverrideChange?: (pattern: string, value: number) => void
+  onOverrideReset?: () => void
 }
 
 export default function EditorPane({
@@ -105,7 +109,15 @@ export default function EditorPane({
   onOpenAlternatives,
   onSave,
   exerciseRefSetter,
+  sraHeatmap,
+  labOverrides,
+  onOverrideChange,
+  onOverrideReset,
 }: Props) {
+  const presentPatterns = Array.from(new Set(
+    sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter((p): p is string => !!p))
+  ))
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[#121212]">
       {/* Sticky sub-header: template meta + save button */}
@@ -277,6 +289,11 @@ export default function EditorPane({
           result={intelligenceResult}
           morphoConnected={morphoConnected}
           morphoDate={morphoDate}
+          sraHeatmap={sraHeatmap}
+          labOverrides={labOverrides}
+          presentPatterns={presentPatterns}
+          onOverrideChange={onOverrideChange}
+          onOverrideReset={onOverrideReset}
         />
       </div>
     </div>

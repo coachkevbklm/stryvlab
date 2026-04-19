@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { buildIntelligenceResult } from './scoring'
-import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise, IntelligenceProfile, LabOverrides } from './types'
+import type { BuilderSession, TemplateMeta, IntelligenceResult, IntelligenceAlert, BuilderExercise, IntelligenceProfile, LabOverrides, SRAHeatmapWeek } from './types'
 
-export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise, IntelligenceProfile, LabOverrides }
+export type { IntelligenceResult, IntelligenceAlert, BuilderSession, TemplateMeta, BuilderExercise, IntelligenceProfile, LabOverrides, SRAHeatmapWeek }
 export { scoreAlternatives } from './alternatives'
 export type { AlternativeScore } from './alternatives'
 export { resolveExerciseCoeff } from './catalog-utils'

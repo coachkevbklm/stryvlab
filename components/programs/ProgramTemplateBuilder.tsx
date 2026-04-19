@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import ExercisePicker from "./ExercisePicker";
-import { useProgramIntelligence, type IntelligenceProfile } from "@/lib/programs/intelligence";
+import { useProgramIntelligence, useLabOverrides, type IntelligenceProfile } from "@/lib/programs/intelligence";
 import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
 import IntelligenceAlertBadge from "./IntelligenceAlertBadge";
 import ExerciseAlternativesDrawer from "./ExerciseAlternativesDrawer";
@@ -267,6 +267,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
   const [morphoAdjustments, setMorphoAdjustments] = useState<Record<string, number> | undefined>(undefined);
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const { overrides: labOverrides, setOverride: onOverrideChange, resetOverrides: onOverrideReset } = useLabOverrides()
 
   useEffect(() => {
     if (!clientId) return
@@ -311,7 +312,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       is_compound: e.is_compound,
     })),
   }));
-  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile, morphoAdjustments);
+  const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile, morphoAdjustments ?? undefined, labOverrides);
 
   function handleAlertClick(sessionIndex: number, exerciseIndex: number) {
     const key = `${sessionIndex}-${exerciseIndex}`
@@ -508,6 +509,10 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
             onOpenAlternatives={(si, ei) => setAlternativesTarget({ si, ei })}
             onSave={handleSave}
             exerciseRefSetter={exerciseRefSetter}
+            sraHeatmap={intelligenceResult?.sraHeatmap}
+            labOverrides={labOverrides}
+            onOverrideChange={onOverrideChange}
+            onOverrideReset={onOverrideReset}
           />
         </Panel>
 

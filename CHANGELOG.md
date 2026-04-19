@@ -1,5 +1,8 @@
 ## 2026-04-19
 
+FEATURE: LabModeSection — SRA heatmap table (muscles × 4 weeks, color-coded fatigue)
+FEATURE: LabModeSection — Lab overrides sliders per movement pattern (0.5–1.5 range)
+FEATURE: EditorPane + ProgramTemplateBuilder — wire useLabOverrides into studio
 FEATURE: useLabOverrides hook — coach can override stimulus coefficients per pattern in Lab Mode
 FEATURE: useProgramIntelligence — accepts labOverrides (5th param), merged with morpho adjustments
 FEATURE: scoreSRA — export sraHeatmap (SRAHeatmapWeek[]) with 4-week fatigue per muscle (0–100, empirical factor 0.003)

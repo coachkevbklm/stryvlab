@@ -2,13 +2,18 @@
 'use client'
 
 import { useState } from 'react'
-import { FlaskConical, ChevronDown, ChevronUp, Microscope, Info } from 'lucide-react'
-import type { IntelligenceResult } from '@/lib/programs/intelligence'
+import { FlaskConical, ChevronDown, ChevronUp, Microscope, Info, Zap, Sliders } from 'lucide-react'
+import type { IntelligenceResult, SRAHeatmapWeek } from '@/lib/programs/intelligence'
 
 interface Props {
   result: IntelligenceResult | null
   morphoConnected: boolean
   morphoDate?: string
+  sraHeatmap?: SRAHeatmapWeek[]
+  labOverrides?: Record<string, number>
+  presentPatterns?: string[]
+  onOverrideChange?: (pattern: string, value: number) => void
+  onOverrideReset?: () => void
 }
 
 const RULE_EXPLANATIONS: Record<string, string> = {
@@ -20,7 +25,10 @@ const RULE_EXPLANATIONS: Record<string, string> = {
   completeness: 'Patterns requis par objectif. Hypertrophie = push + pull + jambes + core. Manque → score incomplet.',
 }
 
-export default function LabModeSection({ result, morphoConnected, morphoDate }: Props) {
+export default function LabModeSection({
+  result, morphoConnected, morphoDate,
+  sraHeatmap, labOverrides, presentPatterns, onOverrideChange, onOverrideReset
+}: Props) {
   const [visible, setVisible] = useState(true)
   const [expandedRule, setExpandedRule] = useState<string | null>(null)
 
@@ -74,6 +82,96 @@ export default function LabModeSection({ result, morphoConnected, morphoDate }: 
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* SRA Heatmap */}
+          {sraHeatmap && sraHeatmap.some(w => w.muscles.length > 0) && (() => {
+            const weeks: SRAHeatmapWeek[] = sraHeatmap
+            const allMuscles = Array.from(new Set(weeks.flatMap(w => w.muscles.map(m => m.name))))
+            return (
+              <div>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2 flex items-center gap-1.5">
+                  <Zap size={10} />
+                  Fatigue musculaire (4 semaines)
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[9px]">
+                    <thead>
+                      <tr>
+                        <th className="text-left text-white/25 pr-2 pb-1 font-normal">Muscle</th>
+                        {weeks.map(w => (
+                          <th key={w.week} className="text-center text-white/25 px-1 pb-1 font-normal">S{w.week}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allMuscles.map(muscle => (
+                        <tr key={muscle}>
+                          <td className="text-white/40 pr-2 py-0.5 capitalize">{muscle}</td>
+                          {weeks.map(week => {
+                            const entry = week.muscles.find(x => x.name === muscle)
+                            const fatigue = entry?.fatigue ?? 0
+                            const bg = fatigue > 60 ? 'bg-red-500/25' : fatigue > 30 ? 'bg-amber-500/20' : 'bg-white/[0.03]'
+                            return (
+                              <td key={week.week} className={`text-center px-1 py-0.5 rounded ${bg}`}>
+                                <span className="font-mono text-white/50">{fatigue > 0 ? fatigue : '–'}</span>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Lab Overrides */}
+          {presentPatterns && presentPatterns.length > 0 && onOverrideChange && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 flex items-center gap-1.5">
+                  <Sliders size={10} />
+                  Overrides coefficients
+                </p>
+                {onOverrideReset && Object.keys(labOverrides ?? {}).length > 0 && (
+                  <button
+                    onClick={onOverrideReset}
+                    className="text-[9px] text-[#8b5cf6]/60 hover:text-[#8b5cf6] transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {presentPatterns.map(pattern => {
+                  const currentVal = (labOverrides ?? {})[pattern] ?? 1.0
+                  return (
+                    <div key={pattern} className="flex items-center gap-2">
+                      <span className="text-[9px] text-white/40 w-28 shrink-0 truncate capitalize">
+                        {pattern.replace(/_/g, ' ')}
+                      </span>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={1.5}
+                        step={0.05}
+                        value={currentVal}
+                        onChange={e => onOverrideChange(pattern, parseFloat(e.target.value))}
+                        className="flex-1 accent-[#8b5cf6] h-1"
+                      />
+                      <span
+                        className="text-[9px] font-mono w-8 text-right shrink-0"
+                        style={{ color: currentVal !== 1.0 ? '#8b5cf6' : 'rgba(255,255,255,0.3)' }}
+                      >
+                        {currentVal.toFixed(2)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
