@@ -3,8 +3,7 @@
 
 import { Plus, Loader2, Save, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import ExerciseCard, { type ExerciseData } from './ExerciseCard'
-import LabModeSection from './LabModeSection'
-import type { IntelligenceResult, IntelligenceAlert, SRAHeatmapWeek } from '@/lib/programs/intelligence'
+import type { IntelligenceResult, IntelligenceAlert } from '@/lib/programs/intelligence'
 
 const GOALS = [
   { value: 'hypertrophy', label: 'Hypertrophie' },
@@ -45,6 +44,7 @@ export interface TemplateMeta {
   notes: string
   equipment_archetype: string
   muscle_tags: string[]
+  session_mode: 'day' | 'cycle'
 }
 
 export interface EditorSession {
@@ -67,7 +67,9 @@ interface Props {
   morphoDate?: string
   templateId?: string
   alertsFor: (si: number, ei: number) => IntelligenceAlert[]
+  sessionMode: 'day' | 'cycle'
   onMetaChange: (patch: Partial<TemplateMeta>) => void
+  onSessionModeChange: (mode: 'day' | 'cycle') => void
   onUpdateSession: (si: number, patch: Partial<EditorSession>) => void
   onUpdateExercise: (si: number, ei: number, patch: Partial<ExerciseData>) => void
   onRemoveExercise: (si: number, ei: number) => void
@@ -76,13 +78,13 @@ interface Props {
   onAddSession: () => void
   onImageUpload: (si: number, ei: number, file: File) => void
   onPickExercise: (si: number, ei: number) => void
+  onPickExerciseForAlternative: (si: number, ei: number, addFn: (name: string) => Promise<void>) => void
   onOpenAlternatives: (si: number, ei: number) => void
+  onToggleSuperset: (si: number, ei: number) => void
+  onMoveSession: (fromSi: number, toSi: number) => void
+  supersetGroupColors: Record<string, string>
   onSave: () => void
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
-  sraHeatmap?: SRAHeatmapWeek[]
-  labOverrides?: Record<string, number>
-  onOverrideChange?: (pattern: string, value: number) => void
-  onOverrideReset?: () => void
 }
 
 export default function EditorPane({
@@ -97,7 +99,9 @@ export default function EditorPane({
   morphoDate,
   templateId,
   alertsFor,
+  sessionMode,
   onMetaChange,
+  onSessionModeChange,
   onUpdateSession,
   onUpdateExercise,
   onRemoveExercise,
@@ -106,13 +110,13 @@ export default function EditorPane({
   onAddSession,
   onImageUpload,
   onPickExercise,
+  onPickExerciseForAlternative,
   onOpenAlternatives,
+  onToggleSuperset,
+  onMoveSession,
+  supersetGroupColors,
   onSave,
   exerciseRefSetter,
-  sraHeatmap,
-  labOverrides,
-  onOverrideChange,
-  onOverrideReset,
 }: Props) {
   const presentPatterns = Array.from(new Set(
     sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter((p): p is string => !!p))
@@ -141,47 +145,65 @@ export default function EditorPane({
         </div>
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={meta.goal}
             onChange={e => onMetaChange({ goal: e.target.value })}
-            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none"
+            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none min-w-0"
           >
             {GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
           </select>
           <select
             value={meta.level}
             onChange={e => onMetaChange({ level: e.target.value })}
-            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none"
+            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none min-w-0"
           >
             {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
           <select
             value={meta.equipment_archetype}
             onChange={e => onMetaChange({ equipment_archetype: e.target.value })}
-            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none"
+            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none min-w-0 max-w-[160px]"
           >
             {EQUIPMENT_ARCHETYPES.map(eq => <option key={eq.value} value={eq.value}>{eq.label}</option>)}
           </select>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 shrink-0">
             <input
               type="number"
               value={meta.frequency}
               onChange={e => onMetaChange({ frequency: Number(e.target.value) || 1 })}
               min={1} max={7}
-              className="w-10 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none font-mono text-center"
+              className="w-9 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-1 outline-none font-mono text-center"
             />
-            <span className="text-[10px] text-white/30">j/sem</span>
+            <span className="text-[10px] text-white/30 whitespace-nowrap">j/sem</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 shrink-0">
             <input
               type="number"
               value={meta.weeks}
               onChange={e => onMetaChange({ weeks: Number(e.target.value) || 1 })}
               min={1} max={52}
-              className="w-10 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none font-mono text-center"
+              className="w-9 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-1 outline-none font-mono text-center"
             />
-            <span className="text-[10px] text-white/30">semaines</span>
+            <span className="text-[10px] text-white/30 whitespace-nowrap">sem.</span>
+          </div>
+
+          {/* Session mode toggle */}
+          <div className="flex items-center rounded-lg overflow-hidden border-[0.3px] border-white/[0.06] shrink-0">
+            {(['day', 'cycle'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => onSessionModeChange(mode)}
+                className={[
+                  'h-7 px-3 text-[10px] font-semibold transition-colors',
+                  sessionMode === mode
+                    ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                    : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]',
+                ].join(' ')}
+              >
+                {mode === 'day' ? 'Jours' : 'Cycle'}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -211,29 +233,56 @@ export default function EditorPane({
                   : <ChevronDown size={14} />
                 }
               </button>
+              {/* Up/down arrows in cycle mode */}
+              {sessionMode === 'cycle' && (
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button
+                    onClick={() => onMoveSession(si, si - 1)}
+                    disabled={si === 0}
+                    className="p-0.5 rounded text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronUp size={10} />
+                  </button>
+                  <button
+                    onClick={() => onMoveSession(si, si + 1)}
+                    disabled={si === sessions.length - 1}
+                    className="p-0.5 rounded text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronDown size={10} />
+                  </button>
+                </div>
+              )}
               <input
                 value={session.name}
                 onChange={e => onUpdateSession(si, { name: e.target.value })}
                 placeholder={`Séance ${si + 1}`}
                 className="flex-1 bg-transparent text-[13px] font-semibold text-white placeholder:text-white/30 outline-none"
               />
-              {/* Day of week */}
-              <div className="flex items-center gap-1">
-                {DAYS.map((d, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => onUpdateSession(si, { day_of_week: session.day_of_week === idx + 1 ? null : idx + 1 })}
-                    className={[
-                      'w-7 h-7 rounded-md text-[9px] font-medium transition-colors',
-                      session.day_of_week === idx + 1
-                        ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                        : 'text-white/25 hover:text-white/50 hover:bg-white/[0.04]',
-                    ].join(' ')}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
+              {/* Day of week pills (day mode only) */}
+              {sessionMode === 'day' && (
+                <div className="flex items-center gap-1">
+                  {DAYS.map((d, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onUpdateSession(si, { day_of_week: session.day_of_week === idx + 1 ? null : idx + 1 })}
+                      className={[
+                        'w-7 h-7 rounded-md text-[9px] font-medium transition-colors',
+                        session.day_of_week === idx + 1
+                          ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                          : 'text-white/25 hover:text-white/50 hover:bg-white/[0.04]',
+                      ].join(' ')}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Cycle badge */}
+              {sessionMode === 'cycle' && (
+                <span className="text-[10px] font-mono text-white/25 shrink-0">
+                  S{si + 1}
+                </span>
+              )}
               <button
                 onClick={() => onRemoveSession(si)}
                 className="p-1.5 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors text-[11px]"
@@ -255,11 +304,14 @@ export default function EditorPane({
                     isUploading={uploadingKey === `${si}-${ei}`}
                     alerts={alertsFor(si, ei)}
                     templateId={templateId}
+                    supersetGroupColor={ex.group_id ? supersetGroupColors[ex.group_id] : undefined}
                     onUpdate={patch => onUpdateExercise(si, ei, patch)}
                     onRemove={() => onRemoveExercise(si, ei)}
                     onImageUpload={file => onImageUpload(si, ei, file)}
                     onPickExercise={() => onPickExercise(si, ei)}
+                    onPickExerciseForAlternative={addFn => onPickExerciseForAlternative(si, ei, addFn)}
                     onOpenAlternatives={() => onOpenAlternatives(si, ei)}
+                    onToggleSuperset={() => onToggleSuperset(si, ei)}
                     exerciseRef={exerciseRefSetter(`${si}-${ei}`)}
                   />
                 ))}
@@ -284,17 +336,6 @@ export default function EditorPane({
           Ajouter une séance
         </button>
 
-        {/* Lab Mode */}
-        <LabModeSection
-          result={intelligenceResult}
-          morphoConnected={morphoConnected}
-          morphoDate={morphoDate}
-          sraHeatmap={sraHeatmap}
-          labOverrides={labOverrides}
-          presentPatterns={presentPatterns}
-          onOverrideChange={onOverrideChange}
-          onOverrideReset={onOverrideReset}
-        />
       </div>
     </div>
   )

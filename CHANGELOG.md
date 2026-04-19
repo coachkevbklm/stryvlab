@@ -1,5 +1,32 @@
 ## 2026-04-19
 
+FEATURE: ProgramTemplateBuilder — session_mode ('day'|'cycle') added to TemplateMeta + initial state; orderedSessions sorts by day_of_week in day mode; rawSessionIndex maps ordered→raw indices; moveSession + moveExercise functions added
+FEATURE: EditorPane — Jours/Cycle toggle in meta row; day-of-week pills conditionalized on day mode; cycle badge (S1, S2…) in cycle mode; up/down arrow buttons in cycle mode session headers for manual reordering
+
+FEATURE: ExerciseCard — "Catalogue" button always visible in name row (was hidden Tag icon); empty image zone opens catalogue as primary CTA
+FEATURE: ExerciseCard — superset toggle button (Link2/Link2Off) + colored left border + SUPERSET badge when exercise has group_id
+FEATURE: ProgramTemplateBuilder — toggleSuperset() pairs exercise with next via shared group_id, color-coded per group
+FEATURE: ExerciseClientAlternatives — "Ajouter depuis le catalogue" opens ExercisePicker (was free-text input); uses forwardRef+useImperativeHandle to call addAlternative after pick
+FIX: ExerciseCard — exercise name input no longer truncate in edit mode
+FIX: ExerciseCard — image 120×120 (was 140), grid-cols-[120px_1fr], gap-1 on sets grid, "Repos" label (was "Repos (s)"), min-w-0 on all flex children
+FIX: ProgramIntelligencePanel — Volume KPIs grid-cols-2 (was 4), Radar+Donut stacked (was side-by-side grid-cols-2), session name flex-1 truncate
+FIX: LabModeSection — subscores grid-cols-2 inline (was 3), pattern label w-32 (was 28)
+FIX: NavigatorPane — add title tooltip on truncated session/exercise names
+FIX: EditorPane — meta row gap-2, min-w-0 on selects, max-w-[160px] on equipment, whitespace-nowrap on labels, shrink-0 on number groups
+FIX: ProgramTemplateBuilder — navWidth 16% (was 14%), intelWidth 30% (was 32%), minWidth 160px nav / 260px intel, drag clamps corrected
+REFACTOR: IntelligencePanelShell + ProgramIntelligencePanel — rename "Intelligence" → "SMART FIT" in all panel headers
+REFACTOR: ProgramTemplateBuilder — replace react-resizable-panels with native CSS drag-split (mousedown/mousemove/mouseup) — eliminates re-render layout reset bug
+REFACTOR: IntelligencePanelShell — move LabModeSection from EditorPane into Intelligence Panel (better UX, removes 4 lab props from EditorPane)
+FIX: ExerciseCard — full French labels for equipment (Élastique, Haltère, Machine) and muscles (Pectoraux, Ischios, Dos haut, Quadriceps, Poly-articulaire)
+FIX: IntelligencePanelShell — add px-3 py-3 padding on docked scroll area, remove forbidden shadow-lg/shadow-2xl
+FIX: ProgramTemplateBuilder — startNavRef aligned to 14 (was 16, caused jump on first drag)
+FIX: ProgramIntelligencePanel — subscores grid-cols-2 (was grid-cols-3, too narrow in docked panel)
+FIX: ProgramTemplateBuilder — nav 14%, intel 32% default widths for better proportions
+FIX: ProgramTemplateBuilder — h-[calc(100vh-96px)] so dual-pane layout fills viewport correctly (react-resizable-panels needs fixed height)
+FIX: new/edit template pages — remove wrapping padding/min-h-screen that broke PanelGroup height
+REFACTOR: scoreBalance — enrich PUSH_PULL_IMBALANCE alerts with pushSets/pullSets counts and set-delta suggestions
+REFACTOR: scoreSRA — enrich SRA_VIOLATION alerts with capitalized muscle name, exact missing hours, and effectiveLevel
+REFACTOR: scoreRedundancy — enrich REDUNDANT_EXERCISES alert with combinedSets breakdown (exA.sets + exB.sets)
 FEATURE: LabModeSection — SRA heatmap table (muscles × 4 weeks, color-coded fatigue)
 FEATURE: LabModeSection — Lab overrides sliders per movement pattern (0.5–1.5 range)
 FEATURE: EditorPane + ProgramTemplateBuilder — wire useLabOverrides into studio

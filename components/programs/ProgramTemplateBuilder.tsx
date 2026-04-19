@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import ExercisePicker from "./ExercisePicker";
 import { useProgramIntelligence, useLabOverrides, type IntelligenceProfile } from "@/lib/programs/intelligence";
 import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
@@ -163,6 +162,7 @@ interface TemplateMeta {
   muscle_tags: string[];
   notes: string;
   equipment_archetype: string;
+  session_mode: 'day' | 'cycle';
 }
 
 function emptyExercise(): Exercise {
@@ -215,6 +215,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
           muscle_tags: initial.muscle_tags ?? [],
           notes: initial.notes ?? "",
           equipment_archetype: initial.equipment_archetype ?? "",
+          session_mode: (initial.session_mode ?? 'day') as 'day' | 'cycle',
         }
       : {
           name: "",
@@ -226,6 +227,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
           muscle_tags: [],
           notes: "",
           equipment_archetype: "",
+          session_mode: 'day',
         },
   );
 
@@ -260,6 +262,42 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       : [emptySession()],
   );
 
+  const orderedSessions = meta.session_mode === 'day'
+    ? [...sessions].sort((a, b) => {
+        const aDay = a.day_of_week ?? 99
+        const bDay = b.day_of_week ?? 99
+        return aDay - bDay
+      })
+    : sessions
+
+  function rawSessionIndex(orderedSi: number): number {
+    const target = orderedSessions[orderedSi]
+    return sessions.indexOf(target)
+  }
+
+  function moveSession(fromSi: number, toSi: number) {
+    if (fromSi === toSi) return
+    setSessions(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(fromSi, 1)
+      next.splice(toSi, 0, moved)
+      return next
+    })
+  }
+
+  function moveExercise(
+    fromSi: number, fromEi: number,
+    toSi: number, toEi: number,
+  ) {
+    if (fromSi === toSi && fromEi === toEi) return
+    setSessions(prev => {
+      const next = prev.map(s => ({ ...s, exercises: [...s.exercises] }))
+      const [moved] = next[fromSi].exercises.splice(fromEi, 1)
+      next[toSi].exercises.splice(toEi, 0, moved)
+      return next
+    })
+  }
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
@@ -286,6 +324,8 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
     ei: number;
   } | null>(null);
   const [alternativesTarget, setAlternativesTarget] = useState<{ si: number; ei: number } | null>(null);
+  // Picker used to add a client alternative — callback receives the picked name
+  const [altPickerCallback, setAltPickerCallback] = useState<((name: string) => Promise<void>) | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const intelligenceMeta = {
@@ -458,37 +498,146 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
 
   const morphoConnected = !!morphoAdjustments && Object.keys(morphoAdjustments).length > 0
 
-  const navSessions = sessions.map(s => ({
+  const SUPERSET_COLORS = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316']
+
+  // Compute stable color mapping: group_id → color
+  const supersetGroupColors = useMemo(() => {
+    const map: Record<string, string> = {}
+    let colorIdx = 0
+    sessions.forEach(s => {
+      s.exercises.forEach(e => {
+        if (e.group_id && !map[e.group_id]) {
+          map[e.group_id] = SUPERSET_COLORS[colorIdx % SUPERSET_COLORS.length]
+          colorIdx++
+        }
+      })
+    })
+    return map
+  }, [sessions])
+
+  function toggleSuperset(si: number, ei: number) {
+    setSessions(prev => {
+      const session = prev[si]
+      const ex = session.exercises[ei]
+
+      if (ex.group_id) {
+        // Remove from superset — if only 1 exercise left in group, clear the other too
+        const groupId = ex.group_id
+        const groupMembers = session.exercises.filter(e => e.group_id === groupId)
+        return prev.map((s, i) => {
+          if (i !== si) return s
+          const updated = s.exercises.map(e => {
+            if (e.group_id !== groupId) return e
+            // If 2 members: removing one should clear both if only 1 remains after
+            if (groupMembers.length <= 2 || e === ex) return { ...e, group_id: undefined }
+            return e
+          })
+          return { ...s, exercises: updated }
+        })
+      } else {
+        // Add to superset with the next exercise — create a new group_id
+        const nextEx = session.exercises[ei + 1]
+        if (!nextEx) return prev // no next exercise to pair with
+        const groupId = `sg-${Date.now()}`
+        return prev.map((s, i) => {
+          if (i !== si) return s
+          return {
+            ...s,
+            exercises: s.exercises.map((e, idx) => {
+              if (idx === ei) return { ...e, group_id: groupId }
+              if (idx === ei + 1) {
+                // If next exercise already has a group, join that group instead
+                return { ...e, group_id: nextEx.group_id ?? groupId }
+              }
+              return e
+            }),
+          }
+        })
+      }
+    })
+  }
+
+  const navSessions = orderedSessions.map(s => ({
     name: s.name,
     exercises: s.exercises.map(e => ({ name: e.name })),
   }))
 
+  // ─── Resizable split layout ────────────────────────────────────────────────
+  const [navWidth, setNavWidth] = useState(16)       // % of total width
+  const [intelWidth, setIntelWidth] = useState(30)   // % of total width
+  const containerRef = useRef<HTMLDivElement>(null)
+  const draggingRef = useRef<'left' | 'right' | null>(null)
+  const startXRef = useRef(0)
+  const startNavRef = useRef(16)
+  const startIntelRef = useRef(30)
+
+  const onMouseDownLeft = useCallback((e: React.MouseEvent) => {
+    draggingRef.current = 'left'
+    startXRef.current = e.clientX
+    startNavRef.current = navWidth
+    e.preventDefault()
+  }, [navWidth])
+
+  const onMouseDownRight = useCallback((e: React.MouseEvent) => {
+    draggingRef.current = 'right'
+    startXRef.current = e.clientX
+    startIntelRef.current = intelWidth
+    e.preventDefault()
+  }, [intelWidth])
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!draggingRef.current || !containerRef.current) return
+      const totalW = containerRef.current.offsetWidth
+      const dx = e.clientX - startXRef.current
+      const dPct = (dx / totalW) * 100
+      if (draggingRef.current === 'left') {
+        const next = Math.min(Math.max(startNavRef.current + dPct, 12), 28)
+        setNavWidth(next)
+      } else {
+        const next = Math.min(Math.max(startIntelRef.current - dPct, 22), 42)
+        setIntelWidth(next)
+      }
+    }
+    function onMouseUp() { draggingRef.current = null }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
   return (
-    <div className="h-full flex flex-col bg-[#121212]">
+    <div className="h-[calc(100vh-96px)] flex flex-col bg-[#121212] overflow-hidden">
       {/* Dual-pane layout */}
-      <PanelGroup orientation="horizontal" className="flex-1 overflow-hidden">
-        {/* Navigator — 16% */}
-        <Panel defaultSize={16} minSize={12} maxSize={25}>
+      <div ref={containerRef} className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+        {/* Navigator */}
+        <div style={{ flexGrow: navWidth, flexShrink: 1, flexBasis: 0, minWidth: 160, overflow: 'hidden' }}>
           <NavigatorPane
             sessions={navSessions}
             activeSessionIndex={null}
             activeExerciseKey={highlightKey}
             onSelectSession={si => {
-              const el = exerciseRefs.current[`${si}-0`]
+              const el = exerciseRefs.current[`${rawSessionIndex(si)}-0`]
               el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }}
-            onSelectExercise={(si, ei) => handleAlertClick(si, ei)}
+            onSelectExercise={(si, ei) => handleAlertClick(rawSessionIndex(si), ei)}
             onAddSession={() => setSessions(prev => [...prev, emptySession()])}
           />
-        </Panel>
+        </div>
 
-        <PanelResizeHandle className="w-px bg-white/[0.06] hover:bg-[#1f8a65]/40 transition-colors cursor-col-resize" />
+        {/* Resize handle left */}
+        <div
+          onMouseDown={onMouseDownLeft}
+          className="w-1 flex-none bg-white/[0.06] hover:bg-[#1f8a65]/50 cursor-col-resize transition-colors active:bg-[#1f8a65]"
+        />
 
-        {/* Editor — 54% */}
-        <Panel defaultSize={54} minSize={40}>
+        {/* Editor — takes remaining space */}
+        <div style={{ flexGrow: 100 - navWidth - intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 0, overflow: 'hidden' }}>
           <EditorPane
             meta={meta}
-            sessions={sessions}
+            sessions={orderedSessions}
             saving={saving}
             error={error}
             uploadingKey={uploadingKey}
@@ -497,51 +646,76 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
             morphoConnected={morphoConnected}
             templateId={templateId}
             alertsFor={alertsFor}
+            sessionMode={meta.session_mode}
             onMetaChange={patch => setMeta(m => ({ ...m, ...patch }))}
-            onUpdateSession={updateSession}
-            onUpdateExercise={updateExercise}
-            onRemoveExercise={removeExercise}
-            onAddExercise={addExercise}
-            onRemoveSession={removeSession}
+            onSessionModeChange={mode => setMeta(m => ({ ...m, session_mode: mode }))}
+            onUpdateSession={(si, patch) => updateSession(rawSessionIndex(si), patch)}
+            onUpdateExercise={(si, ei, patch) => updateExercise(rawSessionIndex(si), ei, patch)}
+            onRemoveExercise={(si, ei) => removeExercise(rawSessionIndex(si), ei)}
+            onAddExercise={si => addExercise(rawSessionIndex(si))}
+            onRemoveSession={si => removeSession(rawSessionIndex(si))}
             onAddSession={() => setSessions(prev => [...prev, emptySession()])}
-            onImageUpload={handleImageUpload}
-            onPickExercise={(si, ei) => setPickerTarget({ si, ei })}
-            onOpenAlternatives={(si, ei) => setAlternativesTarget({ si, ei })}
+            onImageUpload={(si, ei, file) => handleImageUpload(rawSessionIndex(si), ei, file)}
+            onPickExercise={(si, ei) => setPickerTarget({ si: rawSessionIndex(si), ei })}
+            onPickExerciseForAlternative={(si, ei, addFn) => {
+              setAltPickerCallback(() => addFn)
+              setPickerTarget({ si: rawSessionIndex(si), ei })
+            }}
+            onOpenAlternatives={(si, ei) => setAlternativesTarget({ si: rawSessionIndex(si), ei })}
+            onToggleSuperset={(si, ei) => toggleSuperset(rawSessionIndex(si), ei)}
+            onMoveSession={(fromSi, toSi) => moveSession(rawSessionIndex(fromSi), rawSessionIndex(toSi))}
+            supersetGroupColors={supersetGroupColors}
             onSave={handleSave}
             exerciseRefSetter={exerciseRefSetter}
-            sraHeatmap={intelligenceResult?.sraHeatmap}
-            labOverrides={labOverrides}
-            onOverrideChange={onOverrideChange}
-            onOverrideReset={onOverrideReset}
           />
-        </Panel>
+        </div>
 
-        <PanelResizeHandle className="w-px bg-white/[0.06] hover:bg-[#1f8a65]/40 transition-colors cursor-col-resize" />
+        {/* Resize handle right */}
+        <div
+          onMouseDown={onMouseDownRight}
+          className="w-1 flex-none bg-white/[0.06] hover:bg-[#1f8a65]/50 cursor-col-resize transition-colors active:bg-[#1f8a65]"
+        />
 
-        {/* Intelligence Panel — 30% */}
-        <Panel defaultSize={30} minSize={20} maxSize={40}>
+        {/* Intelligence Panel */}
+        <div style={{ flexGrow: intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 260, overflow: 'hidden' }}>
           <IntelligencePanelShell
             result={intelligenceResult}
             weeks={meta.weeks}
             onAlertClick={handleAlertClick}
+            morphoConnected={morphoConnected}
+            sraHeatmap={intelligenceResult?.sraHeatmap}
+            labOverrides={labOverrides}
+            presentPatterns={Array.from(new Set(sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter(Boolean) as string[])))}
+            onOverrideChange={onOverrideChange}
+            onOverrideReset={onOverrideReset}
           />
-        </Panel>
-      </PanelGroup>
+        </div>
+      </div>
 
       {/* Overlays */}
       {pickerTarget && (
         <ExercisePicker
           onSelect={({ name, gifUrl, movementPattern, equipment, isCompound }) => {
-            updateExercise(pickerTarget.si, pickerTarget.ei, {
-              name,
-              image_url: gifUrl,
-              movement_pattern: movementPattern,
-              equipment_required: equipment,
-              is_compound: isCompound,
-            });
-            setPickerTarget(null);
+            if (altPickerCallback) {
+              // Mode: adding a client alternative
+              altPickerCallback(name)
+              setAltPickerCallback(null)
+            } else {
+              // Mode: replacing/setting main exercise
+              updateExercise(pickerTarget.si, pickerTarget.ei, {
+                name,
+                image_url: gifUrl,
+                movement_pattern: movementPattern,
+                equipment_required: equipment,
+                is_compound: isCompound,
+              })
+            }
+            setPickerTarget(null)
           }}
-          onClose={() => setPickerTarget(null)}
+          onClose={() => {
+            setPickerTarget(null)
+            setAltPickerCallback(null)
+          }}
         />
       )}
 
