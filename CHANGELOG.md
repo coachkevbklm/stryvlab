@@ -1,5 +1,8 @@
 ## 2026-04-19
 
+FEATURE: scoreSRA — export sraHeatmap (SRAHeatmapWeek[]) with 4-week fatigue per muscle (0–100, empirical factor 0.003)
+FEATURE: types.ts — add SRAHeatmapWeek interface + sraHeatmap field to IntelligenceResult
+FEATURE: buildIntelligenceResult — propagate sraHeatmap from scoreSRA result
 FEATURE: scoreRedundancy — skip bilateral+unilateral pairs when morpho has unilateral boost (arm asymmetry targeting)
 FEATURE: scoreRedundancy — add optional morphoStimulusAdjustments param + isUnilateral helper
 FEATURE: buildIntelligenceResult — pass morphoStimulusAdjustments to scoreRedundancy

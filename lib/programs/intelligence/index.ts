@@ -20,6 +20,7 @@ const EMPTY_RESULT: IntelligenceResult = {
   missingPatterns: [],
   redundantPairs: [],
   sraMap: [],
+  sraHeatmap: [],
   programStats: { totalSets: 0, totalEstimatedReps: 0, totalExercises: 0, avgExercisesPerSession: 0, sessionsStats: [] },
 }
 

@@ -3,7 +3,7 @@ import type {
   BuilderSession, BuilderExercise, TemplateMeta,
   IntelligenceAlert, IntelligenceResult, MuscleDistribution,
   PatternDistribution, SRAPoint, RedundantPair, IntelligenceProfile,
-  ProgramStats, SessionStats,
+  ProgramStats, SessionStats, SRAHeatmapWeek,
 } from './types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ export function scoreSRA(
   sessions: BuilderSession[],
   meta: TemplateMeta,
   profile?: IntelligenceProfile,
-): { score: number; alerts: IntelligenceAlert[]; sraMap: SRAPoint[] } {
+): { score: number; alerts: IntelligenceAlert[]; sraMap: SRAPoint[]; sraHeatmap: SRAHeatmapWeek[] } {
   const alerts: IntelligenceAlert[] = []
   const sraMap: SRAPoint[] = []
   const effectiveLevel = profile?.fitnessLevel ?? meta.level
@@ -234,7 +234,30 @@ export function scoreSRA(
     ? 100
     : clampScore(100 - (violations / totalChecks) * 100)
 
-  return { score, alerts, sraMap }
+  // ─── SRA Heatmap (4 semaines) ─────────────────────────────────────────────
+  // The weekly program repeats over 4 weeks.
+  // For each week (identical, same program), fatigue per muscle =
+  // total weightedVolume for that muscle / (sraWindow_hours × 0.003) → clamped 0–100.
+  // Factor 0.003 is empirical: ~1 set compound = ~3‰ of the SRA window in fatigue.
+  const muscleNames = Object.keys(muscleSessionMap)
+  const sraHeatmap: SRAHeatmapWeek[] = [1, 2, 3, 4].map(week => {
+    const muscles = muscleNames.map(muscle => {
+      const window = (SRA_WINDOWS[muscle] ?? SRA_WINDOW_DEFAULT) * levelMult
+      let totalVolume = 0
+      for (const session of sessions) {
+        for (const ex of session.exercises) {
+          if (ex.primary_muscles.map(normalizeMuscleSlug).includes(muscle)) {
+            totalVolume += weightedVolume(ex)
+          }
+        }
+      }
+      const fatigue = Math.round(Math.min(100, totalVolume / (window * 0.003)))
+      return { name: muscle, fatigue }
+    }).filter(m => m.fatigue > 0)
+    return { week, muscles }
+  })
+
+  return { score, alerts, sraMap, sraHeatmap }
 }
 
 // ─── 2b. Superset imbalance detection ─────────────────────────────────────────
@@ -689,6 +712,7 @@ export function buildIntelligenceResult(
       missingPatterns: [],
       redundantPairs: [],
       sraMap: [],
+      sraHeatmap: [],
       programStats: emptyProgramStats,
     }
   }
@@ -813,6 +837,7 @@ export function buildIntelligenceResult(
     missingPatterns: completenessResult.missingPatterns,
     redundantPairs: redundancyResult.redundantPairs,
     sraMap: sraResult.sraMap,
+    sraHeatmap: sraResult.sraHeatmap,
     programStats,
   }
 }

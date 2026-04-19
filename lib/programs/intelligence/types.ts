@@ -72,6 +72,7 @@ export interface IntelligenceResult {
   missingPatterns: MovementPattern[]
   redundantPairs: RedundantPair[]
   sraMap: SRAPoint[]
+  sraHeatmap: SRAHeatmapWeek[]
   programStats: ProgramStats
 }
 
@@ -115,4 +116,13 @@ export interface IntelligenceProfile {
   equipment: string[]
   fitnessLevel?: string
   goal?: string
+}
+
+// Fatigue par muscle pour une semaine donnée (0–100, 0 = repos, 100 = max fatigue)
+export interface SRAHeatmapWeek {
+  week: number          // 1, 2, 3, 4
+  muscles: {
+    name: string        // slug FR
+    fatigue: number     // 0–100
+  }[]
 }
