@@ -114,6 +114,8 @@ const EQUIPMENT_ITEMS = [
 ];
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+const SUPERSET_COLORS = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316']
+
 const MUSCLE_GROUPS: { slug: string; label: string }[] = [
   { slug: 'chest',      label: 'Pectoraux' },
   { slug: 'shoulders',  label: 'Épaules' },
@@ -262,20 +264,21 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       : [emptySession()],
   );
 
-  const orderedSessions = meta.session_mode === 'day'
-    ? [...sessions].sort((a, b) => {
-        const aDay = a.day_of_week ?? 99
-        const bDay = b.day_of_week ?? 99
-        return aDay - bDay
-      })
-    : sessions
+  const orderedSessions = useMemo(() =>
+    meta.session_mode === 'day'
+      ? [...sessions].sort((a, b) => (a.day_of_week ?? 99) - (b.day_of_week ?? 99))
+      : sessions,
+    [sessions, meta.session_mode]
+  )
 
   function rawSessionIndex(orderedSi: number): number {
     const target = orderedSessions[orderedSi]
+    if (!target) return 0  // defensive fallback — should never happen in practice
     return sessions.indexOf(target)
   }
 
   function moveSession(fromSi: number, toSi: number) {
+    if (meta.session_mode !== 'cycle') return
     if (fromSi === toSi) return
     setSessions(prev => {
       const next = [...prev]
@@ -498,8 +501,6 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
 
   const morphoConnected = !!morphoAdjustments && Object.keys(morphoAdjustments).length > 0
 
-  const SUPERSET_COLORS = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316']
-
   // Compute stable color mapping: group_id → color
   const supersetGroupColors = useMemo(() => {
     const map: Record<string, string> = {}
@@ -557,10 +558,13 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
     })
   }
 
-  const navSessions = orderedSessions.map(s => ({
-    name: s.name,
-    exercises: s.exercises.map(e => ({ name: e.name })),
-  }))
+  const navSessions = useMemo(() =>
+    orderedSessions.map(s => ({
+      name: s.name,
+      exercises: s.exercises.map(e => ({ name: e.name })),
+    })),
+    [orderedSessions]
+  )
 
   // ─── Resizable split layout ────────────────────────────────────────────────
   const [navWidth, setNavWidth] = useState(16)       // % of total width
