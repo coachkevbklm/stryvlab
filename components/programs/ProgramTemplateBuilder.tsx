@@ -8,7 +8,6 @@ import {
   ChevronUp,
   Save,
   Loader2,
-  GripVertical,
   Tag,
   ImagePlus,
   X,
@@ -392,6 +391,15 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
     const activeId = String(active.id)
     const overId = String(over.id)
 
+    if (activeId.startsWith('nav-session-') && overId.startsWith('nav-session-')) {
+      const fromSi = Number(activeId.replace('nav-session-', ''))
+      const toSi = Number(overId.replace('nav-session-', ''))
+      if (meta.session_mode === 'cycle') {
+        moveSession(fromSi, toSi)
+      }
+      return
+    }
+
     if (activeId.startsWith('ex-') && overId.startsWith('ex-')) {
       const from = parseExId(activeId)
       const to = parseExId(overId)
@@ -663,12 +671,14 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
             sessions={navSessions}
             activeSessionIndex={null}
             activeExerciseKey={highlightKey}
+            sessionMode={meta.session_mode}
             onSelectSession={si => {
               const el = exerciseRefs.current[`${rawSessionIndex(si)}-0`]
               el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }}
             onSelectExercise={(si, ei) => handleAlertClick(rawSessionIndex(si), ei)}
             onAddSession={() => setSessions(prev => [...prev, emptySession()])}
+            onMoveSession={(fromSi, toSi) => moveSession(fromSi, toSi)}
           />
         </div>
 
