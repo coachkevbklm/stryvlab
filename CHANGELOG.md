@@ -1,5 +1,9 @@
 ## 2026-04-19
 
+FEATURE: scoreRedundancy — skip bilateral+unilateral pairs when morpho has unilateral boost (arm asymmetry targeting)
+FEATURE: scoreRedundancy — add optional morphoStimulusAdjustments param + isUnilateral helper
+FEATURE: buildIntelligenceResult — pass morphoStimulusAdjustments to scoreRedundancy
+
 REFACTOR: ProgramTemplateBuilder — refactor vers layout dual-pane (Navigator 16% | Editor 54% | Intelligence 30%) via react-resizable-panels v4
 FEATURE: EditorPane — pane éditeur avec sticky meta-header, sessions scrollables, ExerciseCard + LabModeSection par session
 FEATURE: IntelligencePanelShell — panel modulaire dock/float/minimize avec Framer Motion drag

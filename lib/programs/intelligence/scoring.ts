@@ -284,8 +284,16 @@ export function scoreSuperset(
 
 // ─── 3. Redondance mécanique ──────────────────────────────────────────────────
 
+const UNILATERAL_REGEX = /unilatéral|unilateral|single|1 bras|1 jambe/i
+
+function isUnilateral(ex: BuilderExercise): boolean {
+  return (ex.movement_pattern?.startsWith('unilateral_') ?? false) ||
+         UNILATERAL_REGEX.test(ex.name)
+}
+
 export function scoreRedundancy(
   sessions: BuilderSession[],
+  morphoStimulusAdjustments?: Record<string, number>,
 ): { score: number; alerts: IntelligenceAlert[]; redundantPairs: RedundantPair[] } {
   const alerts: IntelligenceAlert[] = []
   const redundantPairs: RedundantPair[] = []
@@ -314,6 +322,18 @@ export function scoreRedundancy(
         // Coefficients proches (même registre d'intensité)
         const coeffA = getCoeff(exA), coeffB = getCoeff(exB)
         if (Math.abs(coeffA - coeffB) >= 0.20) continue
+
+        // Si morpho a un boost unilatéral pour ce pattern et exactement un des deux est unilatéral,
+        // c'est du travail asymétrique ciblé — pas de la redondance
+        if (morphoStimulusAdjustments) {
+          // pA is e.g. "horizontal_push" or "vertical_pull" — extract the directional suffix
+          // to map to morpho keys like "unilateral_push" / "unilateral_pull"
+          const directionMatch = pA.match(/_(push|pull|press|row|hinge|squat|lunge|fly)$/)
+          const direction = directionMatch ? directionMatch[1] : pA
+          const unilateralPatternKey = `unilateral_${direction}`
+          const hasUnilateralBoost = (morphoStimulusAdjustments[unilateralPatternKey] ?? 1.0) > 1.0
+          if (hasUnilateralBoost && (isUnilateral(exA) !== isUnilateral(exB))) continue
+        }
 
         redundantPairs.push({ sessionIndex: si, exerciseIndexA: a, exerciseIndexB: b, reason: `Même pattern (${pA}), muscles communs : ${overlap.join(', ')}` })
         alerts.push({
@@ -675,7 +695,7 @@ export function buildIntelligenceResult(
 
   const balanceResult = scoreBalance(filteredSessions, meta)
   const sraResult = scoreSRA(filteredSessions, meta, profile)
-  const redundancyResult = scoreRedundancy(filteredSessions)
+  const redundancyResult = scoreRedundancy(filteredSessions, morphoStimulusAdjustments)
   const progressionResult = scoreProgression(filteredSessions, meta)
   const specificityResult = scoreSpecificity(filteredSessions, meta, profile, morphoStimulusAdjustments)
   const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
