@@ -98,36 +98,9 @@ export default function ProfilPage() {
       <div className="px-6 pb-24 space-y-4">
         {/* Infos contact */}
         <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
-              Informations
-            </p>
-            {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
-                className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
-              >
-                <Edit2 size={12} /> Modifier
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setEditing(false)}
-                  className="text-[11px] text-white/40 hover:text-white transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={save}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                >
-                  {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                  Enregistrer
-                </button>
-              </div>
-            )}
-          </div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
+            Informations
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {client.email && (
@@ -181,9 +154,36 @@ export default function ProfilPage() {
 
         {/* Profil sportif */}
         <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
-            Profil sportif
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Profil sportif
+            </p>
+            {!editing ? (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+              >
+                <Edit2 size={12} /> Modifier
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setEditing(false)}
+                  className="text-[11px] text-white/40 hover:text-white transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={save}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                  Enregistrer
+                </button>
+              </div>
+            )}
+          </div>
           {!editing ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
