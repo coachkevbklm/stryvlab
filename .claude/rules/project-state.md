@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-19 (Phase 2 Biomechanics Engine — Implémentation Complète)
+> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 2 — useDockBottom Hook)
 
 ---
 
@@ -35,6 +35,37 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 ---
 
+## 2026-04-20 — Shell Refactor Phase 1 Task 2: useDockBottom Hook
+
+**Ce qui a été fait :**
+
+1. **`components/layout/useDockBottom.ts`** — hook contextuel pour items dock bas
+   - Type `DockBottomItem { id, label, href, icon: LucideIcon }`
+   - Utilise `usePathname()` pour détecter la route active
+   - 5 contextes d'items :
+     1. Lab Data (/lab/*/data) → Métriques, Bilans, Performances, MorphoPro
+     2. Lab Protocoles (/lab/*/protocoles) → Nutrition, Entraînement, Cardio, Composition
+     3. Business (comptabilité, formules, organisation) → Comptabilité, Formules, Organisation
+     4. Templates (programs, assessments) → Programmes, Bilans, Nutrition
+     5. Mon compte (settings) → Profil, Préférences, Notifications
+   - Retourne `[]` pour dashboard et autres routes (pas de dock bas)
+   - Import `LucideIcon` comme type (plus propre que `React.FC<...>`)
+
+**Points de vigilance :**
+- Directive `"use client"` au top du fichier — hook React client-side uniquement
+- `pathname.includes()` pour détection Lab (flexible à sous-routes futures)
+- `pathname.startsWith()` pour détection Business/Templates/Settings (précis)
+- Les `href: ""` en Lab Data/Protocoles sont intentionnels — placeholders pour Phase 3 routing
+- `LucideIcon` type importé de lucide-react (v0.x+ supporte ce type explicitement)
+
+**Next Steps — Task 3-4 (Shell UI) :**
+- [ ] `components/shell/BottomDock.tsx` — UI visuelle du dock bas (items + navigation)
+- [ ] Intégration `useDockBottom` dans BottomDock pour items dynamiques
+- [ ] `components/shell/LeftDock.tsx` — dock vertical permanent gauche (clients, recents, search, settings)
+- [ ] `app/coach/layout.tsx` — wrapping DockProvider, layouts shell 2-dock
+
+---
+
 ## 2026-04-19 — Shell Refactor Phase 1 Task 1: DockContext
 
 **Ce qui a été fait :**
@@ -51,11 +82,6 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 - `activeClientId` devient `null` quand on ferme le client actif — aucun fallback automatique au premier client
 - Le contexte expose `useCallback` stables — OK pour la réactivité perf
 - Initialisation provider sans clients ouverts — comportement vide intentionnel (dock vide au démarrage)
-
-**Next Steps — Task 2-3 (Shell UI) :**
-- [ ] `components/shell/LeftDock.tsx` — dock vertical permanent gauche (sections: clients, recents, search, settings)
-- [ ] `components/shell/BottomDock.tsx` — dock horizontal contextuel bas (tabs: client actif, alternative actions)
-- [ ] `app/coach/layout.tsx` — wrapping DockProvider, layouts shell 2-dock
 
 ---
 

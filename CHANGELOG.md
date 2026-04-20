@@ -1,3 +1,11 @@
+## 2026-04-20
+
+FEATURE: Add useDockBottom hook — contextual dock items per pathname (Lab Data, Lab Protocoles, Business, Templates, Settings)
+FIX: PATCH /api/program-templates/[id] — session_mode now persisted on save (was silently dropped from update payload)
+FIX: PATCH /api/program-templates/[id] — alternatives now preserved on save — exercises matched by dbId are updated in-place instead of deleted+recreated with new UUIDs
+FIX: POST /api/program-templates — session_mode now saved on template creation
+FIX: edit/page.tsx — session_mode fetched from DB so toggle initialises correctly on page load
+
 ## 2026-04-19
 
 FEATURE: Add DockContext for shell refactor — manage open clients and active client state
