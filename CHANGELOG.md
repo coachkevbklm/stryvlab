@@ -1,5 +1,6 @@
 ## 2026-04-20
 
+FEATURE: Add DockBottom — floating horizontal dock with contextual items and + action menu
 FEATURE: Add ClientTabsBar — scrollable Chrome-style tabs for open clients, integrated above bottom dock
 FEATURE: Add DockLeft — permanent vertical dock with 5 global entries (Dashboard, Lab, Templates, Business, Mon compte)
 FEATURE: Add useDockBottom hook — contextual dock items per pathname (Lab Data, Lab Protocoles, Business, Templates, Settings)

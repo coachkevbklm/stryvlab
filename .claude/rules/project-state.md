@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 3 — DockLeft)
+> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 5 — DockBottom)
 
 ---
 
@@ -32,6 +32,50 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 **Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
 
 **Phase 1 Plan:** `docs/superpowers/plans/2026-04-19-studio-lab-ui-redesign.md`
+
+---
+
+## 2026-04-20 — Shell Refactor Phase 1 Task 5: DockBottom
+
+**Ce qui a été fait :**
+
+1. **`components/layout/DockBottom.tsx`** — dock horizontal flottant contextuel avec + action menu
+   - Position fixe : `bottom-6 left-1/2 -translate-x-1/2` (centré bas de page)
+   - Structure : `ClientTabsBar` au-dessus, puis barre items dock + bouton +
+   - Barre dock : `bg-[#181818]`, border `border-[0.3px] border-white/[0.06]`, `rounded-2xl`, `h-14`, `px-3`
+   - Items divisés : `leftItems` (première moitié) | séparateur | bouton + (central) | séparateur | `rightItems` (deuxième moitié)
+   - Chaque item : icone 16px, label `text-[9px] font-medium`, style actif/inactif (accent #1f8a65 ou white/40)
+   - Bouton + : `bg-[#1f8a65]`, `h-10 w-10`, `rounded-xl`, `hover:bg-[#217356]`, `active:scale-[0.95]`
+   - Menu + : bottom-full, Framer Motion (opacity/y/scale), listes actions contextuelles par pathname
+   - Menu fermeture au clic sur overlay invisible `fixed inset-0 z-[-1]`
+
+2. **`usePlusActions()`** — fonction locale dérivant actions du pathname
+   - `/coach/clients` → "Nouveau client"
+   - `/coach/programs` → "Nouveau template"
+   - `/coach/assessments` → "Nouveau bilan"
+   - `/coach/comptabilite` → "Nouvelle facture"
+   - `/coach/formules` → "Nouvelle formule"
+   - Défaut → "Nouveau"
+
+3. **Intégration avec `useDockBottom()`** — items dynamiques et séparateurs
+   - Récupère les items via le hook
+   - Divise en left/right par `Math.floor(items.length / 2)`
+   - Affiche séparateurs `w-px h-6 bg-white/[0.06]` autour du bouton + si items.length > 0
+   - Fallback texte "Actions" si aucun item
+
+**Points de vigilance :**
+- Z-index 50 — dock au-dessus du contenu principal mais sous les modals (z-50)
+- Overlay fermeture est `z-[-1]` — ne bloque pas les interactions dock, ferme juste le menu
+- Les items sont évalués par ordre d'apparition : left (0 à floor), right (floor à length)
+- La directive `"use client"` est requise pour useState + usePathname + useDockBottom
+- `isActive()` retourne false pour href vides ou "#" — permet de gérer les placeholder items
+- Séparateurs visuels ne s'affichent que si items.length > 0 — dock propre si aucun item contextuel
+
+**Next Steps — Task 6 (Integration à app/coach/layout.tsx) :**
+- [ ] Wrapping DockProvider dans `/app/coach/layout.tsx`
+- [ ] Rendu `<DockBottom />` + `<DockLeft />` dans le layout principal
+- [ ] Tests : vérifier que les items dock changent selon la route active
+- [ ] Tests : vérifier que le menu + affiche les bonnes actions par page
 
 ---
 
