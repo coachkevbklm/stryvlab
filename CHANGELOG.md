@@ -1,5 +1,8 @@
 ## 2026-04-20
 
+FIX: profil/page — save() now checks res.ok and surfaces error, redirects to /coach/clients after delete/archive
+FIX: bilans/page — fetch ok-check on both submissions and templates fetches to trigger error state on HTTP failures
+
 FEATURE: Phase 2A — replace /coach/clients/[clientId] monolith with routed Lab sub-pages (profil, data/*, protocoles/*)
 FEATURE: ClientHeader — reusable client identity header with automatic dock tab registration and safe initials
 FEATURE: Client layout — loads client data once in layout, exposes via ClientProvider to all sub-pages

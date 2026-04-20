@@ -18,8 +18,8 @@ export default function BilansPage() {
   useEffect(() => {
     setError("");
     Promise.all([
-      fetch(`/api/assessments/submissions?client_id=${clientId}`).then((r) => r.json()),
-      fetch("/api/assessments/templates").then((r) => r.json()),
+      fetch(`/api/assessments/submissions?client_id=${clientId}`).then((r) => { if (!r.ok) throw new Error("submissions"); return r.json(); }),
+      fetch("/api/assessments/templates").then((r) => { if (!r.ok) throw new Error("templates"); return r.json(); }),
     ])
       .then(([subsData, templatesData]) => {
         setSubmissions(subsData.submissions ?? []);

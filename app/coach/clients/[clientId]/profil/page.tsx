@@ -10,6 +10,7 @@ import RestrictionsWidget from "@/components/clients/RestrictionsWidget";
 import ClientFormulasTab from "@/components/crm/ClientFormulasTab";
 import ClientCrmTab from "@/components/crm/ClientCrmTab";
 import DeleteClientModal from "@/components/clients/DeleteClientModal";
+import { useRouter } from "next/navigation";
 import {
   Mail, Phone, Calendar, Edit2, Save, Loader2,
 } from "lucide-react";
@@ -47,8 +48,10 @@ const EQUIPMENT_CATEGORIES = [
 
 export default function ProfilPage() {
   const { client, clientId, refetch } = useClient();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [showDelete, setShowDelete] = useState(false);
   const [draft, setDraft] = useState({
     training_goal: client.training_goal ?? "",
@@ -74,21 +77,28 @@ export default function ProfilPage() {
 
   async function save() {
     setSaving(true);
-    await fetch(`/api/clients/${clientId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        training_goal: draft.training_goal || null,
-        fitness_level: draft.fitness_level || null,
-        sport_practice: draft.sport_practice || null,
-        weekly_frequency: draft.weekly_frequency ? Number(draft.weekly_frequency) : null,
-        equipment_category: draft.equipment_category || null,
-        notes: draft.notes || null,
-      }),
-    });
-    await refetch();
-    setSaving(false);
-    setEditing(false);
+    setSaveError("");
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          training_goal: draft.training_goal || null,
+          fitness_level: draft.fitness_level || null,
+          sport_practice: draft.sport_practice || null,
+          weekly_frequency: draft.weekly_frequency ? Number(draft.weekly_frequency) : null,
+          equipment_category: draft.equipment_category || null,
+          notes: draft.notes || null,
+        }),
+      });
+      if (!res.ok) { setSaveError("Erreur lors de la sauvegarde"); return; }
+      await refetch();
+      setEditing(false);
+    } catch {
+      setSaveError("Erreur réseau");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -184,6 +194,9 @@ export default function ProfilPage() {
               </div>
             )}
           </div>
+          {saveError && (
+            <p className="text-[11px] text-red-400/80 mb-3">{saveError}</p>
+          )}
           {!editing ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
@@ -324,7 +337,7 @@ export default function ProfilPage() {
           clientId={clientId}
           clientName={`${client.first_name} ${client.last_name}`}
           onClose={() => setShowDelete(false)}
-          onSuccess={() => setShowDelete(false)}
+          onSuccess={() => router.push("/coach/clients")}
         />
       )}
     </main>
