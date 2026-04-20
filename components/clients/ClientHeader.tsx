@@ -11,7 +11,7 @@ const TRAINING_GOALS: Record<string, string> = {
   endurance: "Endurance",
   recomp: "Recomposition",
   maintenance: "Maintenance",
-  athletic: "Athletic",
+  athletic: "Athlétique",
 };
 
 const FITNESS_LEVELS: Record<string, string> = {
@@ -21,11 +21,18 @@ const FITNESS_LEVELS: Record<string, string> = {
   elite: "Élite",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "Actif",
+  inactive: "Inactif",
+  suspended: "Suspendu",
+  archived: "Archivé",
+};
+
 export default function ClientHeader() {
   const { client } = useClient();
   const { openClient } = useDock();
 
-  // Enregistre ce client comme ouvert dans le dock (tab Chrome)
+  // Register client as open in the dock's client tabs bar
   useEffect(() => {
     openClient({
       id: client.id,
@@ -34,7 +41,7 @@ export default function ClientHeader() {
     });
   }, [client.id, client.first_name, client.last_name, openClient]);
 
-  const initials = `${client.first_name[0]}${client.last_name[0]}`.toUpperCase();
+  const initials = `${client.first_name?.[0] ?? ""}${client.last_name?.[0] ?? ""}`.toUpperCase() || "?";
   const goal = client.training_goal ? TRAINING_GOALS[client.training_goal] : null;
   const level = client.fitness_level ? FITNESS_LEVELS[client.fitness_level] : null;
 
@@ -59,9 +66,11 @@ export default function ClientHeader() {
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
               client.status === "active"
                 ? "bg-[#1f8a65]/10 text-[#1f8a65]"
+                : client.status === "suspended"
+                ? "bg-amber-500/10 text-amber-400"
                 : "bg-white/[0.06] text-white/40"
             }`}>
-              {client.status === "active" ? "Actif" : client.status}
+              {STATUS_LABELS[client.status] ?? client.status}
             </span>
           )}
         </div>
