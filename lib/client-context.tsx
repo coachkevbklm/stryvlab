@@ -24,7 +24,7 @@ export type ClientData = {
 type ClientContextType = {
   client: ClientData;
   clientId: string;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 };
 
 const ClientContext = createContext<ClientContextType | null>(null);
@@ -38,7 +38,7 @@ export function ClientProvider({
   children: ReactNode;
   client: ClientData;
   clientId: string;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 }) {
   return (
     <ClientContext.Provider value={{ client, clientId, refetch }}>
