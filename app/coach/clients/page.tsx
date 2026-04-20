@@ -29,6 +29,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useDock } from "@/components/layout/DockContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -160,6 +161,7 @@ function avatarColor(id: string) {
 
 export default function CoachClientsPage() {
   const router = useRouter();
+  const { openClient } = useDock();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -611,7 +613,10 @@ export default function CoachClientsPage() {
                 key={client.id}
                 client={client}
                 index={i}
-                onClick={() => router.push(`/coach/clients/${client.id}`)}
+                onClick={() => {
+                  openClient({ id: client.id, firstName: client.first_name, lastName: client.last_name });
+                  router.push(`/coach/clients/${client.id}`);
+                }}
               />
             ))}
           </div>
@@ -647,7 +652,10 @@ export default function CoachClientsPage() {
                     key={client.id}
                     client={client}
                     index={i}
-                    onClick={() => router.push(`/coach/clients/${client.id}`)}
+                    onClick={() => {
+                      openClient({ id: client.id, firstName: client.first_name, lastName: client.last_name });
+                      router.push(`/coach/clients/${client.id}`);
+                    }}
                   />
                 ))}
               </tbody>
