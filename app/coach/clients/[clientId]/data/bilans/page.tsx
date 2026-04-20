@@ -5,6 +5,7 @@ import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import { useClient } from "@/lib/client-context";
 import ClientHeader from "@/components/clients/ClientHeader";
 import SubmissionsList from "@/components/assessments/dashboard/SubmissionsList";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SubmissionWithClient } from "@/types/assessment";
 
 export default function BilansPage() {
@@ -12,8 +13,10 @@ export default function BilansPage() {
   const [submissions, setSubmissions] = useState<SubmissionWithClient[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    setError("");
     Promise.all([
       fetch(`/api/assessments/submissions?client_id=${clientId}`).then((r) => r.json()),
       fetch("/api/assessments/templates").then((r) => r.json()),
@@ -22,6 +25,7 @@ export default function BilansPage() {
         setSubmissions(subsData.submissions ?? []);
         setTemplates(templatesData.templates ?? []);
       })
+      .catch(() => setError("Erreur lors du chargement des bilans"))
       .finally(() => setLoading(false));
   }, [clientId]);
 
@@ -67,8 +71,23 @@ export default function BilansPage() {
     <main className="min-h-screen bg-[#121212]">
       <ClientHeader />
       <div className="px-6 pb-24">
-        {loading ? (
-          <div className="text-[12px] text-white/30 py-8 text-center">Chargement…</div>
+        {error ? (
+          <p className="text-[13px] text-white/40 py-8 text-center">{error}</p>
+        ) : loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white/[0.02] rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
         ) : (
           <SubmissionsList
             submissions={submissions}
