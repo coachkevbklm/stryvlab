@@ -1,8 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
 import ProgramTemplateBuilder from '@/components/programs/ProgramTemplateBuilder'
 
 export default async function EditProgramTemplatePage({ params }: { params: { templateId: string } }) {
@@ -19,7 +17,7 @@ export default async function EditProgramTemplatePage({ params }: { params: { te
     .from('coach_program_templates')
     .select(`
       id, name, description, goal, level, frequency, weeks, muscle_tags, notes,
-      equipment_archetype, is_system, coach_id,
+      equipment_archetype, session_mode, is_system, coach_id,
       coach_program_template_sessions (
         id, name, day_of_week, position, notes,
         coach_program_template_exercises (
@@ -41,18 +39,8 @@ export default async function EditProgramTemplatePage({ params }: { params: { te
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans">
-      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/10 px-8 py-5">
-        <div className="max-w-3xl mx-auto">
-          <Link href="/coach/programs/templates" className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-3 font-medium transition-colors">
-            <ChevronLeft size={16} />Templates
-          </Link>
-          <h1 className="text-xl font-bold text-white">Modifier — {template.name}</h1>
-        </div>
-      </header>
-      <main className="px-6 py-6">
-        <ProgramTemplateBuilder initial={template} templateId={params.templateId} />
-      </main>
+    <div className="bg-[#121212] font-sans">
+      <ProgramTemplateBuilder initial={template} templateId={params.templateId} />
     </div>
   )
 }

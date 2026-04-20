@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   if (authError || !user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
   const body = await req.json()
-  const { name, description, goal, level, frequency, weeks, muscle_tags, notes, sessions } = body
+  const { name, description, goal, level, frequency, weeks, muscle_tags, notes, sessions, session_mode } = body
 
   if (!name) return NextResponse.json({ error: 'name requis' }, { status: 400 })
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // Créer le template
   const { data: template, error: tErr } = await db
     .from('coach_program_templates')
-    .insert({ coach_id: user.id, name, description, goal, level, frequency, weeks, muscle_tags: muscle_tags ?? [], notes, equipment_archetype: body.equipment_archetype || null })
+    .insert({ coach_id: user.id, name, description, goal, level, frequency, weeks, muscle_tags: muscle_tags ?? [], notes, equipment_archetype: body.equipment_archetype || null, session_mode: session_mode ?? 'day' })
     .select('id')
     .single()
 

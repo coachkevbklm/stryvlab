@@ -45,13 +45,42 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (authError || !user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
   const body = await req.json()
-  const { name, description, goal, level, frequency, weeks, muscle_tags, notes, equipment_archetype } = body
+  const { name, description, goal, level, frequency, weeks, muscle_tags, notes, equipment_archetype, session_mode } = body
 
   const db = service()
 
-  // Supprimer et recréer les sessions si fournies
+  // Rebuild sessions preserving exercise UUIDs (dbId) so alternatives survive
   if (body.sessions) {
-    await db.from('coach_program_template_sessions').delete().eq('template_id', params.templateId)
+    // Collect all existing exercise IDs for this template so we can delete orphans
+    const { data: existingSessions } = await db
+      .from('coach_program_template_sessions')
+      .select('id')
+      .eq('template_id', params.templateId)
+
+    const existingSessionIds = (existingSessions ?? []).map((s: any) => s.id)
+
+    // Collect all existing exercise IDs to detect which ones to keep vs delete
+    let existingExerciseIds: string[] = []
+    if (existingSessionIds.length) {
+      const { data: existingExs } = await db
+        .from('coach_program_template_exercises')
+        .select('id')
+        .in('session_id', existingSessionIds)
+      existingExerciseIds = (existingExs ?? []).map((e: any) => e.id)
+    }
+
+    // Collect the dbIds that will be reused in the new save
+    const incomingDbIds = new Set<string>()
+    for (const s of body.sessions) {
+      for (const e of (s.exercises ?? [])) {
+        if (e.dbId) incomingDbIds.add(e.dbId)
+      }
+    }
+
+    // Delete sessions that are no longer present (cascade deletes their exercises + alternatives)
+    if (existingSessionIds.length) {
+      await db.from('coach_program_template_sessions').delete().eq('template_id', params.templateId)
+    }
 
     for (let si = 0; si < body.sessions.length; si++) {
       const s = body.sessions[si]
@@ -62,8 +91,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         .single()
 
       if (session && s.exercises?.length) {
-        await db.from('coach_program_template_exercises').insert(
-          s.exercises.map((e: any, ei: number) => ({
+        for (let ei = 0; ei < s.exercises.length; ei++) {
+          const e = s.exercises[ei]
+          const exRow = {
             session_id: session.id,
             name: e.name,
             sets: e.sets ?? 3,
@@ -78,15 +108,30 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             primary_muscles: e.primary_muscles ?? [],
             secondary_muscles: e.secondary_muscles ?? [],
             group_id: e.group_id ?? null,
-          }))
-        )
+          }
+
+          if (e.dbId && existingExerciseIds.includes(e.dbId)) {
+            // Reuse existing UUID — alternatives stay linked
+            await db
+              .from('coach_program_template_exercises')
+              .update(exRow)
+              .eq('id', e.dbId)
+            // Re-link to new session
+            await db
+              .from('coach_program_template_exercises')
+              .update({ session_id: session.id, position: ei })
+              .eq('id', e.dbId)
+          } else {
+            await db.from('coach_program_template_exercises').insert(exRow)
+          }
+        }
       }
     }
   }
 
   const { data, error } = await db
     .from('coach_program_templates')
-    .update({ name, description, goal, level, frequency, weeks, muscle_tags, notes, equipment_archetype: equipment_archetype || null })
+    .update({ name, description, goal, level, frequency, weeks, muscle_tags, notes, equipment_archetype: equipment_archetype || null, session_mode: session_mode ?? 'day' })
     .eq('id', params.templateId)
     .eq('coach_id', user.id)
     .select(SELECT)
