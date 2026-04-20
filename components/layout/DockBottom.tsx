@@ -128,7 +128,7 @@ export default function DockBottom() {
       </div>
 
       {plusOpen && (
-        <div className="fixed inset-0 z-[-1]" onClick={() => setPlusOpen(false)} />
+        <div className="fixed inset-0 z-40" onClick={() => setPlusOpen(false)} />
       )}
     </div>
   );
