@@ -1,5 +1,6 @@
 ## 2026-04-20
 
+FEATURE: Add DockLeft — permanent vertical dock with 5 global entries (Dashboard, Lab, Templates, Business, Mon compte)
 FEATURE: Add useDockBottom hook — contextual dock items per pathname (Lab Data, Lab Protocoles, Business, Templates, Settings)
 FIX: PATCH /api/program-templates/[id] — session_mode now persisted on save (was silently dropped from update payload)
 FIX: PATCH /api/program-templates/[id] — alternatives now preserved on save — exercises matched by dbId are updated in-place instead of deleted+recreated with new UUIDs

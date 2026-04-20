@@ -2,7 +2,7 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 2 — useDockBottom Hook)
+> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 3 — DockLeft)
 
 ---
 
@@ -32,6 +32,33 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 **Phase 0 Spec:** `docs/superpowers/specs/2026-04-18-morphopro-bridge-design.md`
 
 **Phase 1 Plan:** `docs/superpowers/plans/2026-04-19-studio-lab-ui-redesign.md`
+
+---
+
+## 2026-04-20 — Shell Refactor Phase 1 Task 3: DockLeft
+
+**Ce qui a été fait :**
+
+1. **`components/layout/DockLeft.tsx`** — dock vertical permanent gauche avec 5 entrées globales
+   - Position fixe : `left-4 top-1/2 -translate-y-1/2` (centré verticalement, 16px à gauche)
+   - Style : `bg-[#181818]`, border `border-[0.3px] border-white/[0.06]`, `rounded-2xl`, `z-50`
+   - 5 items : Dashboard, Lab, Templates, Business, Mon compte
+   - Chaque item : icone Lucide 18px, icon 1.75 strokeWidth (2 si actif), label tooltip au hover, indicator dot vert à droite si actif
+   - Matching routes via fonction `match(pathname)` per item
+   - Style actif : `bg-[#1f8a65]/10 text-[#1f8a65]`, hover style pour inactif
+   - Tooltip : `bg-[#0f0f0f]`, border subtile, opacity 0→100 au hover, `text-[11px] font-medium text-white/70`
+
+**Points de vigilance :**
+- Z-index 50 — assure que la dock est au-dessus du contenu mais sous les modals (z-50)
+- `match()` est une fonction per item — Lab est inclusive (startsWith `/coach/clients` OU `/lab`)
+- Templates inclut `/coach/assessments` (bilans sont des templates de bilan)
+- Business inclut comptabilité, formules, et organisation
+- Le tooltip est `pointer-events-none` pour ne pas intercepter les clics
+- Icone strokeWidth : 1.75 par défaut, 2 quand actif pour un contraste plus fort
+
+**Next Steps — Task 4 (BottomDock UI) :**
+- [ ] `components/shell/BottomDock.tsx` — UI visuelle du dock bas (items dynamiques via useDockBottom hook)
+- [ ] `app/coach/layout.tsx` — wrapping DockProvider, layout shell avec DockLeft + BottomDock
 
 ---
 
