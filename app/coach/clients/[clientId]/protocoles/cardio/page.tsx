@@ -1,0 +1,51 @@
+"use client";
+
+import { useMemo } from "react";
+import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useClient } from "@/lib/client-context";
+import ClientHeader from "@/components/clients/ClientHeader";
+import Link from "next/link";
+import { HeartPulse, ArrowRight } from "lucide-react";
+
+export default function CardioPage() {
+  const { client } = useClient();
+
+  const topBarLeft = useMemo(
+    () => (
+      <div>
+        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">Lab · Protocoles</p>
+        <p className="text-[13px] font-semibold text-white leading-none">
+          {client.first_name} {client.last_name} — Cardio
+        </p>
+      </div>
+    ),
+    [client.first_name, client.last_name],
+  );
+  useSetTopBar(topBarLeft);
+
+  return (
+    <main className="min-h-screen bg-[#121212]">
+      <ClientHeader />
+      <div className="px-6 pb-24">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
+          Outils cardio
+        </p>
+        <Link
+          href="/outils/hr-zones"
+          className="group flex items-center gap-4 bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.04] transition-colors"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0 text-white/40 group-hover:text-[#1f8a65] transition-colors">
+            <HeartPulse size={18} strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-white">HR Zones</p>
+            <p className="text-[11px] text-white/40 leading-relaxed mt-0.5">
+              Zones cardiaques cibles via méthode Karvonen.
+            </p>
+          </div>
+          <ArrowRight size={14} className="text-white/20 group-hover:text-[#1f8a65] transition-colors shrink-0" />
+        </Link>
+      </div>
+    </main>
+  );
+}
