@@ -1,5 +1,21 @@
 ## 2026-04-20
 
+FEATURE: Phase 2A — replace /coach/clients/[clientId] monolith with routed Lab sub-pages (profil, data/*, protocoles/*)
+FEATURE: ClientHeader — reusable client identity header with automatic dock tab registration and safe initials
+FEATURE: Client layout — loads client data once in layout, exposes via ClientProvider to all sub-pages
+FEATURE: /profil page — client info, sport profile inline edit, restrictions, access tokens, formulas, CRM, danger zone
+FEATURE: /data/metriques page — MetricsSection in Lab routing structure
+FEATURE: /data/bilans page — SubmissionsList with fetch, skeleton loading, error handling
+FEATURE: /data/performances page — PerformanceDashboard + SessionHistory + ProgressionHistory
+FEATURE: /data/morphopro page — MorphoAnalysisSection moved from Profil tab to Lab Data
+FEATURE: /protocoles/nutrition page — 4 nutrition tool links (Macros, Carb Cycling, Hydratation, Cycle Sync)
+FEATURE: /protocoles/entrainement page — ProgramEditor embedded in Lab routing
+FEATURE: /protocoles/cardio page — HR Zones tool link
+FEATURE: /protocoles/composition page — Body Fat % tool link
+FEATURE: useDockBottom — client sub-page aware (data/*, protocoles/*, profil root contexts)
+FEATURE: Client list — openClient() called on card click to register tab in dock
+REFACTOR: /coach/clients/[clientId]/page.tsx — server-side redirect to /profil (monolith removed)
+FEATURE: Add ClientContext — shared client data (ClientData type, ClientProvider, useClient hook) for Lab sub-pages
 FEATURE: Refactor CoachShell — replace 200px sidebar with double dock (DockLeft + DockBottom)
 FIX: DockBottom overlay z-index corrected from z-[-1] to z-40 — click-outside now closes + menu
 FEATURE: Add DockBottom — floating horizontal dock with contextual items and + action menu
