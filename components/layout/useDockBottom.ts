@@ -18,6 +18,7 @@ import {
   UserCircle,
   Bell,
   Settings,
+  Layers,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -30,6 +31,38 @@ export type DockBottomItem = {
 
 export function useDockBottom(): DockBottomItem[] {
   const pathname = usePathname();
+
+  // Lab — client ouvert — Data & Analyse
+  if (pathname.includes("/coach/clients/") && pathname.includes("/data")) {
+    const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
+    return [
+      { id: "metriques", label: "Métriques", href: `/coach/clients/${clientId}/data/metriques`, icon: BarChart2 },
+      { id: "bilans", label: "Bilans", href: `/coach/clients/${clientId}/data/bilans`, icon: ClipboardList },
+      { id: "performances", label: "Performances", href: `/coach/clients/${clientId}/data/performances`, icon: TrendingUp },
+      { id: "morphopro", label: "MorphoPro", href: `/coach/clients/${clientId}/data/morphopro`, icon: Scan },
+    ];
+  }
+
+  // Lab — client ouvert — Protocoles
+  if (pathname.includes("/coach/clients/") && pathname.includes("/protocoles")) {
+    const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
+    return [
+      { id: "nutrition", label: "Nutrition", href: `/coach/clients/${clientId}/protocoles/nutrition`, icon: Utensils },
+      { id: "entrainement", label: "Entraînement", href: `/coach/clients/${clientId}/protocoles/entrainement`, icon: Dumbbell },
+      { id: "cardio", label: "Cardio", href: `/coach/clients/${clientId}/protocoles/cardio`, icon: HeartPulse },
+      { id: "composition", label: "Composition", href: `/coach/clients/${clientId}/protocoles/composition`, icon: BarChart3 },
+    ];
+  }
+
+  // Lab — client ouvert — page racine (profil)
+  if (pathname.match(/^\/coach\/clients\/[^/]+\/(profil)?$/)) {
+    const clientId = pathname.split("/coach/clients/")[1]?.split("/")[0];
+    return [
+      { id: "profil", label: "Profil", href: `/coach/clients/${clientId}/profil`, icon: UserCircle },
+      { id: "data", label: "Data & Analyse", href: `/coach/clients/${clientId}/data/metriques`, icon: BarChart2 },
+      { id: "protocoles", label: "Protocoles", href: `/coach/clients/${clientId}/protocoles/nutrition`, icon: Layers },
+    ];
+  }
 
   // Lab — Data & Analyse
   if (pathname.includes("/lab/") && pathname.includes("/data")) {
