@@ -15,8 +15,13 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
 
   const fetchClient = useCallback(async () => {
+    setError("");
     try {
       const res = await fetch(`/api/clients/${clientId}`);
+      if (!res.ok) {
+        setError(res.status === 404 ? "Client introuvable" : "Erreur serveur");
+        return;
+      }
       const data = await res.json();
       if (data.client) {
         setClient(data.client);
