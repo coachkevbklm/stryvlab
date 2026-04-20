@@ -1,5 +1,7 @@
 ## 2026-04-20
 
+FEATURE: Refactor CoachShell — replace 200px sidebar with double dock (DockLeft + DockBottom)
+FIX: DockBottom overlay z-index corrected from z-[-1] to z-40 — click-outside now closes + menu
 FEATURE: Add DockBottom — floating horizontal dock with contextual items and + action menu
 FEATURE: Add ClientTabsBar — scrollable Chrome-style tabs for open clients, integrated above bottom dock
 FEATURE: Add DockLeft — permanent vertical dock with 5 global entries (Dashboard, Lab, Templates, Business, Mon compte)
