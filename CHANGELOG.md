@@ -1,5 +1,6 @@
 ## 2026-04-23
 
+FIX: /api/session-logs/[logId]/sets — improve FK error handling (catch 23503, return 409) and type safety on Supabase .single() responses
 FEATURE: PATCH /api/session-logs/[logId]/sets — live upsert endpoint for client_set_logs during session (key: session_log_id, exercise_name, set_number, side) with auth check and empty array ping support
 SCHEMA: client_set_logs — add UNIQUE constraint on (session_log_id, exercise_name, set_number, side) to support live upsert operations
 
