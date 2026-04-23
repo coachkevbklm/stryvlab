@@ -39,21 +39,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const db = service()
 
   // Vérifier ownership : le log appartient au client connecté
-  const { data: client } = await db
+  const { data: clientData } = await db
     .from('coach_clients')
     .select('id')
     .eq('user_id', user.id)
     .single()
-  if (!client) return NextResponse.json({ error: 'Profil client introuvable' }, { status: 404 })
+  const clientId = (clientData as { id: string } | null)?.id
+  if (!clientId) return NextResponse.json({ error: 'Profil client introuvable' }, { status: 404 })
 
-  const { data: log } = await db
+  const { data: logData } = await db
     .from('client_session_logs')
     .select('id')
     .eq('id', params.logId)
-    .eq('client_id', (client as { id: string }).id)
+    .eq('client_id', clientId)
     .is('completed_at', null)
     .single()
-  if (!log) return NextResponse.json({ error: 'Séance introuvable ou déjà terminée' }, { status: 404 })
+  if (!logData) return NextResponse.json({ error: 'Séance introuvable ou déjà terminée' }, { status: 404 })
 
   const raw = await req.json()
   const parsed = bodySchema.safeParse(raw)
@@ -61,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   // Si set_logs est vide, c'est un ping de validation (draft check) — retourner ok directement
   if (parsed.data.set_logs.length === 0) {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   }
 
   const rows = parsed.data.set_logs.map(s => ({
@@ -85,7 +86,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       onConflict: 'session_log_id,exercise_name,set_number,side',
     })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '23503') {
+      return NextResponse.json({ error: 'Séance introuvable, opération annulée' }, { status: 409 })
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ success: true })
 }
