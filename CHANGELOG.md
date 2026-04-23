@@ -1,4 +1,22 @@
+## 2026-04-23
+
+SCHEMA: client_set_logs — add UNIQUE constraint on (session_log_id, exercise_name, set_number, side) to support live upsert operations
+
 ## 2026-04-20
+
+SCHEMA: programs — add goal, level, frequency, muscle_tags, equipment_archetype, session_mode columns (align with coach_program_templates)
+SCHEMA: program_exercises — add movement_pattern, equipment_required, group_id, is_compound, target_rir, weight_increment_kg, primary_muscles, secondary_muscles columns
+FEATURE: ProgramTemplateBuilder — add programId prop + program mode: loads program_sessions/program_exercises, saves to PATCH /api/programs/[id], calls onSaved callback instead of router.push
+FEATURE: PATCH /api/programs/[programId] — full atomic session/exercise rebuild (mirrors template PATCH logic) + simple field toggle support (is_client_visible etc.)
+CHORE: GET /api/programs — include all new program and exercise fields in select
+FEATURE: /protocoles/entrainement — uses ProgramTemplateBuilder (full studio-lab) instead of ProgramEditor when editing a client program
+
+FIX: assign/page — redirect after template assignment now points to /coach/clients/[clientId]/protocoles/entrainement instead of client root
+SCHEMA: programs — add is_client_visible boolean column (default false) to independently control app-client visibility per program
+FEATURE: ClientProgramsList — new component listing all assigned programs with toggle app-client visibility, open editor, create empty, assign template, delete
+FEATURE: /protocoles/entrainement — refactored from single ProgramEditor to list-first view with inline editor (back button in topbar)
+CHORE: GET /api/programs — now returns is_client_visible in select
+CHORE: PATCH /api/programs/[programId] — now accepts is_client_visible in patch payload
 
 FIX: profil/page — save() now checks res.ok and surfaces error, redirects to /coach/clients after delete/archive
 FIX: bilans/page — fetch ok-check on both submissions and templates fetches to trigger error state on HTTP failures
