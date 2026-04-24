@@ -148,7 +148,7 @@ export default function CustomExerciseModal({ onClose, onCreated }: Props) {
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
-        className="bg-[#181818] rounded-2xl w-full max-w-lg border border-[0.3px] border-white/[0.06] flex flex-col max-h-[90vh]"
+        className="bg-[#181818] rounded-2xl w-full max-w-lg border-[0.3px] border-white/[0.06] flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[0.3px] border-white/[0.06]">
           <div>
@@ -245,7 +245,7 @@ function StepMedia({ form, update }: { form: FormData; update: (p: Partial<FormD
     <div className="space-y-4">
       <p className="text-[12px] text-white/50">Ajoutez une image, un GIF de démonstration, ou une vidéo.</p>
       {form.mediaUrl ? (
-        <div className="relative rounded-xl overflow-hidden bg-white/[0.02] border border-[0.3px] border-white/[0.06]">
+        <div className="relative rounded-xl overflow-hidden bg-white/[0.02] border-[0.3px] border-white/[0.06]">
           {form.mediaType === 'video' ? (
             <video src={form.mediaUrl} className="w-full max-h-48 object-cover" controls />
           ) : (
@@ -416,7 +416,7 @@ function StepClassification({ form, update }: { form: FormData; update: (p: Part
           </select>
         </div>
       </div>
-      <div className="flex items-center justify-between rounded-xl bg-white/[0.02] px-4 py-3 border border-[0.3px] border-white/[0.06]">
+      <div className="flex items-center justify-between rounded-xl bg-white/[0.02] px-4 py-3 border-[0.3px] border-white/[0.06]">
         <span className="text-[12px] text-white/70">Exercice unilatéral</span>
         <button
           onClick={() => update({ unilateral: !form.unilateral })}
