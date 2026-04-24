@@ -2,7 +2,97 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-20 (Shell Refactor Phase 1 Task 5 — DockBottom)
+> Dernière mise à jour : 2026-04-23 (PWA Service Worker Strategy)
+
+---
+
+## 2026-04-23 — PWA Service Worker Strategy
+
+**Ce qui a été fait :**
+
+1. **`public/sw.js`** — cache stratégies optimisées pour client app
+   - Version bumped `stryv-client-v1` → `stryv-client-v2` (force re-cache)
+   - API routes (`/api/*`) → `networkFirst` (données fraîches)
+   - Assets statiques (`/_next/static/`) → `cacheFirst` (versioned, jamais stale)
+   - Client pages (`/client/*`) → `networkFirstWithTimeout(3s)` (fresh content, fallback to cache on timeout/offline)
+   - `networkFirstWithTimeout()` nouveau helper : race `fetch(request)` vs `setTimeout(3000)`, reverts to cache si timeout
+
+2. **`components/client/ServiceWorkerRegistrar.tsx`** — logic pour auto-reload avec protection
+   - Inscription SW avec scope `/client`
+   - Event listener `controllerchange` → auto-reload SAUF si séance active (détecte `draft_session_log_id_*` keys)
+   - `hasActiveDraft()` helper : boucle localStorage, check prefix
+
+**Points de vigilance :**
+- `networkFirstWithTimeout` protège contre les pages qui hang — timeout 3s et fallback cache prévient freezing UI
+- `hasActiveDraft()` check PREV reload si client est en pleine séance — évite perte de données non flushed
+- CACHE_NAME bump (`v1 → v2`) force re-fetch de tous les assets à la première activation du nouveau SW
+- Le scope `/client` isole la SW : seules les routes `/client/*` sont affectées
+
+**Next Steps — PWA Phase 2 :**
+- [ ] Monitor performance : est-ce que 3s timeout est approprié pour les pages client ?
+- [ ] Ajouter notifications Web Push pour la fin de repos dans SessionLogger
+- [ ] VAPID keys configuration pour Web Push
+- [ ] Manifest et icons finaux (actuellement generic)
+
+---
+
+## 2026-04-20 — UX Redesign Phase 2A — Client Routing
+
+**Ce qui a été fait :**
+
+1. **`lib/client-context.tsx`** — ClientContext avec `ClientData` type, `ClientProvider`, `useClient()` hook
+   - `refetch: () => Promise<void>` (async correct)
+   - Guard: `if (!ctx) throw new Error("useClient must be called within ClientProvider")`
+
+2. **`components/clients/ClientHeader.tsx`** — header client réutilisable
+   - Initials sécurisées (`?.[0] ?? ""`) — safe sur strings vides
+   - Badge statut FR (`STATUS_LABELS` map) + amber pour suspended
+   - `useEffect` registre le client dans le dock (`openClient`) au mount
+
+3. **`app/coach/clients/[clientId]/layout.tsx`** — layout client-side qui charge les données une fois
+   - Fetch avec `res.ok` check + `setError("")` au début de chaque fetch
+   - Loading: `<Skeleton>` components
+   - Error state: message + "Retour à la liste" button
+   - Wraps children in `ClientProvider`
+
+4. **`app/coach/clients/[clientId]/page.tsx`** — Server Component redirect vers `/profil`
+   - Plus de monolithe 1510 lignes — remplacé par 9 lignes
+
+5. **`components/layout/useDockBottom.ts`** — ajout 3 nouveaux contextes client
+   - `/coach/clients/*/data/*` → Métriques, Bilans, Performances, MorphoPro
+   - `/coach/clients/*/protocoles/*` → Nutrition, Entraînement, Cardio, Composition
+   - `/coach/clients/*/profil` → Profil, Data & Analyse, Protocoles
+
+6. **`app/coach/clients/[clientId]/profil/page.tsx`** — page Profil complète
+   - Infos contact read-only, Sport Profile avec édition inline (toggle dans le bon card)
+   - RestrictionsWidget, ClientAccessToken (adapté: clientStatus + clientEmail props), ClientFormulasTab, ClientCrmTab
+   - Danger zone + DeleteClientModal (adapté: onSuccess prop)
+
+7. **Pages Data & Analyse** (4 routes):
+   - `/data/metriques` → MetricsSection
+   - `/data/bilans` → SubmissionsList + skeleton loading + error handling
+   - `/data/performances` → PerformanceDashboard + SessionHistory + ProgressionHistory
+   - `/data/morphopro` → MorphoAnalysisSection (déplacé depuis l'onglet Profil)
+
+8. **Pages Protocoles** (4 routes):
+   - `/protocoles/nutrition` → 4 outils (Macros, Carb Cycling, Hydratation, Cycle Sync)
+   - `/protocoles/entrainement` → ProgramEditor (clientId only)
+   - `/protocoles/cardio` → HR Zones tool link
+   - `/protocoles/composition` → Body Fat % tool link
+
+9. **`app/coach/clients/page.tsx`** — `openClient()` appelé avant `router.push()` sur chaque carte client
+
+**Points de vigilance :**
+- La regex profil root `^\/coach\/clients\/[^/]+\/(profil)?$` ne matche pas le bare path sans trailing slash — safe car le redirect serveur intercepte avant
+- `bilans/page.tsx` gère son propre state local (submissions, templates) — ne pollue pas ClientContext
+- `ClientAccessToken` requiert `clientStatus` et `clientEmail` en plus de `clientId`
+- `DeleteClientModal` utilise `onSuccess` (pas `onDeleted`) avec `(mode: "archive" | "delete") => void`
+- Toutes les pages ont `pb-24` pour le dock bottom clearance
+
+**Next Steps — Phase 2B (Lab Protocoles avec injection données client) :**
+- [ ] Outils nutrition (Macros, Carb Cycling) pré-remplis avec données du client actif
+- [ ] ProgramEditor contextualisé : programmes récents du client en premier
+- [ ] Phase 3 (Lab tools contextualized) — planning à définir
 
 ---
 

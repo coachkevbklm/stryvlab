@@ -1,5 +1,13 @@
+## 2026-04-24
+
+FEATURE: intelligence/types.ts — add BiomechData interface with plane, mechanic, joint stress, instability, coordination, and constraint profile fields
+FEATURE: BuilderExercise — extend with optional biomech fields (plane, mechanic, unilateral, primaryMuscle, jointStress*, globalInstability, coordinationDemand, constraintProfile)
+FEATURE: IntelligenceResult.subscores — add jointLoad and coordination fields (defaulting to 100, weighted 0 until Phase 4 scorers are implemented)
+
 ## 2026-04-23
 
+FEATURE: PWA — replace stale-while-revalidate with network-first + 3s timeout for client pages, auto-reload SW on controllerchange unless draft session active
+FEATURE: ServiceWorkerRegistrar — add hasActiveDraft() check before SW reload, detect draft_session_log_id_* keys from SessionLogger localStorage
 FIX: SessionLogger — add cancelled guard on initDraft useEffect to prevent StrictMode double-invoke, cleanup saveDebounceRef on unmount, flush exerciseNotes on submitSession via notes field, add comment on ping validation
 FEATURE: SessionLogger — live save (draft created at mount, set-by-set upsert via PATCH /sets, flush+complete at submit, localStorage draft recovery, fallback POST if no network at start)
 REFACTOR: SessionLogger — remove back button from header (replaced by spacer), sessionId prop added, patchSets fire-and-forget, updateSet debounce 800ms, toggleSet immediate patch
