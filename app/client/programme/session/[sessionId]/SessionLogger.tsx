@@ -198,18 +198,21 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
   // ── Création ou récupération du draft session log au montage ──
   useEffect(() => {
+    let cancelled = false
+
     async function initDraft() {
       const existingId = localStorage.getItem(DRAFT_KEY)
 
       if (existingId) {
         // Vérifier que ce log existe encore en DB et n'est pas terminé
         try {
+          // Ping de validation : set_logs=[] déclenche un early return dans la route (sans mutation)
           const res = await fetch(`/api/session-logs/${existingId}/sets`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ set_logs: [] }),
           })
-          if (res.ok) {
+          if (res.ok && !cancelled) {
             sessionLogIdRef.current = existingId
             setDraftReady(true)
             return
@@ -217,7 +220,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         } catch {
           // Log invalide ou réseau coupé — on en crée un nouveau
         }
-        localStorage.removeItem(DRAFT_KEY)
+        if (!cancelled) localStorage.removeItem(DRAFT_KEY)
       }
 
       // Créer un nouveau session log
@@ -231,7 +234,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             set_logs: [],
           }),
         })
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json()
           const newId = data?.session_log?.id
           if (newId) {
@@ -242,10 +245,19 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       } catch {
         // Pas de réseau au démarrage — on fonctionnera sans live save
       }
-      setDraftReady(true)
+      if (!cancelled) setDraftReady(true)
     }
+
     initDraft()
+    return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Cleanup debounce au démontage ──
+  useEffect(() => {
+    return () => {
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+    }
   }, [])
 
   // ── Chrono repos — tick ──
@@ -438,7 +450,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         await fetch(`/api/session-logs/${logId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: true, duration_min: durationMin }),
+          body: JSON.stringify({ completed: true, duration_min: durationMin, notes: JSON.stringify(exerciseNotes) }),
         })
       } catch (err) {
         setSaveState('error')

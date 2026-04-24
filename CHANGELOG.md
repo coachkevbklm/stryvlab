@@ -1,5 +1,6 @@
 ## 2026-04-23
 
+FIX: SessionLogger — add cancelled guard on initDraft useEffect to prevent StrictMode double-invoke, cleanup saveDebounceRef on unmount, flush exerciseNotes on submitSession via notes field, add comment on ping validation
 FEATURE: SessionLogger — live save (draft created at mount, set-by-set upsert via PATCH /sets, flush+complete at submit, localStorage draft recovery, fallback POST if no network at start)
 REFACTOR: SessionLogger — remove back button from header (replaced by spacer), sessionId prop added, patchSets fire-and-forget, updateSet debounce 800ms, toggleSet immediate patch
 FIX: /api/session-logs/[logId]/sets — improve FK error handling (catch 23503, return 409) and type safety on Supabase .single() responses
