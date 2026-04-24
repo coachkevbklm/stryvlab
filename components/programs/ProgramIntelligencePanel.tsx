@@ -22,10 +22,18 @@ const SUBSCORE_LABELS: Record<string, string> = {
   progression: 'Progression',
   completeness: 'Couverture',
   redundancy: 'Diversité',
+  jointLoad: 'Charge articulaire',
+  coordination: 'Coordination',
 }
 
 const SCORE_COLOR = (score: number) =>
   score >= 75 ? '#1f8a65' : score >= 50 ? '#f59e0b' : '#ef4444'
+
+// Accent color for subscore label (used as a subtle tint, not for the numeric score)
+const SUBSCORE_ACCENT: Record<string, string> = {
+  jointLoad: '#f97316',   // orange — injury/load theme
+  coordination: '#8b5cf6', // purple — skill/motor control theme
+}
 
 const SEVERITY_ICON = { critical: AlertCircle, warning: AlertTriangle, info: Info }
 const SEVERITY_COLOR = { critical: 'text-red-400', warning: 'text-amber-400', info: 'text-white/40' }
@@ -92,7 +100,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Zap size={13} className="text-[#1f8a65]" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Intelligence</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Smart Fit</p>
           </div>
           <button onClick={() => setCollapsed(!collapsed)} className="text-white/30 hover:text-white/60">
             {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -130,50 +138,62 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
 
       {!collapsed && (
         <>
-          {/* Grille 2×3 subscores */}
-          <div className="grid grid-cols-3 gap-1.5">
-            {Object.entries(result.subscores).map(([key, val]) => (
-              <div key={key} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5">
-                <p className="text-[18px] font-black leading-none" style={{ color: SCORE_COLOR(val) }}>
-                  {val}
-                </p>
-                <p className="text-[9px] text-white/40 mt-0.5">{SUBSCORE_LABELS[key]}</p>
-              </div>
-            ))}
+          {/* Grille subscores */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {Object.entries(result.subscores).map(([key, val]) => {
+              const labelAccent = SUBSCORE_ACCENT[key]
+              return (
+                <div
+                  key={key}
+                  className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5"
+                  style={labelAccent ? { borderColor: `${labelAccent}22` } : undefined}
+                >
+                  <p className="text-[18px] font-black leading-none" style={{ color: SCORE_COLOR(val) }}>
+                    {val}
+                  </p>
+                  <p
+                    className="text-[9px] mt-0.5"
+                    style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.4)' }}
+                  >
+                    {SUBSCORE_LABELS[key] ?? key}
+                  </p>
+                </div>
+              )
+            })}
           </div>
 
           {/* KPIs globaux programme */}
           {result.programStats.totalSets > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2.5">Volume programme</p>
-              <div className="grid grid-cols-4 gap-1.5">
-                <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.totalSets}</p>
-                  <p className="text-[8px] text-white/40 mt-0.5">séries / sem.</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
+                  <p className="text-[8px] text-white/40">Séries/sem.</p>
+                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.totalSets}</p>
                 </div>
-                <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[15px] font-black text-white leading-none">
+                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
+                  <p className="text-[8px] text-white/40">Reps est.</p>
+                  <p className="text-[14px] font-black text-white leading-none">
                     {result.programStats.totalEstimatedReps >= 1000
                       ? `${(result.programStats.totalEstimatedReps / 1000).toFixed(1)}k`
                       : result.programStats.totalEstimatedReps}
                   </p>
-                  <p className="text-[8px] text-white/40 mt-0.5">reps est.</p>
                 </div>
-                <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.totalExercises}</p>
-                  <p className="text-[8px] text-white/40 mt-0.5">exercices</p>
+                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
+                  <p className="text-[8px] text-white/40">Exercices</p>
+                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.totalExercises}</p>
                 </div>
-                <div className="bg-white/[0.02] rounded-xl p-2">
-                  <p className="text-[15px] font-black text-white leading-none">{result.programStats.avgExercisesPerSession}</p>
-                  <p className="text-[8px] text-white/40 mt-0.5">exos/séance</p>
+                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
+                  <p className="text-[8px] text-white/40">Exos/séance</p>
+                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.avgExercisesPerSession}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Radar + Donut side-by-side */}
+          {/* Radar + Donut stacked */}
           {(mounted && Object.keys(result.distribution).length > 0) || (mounted && donutData.length > 0) ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               {/* Radar musculaire */}
               {mounted && Object.keys(result.distribution).length > 0 && (
                 <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
@@ -248,7 +268,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
                     <div key={i} className="border-t border-white/[0.04] pt-2.5 first:border-0 first:pt-0">
                       {/* En-tête séance */}
                       <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-[10px] font-semibold text-white/70 truncate max-w-[140px]">
+                        <p className="text-[10px] font-semibold text-white/70 truncate min-w-0 flex-1 mr-2">
                           {s.name || `Séance ${i + 1}`}
                         </p>
                         <div className="flex items-center gap-2 shrink-0">

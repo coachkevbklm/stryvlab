@@ -23,6 +23,19 @@ const RULE_EXPLANATIONS: Record<string, string> = {
   progression: 'RIR semaine 1 doit être ≥1 (marge de progression). Un RIR=0 dès semaine 1 = risque de stagnation rapide.',
   redundancy: 'Exercices identiques (même pattern + mêmes muscles + coeff similaire) → volume dilué sans stimulus nouveau.',
   completeness: 'Patterns requis par objectif. Hypertrophie = push + pull + jambes + core. Manque → score incomplet.',
+  jointLoad: 'Charge cumulée sur les articulations (épaule, genou, rachis). Un score faible indique un risque articulaire élevé — adapter le volume ou remplacer les exercices à fort impact.',
+  coordination: 'Complexité motrice moyenne du programme. Un score faible signale des exercices très techniques pour le niveau du client — risque de mauvaise exécution et de blessure.',
+}
+
+const SUBSCORE_LABEL_FR: Record<string, string> = {
+  balance: 'Équilibre',
+  recovery: 'Récupération',
+  specificity: 'Cohérence obj.',
+  progression: 'Progression',
+  completeness: 'Couverture',
+  redundancy: 'Diversité',
+  jointLoad: 'Charge articulaire',
+  coordination: 'Coordination',
 }
 
 export default function LabModeSection({
@@ -66,22 +79,31 @@ export default function LabModeSection({
                 <Microscope size={10} />
                 Debug subscores
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {Object.entries(result.subscores).map(([key, score]) => (
-                  <div key={key} className="rounded-lg bg-black/20 px-2 py-1.5">
-                    <div className="text-[9px] text-white/35 mb-0.5 capitalize">
-                      {key}
-                    </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {Object.entries(result.subscores).map(([key, score]) => {
+                  const labelAccent = key === 'jointLoad' ? '#f97316' : key === 'coordination' ? '#8b5cf6' : undefined
+                  return (
                     <div
-                      className="text-[13px] font-bold font-mono"
-                      style={{
-                        color: score >= 75 ? '#1f8a65' : score >= 50 ? '#f59e0b' : '#ef4444',
-                      }}
+                      key={key}
+                      className="rounded-lg bg-black/20 px-2 py-1.5 flex items-center justify-between gap-2"
                     >
-                      {Math.round(score)}
+                      <div
+                        className="text-[9px] capitalize truncate"
+                        style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.35)' }}
+                      >
+                        {SUBSCORE_LABEL_FR[key] ?? key}
+                      </div>
+                      <div
+                        className="text-[12px] font-bold font-mono shrink-0"
+                        style={{
+                          color: score >= 75 ? '#1f8a65' : score >= 50 ? '#f59e0b' : '#ef4444',
+                        }}
+                      >
+                        {Math.round(score)}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -151,7 +173,7 @@ export default function LabModeSection({
                   const currentVal = (labOverrides ?? {})[pattern] ?? 1.0
                   return (
                     <div key={pattern} className="flex items-center gap-2">
-                      <span className="text-[9px] text-white/40 w-28 shrink-0 truncate capitalize">
+                      <span className="text-[9px] text-white/40 w-32 shrink-0 truncate capitalize">
                         {pattern.replace(/_/g, ' ')}
                       </span>
                       <input

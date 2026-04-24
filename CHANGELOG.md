@@ -1,5 +1,8 @@
 ## 2026-04-24
 
+FEATURE: Display jointLoad and coordination subscores in ProgramIntelligencePanel — amber/orange theme for jointLoad, purple for coordination, with matching labels in LabModeSection debug view and rule transparency section
+FEATURE: Extend POST /api/exercises/custom Zod schema with full biomech fields — description, media_url, media_type, plane, mechanic, unilateral, primary_muscle, primary_activation, secondary_muscles_detail, secondary_activations, stabilizers, joint_stress_spine, joint_stress_knee, joint_stress_shoulder, global_instability, coordination_demand, constraint_profile; all fields now persisted in DB insert
+
 FEATURE: Add custom exercise media upload endpoint — POST /api/exercises/custom/upload-media, supports JPG/PNG/WebP/GIF/MP4/WebM up to 50MB, uploads to Supabase Storage exercise-media bucket, returns public URL and mediaType
 
 FEATURE: programs/[programId] API — persist and return 14 biomech fields (plane, mechanic, unilateral, joint stress, etc.) in program_exercises insert and SELECT
