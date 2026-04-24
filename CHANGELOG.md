@@ -1,5 +1,7 @@
 ## 2026-04-24
 
+FIX: Intelligence — normaliser slugs biomech EN dans fiberVolumes (gluteus_medius→moyen_fessier, hamstrings→ischio_jambiers) pour éliminer doublons dans les barres par faisceau
+FIX: Intelligence — MISSING_PATTERN: labels FR dans les titres d'alertes; sévérité info (au lieu de warning) pour programmes spécialisés ≤2 séances; score Couverture plafonné à min 50 pour séances ciblées
 FEATURE: Intelligence panel — répartition volume par faisceau musculaire précis (gluteus_medius, deltoid_posterior, etc.) avec barres horizontales animées par séance; radar agrandi (200px) + normalisation sur max; donut patterns revu avec légende inline; fiberVolumes ajouté dans SessionStats (scoring engine + types)
 FIX: ExerciseAlternativesDrawer — convert MOVEMENT_PATTERNS from raw slugs to {value, label} objects with French labels (was displaying "hip abduction", "scapular retraction" in English)
 FIX: view/page.tsx — add 6 missing patterns (scapular_elevation + 5 new) to MOVEMENT_LABELS map

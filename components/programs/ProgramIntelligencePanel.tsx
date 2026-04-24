@@ -51,62 +51,60 @@ const RADAR_MUSCLES: { key: string; label: string }[] = [
   { key: 'abdos', label: 'Abdos' },
 ]
 
-// Traduction faisceaux biomech précis → français naturel
+// Traduction slugs normalisés → français naturel (après normalizeFiberSlug côté moteur)
 const FIBER_LABEL_FR: Record<string, string> = {
-  // Fessiers
-  gluteus_maximus: 'Grand fessier',
-  gluteus_medius: 'Moyen fessier',
-  gluteus_minimus: 'Petit fessier',
+  // Fessiers — slugs normalisés
+  grand_fessier: 'Grand fessier',
+  moyen_fessier: 'Moyen fessier',
+  petit_fessier: 'Petit fessier',
+  // Ischio-jambiers
+  ischio_jambiers: 'Ischio-jambiers',
+  biceps_femoral: 'Biceps fémoral',
+  semi_membraneux: 'Semi-membraneux',
+  semi_tendineux: 'Semi-tendineux',
   // Quadriceps
   quadriceps: 'Quadriceps',
-  rectus_femoris: 'Droit fémoral',
-  vastus_lateralis: 'Vaste latéral',
-  vastus_medialis: 'Vaste médial',
-  // Ischio-jambiers
-  hamstrings: 'Ischio-jambiers',
-  biceps_femoris: 'Biceps fémoral',
-  semimembranosus: 'Semi-membraneux',
-  semitendinosus: 'Semi-tendineux',
+  droit_femoral: 'Droit fémoral',
+  vaste_lateral: 'Vaste latéral',
+  vaste_medial: 'Vaste médial',
   // Dos
-  latissimus_dorsi: 'Grand dorsal',
-  rhomboids: 'Rhomboïdes',
-  trapezius: 'Trapèze',
-  trapezius_upper: 'Trapèze sup.',
-  trapezius_middle: 'Trapèze moy.',
-  trapezius_lower: 'Trapèze inf.',
-  spine_erectors: 'Érecteurs du rachis',
+  grand_dorsal: 'Grand dorsal',
+  rhomboides: 'Rhomboïdes',
+  trapeze: 'Trapèze',
+  trapeze_superieur: 'Trapèze sup.',
+  trapeze_moyen: 'Trapèze moy.',
+  trapeze_inferieur: 'Trapèze inf.',
+  erecteurs_rachis: 'Érecteurs du rachis',
   // Pectoraux
-  pectoralis_major: 'Grand pectoral',
-  pectoralis_minor: 'Petit pectoral',
+  grand_pectoral: 'Grand pectoral',
+  petit_pectoral: 'Petit pectoral',
   // Épaules
-  deltoid_anterior: 'Deltoïde ant.',
-  deltoid_lateral: 'Deltoïde lat.',
-  deltoid_posterior: 'Deltoïde post.',
+  deltoide_anterieur: 'Deltoïde ant.',
+  deltoide_lateral: 'Deltoïde lat.',
+  deltoide_posterieur: 'Deltoïde post.',
   // Bras
-  biceps_brachii: 'Biceps',
-  brachialis: 'Brachial ant.',
-  brachioradialis: 'Brachio-radial',
-  triceps_brachii: 'Triceps',
+  biceps: 'Biceps',
+  brachial_anterieur: 'Brachial ant.',
+  brachio_radial: 'Brachio-radial',
+  triceps: 'Triceps',
   // Mollets
-  gastrocnemius: 'Gastrocnémien',
-  soleus: 'Soléaire',
-  // Abdos / core
-  rectus_abdominis: 'Droit abdominal',
+  gastrocnemien: 'Gastrocnémien',
+  soleaire: 'Soléaire',
+  // Core
+  droit_abdominal: 'Droit abdominal',
   obliques: 'Obliques',
-  transverse_abdominis: 'Transverse',
-  core: 'Sangle abdominale',
-  // Lombaires
-  lower_back: 'Lombaires',
-  // Slugs FR grossiers (fallback)
-  dos: 'Dos (global)',
-  pectoraux: 'Pectoraux (global)',
-  epaules: 'Épaules (global)',
-  fessiers: 'Fessiers (global)',
+  transverse: 'Transverse',
+  sangle_abdominale: 'Sangle abdominale',
+  // Slugs FR grossiers (fallback quand pas de biomech)
+  dos: 'Dos',
+  pectoraux: 'Pectoraux',
+  epaules: 'Épaules',
+  fessiers: 'Fessiers',
   'ischio-jambiers': 'Ischio-jambiers',
-  biceps: 'Biceps (global)',
-  triceps: 'Triceps (global)',
-  mollets: 'Mollets (global)',
-  abdos: 'Abdos (global)',
+  biceps_global: 'Biceps',
+  triceps_global: 'Triceps',
+  mollets: 'Mollets',
+  abdos: 'Abdos',
   lombaires: 'Lombaires',
 }
 

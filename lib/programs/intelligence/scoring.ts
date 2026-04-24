@@ -6,6 +6,59 @@ import type {
   ProgramStats, SessionStats, SRAHeatmapWeek,
 } from './types'
 
+// ─── Normalisation slugs biomech précis → slugs FR affichables ───────────────
+// Utilisé dans fiberVolumes pour éviter les doublons (hamstrings + ischio-jambiers,
+// glutes + fessiers, etc.) quand primaryMuscle vient du catalogue EN.
+const BIOMECH_TO_FR: Record<string, string> = {
+  // Fessiers
+  gluteus_maximus: 'grand_fessier',
+  gluteus_medius: 'moyen_fessier',
+  gluteus_minimus: 'petit_fessier',
+  glutes: 'grand_fessier',
+  // Ischio-jambiers
+  hamstrings: 'ischio_jambiers',
+  biceps_femoris: 'biceps_femoral',
+  semimembranosus: 'semi_membraneux',
+  semitendinosus: 'semi_tendineux',
+  // Quadriceps
+  quadriceps: 'quadriceps',
+  rectus_femoris: 'droit_femoral',
+  vastus_lateralis: 'vaste_lateral',
+  vastus_medialis: 'vaste_medial',
+  // Dos
+  latissimus_dorsi: 'grand_dorsal',
+  rhomboids: 'rhomboides',
+  trapezius: 'trapeze',
+  trapezius_upper: 'trapeze_superieur',
+  trapezius_middle: 'trapeze_moyen',
+  trapezius_lower: 'trapeze_inferieur',
+  spine_erectors: 'erecteurs_rachis',
+  // Pectoraux
+  pectoralis_major: 'grand_pectoral',
+  pectoralis_minor: 'petit_pectoral',
+  // Épaules
+  deltoid_anterior: 'deltoide_anterieur',
+  deltoid_lateral: 'deltoide_lateral',
+  deltoid_posterior: 'deltoide_posterieur',
+  // Bras
+  biceps_brachii: 'biceps',
+  brachialis: 'brachial_anterieur',
+  brachioradialis: 'brachio_radial',
+  triceps_brachii: 'triceps',
+  // Mollets
+  gastrocnemius: 'gastrocnemien',
+  soleus: 'soleaire',
+  // Core
+  rectus_abdominis: 'droit_abdominal',
+  obliques: 'obliques',
+  transverse_abdominis: 'transverse',
+  core: 'sangle_abdominale',
+}
+
+function normalizeFiberSlug(slug: string): string {
+  return BIOMECH_TO_FR[slug] ?? slug
+}
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 // Fenêtres SRA en heures par groupe musculaire (niveau intermédiaire)
@@ -643,19 +696,49 @@ export function scoreCompleteness(
     scapular_protraction: 'Protraction scapulaire',
   }
 
+  // Labels FR pour les patterns dans les alertes
+  const PATTERN_LABEL_FR: Record<string, string> = {
+    horizontal_push: 'Poussée horizontale', vertical_push: 'Poussée verticale',
+    horizontal_pull: 'Tirage horizontal', vertical_pull: 'Tirage vertical',
+    squat_pattern: 'Squat / Fentes', hip_hinge: 'Charnière hanche',
+    elbow_flexion: 'Flexion coude (Biceps)', elbow_extension: 'Extension coude (Triceps)',
+    lateral_raise: 'Élévation latérale', knee_flexion: 'Flexion genou',
+    knee_extension: 'Extension genou', calf_raise: 'Extension mollets',
+    carry: 'Porté (Carry)', core_flex: 'Flexion core',
+    core_anti_flex: 'Gainage anti-flexion', core_rotation: 'Rotation core',
+    scapular_elevation: 'Élévation scapulaire', hip_abduction: 'Abduction hanche',
+    hip_adduction: 'Adduction hanche', shoulder_rotation: 'Rotation épaule',
+    scapular_retraction: 'Rétraction scapulaire', scapular_protraction: 'Protraction scapulaire',
+  }
+
+  // Si le programme est spécialisé (1-2 séances ou fréquence ≤ 2), les patterns
+  // manquants sont informatifs — le coach l'a fait volontairement.
+  const isSpecialized = sessions.length <= 2 || meta.frequency <= 2
+  const missingSeverity = isSpecialized ? 'info' : 'warning'
+
   missing.forEach(pattern => {
+    const label = PATTERN_LABEL_FR[pattern] ?? pattern.replace(/_/g, ' ')
     alerts.push({
-      severity: 'warning',
+      severity: missingSeverity,
       code: 'MISSING_PATTERN',
-      title: `Pattern manquant : ${pattern.replace(/_/g, ' ')}`,
-      explanation: `L'objectif "${meta.goal}" recommande d'inclure des exercices de type ${pattern.replace(/_/g, ' ')}.`,
+      title: `Pattern manquant — ${label}`,
+      explanation: isSpecialized
+        ? `Programme spécialisé : "${label}" non couvert. Normal pour une séance ciblée.`
+        : `L'objectif "${meta.goal}" recommande des exercices de type "${label}".`,
       suggestion: `Exemple : ${PATTERN_EXAMPLES[pattern] ?? 'exercice de ce pattern'}.`,
     })
   })
 
+  // Pénalité réduite pour les programmes spécialisés (1-2 séances)
+  const coverageRatio = effectiveRequired.length === 0
+    ? 1
+    : (effectiveRequired.length - missing.length) / effectiveRequired.length
   const score = effectiveRequired.length === 0
     ? 100
-    : clampScore(((effectiveRequired.length - missing.length) / effectiveRequired.length) * 100)
+    : clampScore(isSpecialized
+        ? Math.max(50, coverageRatio * 100)  // plancher à 50 pour programme spécialisé
+        : coverageRatio * 100
+      )
 
   return { score, alerts, missingPatterns: missing }
 }
@@ -951,11 +1034,12 @@ export function buildIntelligenceResult(
         const norm = normalizeMuscleSlug(m)
         muscleVolumes[norm] = (muscleVolumes[norm] ?? 0) + vol
       })
-      // Faisceau précis biomech (ex: gluteus_medius, deltoid_posterior)
+      // Faisceau précis biomech normalisé (gluteus_medius → moyen_fessier, etc.)
       if (ex.primaryMuscle) {
-        fiberVolumes[ex.primaryMuscle] = (fiberVolumes[ex.primaryMuscle] ?? 0) + vol
+        const fiberKey = normalizeFiberSlug(ex.primaryMuscle)
+        fiberVolumes[fiberKey] = (fiberVolumes[fiberKey] ?? 0) + vol
       } else {
-        // Fallback: même slug FR grossier que muscleVolumes
+        // Fallback: slug FR grossier depuis primary_muscles
         ex.primary_muscles.forEach(m => {
           const norm = normalizeMuscleSlug(m)
           fiberVolumes[norm] = (fiberVolumes[norm] ?? 0) + vol
