@@ -284,8 +284,16 @@ function StepMedia({ form, update }: { form: FormData; update: (p: Partial<FormD
 }
 
 const MUSCLE_GROUPS_OPTIONS = [
-  'abdos', 'biceps', 'dos', 'epaules', 'fessiers',
-  'ischio-jambiers', 'mollets', 'pectoraux', 'quadriceps', 'triceps',
+  { value: 'abdos', label: 'Abdominaux' },
+  { value: 'biceps', label: 'Biceps' },
+  { value: 'dos', label: 'Dos' },
+  { value: 'epaules', label: 'Épaules' },
+  { value: 'fessiers', label: 'Fessiers' },
+  { value: 'ischio-jambiers', label: 'Ischio-jambiers' },
+  { value: 'mollets', label: 'Mollets' },
+  { value: 'pectoraux', label: 'Pectoraux' },
+  { value: 'quadriceps', label: 'Quadriceps' },
+  { value: 'triceps', label: 'Triceps' },
 ]
 
 const MOVEMENT_PATTERNS_OPTIONS = [
@@ -339,13 +347,30 @@ const CONSTRAINT_PROFILES = [
 ]
 
 const MUSCLE_OPTIONS = [
-  'biceps_brachii', 'brachialis', 'brachioradialis',
-  'triceps_brachii', 'pectoralis_major', 'pectoralis_minor',
-  'deltoid_anterior', 'deltoid_lateral', 'deltoid_posterior',
-  'trapezius', 'rhomboids', 'latissimus_dorsi',
-  'spine_erectors', 'gluteus_maximus', 'gluteus_medius', 'gluteus_minimus',
-  'quadriceps', 'hamstrings', 'gastrocnemius', 'soleus',
-  'rectus_abdominis', 'obliques', 'transverse_abdominis', 'core',
+  { value: 'biceps_brachii', label: 'Biceps' },
+  { value: 'brachialis', label: 'Brachial antérieur' },
+  { value: 'brachioradialis', label: 'Brachio-radial' },
+  { value: 'triceps_brachii', label: 'Triceps' },
+  { value: 'pectoralis_major', label: 'Grand pectoral' },
+  { value: 'pectoralis_minor', label: 'Petit pectoral' },
+  { value: 'deltoid_anterior', label: 'Deltoïde antérieur' },
+  { value: 'deltoid_lateral', label: 'Deltoïde latéral' },
+  { value: 'deltoid_posterior', label: 'Deltoïde postérieur' },
+  { value: 'trapezius', label: 'Trapèze' },
+  { value: 'rhomboids', label: 'Rhomboïdes' },
+  { value: 'latissimus_dorsi', label: 'Grand dorsal' },
+  { value: 'spine_erectors', label: 'Érecteurs du rachis' },
+  { value: 'gluteus_maximus', label: 'Grand fessier' },
+  { value: 'gluteus_medius', label: 'Moyen fessier' },
+  { value: 'gluteus_minimus', label: 'Petit fessier' },
+  { value: 'quadriceps', label: 'Quadriceps' },
+  { value: 'hamstrings', label: 'Ischio-jambiers' },
+  { value: 'gastrocnemius', label: 'Gastrocnémien' },
+  { value: 'soleus', label: 'Soléaire' },
+  { value: 'rectus_abdominis', label: 'Droit abdominal' },
+  { value: 'obliques', label: 'Obliques' },
+  { value: 'transverse_abdominis', label: 'Transverse' },
+  { value: 'core', label: 'Sangle abdominale' },
 ]
 
 function StepIdentity({ form, update }: { form: FormData; update: (p: Partial<FormData>) => void }) {
@@ -368,7 +393,7 @@ function StepIdentity({ form, update }: { form: FormData; update: (p: Partial<Fo
           className="w-full h-[44px] rounded-xl bg-[#0a0a0a] px-4 text-[13px] text-white/80 outline-none"
         >
           <option value="">— Choisir —</option>
-          {MUSCLE_GROUPS_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+          {MUSCLE_GROUPS_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
         </select>
       </div>
       <div>
@@ -474,7 +499,7 @@ function StepMuscles({ form, update }: { form: FormData; update: (p: Partial<For
         <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">Muscle primaire *</label>
         <select value={form.primaryMuscle} onChange={e => update({ primaryMuscle: e.target.value })} className="w-full h-[44px] rounded-xl bg-[#0a0a0a] px-4 text-[13px] text-white/80 outline-none">
           <option value="">— Choisir —</option>
-          {MUSCLE_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+          {MUSCLE_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
       <div>
@@ -489,12 +514,12 @@ function StepMuscles({ form, update }: { form: FormData; update: (p: Partial<For
       <div>
         <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">Muscles secondaires (max 3, optionnel)</label>
         <div className="flex flex-wrap gap-1.5">
-          {MUSCLE_OPTIONS.filter(m => m !== form.primaryMuscle).map(m => (
-            <button key={m} onClick={() => toggleSecondary(m)}
+          {MUSCLE_OPTIONS.filter(m => m.value !== form.primaryMuscle).map(m => (
+            <button key={m.value} onClick={() => toggleSecondary(m.value)}
               className={`rounded-lg px-2 py-1 text-[10px] font-medium transition-colors ${
-                form.secondaryMusclesDetail.includes(m) ? 'bg-[#1f8a65]/10 text-[#1f8a65]' : 'bg-white/[0.04] text-white/35 hover:text-white/55'
+                form.secondaryMusclesDetail.includes(m.value) ? 'bg-[#1f8a65]/10 text-[#1f8a65]' : 'bg-white/[0.04] text-white/35 hover:text-white/55'
               }`}
-            >{m}</button>
+            >{m.label}</button>
           ))}
         </div>
       </div>
