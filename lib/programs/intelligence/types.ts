@@ -65,6 +65,8 @@ export interface IntelligenceResult {
     progression: number
     completeness: number
     redundancy: number
+    jointLoad: number
+    coordination: number
   }
   alerts: IntelligenceAlert[]
   distribution: MuscleDistribution
@@ -90,6 +92,21 @@ export interface BuilderExercise {
   secondary_muscles: string[]
   is_compound?: boolean       // checkbox coach — undefined = auto-dérivé
   group_id?: string           // superset group identifier
+  // Biomech fields (populated from catalog on picker selection, null for old exercises)
+  plane?: string | null
+  mechanic?: string | null
+  unilateral?: boolean
+  primaryMuscle?: string | null
+  primaryActivation?: number | null
+  secondaryMusclesDetail?: string[]
+  secondaryActivations?: number[]
+  stabilizers?: string[]
+  jointStressSpine?: number | null
+  jointStressKnee?: number | null
+  jointStressShoulder?: number | null
+  globalInstability?: number | null
+  coordinationDemand?: number | null
+  constraintProfile?: string | null
 }
 
 export interface BuilderSession {
@@ -130,3 +147,21 @@ export interface SRAHeatmapWeek {
 // Lab Mode overrides — coach can override stimulus coefficient per movement pattern
 // Merged on top of morphoStimulusAdjustments (labOverrides takes priority)
 export type LabOverrides = Record<string, number>
+
+// Biomechanical data available per exercise (from enriched catalog or custom exercises)
+export interface BiomechData {
+  plane: string | null
+  mechanic: string | null
+  unilateral: boolean
+  primaryMuscle: string | null
+  primaryActivation: number | null
+  secondaryMuscles: string[]
+  secondaryActivations: number[]
+  stabilizers: string[]
+  jointStressSpine: number | null
+  jointStressKnee: number | null
+  jointStressShoulder: number | null
+  globalInstability: number | null
+  coordinationDemand: number | null
+  constraintProfile: string | null
+}

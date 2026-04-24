@@ -88,12 +88,13 @@ export function scoreBalance(
   const alerts: IntelligenceAlert[] = []
 
   let pushVol = 0, pullVol = 0
+  let pushSets = 0, pullSets = 0
   for (const session of sessions) {
     for (const ex of session.exercises) {
       const p = getPattern(ex)
       const vol = weightedVolume(ex)
-      if (PUSH_PATTERNS.has(p)) pushVol += vol
-      if (PULL_PATTERNS.has(p)) pullVol += vol
+      if (PUSH_PATTERNS.has(p)) { pushVol += vol; pushSets += ex.sets }
+      if (PULL_PATTERNS.has(p)) { pullVol += vol; pullSets += ex.sets }
     }
   }
 
@@ -113,8 +114,10 @@ export function scoreBalance(
       severity: 'critical',
       code: 'PUSH_PULL_IMBALANCE',
       title: 'Déséquilibre push/pull sévère',
-      explanation: `Le ratio push/pull est de ${ratio.toFixed(2)} (idéal : ~1.0). Un déséquilibre important augmente le risque de dysfonction gléno-humérale et d'inhibition réciproque.`,
-      suggestion: ratio > 1 ? 'Ajoutez des exercices de tirage (rowing, tractions) pour rééquilibrer.' : 'Ajoutez des exercices de poussée (développé, OHP) pour rééquilibrer.',
+      explanation: `Ratio push/pull : ${ratio.toFixed(2)} (${pushSets} sets push / ${pullSets} sets pull). Un déséquilibre sévère augmente le risque de dysfonction gléno-humérale et d'inhibition réciproque.`,
+      suggestion: ratio > 1
+        ? `Ajoutez ~${Math.round((pushSets - pullSets) / 2)} sets de tirage (rowing, tractions) pour rééquilibrer.`
+        : `Ajoutez ~${Math.round((pullSets - pushSets) / 2)} sets de poussée (développé, OHP) pour rééquilibrer.`,
     })
   } else if (ratio < thresholds.warn[0] || ratio > thresholds.warn[1]) {
     score = Math.min(score, 65)
@@ -122,8 +125,10 @@ export function scoreBalance(
       severity: 'warning',
       code: 'PUSH_PULL_IMBALANCE',
       title: 'Déséquilibre push/pull',
-      explanation: `Ratio push/pull : ${ratio.toFixed(2)}. Optimal pour "${meta.goal}" : ${thresholds.warn[0]}–${thresholds.warn[1]}.`,
-      suggestion: ratio > 1 ? "Envisagez d'ajouter 1–2 exercices de tirage." : "Envisagez d'ajouter 1–2 exercices de poussée.",
+      explanation: `Ratio push/pull : ${ratio.toFixed(2)} (${pushSets} sets push / ${pullSets} sets pull). Optimal pour "${meta.goal}" : ${thresholds.warn[0]}–${thresholds.warn[1]}.`,
+      suggestion: ratio > 1
+        ? "Envisagez d'ajouter 1–2 exercices de tirage pour équilibrer."
+        : "Envisagez d'ajouter 1–2 exercices de poussée pour équilibrer.",
     })
   }
 
@@ -202,15 +207,16 @@ export function scoreSRA(
       }
 
       if (hours !== null) {
+        const muscleName = muscle.charAt(0).toUpperCase() + muscle.slice(1)
         if (hours <= window * 0.5) {
           point.violation = true
           violations++
           alerts.push({
             severity: 'critical',
             code: 'SRA_VIOLATION',
-            title: `Récupération insuffisante — ${muscle}`,
-            explanation: `${muscle} sollicité ${hours}h après la séance précédente. Fenêtre minimum : ${Math.round(window)}h (niveau ${meta.level}).`,
-            suggestion: `Espacez les séances sollicitant ${muscle} d'au moins ${Math.round(window - hours)}h supplémentaires.`,
+            title: `Récupération insuffisante — ${muscleName}`,
+            explanation: `${muscleName} sollicité ${hours}h après la séance précédente (minimum requis : ${Math.round(window)}h pour niveau ${effectiveLevel}).`,
+            suggestion: `Espacez cette séance d'au moins ${Math.round(window - hours)}h supplémentaires — ou réduisez le volume ${muscleName} dans l'une des deux séances.`,
             sessionIndex: curr.sessionIndex,
           })
         } else if (hours <= window * 0.8) {
@@ -218,9 +224,9 @@ export function scoreSRA(
           alerts.push({
             severity: 'warning',
             code: 'SRA_VIOLATION',
-            title: `Récupération courte — ${muscle}`,
-            explanation: `${muscle} sollicité ${hours}h après la séance précédente. Idéal : ${Math.round(window)}h.`,
-            suggestion: `Envisagez d'espacer davantage ou de réduire l'intensité de l'une des séances.`,
+            title: `Récupération courte — ${muscleName}`,
+            explanation: `${muscleName} sollicité ${hours}h après la séance précédente. Idéal : ${Math.round(window)}h. Manque : ${Math.round(window - hours)}h.`,
+            suggestion: `Décalez cette séance ou réduisez l'intensité (sets ou charge) des exercices ciblant ${muscleName}.`,
             sessionIndex: curr.sessionIndex,
           })
         }
@@ -358,12 +364,13 @@ export function scoreRedundancy(
           if (hasUnilateralBoost && (isUnilateral(exA) !== isUnilateral(exB))) continue
         }
 
+        const combinedSets = exA.sets + exB.sets
         redundantPairs.push({ sessionIndex: si, exerciseIndexA: a, exerciseIndexB: b, reason: `Même pattern (${pA}), muscles communs : ${overlap.join(', ')}` })
         alerts.push({
           severity: 'warning',
           code: 'REDUNDANT_EXERCISES',
           title: `Redondance mécanique : ${exA.name} + ${exB.name}`,
-          explanation: `Ces deux exercices ciblent les mêmes muscles (${overlap.join(', ')}) avec le même pattern (${pA}) et une intensité similaire. Le gain marginal du second est faible.`,
+          explanation: `Ces deux exercices ciblent les mêmes muscles (${overlap.join(', ')}) avec le même pattern (${pA}) et une intensité similaire (${exA.sets} + ${exB.sets} = ${combinedSets} sets). Le gain marginal du second est faible.`,
           suggestion: "Remplacez l'un par un exercice sous un angle différent ou avec un pattern complémentaire.",
           sessionIndex: si,
           exerciseIndex: b,
@@ -653,6 +660,8 @@ const SUBSCORE_WEIGHTS = {
   progression: 0.15,
   completeness: 0.10,
   redundancy: 0.10,
+  jointLoad: 0,   // Phase 4 — not yet factored into globalScore
+  coordination: 0, // Phase 4 — not yet factored into globalScore
 }
 
 function buildNarrative(subscores: IntelligenceResult['subscores'], alerts: IntelligenceAlert[]): string {
@@ -705,7 +714,7 @@ export function buildIntelligenceResult(
     return {
       globalScore: 0,
       globalNarrative: "Ajoutez des exercices pour voir l'analyse.",
-      subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0 },
+      subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0, jointLoad: 100, coordination: 100 },
       alerts: [],
       distribution: {},
       patternDistribution: { push: 0, pull: 0, legs: 0, core: 0 },
@@ -731,6 +740,8 @@ export function buildIntelligenceResult(
     progression: progressionResult.score,
     completeness: completenessResult.score,
     redundancy: redundancyResult.score,
+    jointLoad: 100,   // Phase 4 — placeholder until jointLoad scorer is implemented
+    coordination: 100, // Phase 4 — placeholder until coordination scorer is implemented
   }
 
   const globalScore = clampScore(
