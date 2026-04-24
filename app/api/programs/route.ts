@@ -22,11 +22,18 @@ export async function GET(req: NextRequest) {
   const { data, error } = await service()
     .from('programs')
     .select(`
-      id, name, description, weeks, status, created_at,
+      id, name, description, goal, level, frequency, weeks, muscle_tags,
+      equipment_archetype, session_mode, status, is_client_visible, created_at,
       program_sessions (
         id, name, day_of_week, position, notes,
         program_exercises (
-          id, name, sets, reps, rest_sec, tempo, rir, notes, position, image_url
+          id, name, sets, reps, rest_sec, rir, notes, position, image_url,
+          movement_pattern, equipment_required, primary_muscles, secondary_muscles,
+          group_id, is_compound, target_rir, weight_increment_kg,
+          plane, mechanic, unilateral, primary_muscle, primary_activation,
+          secondary_muscles_detail, secondary_activations, stabilizers,
+          joint_stress_spine, joint_stress_knee, joint_stress_shoulder,
+          global_instability, coordination_demand, constraint_profile
         )
       )
     `)

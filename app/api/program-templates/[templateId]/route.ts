@@ -14,7 +14,11 @@ const SELECT = `
   coach_program_template_sessions (
     id, name, day_of_week, position, notes,
     coach_program_template_exercises (
-      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id
+      id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id,
+      plane, mechanic, unilateral, primary_muscle, primary_activation,
+      secondary_muscles_detail, secondary_activations, stabilizers,
+      joint_stress_spine, joint_stress_knee, joint_stress_shoulder,
+      global_instability, coordination_demand, constraint_profile
     )
   )
 `
@@ -108,6 +112,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             primary_muscles: e.primary_muscles ?? [],
             secondary_muscles: e.secondary_muscles ?? [],
             group_id: e.group_id ?? null,
+            // Biomech fields
+            plane: e.plane ?? null,
+            mechanic: e.mechanic ?? null,
+            unilateral: e.unilateral ?? false,
+            primary_muscle: e.primary_muscle ?? null,
+            primary_activation: e.primary_activation != null ? Number(e.primary_activation) : null,
+            secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+            secondary_activations: (e.secondary_activations ?? []).map(Number),
+            stabilizers: e.stabilizers ?? [],
+            joint_stress_spine: e.joint_stress_spine != null ? Number(e.joint_stress_spine) : null,
+            joint_stress_knee: e.joint_stress_knee != null ? Number(e.joint_stress_knee) : null,
+            joint_stress_shoulder: e.joint_stress_shoulder != null ? Number(e.joint_stress_shoulder) : null,
+            global_instability: e.global_instability != null ? Number(e.global_instability) : null,
+            coordination_demand: e.coordination_demand != null ? Number(e.coordination_demand) : null,
+            constraint_profile: e.constraint_profile ?? null,
           }
 
           if (e.dbId && existingExerciseIds.includes(e.dbId)) {
@@ -183,7 +202,37 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .single()
     if (ns && s.coach_program_template_exercises?.length) {
       await db.from('coach_program_template_exercises').insert(
-        s.coach_program_template_exercises.map((e: any) => ({ session_id: ns.id, name: e.name, sets: e.sets, reps: e.reps, rest_sec: e.rest_sec, rir: e.rir, notes: e.notes, position: e.position, image_url: e.image_url ?? null, movement_pattern: e.movement_pattern ?? null, equipment_required: e.equipment_required ?? [], primary_muscles: e.primary_muscles ?? [], secondary_muscles: e.secondary_muscles ?? [] }))
+        s.coach_program_template_exercises.map((e: any) => ({
+          session_id: ns.id,
+          name: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          rest_sec: e.rest_sec,
+          rir: e.rir,
+          notes: e.notes,
+          position: e.position,
+          image_url: e.image_url ?? null,
+          movement_pattern: e.movement_pattern ?? null,
+          equipment_required: e.equipment_required ?? [],
+          primary_muscles: e.primary_muscles ?? [],
+          secondary_muscles: e.secondary_muscles ?? [],
+          group_id: e.group_id ?? null,
+          // Biomech fields
+          plane: e.plane ?? null,
+          mechanic: e.mechanic ?? null,
+          unilateral: e.unilateral ?? false,
+          primary_muscle: e.primary_muscle ?? null,
+          primary_activation: e.primary_activation != null ? Number(e.primary_activation) : null,
+          secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+          secondary_activations: (e.secondary_activations ?? []).map(Number),
+          stabilizers: e.stabilizers ?? [],
+          joint_stress_spine: e.joint_stress_spine != null ? Number(e.joint_stress_spine) : null,
+          joint_stress_knee: e.joint_stress_knee != null ? Number(e.joint_stress_knee) : null,
+          joint_stress_shoulder: e.joint_stress_shoulder != null ? Number(e.joint_stress_shoulder) : null,
+          global_instability: e.global_instability != null ? Number(e.global_instability) : null,
+          coordination_demand: e.coordination_demand != null ? Number(e.coordination_demand) : null,
+          constraint_profile: e.constraint_profile ?? null,
+        }))
       )
     }
   }

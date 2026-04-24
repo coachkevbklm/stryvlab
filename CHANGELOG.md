@@ -1,5 +1,12 @@
 ## 2026-04-24
 
+FEATURE: programs/[programId] API — persist and return 14 biomech fields (plane, mechanic, unilateral, joint stress, etc.) in program_exercises insert and SELECT
+FEATURE: program-templates/[templateId] API — persist and return 14 biomech fields in coach_program_template_exercises insert, update, and duplicate POST
+FEATURE: programs/route GET — extend program_exercises SELECT to include all 14 biomech columns
+
+REFACTOR: ExerciseCard — remove manual movement pattern select, equipment pills, compound toggle, and primary muscles selector from JSX (auto-populated from catalog)
+REFACTOR: EditorPane — remove equipment_archetype select from meta row (field retained in TemplateMeta and intelligence engine)
+
 FEATURE: ExercisePicker — extend onSelect callback type with biomech fields (plane, mechanic, unilateral, joint stress, etc.) and primaryMuscles/secondaryMuscles
 FEATURE: ExercisePicker — add sourceFilter state and pills UI (Tous / Catalogue STRYVR / Mes exercices) using DS v2.0 active/inactive styles
 FEATURE: ExercisePicker — pass all biomech fields from enriched catalog entries via unknown cast in onSelect handler
