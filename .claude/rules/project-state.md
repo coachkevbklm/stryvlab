@@ -2,7 +2,55 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-24 (Exercise Catalog Biomech Enrichment — Phase 2 Complete)
+> Dernière mise à jour : 2026-04-24 (Phase 3 Performance Feedback Loops — Complete)
+
+---
+
+## 2026-04-24 — Phase 3 Performance Feedback Loops
+
+**Ce qui a été fait :**
+
+1. **`lib/programs/intelligence/performance.ts`** — module pur de détection de tendance
+   - `SessionObservation`, `SetObservation`, `PerformanceTrendResult` — types exportés
+   - `detectPerformanceTrend(sessions)` — 3 règles : Progression (volume croissant + avg RIR ≤ 4), Stagnation (delta volume < 3% + avg RIR ≥ 3), Surmenage (avg RIR ≤ 1 × 2 séances + complétion < 80%)
+   - Aucune auto-application — affichage uniquement (YAGNI)
+
+2. **`tests/lib/intelligence/performance.test.ts`** — 8 tests unitaires (tous PASS)
+   - Couverture : null < 2 séances, progression 3 séances, stagnation flat, stagnation oscillante (<3%), surmenage, surmenage sans RIR bas, null 0 séances, progression 2 séances
+
+3. **`app/api/clients/[clientId]/performance/[exerciseName]/route.ts`** — nouveau endpoint GET
+   - Auth coach + ownership check
+   - Fetch dernières 10 séances complétées → filtre par exercise_name → slice 3 plus récentes
+   - Retourne `PerformanceTrendResult` JSON
+
+4. **`components/programs/studio/ExerciseCard.tsx`** — badge tendance performance
+   - Props optionnels : `performanceTrend?` + `performanceSuggestion?`
+   - Badge pill coloré sous le nom d'exercice : ↗ Progression (vert), → Stagnation (amber), ↘ Surmenage (rouge)
+   - S'affiche uniquement si `performanceTrend !== null`
+
+5. **`components/programs/studio/EditorPane.tsx`** — wiring données performance
+   - Prop `clientId?` ajouté
+   - `trendMap` state + `fetchTrend` callback (useCallback) + useEffect (déclenché au mount et sur changement sessions)
+   - Fetch par exercice unique, non-bloquant (catch silencieux)
+   - `performanceTrend` + `performanceSuggestion` passés à chaque `ExerciseCard`
+
+6. **`components/programs/ProgramTemplateBuilder.tsx`** — `clientId` forwarded à `EditorPane`
+
+**Points de vigilance :**
+- Les badges n'apparaissent QUE si le builder a un `clientId` (cas programme assigné à un client) — sur les templates génériques, aucune donnée n'est fetché
+- `trendMap` est initialisé vide et se remplit progressivement — pas de flash, les badges apparaissent en arrière-plan
+- `fetchTrend` skip si l'exercice est déjà dans le trendMap (pas de re-fetch inutile)
+- L'endpoint lit `client_session_logs.completed_at IS NOT NULL` — les séances abandonnées sont exclues
+- La règle Surmenage nécessite les 2 conditions en AND (RIR ≤ 1 ET complétion < 80%) — RIR bas seul ou complétion basse seule ne déclenche pas
+
+**Next Steps — Phase 4 Export & Webhooks :**
+- [ ] Programme export : PDF / CSV / JSON (format natif app)
+- [ ] Webhook triggers : programme complété, performance client update, analyse morpho terminée
+- [ ] Analytics dashboard : adherence, tendances performance, progression morpho
+
+**Inngest (configuration production restante) :**
+- [ ] Ajouter `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY` en variables d'environnement Vercel
+- [ ] Syncer l'URL de l'app dans le dashboard Inngest (https://app.inngest.com → Apps → Sync)
 
 ---
 

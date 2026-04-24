@@ -1,5 +1,6 @@
 ## 2026-04-24
 
+FEATURE: Phase 3 Performance Feedback Loops — detectPerformanceTrend pure function (8 unit tests), GET /api/clients/[clientId]/performance/[exerciseName] endpoint, performance trend badges (↗/→/↘) on ExerciseCard when clientId context is active
 FEATURE: CustomExerciseModal — 6-step modal (Média, Identité, Classification, Muscles, Biomécanique, Confirmation) with Framer Motion transitions, media upload preview, full biomech sliders, DS v2.0 compliant
 FEATURE: ExercisePicker — wire CustomExerciseModal with "Créer un exercice" button; created exercise auto-added to custom list and selected
 FIX: intelligence/alternatives.ts and scoring.ts — remove invalid Record<string,unknown> casts; use typed property access on BuilderExercise directly (0 new TS errors)
