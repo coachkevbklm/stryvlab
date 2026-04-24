@@ -1,17 +1,46 @@
 import catalogData from '@/data/exercise-catalog.json'
-import type { InjuryRestriction } from './types'
+import type { InjuryRestriction, BiomechData } from './types'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface CatalogEntry {
+  id: string
   name: string
   slug: string
-  movementPattern: string
+  movementPattern: string | null
   isCompound: boolean
   stimulus_coefficient: number
+  // Biomech fields (present after merge script)
+  plane?: string | null
+  mechanic?: string | null
+  unilateral?: boolean
+  primaryMuscle?: string | null
+  primaryActivation?: number | null
+  secondaryMuscles?: string[]
+  secondaryActivations?: number[]
+  stabilizers?: string[]
+  jointStressSpine?: number | null
+  jointStressKnee?: number | null
+  jointStressShoulder?: number | null
+  globalInstability?: number | null
+  coordinationDemand?: number | null
+  constraintProfile?: string | null
 }
 
 const catalog = catalogData as CatalogEntry[]
+const catalogBySlug = new Map(catalog.map(e => [e.slug, e]))
+
+// ─── toSlug helper ────────────────────────────────────────────────────────────
+
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    // eslint-disable-next-line no-misleading-character-class
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
 
 // ─── Normalisation slugs muscles ─────────────────────────────────────────────
 // Le builder stocke les slugs FR (depuis MUSCLE_GROUPS dans ProgramTemplateBuilder).
@@ -33,6 +62,33 @@ const MUSCLE_SLUG_MAP: Record<string, string> = {
 
 export function normalizeMuscleSlug(slug: string): string {
   return MUSCLE_SLUG_MAP[slug] ?? slug
+}
+
+// ─── getBiomechData ───────────────────────────────────────────────────────────
+// Looks up biomechanical data from the enriched catalog by exercise name.
+// Returns null if the exercise is not in the catalog or lacks biomech fields.
+
+export function getBiomechData(exerciseName: string): BiomechData | null {
+  const slug = toSlug(exerciseName)
+  const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)
+  if (!entry || entry.jointStressSpine == null) return null
+
+  return {
+    plane: entry.plane ?? null,
+    mechanic: entry.mechanic ?? null,
+    unilateral: entry.unilateral ?? false,
+    primaryMuscle: entry.primaryMuscle ?? null,
+    primaryActivation: entry.primaryActivation ?? null,
+    secondaryMuscles: entry.secondaryMuscles ?? [],
+    secondaryActivations: entry.secondaryActivations ?? [],
+    stabilizers: entry.stabilizers ?? [],
+    jointStressSpine: entry.jointStressSpine,
+    jointStressKnee: entry.jointStressKnee ?? null,
+    jointStressShoulder: entry.jointStressShoulder ?? null,
+    globalInstability: entry.globalInstability ?? null,
+    coordinationDemand: entry.coordinationDemand ?? null,
+    constraintProfile: entry.constraintProfile ?? null,
+  }
 }
 
 // ─── isCompound depuis les muscles primaires ─────────────────────────────────
@@ -154,31 +210,44 @@ export function getStimulusCoeff(slug: string, movementPattern: string, isCompou
 
 // ─── Resolve coeff pour un exercice du builder ────────────────────────────────
 // Ordre de priorité :
-// 1. Correspondance exacte par nom dans le catalogue JSON (exercice standard)
-// 2. is_compound explicite du coach → getStimulusCoeff(slug_normalisé, pattern, is_compound)
-// 3. is_compound déduit depuis primary_muscles.length ≥ 2
+// 1. primaryActivation passé directement ou trouvé dans le catalogue enrichi (plus précis)
+// 2. Correspondance exacte par slug dans le catalogue JSON → stimulus_coefficient
+// 3. is_compound explicite du coach → getStimulusCoeff(slug_normalisé, pattern, is_compound)
+// 4. is_compound déduit depuis primary_muscles.length ≥ 2
 
 interface ExerciseInput {
   name: string
   movement_pattern: string | null
   primary_muscles: string[]
   is_compound: boolean | undefined
+  primaryActivation?: number | null
 }
 
 export function resolveExerciseCoeff(exercise: ExerciseInput): number {
-  const pattern = exercise.movement_pattern ?? 'unknown'
+  // Priority 1: primaryActivation from enriched catalog (most precise)
+  if (exercise.primaryActivation != null && exercise.primaryActivation > 0) {
+    return exercise.primaryActivation
+  }
 
-  // 1. Recherche dans le catalogue par nom normalisé
+  // Priority 2: catalog lookup by slug — use stimulus_coefficient (composite score)
+  // primaryActivation in catalog is EMG activation ratio (different scale), not used here
+  const slug = toSlug(exercise.name)
+  const entry = catalogBySlug.get(slug)
+  if (entry) {
+    return entry.stimulus_coefficient
+  }
+
+  // Priority 3: fallback to name match (legacy normalisation)
   const nameNorm = exercise.name.toLowerCase().trim()
   const catalogEntry = catalog.find(e => e.name.toLowerCase().trim() === nameNorm)
   if (catalogEntry) return catalogEntry.stimulus_coefficient
 
-  // 2. is_compound explicite du coach
-  const slug = nameNorm.replace(/\s+/g, '-')
+  // Priority 4: derive from is_compound + movement_pattern
   const isComp = exercise.is_compound !== undefined
     ? exercise.is_compound
     : isCompoundFromMuscles(exercise.primary_muscles)
 
+  const pattern = exercise.movement_pattern ?? 'unknown'
   return getStimulusCoeff(slug, pattern, isComp)
 }
 
@@ -198,11 +267,25 @@ const DOS_SUBGROUPS_BY_PATTERN: Record<string, string[]> = {
 /**
  * Expands muscle slugs for scoring purposes.
  * When 'dos' is present, replaces it with functional sub-groups derived from movementPattern.
+ * Optionally merges precise secondary muscles from the enriched catalog.
  * Other muscles are kept as-is (after normalization).
  */
-export function expandMusclesForScoring(muscles: string[], movementPattern: string | null): string[] {
+export function expandMusclesForScoring(
+  muscles: string[],
+  movementPattern: string | null,
+  secondaryMusclesDetail?: string[],
+): string[] {
+  // Merge precise secondary muscles from enriched catalog
+  const baseMap: Record<string, true> = {}
+  muscles.map(normalizeMuscleSlug).forEach(m => { baseMap[m] = true })
+  if (secondaryMusclesDetail && secondaryMusclesDetail.length > 0) {
+    secondaryMusclesDetail.forEach(m => { baseMap[m.toLowerCase()] = true })
+  }
+  const mergedMuscles = Object.keys(baseMap)
+
+  // Apply existing dos sub-group expansion
   const result: string[] = []
-  for (const m of muscles) {
+  for (const m of mergedMuscles) {
     const norm = normalizeMuscleSlug(m)
     if (norm === 'dos') {
       const subgroups = DOS_SUBGROUPS_BY_PATTERN[movementPattern ?? ''] ?? ['dos_large']
