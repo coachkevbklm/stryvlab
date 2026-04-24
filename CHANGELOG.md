@@ -1,5 +1,6 @@
 ## 2026-04-24
 
+FEATURE: Intelligence panel — répartition volume par faisceau musculaire précis (gluteus_medius, deltoid_posterior, etc.) avec barres horizontales animées par séance; radar agrandi (200px) + normalisation sur max; donut patterns revu avec légende inline; fiberVolumes ajouté dans SessionStats (scoring engine + types)
 FIX: ExerciseAlternativesDrawer — convert MOVEMENT_PATTERNS from raw slugs to {value, label} objects with French labels (was displaying "hip abduction", "scapular retraction" in English)
 FIX: view/page.tsx — add 6 missing patterns (scapular_elevation + 5 new) to MOVEMENT_LABELS map
 FIX: CustomExerciseModal — replace latin/slug muscle names with natural French labels in primary muscle select, secondary muscle chips, and muscle group select (values unchanged, labels only)

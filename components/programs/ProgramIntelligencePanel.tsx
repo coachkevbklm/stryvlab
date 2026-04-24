@@ -6,7 +6,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip,
 } from 'recharts'
-import { Zap, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Info, Dumbbell } from 'lucide-react'
+import { Zap, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import type { IntelligenceResult, IntelligenceAlert } from '@/lib/programs/intelligence'
 
 interface Props {
@@ -29,28 +29,85 @@ const SUBSCORE_LABELS: Record<string, string> = {
 const SCORE_COLOR = (score: number) =>
   score >= 75 ? '#1f8a65' : score >= 50 ? '#f59e0b' : '#ef4444'
 
-// Accent color for subscore label (used as a subtle tint, not for the numeric score)
 const SUBSCORE_ACCENT: Record<string, string> = {
-  jointLoad: '#f97316',   // orange — injury/load theme
-  coordination: '#8b5cf6', // purple — skill/motor control theme
+  jointLoad: '#f97316',
+  coordination: '#8b5cf6',
 }
 
 const SEVERITY_ICON = { critical: AlertCircle, warning: AlertTriangle, info: Info }
 const SEVERITY_COLOR = { critical: 'text-red-400', warning: 'text-amber-400', info: 'text-white/40' }
 
-const RADAR_MUSCLE_LABELS: Record<string, string> = {
-  dos: 'Dos', pectoraux: 'Pecto', epaules: 'Épaules',
-  biceps: 'Biceps', triceps: 'Triceps', quadriceps: 'Quad',
-  'ischio-jambiers': 'Ischio', fessiers: 'Fessiers',
-  mollets: 'Mollets', abdos: 'Abdos',
-}
+// Muscles affichés dans le radar — 10 axes
+const RADAR_MUSCLES: { key: string; label: string }[] = [
+  { key: 'dos', label: 'Dos' },
+  { key: 'pectoraux', label: 'Pecto' },
+  { key: 'epaules', label: 'Épaules' },
+  { key: 'biceps', label: 'Biceps' },
+  { key: 'triceps', label: 'Triceps' },
+  { key: 'quadriceps', label: 'Quad' },
+  { key: 'ischio-jambiers', label: 'Ischio' },
+  { key: 'fessiers', label: 'Fessiers' },
+  { key: 'mollets', label: 'Mollets' },
+  { key: 'abdos', label: 'Abdos' },
+]
 
-const MUSCLE_LABEL_FR: Record<string, string> = {
-  dos: 'Dos', pectoraux: 'Pectoraux', epaules: 'Épaules',
-  biceps: 'Biceps', triceps: 'Triceps', quadriceps: 'Quadriceps',
-  'ischio-jambiers': 'Ischio-jambiers', fessiers: 'Fessiers',
-  mollets: 'Mollets', abdos: 'Abdos', lombaires: 'Lombaires',
-  trapezes: 'Trapèzes',
+// Traduction faisceaux biomech précis → français naturel
+const FIBER_LABEL_FR: Record<string, string> = {
+  // Fessiers
+  gluteus_maximus: 'Grand fessier',
+  gluteus_medius: 'Moyen fessier',
+  gluteus_minimus: 'Petit fessier',
+  // Quadriceps
+  quadriceps: 'Quadriceps',
+  rectus_femoris: 'Droit fémoral',
+  vastus_lateralis: 'Vaste latéral',
+  vastus_medialis: 'Vaste médial',
+  // Ischio-jambiers
+  hamstrings: 'Ischio-jambiers',
+  biceps_femoris: 'Biceps fémoral',
+  semimembranosus: 'Semi-membraneux',
+  semitendinosus: 'Semi-tendineux',
+  // Dos
+  latissimus_dorsi: 'Grand dorsal',
+  rhomboids: 'Rhomboïdes',
+  trapezius: 'Trapèze',
+  trapezius_upper: 'Trapèze sup.',
+  trapezius_middle: 'Trapèze moy.',
+  trapezius_lower: 'Trapèze inf.',
+  spine_erectors: 'Érecteurs du rachis',
+  // Pectoraux
+  pectoralis_major: 'Grand pectoral',
+  pectoralis_minor: 'Petit pectoral',
+  // Épaules
+  deltoid_anterior: 'Deltoïde ant.',
+  deltoid_lateral: 'Deltoïde lat.',
+  deltoid_posterior: 'Deltoïde post.',
+  // Bras
+  biceps_brachii: 'Biceps',
+  brachialis: 'Brachial ant.',
+  brachioradialis: 'Brachio-radial',
+  triceps_brachii: 'Triceps',
+  // Mollets
+  gastrocnemius: 'Gastrocnémien',
+  soleus: 'Soléaire',
+  // Abdos / core
+  rectus_abdominis: 'Droit abdominal',
+  obliques: 'Obliques',
+  transverse_abdominis: 'Transverse',
+  core: 'Sangle abdominale',
+  // Lombaires
+  lower_back: 'Lombaires',
+  // Slugs FR grossiers (fallback)
+  dos: 'Dos (global)',
+  pectoraux: 'Pectoraux (global)',
+  epaules: 'Épaules (global)',
+  fessiers: 'Fessiers (global)',
+  'ischio-jambiers': 'Ischio-jambiers',
+  biceps: 'Biceps (global)',
+  triceps: 'Triceps (global)',
+  mollets: 'Mollets (global)',
+  abdos: 'Abdos (global)',
+  lombaires: 'Lombaires',
 }
 
 const PATTERN_LABEL_FR: Record<string, string> = {
@@ -69,24 +126,34 @@ const PATTERN_LABEL_FR: Record<string, string> = {
 
 const PIE_COLORS = ['#1f8a65', '#3b82f6', '#f59e0b', '#8b5cf6']
 
+// Couleur de barre selon intensité relative (% du max dans la séance)
+function barColor(pct: number): string {
+  if (pct >= 60) return '#1f8a65'
+  if (pct >= 30) return '#34d399'
+  return '#6ee7b7'
+}
+
 export default function ProgramIntelligencePanel({ result, onAlertClick }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [alertsExpanded, setAlertsExpanded] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
   const globalColor = SCORE_COLOR(result.globalScore)
 
-  // Radar data
-  const radarData = Object.entries(RADAR_MUSCLE_LABELS).map(([key, label]) => ({
+  // Radar — normaliser sur le max pour que le graphe soit toujours lisible
+  const radarRaw = RADAR_MUSCLES.map(({ key, label }) => ({
     muscle: label,
-    volume: Math.round(result.distribution[key] ?? 0),
+    volume: result.distribution[key] ?? 0,
+  }))
+  const radarMax = Math.max(...radarRaw.map(d => d.volume), 1)
+  const radarData = radarRaw.map(d => ({
+    muscle: d.muscle,
+    volume: Math.round((d.volume / radarMax) * 100),
   }))
 
-  // Donut data
+  // Donut patterns
   const donutData = [
     { name: 'Push', value: result.patternDistribution.push },
     { name: 'Pull', value: result.patternDistribution.pull },
@@ -98,7 +165,8 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Header + score */}
+
+      {/* ── Header + score global ── */}
       <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -110,7 +178,6 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
           </button>
         </div>
 
-        {/* Score global animé */}
         <div className="flex items-end gap-2 mb-2">
           <motion.span
             key={result.globalScore}
@@ -124,7 +191,6 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
           <span className="text-[13px] text-white/30 mb-1">/100</span>
         </div>
 
-        {/* Barre segmentée subscores */}
         <div className="flex gap-0.5 h-1.5 rounded-full overflow-hidden mb-3">
           {Object.entries(result.subscores).map(([key, val]) => (
             <div
@@ -141,7 +207,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
 
       {!collapsed && (
         <>
-          {/* Grille subscores */}
+          {/* ── Grille subscores ── */}
           <div className="grid grid-cols-2 gap-1.5">
             {Object.entries(result.subscores).map(([key, val]) => {
               const labelAccent = SUBSCORE_ACCENT[key]
@@ -154,10 +220,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
                   <p className="text-[18px] font-black leading-none" style={{ color: SCORE_COLOR(val) }}>
                     {val}
                   </p>
-                  <p
-                    className="text-[9px] mt-0.5"
-                    style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.4)' }}
-                  >
+                  <p className="text-[9px] mt-0.5" style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.4)' }}>
                     {SUBSCORE_LABELS[key] ?? key}
                   </p>
                 </div>
@@ -165,161 +228,174 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
             })}
           </div>
 
-          {/* KPIs globaux programme */}
+          {/* ── KPIs globaux ── */}
           {result.programStats.totalSets > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2.5">Volume programme</p>
               <div className="grid grid-cols-2 gap-1.5">
-                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
-                  <p className="text-[8px] text-white/40">Séries/sem.</p>
-                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.totalSets}</p>
-                </div>
-                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
-                  <p className="text-[8px] text-white/40">Reps est.</p>
-                  <p className="text-[14px] font-black text-white leading-none">
-                    {result.programStats.totalEstimatedReps >= 1000
+                {[
+                  { label: 'Séries/sem.', value: result.programStats.totalSets },
+                  {
+                    label: 'Reps est.', value: result.programStats.totalEstimatedReps >= 1000
                       ? `${(result.programStats.totalEstimatedReps / 1000).toFixed(1)}k`
-                      : result.programStats.totalEstimatedReps}
-                  </p>
+                      : result.programStats.totalEstimatedReps
+                  },
+                  { label: 'Exercices', value: result.programStats.totalExercises },
+                  { label: 'Exos/séance', value: result.programStats.avgExercisesPerSession },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
+                    <p className="text-[8px] text-white/40">{label}</p>
+                    <p className="text-[14px] font-black text-white leading-none">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Radar distribution globale ── */}
+          {mounted && radarRaw.some(d => d.volume > 0) && (
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-1">
+                Distribution musculaire
+              </p>
+              <p className="text-[9px] text-white/25 mb-3">Volume normalisé — programme complet</p>
+              <div style={{ width: '100%', height: 200 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarData} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                    <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                    <PolarAngleAxis
+                      dataKey="muscle"
+                      tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.45)', fontWeight: 600 }}
+                    />
+                    <Radar
+                      name="Volume"
+                      dataKey="volume"
+                      stroke="#1f8a65"
+                      fill="#1f8a65"
+                      fillOpacity={0.2}
+                      strokeWidth={1.5}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#0f0f0f', border: 'none', borderRadius: 8, fontSize: 10 }}
+                      itemStyle={{ color: 'rgba(255,255,255,0.7)' }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* ── Donut patterns ── */}
+          {mounted && donutData.length > 0 && (
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-3">Patterns de mouvement</p>
+              <div className="flex items-center gap-4">
+                <div style={{ width: 80, height: 80, flexShrink: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={donutData} cx="50%" cy="50%" innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
+                        {donutData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
-                  <p className="text-[8px] text-white/40">Exercices</p>
-                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.totalExercises}</p>
-                </div>
-                <div className="bg-white/[0.02] rounded-xl p-2 flex items-center justify-between gap-1.5">
-                  <p className="text-[8px] text-white/40">Exos/séance</p>
-                  <p className="text-[14px] font-black text-white leading-none">{result.programStats.avgExercisesPerSession}</p>
+                <div className="flex flex-col gap-1.5 flex-1">
+                  {donutData.map((d, i) => {
+                    const total = donutData.reduce((a, b) => a + b.value, 0)
+                    const pct = total > 0 ? Math.round((d.value / total) * 100) : 0
+                    return (
+                      <div key={d.name} className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                        <span className="text-[9px] text-white/50 flex-1">{d.name}</span>
+                        <span className="text-[9px] font-mono text-white/35">{d.value}s</span>
+                        <span className="text-[9px] font-mono text-white/25 w-7 text-right">{pct}%</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Radar + Donut stacked */}
-          {(mounted && Object.keys(result.distribution).length > 0) || (mounted && donutData.length > 0) ? (
-            <div className="flex flex-col gap-2">
-              {/* Radar musculaire */}
-              {mounted && Object.keys(result.distribution).length > 0 && (
-                <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Distribution</p>
-                  <div style={{ width: '100%', height: 150 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="rgba(255,255,255,0.06)" />
-                        <PolarAngleAxis dataKey="muscle" tick={{ fontSize: 7, fill: 'rgba(255,255,255,0.4)' }} />
-                        <Radar
-                          name="Volume"
-                          dataKey="volume"
-                          stroke="#1f8a65"
-                          fill="#1f8a65"
-                          fillOpacity={0.25}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Donut patterns */}
-              {mounted && donutData.length > 0 && (
-                <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">Patterns</p>
-                  <div style={{ width: '100%', height: 100 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={donutData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={24}
-                          outerRadius={40}
-                          dataKey="value"
-                          strokeWidth={0}
-                        >
-                          {donutData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ background: '#0f0f0f', border: 'none', borderRadius: 8, fontSize: 10 }}
-                          itemStyle={{ color: 'rgba(255,255,255,0.7)' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
-                    {donutData.map((d, i) => (
-                      <div key={d.name} className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-[8px] text-white/40">{d.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {/* Stats par séance */}
+          {/* ── Répartition par faisceau musculaire — par séance ── */}
           {result.programStats.sessionsStats.length > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2.5">Détail par séance</p>
-              <div className="flex flex-col gap-3">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-0.5">
+                Volume par faisceau musculaire
+              </p>
+              <p className="text-[9px] text-white/25 mb-3">Par séance · volume pondéré (sets × coeff stimulus)</p>
+
+              <div className="flex flex-col gap-4">
                 {result.programStats.sessionsStats.map((s, i) => {
-                  const sessionTotalVol = Object.values(s.muscleVolumes).reduce((a, b) => a + b, 0)
+                  const fibers = Object.entries(s.fiberVolumes).sort(([, a], [, b]) => b - a)
+                  if (fibers.length === 0) return null
+
+                  const maxVol = fibers[0][1]
 
                   return (
-                    <div key={i} className="border-t border-white/[0.04] pt-2.5 first:border-0 first:pt-0">
+                    <div key={i}>
                       {/* En-tête séance */}
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-[10px] font-semibold text-white/70 truncate min-w-0 flex-1 mr-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-semibold text-white/70 truncate flex-1 mr-2">
                           {s.name || `Séance ${i + 1}`}
                         </p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[9px] text-white/40 font-mono">{s.totalSets} s.</span>
-                          <span className="text-[9px] text-white/25">·</span>
-                          <span className="text-[9px] text-white/40 font-mono">{s.exerciseCount} ex.</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[9px] text-white/30 font-mono">{s.totalSets}s</span>
+                          <span className="text-[9px] text-white/15">·</span>
+                          <span className="text-[9px] text-white/30 font-mono">{s.exerciseCount} ex.</span>
                         </div>
                       </div>
 
-                      {/* Barres muscles top 3 */}
-                      {s.topMuscles.length > 0 && (
-                        <div className="flex flex-col gap-1 mb-1.5">
-                          {s.topMuscles.map(muscle => {
-                            const vol = s.muscleVolumes[muscle] ?? 0
-                            const pct = sessionTotalVol > 0 ? Math.round((vol / sessionTotalVol) * 100) : 0
-                            return (
-                              <div key={muscle} className="flex items-center gap-1.5">
-                                <span className="text-[9px] text-white/35 w-[56px] shrink-0 truncate">
-                                  {MUSCLE_LABEL_FR[muscle] ?? muscle}
-                                </span>
-                                <div className="flex-1 h-1 bg-white/[0.04] rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full bg-[#1f8a65]"
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                                <span className="text-[9px] text-white/25 font-mono w-7 text-right">{pct}%</span>
+                      {/* Barres faisceaux */}
+                      <div className="flex flex-col gap-1.5">
+                        {fibers.map(([fiber, vol]) => {
+                          const pct = maxVol > 0 ? Math.round((vol / maxVol) * 100) : 0
+                          const label = FIBER_LABEL_FR[fiber] ?? fiber.replace(/_/g, ' ')
+                          const color = barColor(pct)
+                          return (
+                            <div key={fiber} className="flex items-center gap-2">
+                              <span
+                                className="text-[9px] text-white/40 shrink-0 text-right"
+                                style={{ width: 96 }}
+                              >
+                                {label}
+                              </span>
+                              <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ backgroundColor: color }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                                />
                               </div>
-                            )
-                          })}
-                        </div>
-                      )}
+                              <span className="text-[9px] font-mono text-white/25 w-8 text-right shrink-0">
+                                {vol.toFixed(1)}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
 
-                      {/* Patterns présents */}
+                      {/* Patterns de la séance */}
                       {s.patterns.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {s.patterns.slice(0, 4).map(p => (
-                            <span
-                              key={p}
-                              className="text-[9px] font-medium text-white/35 bg-white/[0.04] px-1.5 py-0.5 rounded"
-                            >
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {s.patterns.slice(0, 5).map(p => (
+                            <span key={p} className="text-[8px] font-medium text-white/30 bg-white/[0.03] px-1.5 py-0.5 rounded">
                               {PATTERN_LABEL_FR[p] ?? p}
                             </span>
                           ))}
-                          {s.patterns.length > 4 && (
-                            <span className="text-[9px] text-white/20">+{s.patterns.length - 4}</span>
+                          {s.patterns.length > 5 && (
+                            <span className="text-[8px] text-white/20">+{s.patterns.length - 5}</span>
                           )}
                         </div>
+                      )}
+
+                      {/* Séparateur entre séances */}
+                      {i < result.programStats.sessionsStats.length - 1 && (
+                        <div className="mt-3 h-px bg-white/[0.04]" />
                       )}
                     </div>
                   )
@@ -328,7 +404,7 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
             </div>
           )}
 
-          {/* Alertes */}
+          {/* ── Alertes ── */}
           {result.alerts.length > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">

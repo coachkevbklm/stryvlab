@@ -944,12 +944,23 @@ export function buildIntelligenceResult(
     const patterns = Array.from(new Set(exs.map(e => e.movement_pattern).filter((p): p is string => !!p)))
 
     const muscleVolumes: Record<string, number> = {}
+    const fiberVolumes: Record<string, number> = {}
     for (const ex of exs) {
       const vol = weightedVolume(ex)
       ex.primary_muscles.forEach(m => {
         const norm = normalizeMuscleSlug(m)
         muscleVolumes[norm] = (muscleVolumes[norm] ?? 0) + vol
       })
+      // Faisceau précis biomech (ex: gluteus_medius, deltoid_posterior)
+      if (ex.primaryMuscle) {
+        fiberVolumes[ex.primaryMuscle] = (fiberVolumes[ex.primaryMuscle] ?? 0) + vol
+      } else {
+        // Fallback: même slug FR grossier que muscleVolumes
+        ex.primary_muscles.forEach(m => {
+          const norm = normalizeMuscleSlug(m)
+          fiberVolumes[norm] = (fiberVolumes[norm] ?? 0) + vol
+        })
+      }
     }
 
     const topMuscles = Object.entries(muscleVolumes)
@@ -965,6 +976,7 @@ export function buildIntelligenceResult(
       patterns,
       topMuscles,
       muscleVolumes,
+      fiberVolumes,
     }
   })
 

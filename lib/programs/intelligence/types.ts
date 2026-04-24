@@ -45,6 +45,7 @@ export interface SessionStats {
   patterns: string[]          // slugs uniques présents dans la séance
   topMuscles: string[]        // 3 groupes musculaires les plus sollicités (slugs FR)
   muscleVolumes: Record<string, number>  // slug FR → weighted volume in THIS session
+  fiberVolumes: Record<string, number>   // primaryMuscle biomech (ex: gluteus_medius) → weighted volume
 }
 
 export interface ProgramStats {
