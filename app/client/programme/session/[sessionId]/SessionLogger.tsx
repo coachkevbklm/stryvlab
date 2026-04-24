@@ -434,11 +434,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     // Flush final de tous les sets avant de marquer completed
     if (logId) {
       try {
-        await fetch(`/api/session-logs/${logId}/sets`, {
+        const flushRes = await fetch(`/api/session-logs/${logId}/sets`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ set_logs: sets }),
         })
+        if (!flushRes.ok) {
+          console.warn('[SessionLogger] flush final échoué', flushRes.status)
+        }
       } catch {
         // On continue même si le flush échoue — les données ont été patchées live
       }

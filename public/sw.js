@@ -9,9 +9,8 @@ const STATIC_ASSETS = [
   '/manifest.json',
 ]
 
-// Patterns d'URL qui ne doivent PAS être mis en cache
+// Patterns d'URL qui ne doivent PAS être mis en cache (hors API — gérée par networkFirst ci-dessous)
 const NO_CACHE_PATTERNS = [
-  /\/api\//,
   /supabase/,
   /\.hot-update\./,
 ]
