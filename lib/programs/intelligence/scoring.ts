@@ -650,18 +650,151 @@ export function scoreCompleteness(
   return { score, alerts, missingPatterns: missing }
 }
 
+// ─── 7. Joint Load ────────────────────────────────────────────────────────────
+
+const BODY_PART_TO_JOINT: Record<string, 'spine' | 'knee' | 'shoulder'> = {
+  lower_back: 'spine',
+  upper_back: 'spine',
+  lumbar: 'spine',
+  spine: 'spine',
+  knee_left: 'knee',
+  knee_right: 'knee',
+  knee: 'knee',
+  shoulder_left: 'shoulder',
+  shoulder_right: 'shoulder',
+  shoulder: 'shoulder',
+  rotator_cuff: 'shoulder',
+}
+
+function scoreJointLoad(
+  sessions: BuilderSession[],
+  profile?: IntelligenceProfile,
+): { score: number; alerts: IntelligenceAlert[] } {
+  const alerts: IntelligenceAlert[] = []
+
+  if (!profile || profile.injuries.length === 0) return { score: 80, alerts }
+
+  const injuredJoints = profile.injuries
+    .map(inj => ({ joint: BODY_PART_TO_JOINT[inj.bodyPart], severity: inj.severity }))
+    .filter((x): x is { joint: 'spine' | 'knee' | 'shoulder'; severity: 'avoid' | 'limit' | 'monitor' } => !!x.joint)
+
+  if (injuredJoints.length === 0) return { score: 80, alerts }
+
+  let scoreDeduction = 0
+  const allExercises = sessions.flatMap(s => s.exercises)
+  const totalSets = allExercises.reduce((sum, e) => sum + e.sets, 0)
+  if (totalSets === 0) return { score: 80, alerts }
+
+  for (const { joint, severity } of injuredJoints) {
+    const stressField = joint === 'spine'
+      ? 'jointStressSpine'
+      : joint === 'knee'
+      ? 'jointStressKnee'
+      : 'jointStressShoulder'
+
+    const withData = allExercises.filter(
+      e => (e as Record<string, unknown>)[stressField] != null
+    )
+    if (withData.length === 0) continue
+
+    const weightedSum = withData.reduce((sum, e) => {
+      const stress = (e as Record<string, unknown>)[stressField] as number
+      return sum + stress * e.sets
+    }, 0)
+    const weightedSets = withData.reduce((sum, e) => sum + e.sets, 0)
+    const weightedAvg = weightedSum / weightedSets
+
+    const criticalThreshold = severity === 'avoid' ? 5 : 6
+    const warningThreshold = severity === 'avoid' ? 3 : 4
+    const jointLabel = joint === 'spine' ? 'rachis' : joint === 'knee' ? 'genou' : 'épaule'
+
+    if (weightedAvg >= criticalThreshold) {
+      alerts.push({
+        severity: 'critical',
+        code: 'JOINT_OVERLOAD',
+        title: `Surcharge articulaire — ${jointLabel}`,
+        explanation: `Stress moyen pondéré sur le ${jointLabel} : ${weightedAvg.toFixed(1)}/8. Niveau de restriction : ${severity}.`,
+        suggestion: `Remplacez les exercices à fort stress ${jointLabel} par des variantes machine ou avec câble.`,
+      })
+      scoreDeduction += severity === 'avoid' ? 30 : 20
+    } else if (weightedAvg >= warningThreshold) {
+      alerts.push({
+        severity: 'warning',
+        code: 'JOINT_OVERLOAD',
+        title: `Charge articulaire élevée — ${jointLabel}`,
+        explanation: `Stress moyen pondéré sur le ${jointLabel} : ${weightedAvg.toFixed(1)}/8.`,
+        suggestion: `Surveillez la récupération articulaire et envisagez de réduire le volume sur cette zone.`,
+      })
+      scoreDeduction += 10
+    }
+  }
+
+  return { score: Math.max(0, 100 - scoreDeduction), alerts }
+}
+
+// ─── 8. Coordination demand ───────────────────────────────────────────────────
+
+function scoreCoordination(
+  sessions: BuilderSession[],
+  meta: TemplateMeta,
+): { score: number; alerts: IntelligenceAlert[] } {
+  const alerts: IntelligenceAlert[] = []
+
+  if (meta.level !== 'beginner') return { score: 100, alerts }
+
+  const allExercises = sessions.flatMap(s => s.exercises)
+  const withData = allExercises.filter(
+    e =>
+      (e as Record<string, unknown>).coordinationDemand != null ||
+      (e as Record<string, unknown>).globalInstability != null
+  )
+
+  if (withData.length === 0) return { score: 100, alerts }
+
+  const avg =
+    withData.reduce((sum, e) => {
+      const coord = ((e as Record<string, unknown>).coordinationDemand as number | null) ?? 5
+      const instab = ((e as Record<string, unknown>).globalInstability as number | null) ?? 5
+      return sum + (coord + instab) / 2
+    }, 0) / withData.length
+
+  if (avg > 7.5) {
+    alerts.push({
+      severity: 'critical',
+      code: 'COORDINATION_MISMATCH',
+      title: 'Exercices trop complexes pour débutant',
+      explanation: `Score moyen coordination/instabilité : ${avg.toFixed(1)}/9. Ces exercices nécessitent un apprentissage moteur avancé.`,
+      suggestion: `Remplacez par des exercices guidés (machine, câble) avec coordination ≤ 5 pour commencer.`,
+    })
+    return { score: 40, alerts }
+  }
+
+  if (avg > 6) {
+    alerts.push({
+      severity: 'warning',
+      code: 'COORDINATION_MISMATCH',
+      title: 'Complexité élevée pour niveau débutant',
+      explanation: `Score moyen coordination : ${avg.toFixed(1)}/9.`,
+      suggestion: `Privilégiez des exercices plus guidés en début de programme.`,
+    })
+    return { score: 70, alerts }
+  }
+
+  return { score: 100, alerts }
+}
+
 // ─── Agrégation finale ────────────────────────────────────────────────────────
 
 // Poids des subscores dans le globalScore
 const SUBSCORE_WEIGHTS = {
-  balance: 0.25,
-  recovery: 0.25,
+  balance: 0.20,
+  recovery: 0.20,
   specificity: 0.15,
-  progression: 0.15,
+  progression: 0.10,
   completeness: 0.10,
   redundancy: 0.10,
-  jointLoad: 0,   // Phase 4 — not yet factored into globalScore
-  coordination: 0, // Phase 4 — not yet factored into globalScore
+  jointLoad: 0.10,
+  coordination: 0.05,
 }
 
 function buildNarrative(subscores: IntelligenceResult['subscores'], alerts: IntelligenceAlert[]): string {
@@ -732,6 +865,8 @@ export function buildIntelligenceResult(
   const progressionResult = scoreProgression(filteredSessions, meta)
   const specificityResult = scoreSpecificity(filteredSessions, meta, profile, morphoStimulusAdjustments)
   const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
+  const jointLoadResult = scoreJointLoad(filteredSessions, profile)
+  const coordinationResult = scoreCoordination(filteredSessions, meta)
 
   const subscores = {
     balance: balanceResult.score,
@@ -740,8 +875,8 @@ export function buildIntelligenceResult(
     progression: progressionResult.score,
     completeness: completenessResult.score,
     redundancy: redundancyResult.score,
-    jointLoad: 100,   // Phase 4 — placeholder until jointLoad scorer is implemented
-    coordination: 100, // Phase 4 — placeholder until coordination scorer is implemented
+    jointLoad: jointLoadResult.score,
+    coordination: coordinationResult.score,
   }
 
   const globalScore = clampScore(
@@ -757,6 +892,8 @@ export function buildIntelligenceResult(
     ...progressionResult.alerts,
     ...specificityResult.alerts,
     ...completenessResult.alerts,
+    ...jointLoadResult.alerts,
+    ...coordinationResult.alerts,
   ].sort((a, b) => {
     const order: Record<string, number> = { critical: 0, warning: 1, info: 2 }
     return order[a.severity] - order[b.severity]
