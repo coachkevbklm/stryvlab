@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { analyzeMorphoJob } from '@/jobs/morpho/analyzeMorphoJob'
+import { inngest } from '@/lib/inngest/client'
 
 function service() {
   return createServiceClient(
@@ -124,13 +124,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Erreur création analyse' }, { status: 500 })
   }
 
-  // Démarrer le job async (fire and forget)
-  // TODO: Remplacer par une vraie queue (Inngest, Bull) en production
-  const morphoId = morphoAnalysis.id
-  setImmediate(() => {
-    analyzeMorphoJob(morphoId).catch((err: unknown) => {
-      console.error('[morpho/analyze] Erreur job async:', err)
-    })
+  // Envoyer l'événement Inngest — job géré avec retry, timeout et observabilité
+  await inngest.send({
+    name: 'morpho/analyze.requested',
+    data: { morphoAnalysisId: morphoAnalysis.id },
   })
 
   return NextResponse.json(
