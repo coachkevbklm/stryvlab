@@ -143,6 +143,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   return (
     <SessionLogger
       clientId={client.id}
+      sessionId={params.sessionId}
       session={{ id: session.id, name: session.name }}
       exercises={exercisesWithAlternatives}
       lastPerformance={lastPerformance}

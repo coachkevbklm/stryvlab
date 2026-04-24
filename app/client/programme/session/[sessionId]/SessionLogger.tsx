@@ -54,6 +54,7 @@ interface LastPerf {
 
 interface Props {
   clientId: string
+  sessionId: string
   session: { id: string; name: string }
   exercises: Exercise[]
   lastPerformance: Record<string, LastPerf[]>
@@ -124,7 +125,7 @@ function sideColor(side: 'left' | 'right' | 'bilateral') {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SessionLogger({ clientId, session, exercises, lastPerformance }: Props) {
+export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance }: Props) {
   const router = useRouter()
   const { t } = useClientT()
   const [sets, setSets] = useState<SetLog[]>(() => buildInitialSets(exercises))
@@ -139,6 +140,12 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
   const [altSheetTarget, setAltSheetTarget] = useState<number | null>(null)
+
+  // ── Live save ──
+  const sessionLogIdRef = useRef<string | null>(null)
+  const [draftReady, setDraftReady] = useState(false)
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const DRAFT_KEY = `draft_session_log_id_${sessionId}`
 
   // ── Chrono repos ──
   // restElapsed : secondes écoulées depuis le début du chrono (peut dépasser restPrescribed → overtime)
@@ -159,6 +166,21 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
   const longPressStartRef = useRef<number | null>(null)
   const LONG_PRESS_DURATION = 3000
 
+  // Envoie un upsert des sets actuels d'un exercice vers la DB (fire-and-forget)
+  async function patchSets(currentSets: SetLog[]) {
+    const logId = sessionLogIdRef.current
+    if (!logId) return
+    try {
+      await fetch(`/api/session-logs/${logId}/sets`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ set_logs: currentSets }),
+      })
+    } catch {
+      // Erreur réseau silencieuse — les données sont en state React
+    }
+  }
+
   const currentEx = exercises[currentExIndex]
   const isFirst = currentExIndex === 0
   const isLast = currentExIndex === exercises.length - 1
@@ -173,6 +195,58 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
     const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000)
     return () => clearInterval(iv)
   }, [startTime])
+
+  // ── Création ou récupération du draft session log au montage ──
+  useEffect(() => {
+    async function initDraft() {
+      const existingId = localStorage.getItem(DRAFT_KEY)
+
+      if (existingId) {
+        // Vérifier que ce log existe encore en DB et n'est pas terminé
+        try {
+          const res = await fetch(`/api/session-logs/${existingId}/sets`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ set_logs: [] }),
+          })
+          if (res.ok) {
+            sessionLogIdRef.current = existingId
+            setDraftReady(true)
+            return
+          }
+        } catch {
+          // Log invalide ou réseau coupé — on en crée un nouveau
+        }
+        localStorage.removeItem(DRAFT_KEY)
+      }
+
+      // Créer un nouveau session log
+      try {
+        const res = await fetch('/api/session-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            program_session_id: session.id,
+            session_name: session.name,
+            set_logs: [],
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newId = data?.session_log?.id
+          if (newId) {
+            sessionLogIdRef.current = newId
+            localStorage.setItem(DRAFT_KEY, newId)
+          }
+        }
+      } catch {
+        // Pas de réseau au démarrage — on fonctionnera sans live save
+      }
+      setDraftReady(true)
+    }
+    initDraft()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Chrono repos — tick ──
   useEffect(() => {
@@ -250,29 +324,32 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
           ? { ...s, ...patch }
           : s
       )
-      // Déclenchement chrono par saisie : si reps OU poids rempli et set pas encore complété
       const updated = next.find(s => s.exercise_id === exId && s.set_number === setNum && s.side === side)
       if (updated && !updated.completed && (updated.actual_reps || updated.actual_weight_kg)) {
         const ex = exercises.find(e => e.id === exId)
-        // Démarrer le repos seulement si pas déjà en cours pour ce set
         const alreadyTracking = pendingRestSet?.exId === exId && pendingRestSet?.setNum === setNum && pendingRestSet?.side === side
         if (!alreadyTracking) {
           startRest(exId, setNum, side, ex?.rest_sec ?? null)
         } else {
-          scheduleModalOpen() // reset inactivité
+          scheduleModalOpen()
         }
       }
+      // Debounce 800ms sur la saisie clavier
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+      const exSetsUpdated = next.filter(s => s.exercise_id === exId)
+      saveDebounceRef.current = setTimeout(() => {
+        patchSets(exSetsUpdated)
+      }, 800)
       return next
     })
   }
 
   function toggleSet(exId: string, setNum: number, side: string, restSec: number | null) {
-    setSets(prev =>
-      prev.map(s => {
+    setSets(prev => {
+      const next = prev.map(s => {
         if (s.exercise_id !== exId || s.set_number !== setNum || s.side !== side) return s
         const nowCompleted = !s.completed
         if (nowCompleted) {
-          // Ne relance le repos que si pas déjà en cours pour CE set
           const alreadyTracking = pendingRestSet?.exId === exId && pendingRestSet?.setNum === setNum && pendingRestSet?.side === side
           if (!alreadyTracking) {
             startRest(exId, setNum, side, restSec)
@@ -280,7 +357,11 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
         }
         return { ...s, completed: nowCompleted }
       })
-    )
+      // Patch immédiat sur la coche — intentionnel, pas de debounce
+      const exSetsUpdated = next.filter(s => s.exercise_id === exId)
+      patchSets(exSetsUpdated)
+      return next
+    })
   }
 
   // Sets de l'exercice courant
@@ -336,64 +417,86 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
     setSaveState('saving')
     setErrorMsg(null)
     const durationMin = Math.round(elapsed / 60)
+    const logId = sessionLogIdRef.current
 
-    let sessionLogId: string | null = null
-
-    try {
-      const res = await fetch('/api/session-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          program_session_id: session.id,
-          session_name: session.name,
-          exercise_notes: exerciseNotes,
-          set_logs: sets.map(s => ({
-            exercise_id: s.exercise_id,
-            exercise_name: s.exercise_name,
-            set_number: s.set_number,
-            side: s.side,
-            planned_reps: s.planned_reps,
-            actual_reps: s.actual_reps ? parseInt(s.actual_reps) : null,
-            actual_weight_kg: s.actual_weight_kg ? parseFloat(s.actual_weight_kg) : null,
-            completed: s.completed,
-            rir_actual: s.rir_actual ? parseInt(s.rir_actual) : null,
-            notes: s.notes || null,
-            rest_sec_actual: s.rest_sec_actual ?? null,
-          })),
-        }),
-      })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error ?? `Erreur serveur (${res.status})`)
+    // Flush final de tous les sets avant de marquer completed
+    if (logId) {
+      try {
+        await fetch(`/api/session-logs/${logId}/sets`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ set_logs: sets }),
+        })
+      } catch {
+        // On continue même si le flush échoue — les données ont été patchées live
       }
-
-      const data = await res.json()
-      sessionLogId = data?.session_log?.id ?? null
-    } catch (err) {
-      setSaveState('error')
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
-      return
     }
 
-    if (sessionLogId) {
+    // Marquer la séance comme terminée
+    if (logId) {
       try {
-        await fetch(`/api/session-logs/${sessionLogId}`, {
+        await fetch(`/api/session-logs/${logId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ completed: true, duration_min: durationMin }),
         })
-      } catch {
-        // Silent — session data preserved
+      } catch (err) {
+        setSaveState('error')
+        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
+        return
+      }
+    } else {
+      // Fallback : pas de logId (réseau coupé au démarrage) — POST complet
+      try {
+        const res = await fetch('/api/session-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            program_session_id: session.id,
+            session_name: session.name,
+            exercise_notes: exerciseNotes,
+            set_logs: sets.map(s => ({
+              exercise_id: s.exercise_id,
+              exercise_name: s.exercise_name,
+              set_number: s.set_number,
+              side: s.side,
+              planned_reps: s.planned_reps,
+              actual_reps: s.actual_reps ? parseInt(s.actual_reps) : null,
+              actual_weight_kg: s.actual_weight_kg ? parseFloat(s.actual_weight_kg) : null,
+              completed: s.completed,
+              rir_actual: s.rir_actual ? parseInt(s.rir_actual) : null,
+              notes: s.notes || null,
+              rest_sec_actual: s.rest_sec_actual ?? null,
+            })),
+          }),
+        })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body?.error ?? `Erreur serveur (${res.status})`)
+        }
+        const data = await res.json()
+        const newLogId = data?.session_log?.id
+        if (newLogId) {
+          await fetch(`/api/session-logs/${newLogId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ completed: true, duration_min: durationMin }),
+          }).catch(() => {})
+          setSaveState('idle')
+          localStorage.removeItem(DRAFT_KEY)
+          router.push(`/client/programme/recap/${newLogId}`)
+          return
+        }
+      } catch (err) {
+        setSaveState('error')
+        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
+        return
       }
     }
 
     setSaveState('idle')
-    if (sessionLogId) {
-      router.push(`/client/programme/recap/${sessionLogId}`)
-    } else {
-      router.push('/client/programme')
-    }
+    localStorage.removeItem(DRAFT_KEY)
+    router.push(`/client/programme/recap/${logId}`)
   }
 
   function handleSwap(exerciseId: string, newName: string) {
@@ -419,12 +522,7 @@ export default function SessionLogger({ clientId, session, exercises, lastPerfor
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.07] hover:text-white/70 transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
+          <div className="h-9 w-9" />
           <div className="text-center">
             <p className="text-[13px] font-bold text-white">{session.name}</p>
             <p className="text-[11px] text-white/40 font-mono mt-0.5">{formatTime(elapsed)}</p>
