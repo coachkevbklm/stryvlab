@@ -1,5 +1,8 @@
 ## 2026-04-24
 
+FEATURE: CustomExerciseModal — 6-step modal (Média, Identité, Classification, Muscles, Biomécanique, Confirmation) with Framer Motion transitions, media upload preview, full biomech sliders, DS v2.0 compliant
+FEATURE: ExercisePicker — wire CustomExerciseModal with "Créer un exercice" button; created exercise auto-added to custom list and selected
+FIX: intelligence/alternatives.ts and scoring.ts — remove invalid Record<string,unknown> casts; use typed property access on BuilderExercise directly (0 new TS errors)
 FEATURE: Display jointLoad and coordination subscores in ProgramIntelligencePanel — amber/orange theme for jointLoad, purple for coordination, with matching labels in LabModeSection debug view and rule transparency section
 FEATURE: Extend POST /api/exercises/custom Zod schema with full biomech fields — description, media_url, media_type, plane, mechanic, unilateral, primary_muscle, primary_activation, secondary_muscles_detail, secondary_activations, stabilizers, joint_stress_spine, joint_stress_knee, joint_stress_shoulder, global_instability, coordination_demand, constraint_profile; all fields now persisted in DB insert
 

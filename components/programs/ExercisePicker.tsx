@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Search, X, SlidersHorizontal, Check, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal, Check, ChevronDown, Plus } from "lucide-react";
 import exerciseCatalog from "@/data/exercise-catalog.json";
+import CustomExerciseModal from "@/components/programs/CustomExerciseModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
 
   const [sourceFilter, setSourceFilter] = useState<'all' | 'stryvr' | 'custom'>('all')
   const [customExercises, setCustomExercises] = useState<CatalogEntry[]>([])
+  const [showCustomModal, setShowCustomModal] = useState(false)
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -455,7 +457,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
           </div>
         )}
 
-        {/* Source filter pills */}
+        {/* Source filter pills + Create button */}
         <div className="px-4 pt-2 pb-1 flex items-center gap-2 shrink-0">
           {(
             [
@@ -477,6 +479,15 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
               {label}
             </button>
           ))}
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setShowCustomModal(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-white/[0.04] text-white/50 hover:bg-white/[0.07] hover:text-white/80 transition-all"
+          >
+            <Plus size={11} />
+            Créer un exercice
+          </button>
         </div>
 
         {/* Results count */}
@@ -486,6 +497,32 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
             {search || activeFiltersCount > 0 ? " trouvés" : " disponibles"}
           </p>
         </div>
+
+        {/* Custom Exercise Modal */}
+        {showCustomModal && (
+          <CustomExerciseModal
+            onClose={() => setShowCustomModal(false)}
+            onCreated={(ex) => {
+              const newEntry: CatalogEntry = {
+                id: `custom-${Date.now()}`,
+                name: ex.name,
+                slug: ex.name.toLowerCase().replace(/\s+/g, '-'),
+                gifUrl: ex.mediaUrl,
+                muscleGroup: 'custom',
+                exerciseType: 'exercise',
+                pattern: ex.movementPattern ? [ex.movementPattern] : [],
+                movementPattern: ex.movementPattern || null,
+                equipment: ex.equipment,
+                isCompound: ex.isCompound,
+                muscles: ex.primaryMuscle ? [ex.primaryMuscle] : [],
+                source: 'custom',
+              }
+              setCustomExercises(prev => [...prev, newEntry])
+              setSourceFilter('custom')
+              setShowCustomModal(false)
+            }}
+          />
+        )}
 
         {/* Grid */}
         <div className="overflow-y-auto flex-1 px-3 pb-4">

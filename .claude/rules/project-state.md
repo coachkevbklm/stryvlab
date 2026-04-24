@@ -2,7 +2,108 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-23 (PWA Service Worker Strategy)
+> Dernière mise à jour : 2026-04-24 (Exercise Catalog Biomech Enrichment — Phase 2 Complete)
+
+---
+
+## 2026-04-24 — Exercise Catalog Biomech Enrichment — Phase 2 Complete
+
+**Ce qui a été fait :**
+
+1. **`scripts/merge-exercise-catalog.ts`** — script de fusion CSV → catalog.json
+   - Parse 10 CSV depuis `public/bibliotheque_exercices/*/schema-*.csv`
+   - Match par slug (priorité : map manuelle → auto-slug) — 363/458 exercices enrichis
+   - `scripts/exercise-id-map.json` — 27 mappings manuels pour les exercices dont le nom CSV diffère du slug catalog
+
+2. **`supabase/migrations/20260423_coach_custom_exercises_biomech.sql`** — 17 colonnes biomech sur `coach_custom_exercises`
+   - `media_url`, `media_type`, `plane`, `mechanic`, `unilateral`, `primary_muscle`, `primary_activation`, `secondary_muscles_detail`, `secondary_activations`, `stabilizers`, `joint_stress_spine`, `joint_stress_knee`, `joint_stress_shoulder`, `global_instability`, `coordination_demand`, `constraint_profile`
+
+3. **`supabase/migrations/20260423_program_exercises_biomech.sql`** — 14 colonnes biomech sur `coach_program_template_exercises` et `program_exercises`
+
+4. **`lib/programs/intelligence/types.ts`** — `BiomechData` interface + `BuilderExercise` étendu avec 14 champs biomech optionnels + `jointLoad` et `coordination` dans `IntelligenceResult.subscores`
+
+5. **`lib/programs/intelligence/catalog-utils.ts`** — `getBiomechData(exerciseName)`, `catalogBySlug` map, `toSlug` helper, `resolveExerciseCoeff` prioritise `primaryActivation`
+
+6. **`lib/programs/intelligence/scoring.ts`** — 2 nouveaux sous-moteurs
+   - `scoreJointLoad(sessions, profile?)` — émet `JOINT_OVERLOAD` critical/warning basé sur stress articulaire pondéré × sets, mappé aux blessures du profil client
+   - `scoreCoordination(sessions, meta)` — débutants uniquement, émet `COORDINATION_MISMATCH` si avg(coord+instab)/2 > 6 (warning) ou > 7.5 (critical)
+   - `SUBSCORE_WEIGHTS` mis à jour (8 sous-moteurs, total = 1.00)
+
+7. **`lib/programs/intelligence/alternatives.ts`** — 3 nouveaux critères de scoring
+   - Constraint profile match (+15), unilateral match (+10), activation delta penalty (0 à −15)
+
+8. **`app/api/exercises/custom/upload-media/route.ts`** — endpoint POST upload média vers Supabase Storage `exercise-media`
+
+9. **`app/api/exercises/custom/route.ts`** — schema Zod complet avec tous les champs biomech requis
+
+10. **`components/programs/CustomExerciseModal.tsx`** — modal 6 étapes (Média, Identité, Classification, Muscles, Biomécanique, Confirmation) avec Framer Motion, upload media preview, sliders biomech, DS v2.0
+
+11. **`components/programs/ExercisePicker.tsx`** — intégration `CustomExerciseModal` avec bouton "Créer un exercice", filter pills source (Tous/STRYVR/Mes exercices)
+
+12. **`components/programs/ProgramIntelligencePanel.tsx`** + **`LabModeSection.tsx`** — affichage `jointLoad` (orange) et `coordination` (violet) dans la grille subscores et les règles actives
+
+13. **`components/programs/studio/ExerciseCard.tsx`** + **`EditorPane.tsx`** — suppression des champs manuels (pattern, equipment, muscles, is_compound) — maintenant auto-populés depuis le catalogue
+
+14. **`tests/lib/intelligence/biomech-scoring.test.ts`** — 8 tests (JOINT_OVERLOAD critical/warning/no-injury, COORDINATION_MISMATCH critical/warning/intermediate, scoreAlternatives no-crash)
+
+**Points de vigilance :**
+- `getBiomechData()` retourne `null` si `jointStressSpine == null` — les exercices non-enrichis ne déclenchent pas de scoring articulaire
+- `scoreJointLoad` mappe `lower_back → spine`, `knee_left/right → knee`, `shoulder_left/right → shoulder` via `BODY_PART_TO_JOINT`
+- Les casts `as Record<string, unknown>` remplacés par accès direct sur `BuilderExercise` (les champs sont maintenant typés dans l'interface)
+- `CustomExerciseModal` : le step Confirmation affiche un résumé read-only avant soumission — la validation des champs requis est par étape
+- Les 4 tests pré-existants en échec (`biomechanics-phase2.test.ts` × 3, `catalog-utils.test.ts` × 1) ne sont PAS liés aux changements de cette session
+- Migration `20260423_coach_custom_exercises_biomech.sql` à appliquer manuellement via Supabase Dashboard SQL Editor
+
+**Next Steps — Phase 3 Feedback Loops :**
+- [ ] RIR + completion rate tracking depuis `client_set_logs` — détecter stagnation, overtraining, under-stimulation
+- [ ] Auto-recommandations : volume ±1 set, intensité ±5%, swap exercice, extension récupération
+- [ ] Morpho-performance correlation : delta body comp → program outcome
+
+---
+
+## 2026-04-24 — Session Logger Live Save + PWA Temps Réel
+
+**Ce qui a été fait :**
+
+1. **`supabase/migrations/20260423_set_logs_unique.sql`** — contrainte UNIQUE sur `client_set_logs`
+   - `UNIQUE (session_log_id, exercise_name, set_number, side)` — requis pour l'upsert idempotent
+   - Migration à appliquer manuellement via Supabase Dashboard SQL Editor (CLI non configurée)
+
+2. **`app/api/session-logs/[logId]/sets/route.ts`** — nouveau endpoint PATCH
+   - Upsert des sets via la contrainte unique — pas de doublons possibles
+   - Ownership check : log doit appartenir au client connecté ET avoir `completed_at IS NULL`
+   - FK violation (code 23503) → retourne 409 explicite
+
+3. **`SessionLogger.tsx`** — live save complet
+   - `sessionLogIdRef` (useRef) — ID du draft, pas de re-render
+   - Draft créé au montage via POST, ID stocké en `localStorage` sous `draft_session_log_id_${sessionId}`
+   - `toggleSet` : patch immédiat (sans debounce) à chaque coche de set
+   - `updateSet` : debounce 800ms sur la saisie reps/poids/RIR
+   - `submitSession` : flush final sets + exerciseNotes → PATCH completed — fallback POST si pas de logId
+   - Bouton `ChevronLeft` remplacé par spacer `<div>` — seule sortie = bouton Terminer
+   - Guard `cancelled` dans `initDraft` pour React StrictMode
+   - Cleanup `saveDebounceRef` au démontage pour éviter les appels réseau orphelins
+
+4. **`public/sw.js`** — cache v2, stratégie network-first
+   - `networkFirstWithTimeout(request, 3000)` pour les pages `/client`
+   - Timeout 3s → fallback cache si réseau lent ou offline
+   - `stryv-client-v2` invalide proprement l'ancien cache v1
+
+5. **`components/client/ServiceWorkerRegistrar.tsx`** — rechargement auto
+   - `controllerchange` → `window.location.reload()` si pas de draft actif
+   - `hasActiveDraft()` vérifie les clés `draft_session_log_id_*` en localStorage
+
+**Points de vigilance :**
+- Le draft est créé même si le client ne saisit rien — un log vide restera en DB si la séance est abandonnée
+- La contrainte UNIQUE doit être appliquée manuellement via Supabase Dashboard avant la mise en prod
+- `exerciseNotes` est sérialisé en JSON string dans le champ `notes` du session log (PATCH completed)
+- Le rechargement auto n'a pas lieu si l'utilisateur est en séance — il verra le rechargement à la fin de séance seulement
+
+**Next Steps :**
+- [ ] Afficher indication "Vous avez swappé cet exercice par…" après swap nom d'exercice
+- [ ] Notification Web Push quand le repos est terminé (VAPID keys requis)
+- [ ] Afficher delta performance (weights/reps/RIR vs dernière séance) en recap post-séance
+- [ ] Connecter annotations `lab_protocol` → graphiques MetricsSection
 
 ---
 

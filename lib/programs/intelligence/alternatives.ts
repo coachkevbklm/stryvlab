@@ -103,22 +103,22 @@ export function scoreAlternatives(
     if (candidate.stimulus_coefficient < originalCoeff - 0.15) score -= 15
 
     // Constraint profile match (+15)
-    const origConstraint = (original as Record<string, unknown>).constraintProfile as string | null | undefined
-    const candConstraint = (candidate as Record<string, unknown>).constraintProfile as string | null | undefined
+    const origConstraint = original.constraintProfile as string | null | undefined
+    const candConstraint = (candidate as unknown as { constraintProfile?: string | null }).constraintProfile
     if (origConstraint && candConstraint && origConstraint === candConstraint) {
       score += 15
     }
 
     // Unilateral match (+10)
-    const origUnilateral = (original as Record<string, unknown>).unilateral ?? false
-    const candUnilateral = (candidate as Record<string, unknown>).unilateral ?? false
+    const origUnilateral = original.unilateral ?? false
+    const candUnilateral = (candidate as unknown as { unilateral?: boolean }).unilateral ?? false
     if (origUnilateral === candUnilateral) {
       score += 10
     }
 
     // Primary activation delta penalty (0 to −15)
-    const origActivation = (original as Record<string, unknown>).primaryActivation as number | null | undefined
-    const candActivation = (candidate as Record<string, unknown>).primaryActivation as number | null | undefined
+    const origActivation = original.primaryActivation as number | null | undefined
+    const candActivation = (candidate as unknown as { primaryActivation?: number | null }).primaryActivation
     if (origActivation != null && candActivation != null) {
       const delta = Math.abs(origActivation - candActivation)
       if (delta > 0.25) score -= Math.round(delta * 60)

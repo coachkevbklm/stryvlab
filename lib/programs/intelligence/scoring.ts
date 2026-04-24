@@ -693,12 +693,12 @@ function scoreJointLoad(
       : 'jointStressShoulder'
 
     const withData = allExercises.filter(
-      e => (e as Record<string, unknown>)[stressField] != null
+      e => e[stressField as keyof typeof e] != null
     )
     if (withData.length === 0) continue
 
     const weightedSum = withData.reduce((sum, e) => {
-      const stress = (e as Record<string, unknown>)[stressField] as number
+      const stress = e[stressField as keyof typeof e] as number
       return sum + stress * e.sets
     }, 0)
     const weightedSets = withData.reduce((sum, e) => sum + e.sets, 0)
@@ -744,17 +744,15 @@ function scoreCoordination(
 
   const allExercises = sessions.flatMap(s => s.exercises)
   const withData = allExercises.filter(
-    e =>
-      (e as Record<string, unknown>).coordinationDemand != null ||
-      (e as Record<string, unknown>).globalInstability != null
+    e => e.coordinationDemand != null || e.globalInstability != null
   )
 
   if (withData.length === 0) return { score: 100, alerts }
 
   const avg =
     withData.reduce((sum, e) => {
-      const coord = ((e as Record<string, unknown>).coordinationDemand as number | null) ?? 5
-      const instab = ((e as Record<string, unknown>).globalInstability as number | null) ?? 5
+      const coord = e.coordinationDemand ?? 5
+      const instab = e.globalInstability ?? 5
       return sum + (coord + instab) / 2
     }, 0) / withData.length
 
