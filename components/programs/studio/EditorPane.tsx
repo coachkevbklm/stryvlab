@@ -168,13 +168,6 @@ export default function EditorPane({
           >
             {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
-          <select
-            value={meta.equipment_archetype}
-            onChange={e => onMetaChange({ equipment_archetype: e.target.value })}
-            className="h-7 rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-2 outline-none min-w-0 max-w-[160px]"
-          >
-            {EQUIPMENT_ARCHETYPES.map(eq => <option key={eq.value} value={eq.value}>{eq.label}</option>)}
-          </select>
           <div className="flex items-center gap-1 shrink-0">
             <input
               type="number"

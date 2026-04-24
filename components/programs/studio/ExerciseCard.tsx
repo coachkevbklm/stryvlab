@@ -184,7 +184,7 @@ export default function ExerciseCard({
 
       <div className="p-3">
         <div className="grid grid-cols-[120px_1fr] gap-3">
-          {/* Left column: image + pattern + equipment */}
+          {/* Left column: image */}
           <div className="flex flex-col gap-2">
             {/* Image — primary CTA: opens catalogue if no image */}
             <div className="relative w-[120px] h-[120px] rounded-lg overflow-hidden bg-white/[0.03] border-[0.3px] border-white/[0.06] group">
@@ -236,53 +236,6 @@ export default function ExerciseCard({
                 e.target.value = ''
               }}
             />
-
-            {/* Movement pattern */}
-            <select
-              value={exercise.movement_pattern ?? ''}
-              onChange={e => onUpdate({ movement_pattern: e.target.value || null })}
-              className="w-full rounded-lg bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 px-2 py-1.5 outline-none"
-            >
-              {MOVEMENT_PATTERNS.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-
-            {/* Equipment pills */}
-            <div className="flex flex-wrap gap-1">
-              {EQUIPMENT_ITEMS.map(eq => {
-                const active = exercise.equipment_required.includes(eq.value)
-                return (
-                  <button
-                    key={eq.value}
-                    onClick={() => onUpdate({
-                      equipment_required: active
-                        ? exercise.equipment_required.filter(v => v !== eq.value)
-                        : [...exercise.equipment_required, eq.value],
-                    })}
-                    className={[
-                      'rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors',
-                      active
-                        ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                        : 'bg-white/[0.03] text-white/30 hover:text-white/50',
-                    ].join(' ')}
-                  >
-                    {eq.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Compound toggle */}
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={exercise.is_compound === true}
-                onChange={e => onUpdate({ is_compound: e.target.checked ? true : undefined })}
-                className="w-3 h-3 rounded accent-[#1f8a65]"
-              />
-              <span className="text-[9px] text-white/40">Poly-articulaire</span>
-            </label>
           </div>
 
           {/* Right column: name, sets/reps, muscles, notes */}
@@ -377,34 +330,6 @@ export default function ExerciseCard({
                   />
                 </div>
               ))}
-            </div>
-
-            {/* Primary muscles */}
-            <div>
-              <label className="block text-[9px] text-white/30 mb-1">Muscles primaires</label>
-              <div className="flex flex-wrap gap-1">
-                {MUSCLE_GROUPS.map(m => {
-                  const active = exercise.primary_muscles.includes(m.slug)
-                  return (
-                    <button
-                      key={m.slug}
-                      onClick={() => onUpdate({
-                        primary_muscles: active
-                          ? exercise.primary_muscles.filter(s => s !== m.slug)
-                          : [...exercise.primary_muscles, m.slug],
-                      })}
-                      className={[
-                        'rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors',
-                        active
-                          ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                          : 'bg-white/[0.03] text-white/25 hover:text-white/50',
-                      ].join(' ')}
-                    >
-                      {m.label}
-                    </button>
-                  )
-                })}
-              </div>
             </div>
 
             {/* Notes */}
