@@ -24,11 +24,28 @@ const FILTER_LABELS: Record<string, string> = {
 }
 
 const MOVEMENT_PATTERNS = [
-  'horizontal_push', 'vertical_push', 'horizontal_pull', 'vertical_pull',
-  'squat_pattern', 'hip_hinge', 'elbow_flexion', 'elbow_extension',
-  'lateral_raise', 'knee_flexion', 'knee_extension', 'calf_raise',
-  'core_flex', 'core_anti_flex', 'core_rotation', 'carry', 'scapular_elevation',
-  'hip_abduction', 'hip_adduction', 'shoulder_rotation', 'scapular_retraction', 'scapular_protraction',
+  { value: 'horizontal_push', label: 'Poussée horizontale' },
+  { value: 'vertical_push', label: 'Poussée verticale' },
+  { value: 'horizontal_pull', label: 'Tirage horizontal' },
+  { value: 'vertical_pull', label: 'Tirage vertical' },
+  { value: 'squat_pattern', label: 'Pattern squat' },
+  { value: 'hip_hinge', label: 'Charnière hanche' },
+  { value: 'elbow_flexion', label: 'Flexion coude (Biceps)' },
+  { value: 'elbow_extension', label: 'Extension coude (Triceps)' },
+  { value: 'lateral_raise', label: 'Élévation latérale' },
+  { value: 'knee_flexion', label: 'Flexion genou' },
+  { value: 'knee_extension', label: 'Extension genou' },
+  { value: 'calf_raise', label: 'Extension mollets' },
+  { value: 'core_flex', label: 'Flexion core' },
+  { value: 'core_anti_flex', label: 'Gainage anti-flexion' },
+  { value: 'core_rotation', label: 'Rotation core' },
+  { value: 'carry', label: 'Porté (Carry)' },
+  { value: 'scapular_elevation', label: 'Élévation scapulaire (Shrug)' },
+  { value: 'hip_abduction', label: 'Abduction hanche' },
+  { value: 'hip_adduction', label: 'Adduction hanche' },
+  { value: 'shoulder_rotation', label: 'Rotation épaule' },
+  { value: 'scapular_retraction', label: 'Rétraction scapulaire' },
+  { value: 'scapular_protraction', label: 'Protraction scapulaire' },
 ]
 
 const MUSCLE_OPTIONS = [
@@ -188,7 +205,7 @@ export default function ExerciseAlternativesDrawer({ exercise, sessionExercises,
                 >
                   <option value="">Sélectionner…</option>
                   {MOVEMENT_PATTERNS.map(p => (
-                    <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>
+                    <option key={p.value} value={p.value}>{p.label}</option>
                   ))}
                 </select>
               </div>

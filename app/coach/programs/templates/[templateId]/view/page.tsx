@@ -45,7 +45,7 @@ const MOVEMENT_LABELS: Record<string, string> = {
   horizontal_pull: "Tirage horiz.",
   vertical_pull: "Tirage vert.",
   squat_pattern: "Squat",
-  hip_hinge: "Hinge hanche",
+  hip_hinge: "Charnière hanche",
   knee_flexion: "Flexion genou",
   knee_extension: "Extension genou",
   calf_raise: "Mollets",
@@ -56,6 +56,12 @@ const MOVEMENT_LABELS: Record<string, string> = {
   core_anti_flex: "Gainage",
   core_flex: "Core flex",
   core_rotation: "Rotation core",
+  scapular_elevation: "Élév. scapulaire",
+  hip_abduction: "Abduction hanche",
+  hip_adduction: "Adduction hanche",
+  shoulder_rotation: "Rotation épaule",
+  scapular_retraction: "Rétraction scap.",
+  scapular_protraction: "Protraction scap.",
 };
 const EQUIPMENT_LABELS: Record<string, string> = {
   bodyweight: "Poids du corps",

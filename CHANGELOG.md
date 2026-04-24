@@ -1,5 +1,7 @@
 ## 2026-04-24
 
+FIX: ExerciseAlternativesDrawer — convert MOVEMENT_PATTERNS from raw slugs to {value, label} objects with French labels (was displaying "hip abduction", "scapular retraction" in English)
+FIX: view/page.tsx — add 6 missing patterns (scapular_elevation + 5 new) to MOVEMENT_LABELS map
 FIX: CustomExerciseModal — replace latin/slug muscle names with natural French labels in primary muscle select, secondary muscle chips, and muscle group select (values unchanged, labels only)
 FEATURE: Add 5 movement patterns — hip_abduction, hip_adduction, shoulder_rotation, scapular_retraction, scapular_protraction — to scoring engine (LEGS_PATTERNS, PULL_PATTERNS, PATTERN_EQUIPMENT_REQUIREMENTS, PATTERN_EXAMPLES), catalog-utils getStimulusCoeff, MOVEMENT_PATTERNS arrays in ProgramTemplateBuilder/ExerciseCard/ExerciseAlternativesDrawer/CustomExerciseModal, PATTERN_LABEL_FR in ProgramIntelligencePanel, and inferMovementPattern in generate-exercise-catalog script
 FEATURE: Phase 3 Performance Feedback Loops — detectPerformanceTrend pure function (8 unit tests), GET /api/clients/[clientId]/performance/[exerciseName] endpoint, performance trend badges (↗/→/↘) on ExerciseCard when clientId context is active
