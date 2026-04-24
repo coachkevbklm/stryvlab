@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildIntelligenceResult } from '@/lib/programs/intelligence/scoring'
+import { scoreAlternatives } from '@/lib/programs/intelligence/alternatives'
 import type { BuilderSession, TemplateMeta, IntelligenceProfile } from '@/lib/programs/intelligence/types'
 
 const meta: TemplateMeta = {
@@ -63,6 +64,32 @@ describe('scoreJointLoad', () => {
     const result = buildIntelligenceResult([session], meta, profile)
     const alert = result.alerts.find(a => a.code === 'JOINT_OVERLOAD')
     expect(alert?.severity).toBe('warning')
+  })
+})
+
+describe('scoreAlternatives biomech criteria', () => {
+  const altContext = {
+    equipmentArchetype: 'full_gym', goal: 'hypertrophy',
+    level: 'intermediate', sessionExercises: [] as never[],
+  }
+
+  it('runs without crash when biomech fields present', () => {
+    const original = {
+      name: 'Curl barre', movement_pattern: 'elbow_flexion',
+      equipment_required: ['barbell'], primary_muscles: ['biceps'],
+      secondary_muscles: [], is_compound: false,
+      constraintProfile: 'free_weight', unilateral: false, primaryActivation: 0.85,
+    }
+    expect(() => scoreAlternatives(original as never, altContext)).not.toThrow()
+  })
+
+  it('runs without crash with activation delta', () => {
+    const original = {
+      name: 'Deadlift', movement_pattern: 'hip_hinge',
+      equipment_required: ['barbell'], primary_muscles: ['dos', 'fessiers'],
+      secondary_muscles: [], is_compound: true, primaryActivation: 0.9,
+    }
+    expect(() => scoreAlternatives(original as never, altContext)).not.toThrow()
   })
 })
 
