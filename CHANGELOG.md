@@ -1,5 +1,7 @@
 ## 2026-04-24
 
+FEATURE: Add custom exercise media upload endpoint — POST /api/exercises/custom/upload-media, supports JPG/PNG/WebP/GIF/MP4/WebM up to 50MB, uploads to Supabase Storage exercise-media bucket, returns public URL and mediaType
+
 FEATURE: programs/[programId] API — persist and return 14 biomech fields (plane, mechanic, unilateral, joint stress, etc.) in program_exercises insert and SELECT
 FEATURE: program-templates/[templateId] API — persist and return 14 biomech fields in coach_program_template_exercises insert, update, and duplicate POST
 FEATURE: programs/route GET — extend program_exercises SELECT to include all 14 biomech columns
