@@ -159,6 +159,21 @@ interface Exercise {
   is_compound: boolean | undefined;
   group_id?: string;
   dbId?: string;
+  // Biomech fields (auto-populated from catalog on picker selection)
+  plane?: string | null;
+  mechanic?: string | null;
+  unilateral?: boolean;
+  primaryMuscle?: string | null;
+  primaryActivation?: number | null;
+  secondaryMusclesDetail?: string[];
+  secondaryActivations?: number[];
+  stabilizers?: string[];
+  jointStressSpine?: number | null;
+  jointStressKnee?: number | null;
+  jointStressShoulder?: number | null;
+  globalInstability?: number | null;
+  coordinationDemand?: number | null;
+  constraintProfile?: string | null;
 }
 interface Session {
   name: string;
@@ -196,6 +211,12 @@ function emptyExercise(): Exercise {
     is_compound: undefined,
     group_id: undefined,
     dbId: undefined,
+    plane: null, mechanic: null, unilateral: false,
+    primaryMuscle: null, primaryActivation: null,
+    secondaryMusclesDetail: [], secondaryActivations: [],
+    stabilizers: [], jointStressSpine: null, jointStressKnee: null,
+    jointStressShoulder: null, globalInstability: null,
+    coordinationDemand: null, constraintProfile: null,
   };
 }
 function emptySession(): Session {
@@ -209,14 +230,18 @@ function emptySession(): Session {
 }
 
 interface Props {
-  initial?: any; // template existant pour l'édition
+  initial?: any;
   templateId?: string;
+  programId?: string;   // mode programme client (vs template)
   clientId?: string;
+  onSaved?: (program: any) => void;
+  onCancel?: () => void;
 }
 
-export default function ProgramTemplateBuilder({ initial, templateId, clientId }: Props) {
+export default function ProgramTemplateBuilder({ initial, templateId, programId, clientId, onSaved, onCancel }: Props) {
   const router = useRouter();
-  const isEdit = !!templateId;
+  const isProgram = !!programId;
+  const isEdit = !!templateId || isProgram;
 
   const [meta, setMeta] = useState<TemplateMeta>(() =>
     initial
@@ -246,36 +271,53 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
         },
   );
 
-  const [sessions, setSessions] = useState<Session[]>(() =>
-    initial?.coach_program_template_sessions
-      ? initial.coach_program_template_sessions
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    // Support both template (coach_program_template_sessions) and program (program_sessions) shapes
+    const rawSessions = initial?.coach_program_template_sessions
+      ?? initial?.program_sessions
+      ?? null
+    if (!rawSessions) return [emptySession()]
+    return rawSessions
+      .sort((a: any, b: any) => a.position - b.position)
+      .map((s: any) => ({
+        name: s.name,
+        day_of_week: s.day_of_week,
+        notes: s.notes ?? "",
+        open: false,
+        exercises: (s.coach_program_template_exercises ?? s.program_exercises ?? [])
           .sort((a: any, b: any) => a.position - b.position)
-          .map((s: any) => ({
-            name: s.name,
-            day_of_week: s.day_of_week,
-            notes: s.notes ?? "",
-            open: false,
-            exercises: (s.coach_program_template_exercises ?? [])
-              .sort((a: any, b: any) => a.position - b.position)
-              .map((e: any) => ({
-                name: e.name,
-                sets: e.sets,
-                reps: e.reps,
-                rest_sec: e.rest_sec,
-                rir: e.rir,
-                notes: e.notes ?? "",
-                image_url: e.image_url ?? null,
-                movement_pattern: e.movement_pattern ?? null,
-                equipment_required: e.equipment_required ?? [],
-                primary_muscles: e.primary_muscles ?? [],
-                secondary_muscles: e.secondary_muscles ?? [],
-                is_compound: e.is_compound ?? undefined,
-                group_id: e.group_id ?? undefined,
-                dbId: e.id ?? undefined,
-              })),
-          }))
-      : [emptySession()],
-  );
+          .map((e: any) => ({
+            name: e.name,
+            sets: e.sets,
+            reps: e.reps,
+            rest_sec: e.rest_sec,
+            rir: e.rir,
+            notes: e.notes ?? "",
+            image_url: e.image_url ?? null,
+            movement_pattern: e.movement_pattern ?? null,
+            equipment_required: e.equipment_required ?? [],
+            primary_muscles: e.primary_muscles ?? [],
+            secondary_muscles: e.secondary_muscles ?? [],
+            is_compound: e.is_compound ?? undefined,
+            group_id: e.group_id ?? undefined,
+            dbId: e.id ?? undefined,
+            plane: e.plane ?? null,
+            mechanic: e.mechanic ?? null,
+            unilateral: e.unilateral ?? false,
+            primaryMuscle: e.primary_muscle ?? null,
+            primaryActivation: e.primary_activation != null ? Number(e.primary_activation) : null,
+            secondaryMusclesDetail: e.secondary_muscles_detail ?? [],
+            secondaryActivations: (e.secondary_activations ?? []).map(Number),
+            stabilizers: e.stabilizers ?? [],
+            jointStressSpine: e.joint_stress_spine ?? null,
+            jointStressKnee: e.joint_stress_knee ?? null,
+            jointStressShoulder: e.joint_stress_shoulder ?? null,
+            globalInstability: e.global_instability ?? null,
+            coordinationDemand: e.coordination_demand ?? null,
+            constraintProfile: e.constraint_profile ?? null,
+          })),
+      }))
+  });
 
   const orderedSessions = useMemo(() =>
     meta.session_mode === 'day'
@@ -385,6 +427,20 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       primary_muscles: e.primary_muscles,
       secondary_muscles: e.secondary_muscles,
       is_compound: e.is_compound,
+      plane: e.plane ?? null,
+      mechanic: e.mechanic ?? null,
+      unilateral: e.unilateral ?? false,
+      primaryMuscle: e.primaryMuscle ?? null,
+      primaryActivation: e.primaryActivation ?? null,
+      secondaryMusclesDetail: e.secondaryMusclesDetail ?? [],
+      secondaryActivations: e.secondaryActivations ?? [],
+      stabilizers: e.stabilizers ?? [],
+      jointStressSpine: e.jointStressSpine ?? null,
+      jointStressKnee: e.jointStressKnee ?? null,
+      jointStressShoulder: e.jointStressShoulder ?? null,
+      globalInstability: e.globalInstability ?? null,
+      coordinationDemand: e.coordinationDemand ?? null,
+      constraintProfile: e.constraintProfile ?? null,
     })),
   }));
   const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile, morphoAdjustments ?? undefined, labOverrides);
@@ -534,14 +590,51 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
           name: s.name,
           day_of_week: s.day_of_week,
           notes: s.notes,
-          exercises: s.exercises,
+          exercises: s.exercises.map((e) => ({
+            name: e.name,
+            sets: e.sets,
+            reps: e.reps,
+            rest_sec: e.rest_sec,
+            rir: e.rir,
+            notes: e.notes,
+            image_url: e.image_url,
+            movement_pattern: e.movement_pattern,
+            equipment_required: e.equipment_required,
+            primary_muscles: e.primary_muscles,
+            secondary_muscles: e.secondary_muscles,
+            is_compound: e.is_compound,
+            group_id: e.group_id,
+            dbId: e.dbId,
+            plane: e.plane ?? null,
+            mechanic: e.mechanic ?? null,
+            unilateral: e.unilateral ?? false,
+            primary_muscle: e.primaryMuscle ?? null,
+            primary_activation: e.primaryActivation ?? null,
+            secondary_muscles_detail: e.secondaryMusclesDetail ?? [],
+            secondary_activations: e.secondaryActivations ?? [],
+            stabilizers: e.stabilizers ?? [],
+            joint_stress_spine: e.jointStressSpine ?? null,
+            joint_stress_knee: e.jointStressKnee ?? null,
+            joint_stress_shoulder: e.jointStressShoulder ?? null,
+            global_instability: e.globalInstability ?? null,
+            coordination_demand: e.coordinationDemand ?? null,
+            constraint_profile: e.constraintProfile ?? null,
+          })),
         })),
       };
 
-      const url = isEdit
-        ? `/api/program-templates/${templateId}`
-        : "/api/program-templates";
-      const method = isEdit ? "PATCH" : "POST";
+      let url: string
+      let method: string
+      if (isProgram) {
+        url = `/api/programs/${programId}`
+        method = "PATCH"
+      } else if (isEdit) {
+        url = `/api/program-templates/${templateId}`
+        method = "PATCH"
+      } else {
+        url = "/api/program-templates"
+        method = "POST"
+      }
 
       const res = await fetch(url, {
         method,
@@ -554,7 +647,11 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
         return;
       }
 
-      router.push("/coach/programs/templates");
+      if (isProgram && onSaved) {
+        onSaved(d.program)
+      } else if (!isProgram) {
+        router.push("/coach/programs/templates");
+      }
     } catch {
       setError("Erreur réseau");
     } finally {
@@ -770,19 +867,35 @@ export default function ProgramTemplateBuilder({ initial, templateId, clientId }
       {/* Overlays */}
       {pickerTarget && (
         <ExercisePicker
-          onSelect={({ name, gifUrl, movementPattern, equipment, isCompound }) => {
+          onSelect={(exercise) => {
             if (altPickerCallback) {
               // Mode: adding a client alternative
-              altPickerCallback(name)
+              altPickerCallback(exercise.name)
               setAltPickerCallback(null)
             } else {
               // Mode: replacing/setting main exercise
               updateExercise(pickerTarget.si, pickerTarget.ei, {
-                name,
-                image_url: gifUrl,
-                movement_pattern: movementPattern,
-                equipment_required: equipment,
-                is_compound: isCompound,
+                name: exercise.name,
+                image_url: exercise.gifUrl,
+                movement_pattern: exercise.movementPattern,
+                equipment_required: exercise.equipment,
+                is_compound: exercise.isCompound,
+                primary_muscles: exercise.primaryMuscles,
+                secondary_muscles: exercise.secondaryMuscles,
+                plane: exercise.plane ?? null,
+                mechanic: exercise.mechanic ?? null,
+                unilateral: exercise.unilateral ?? false,
+                primaryMuscle: exercise.primaryMuscle ?? null,
+                primaryActivation: exercise.primaryActivation ?? null,
+                secondaryMusclesDetail: exercise.secondaryMusclesDetail ?? [],
+                secondaryActivations: exercise.secondaryActivations ?? [],
+                stabilizers: exercise.stabilizers ?? [],
+                jointStressSpine: exercise.jointStressSpine ?? null,
+                jointStressKnee: exercise.jointStressKnee ?? null,
+                jointStressShoulder: exercise.jointStressShoulder ?? null,
+                globalInstability: exercise.globalInstability ?? null,
+                coordinationDemand: exercise.coordinationDemand ?? null,
+                constraintProfile: exercise.constraintProfile ?? null,
               })
             }
             setPickerTarget(null)

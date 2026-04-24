@@ -29,6 +29,23 @@ interface Props {
     movementPattern: string | null;
     equipment: string[];
     isCompound: boolean;
+    primaryMuscles: string[];
+    secondaryMuscles: string[];
+    // Biomech fields from enriched catalog
+    plane: string | null;
+    mechanic: string | null;
+    unilateral: boolean;
+    primaryMuscle: string | null;
+    primaryActivation: number | null;
+    secondaryMusclesDetail: string[];
+    secondaryActivations: number[];
+    stabilizers: string[];
+    jointStressSpine: number | null;
+    jointStressKnee: number | null;
+    jointStressShoulder: number | null;
+    globalInstability: number | null;
+    coordinationDemand: number | null;
+    constraintProfile: string | null;
   }) => void;
   onClose: () => void;
 }
@@ -95,6 +112,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'stryvr' | 'custom'>('all')
   const [customExercises, setCustomExercises] = useState<CatalogEntry[]>([])
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -150,6 +168,12 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
   const filtered = useMemo(() => {
     let results = allExercises;
 
+    if (sourceFilter === 'custom') {
+      results = results.filter(e => e.source === 'custom')
+    } else if (sourceFilter === 'stryvr') {
+      results = results.filter(e => e.source !== 'custom')
+    }
+
     if (search.trim()) {
       const q = search
         .toLowerCase()
@@ -193,6 +217,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
     return results;
   }, [
     search,
+    sourceFilter,
     filterMuscle,
     filterPattern,
     filterEquipment,
@@ -207,6 +232,7 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
     filterEquipment,
     filterCompound !== "all",
     filterType !== "all",
+    sourceFilter !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -429,8 +455,32 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
           </div>
         )}
 
+        {/* Source filter pills */}
+        <div className="px-4 pt-2 pb-1 flex items-center gap-2 shrink-0">
+          {(
+            [
+              { value: 'all', label: 'Tous' },
+              { value: 'stryvr', label: 'Catalogue STRYVR' },
+              { value: 'custom', label: 'Mes exercices' },
+            ] as const
+          ).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setSourceFilter(value)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all ${
+                sourceFilter === value
+                  ? 'bg-[#1f8a65]/10 text-[#1f8a65]'
+                  : 'bg-white/[0.02] text-white/35 hover:bg-white/[0.05] hover:text-white/60'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Results count */}
-        <div className="px-4 py-2 shrink-0">
+        <div className="px-4 py-1 shrink-0">
           <p className="text-[10px] text-white/70 font-medium">
             {filtered.length} exercice{filtered.length !== 1 ? "s" : ""}
             {search || activeFiltersCount > 0 ? " trouvés" : " disponibles"}
@@ -453,15 +503,32 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                 <button
                   key={exercise.id}
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    const ex = exercise as unknown as Record<string, unknown>
                     onSelect({
                       name: exercise.name,
                       gifUrl: exercise.gifUrl,
                       movementPattern: exercise.movementPattern ?? null,
                       equipment: exercise.equipment ?? [],
                       isCompound: exercise.isCompound ?? false,
+                      primaryMuscles: exercise.muscles ?? [],
+                      secondaryMuscles: [],
+                      plane: (ex.plane as string | null) ?? null,
+                      mechanic: (ex.mechanic as string | null) ?? null,
+                      unilateral: (ex.unilateral as boolean) ?? false,
+                      primaryMuscle: (ex.primaryMuscle as string | null) ?? null,
+                      primaryActivation: (ex.primaryActivation as number | null) ?? null,
+                      secondaryMusclesDetail: (ex.secondaryMuscles as string[]) ?? [],
+                      secondaryActivations: (ex.secondaryActivations as number[]) ?? [],
+                      stabilizers: (ex.stabilizers as string[]) ?? [],
+                      jointStressSpine: (ex.jointStressSpine as number | null) ?? null,
+                      jointStressKnee: (ex.jointStressKnee as number | null) ?? null,
+                      jointStressShoulder: (ex.jointStressShoulder as number | null) ?? null,
+                      globalInstability: (ex.globalInstability as number | null) ?? null,
+                      coordinationDemand: (ex.coordinationDemand as number | null) ?? null,
+                      constraintProfile: (ex.constraintProfile as string | null) ?? null,
                     })
-                  }
+                  }}
                   onMouseEnter={() => setHoveredId(exercise.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   className="group relative flex flex-col bg-[#0a0a0a] rounded-2xl overflow-hidden hover:bg-white/[0.04] active:scale-[0.98] transition-all text-left"

@@ -1,5 +1,16 @@
 ## 2026-04-24
 
+FEATURE: ExercisePicker — extend onSelect callback type with biomech fields (plane, mechanic, unilateral, joint stress, etc.) and primaryMuscles/secondaryMuscles
+FEATURE: ExercisePicker — add sourceFilter state and pills UI (Tous / Catalogue STRYVR / Mes exercices) using DS v2.0 active/inactive styles
+FEATURE: ExercisePicker — pass all biomech fields from enriched catalog entries via unknown cast in onSelect handler
+FEATURE: ProgramTemplateBuilder — extend local Exercise interface with 14 optional biomech fields
+FEATURE: ProgramTemplateBuilder — update emptyExercise() with null biomech defaults
+FEATURE: ProgramTemplateBuilder — wire biomech fields through onSelect handler, load-from-initial, intelligenceSessions, and handleSave payload (snake_case keys for API)
+
+FEATURE: scoring.ts — add scoreJointLoad() with BODY_PART_TO_JOINT mapping, emits JOINT_OVERLOAD critical/warning based on weighted stress vs injury severity
+FEATURE: scoring.ts — add scoreCoordination() for beginner detection, emits COORDINATION_MISMATCH critical (avg > 7.5) or warning (avg > 6)
+FEATURE: scoring.ts — wire jointLoad (0.10) and coordination (0.05) into buildIntelligenceResult with real SUBSCORE_WEIGHTS
+FEATURE: tests/lib/intelligence/biomech-scoring.test.ts — 6 new tests for scoreJointLoad and scoreCoordination (all passing)
 FEATURE: intelligence/types.ts — add BiomechData interface with plane, mechanic, joint stress, instability, coordination, and constraint profile fields
 FEATURE: BuilderExercise — extend with optional biomech fields (plane, mechanic, unilateral, primaryMuscle, jointStress*, globalInstability, coordinationDemand, constraintProfile)
 FEATURE: IntelligenceResult.subscores — add jointLoad and coordination fields (defaulting to 100, weighted 0 until Phase 4 scorers are implemented)
