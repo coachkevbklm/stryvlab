@@ -25,8 +25,8 @@ const SRA_LEVEL_MULTIPLIER: Record<string, number> = {
 
 // Groupes "push" et "pull" pour le calcul de balance
 const PUSH_PATTERNS = new Set(['horizontal_push', 'vertical_push', 'elbow_extension'])
-const PULL_PATTERNS = new Set(['horizontal_pull', 'vertical_pull', 'elbow_flexion', 'scapular_elevation'])
-const LEGS_PATTERNS = new Set(['squat_pattern', 'hip_hinge', 'knee_flexion', 'knee_extension', 'calf_raise'])
+const PULL_PATTERNS = new Set(['horizontal_pull', 'vertical_pull', 'elbow_flexion', 'scapular_elevation', 'scapular_retraction'])
+const LEGS_PATTERNS = new Set(['squat_pattern', 'hip_hinge', 'knee_flexion', 'knee_extension', 'calf_raise', 'hip_abduction', 'hip_adduction'])
 const CORE_PATTERNS = new Set(['core_flex', 'core_anti_flex', 'core_rotation'])
 
 // Seuils ratio push/pull par goal
@@ -568,10 +568,15 @@ const PATTERN_EQUIPMENT_REQUIREMENTS: Record<string, string[]> = {
   hip_hinge:        ['barre', 'halteres', 'machine', 'kettlebell'],
   elbow_flexion:    ['barre', 'halteres', 'machine', 'cables', 'elastiques'],
   elbow_extension:  ['barre', 'halteres', 'machine', 'cables', 'elastiques'],
-  lateral_raise:    ['halteres', 'machine', 'cables'],
-  carry:            ['halteres', 'kettlebell', 'barre'],
-  knee_flexion:     ['machine', 'cables'],
-  calf_raise:       ['machine', 'barre', 'halteres'],
+  lateral_raise:        ['halteres', 'machine', 'cables'],
+  carry:                ['halteres', 'kettlebell', 'barre'],
+  knee_flexion:         ['machine', 'cables'],
+  calf_raise:           ['machine', 'barre', 'halteres'],
+  hip_abduction:        ['machine', 'elastiques', 'cables'],
+  hip_adduction:        ['machine', 'elastiques', 'cables'],
+  shoulder_rotation:    ['halteres', 'machine', 'cables', 'elastiques'],
+  scapular_retraction:  ['machine', 'cables', 'elastiques', 'halteres'],
+  scapular_protraction: ['machine', 'cables', 'elastiques'],
 }
 
 export function scoreCompleteness(
@@ -631,6 +636,11 @@ export function scoreCompleteness(
     carry: 'Marche du fermier',
     knee_flexion: 'Leg curl',
     calf_raise: 'Extension mollets',
+    hip_abduction: 'Abducteur machine',
+    hip_adduction: 'Adducteur machine',
+    shoulder_rotation: 'Rotation externe épaule',
+    scapular_retraction: 'Face pull',
+    scapular_protraction: 'Protraction scapulaire',
   }
 
   missing.forEach(pattern => {

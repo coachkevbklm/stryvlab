@@ -552,6 +552,30 @@ function inferMovementPattern(slug: string, muscleGroup: string): string {
       s.includes('elevation-en-y'))
     return 'lateral_raise'
 
+  // ── HIP ABDUCTION ──
+  if (s.includes('abducteur') || s.includes('abduction-hanche') || s.includes('hip-abduction') ||
+      s.includes('clamshell') || s.includes('fire-hydrant'))
+    return 'hip_abduction'
+
+  // ── HIP ADDUCTION ──
+  if (s.includes('adducteur') || s.includes('adduction-hanche') || s.includes('hip-adduction') ||
+      s.includes('sumo') && s.includes('machine'))
+    return 'hip_adduction'
+
+  // ── SHOULDER ROTATION ──
+  if (s.includes('rotation-externe') || s.includes('rotation-interne') ||
+      s.includes('shoulder-rotation') || s.includes('coiffe-rotateurs'))
+    return 'shoulder_rotation'
+
+  // ── SCAPULAR RETRACTION ──
+  if (s.includes('retraction') || s.includes('face-pull') || s.includes('band-pull-apart') ||
+      s.includes('w-raise') || s.includes('y-raise'))
+    return 'scapular_retraction'
+
+  // ── SCAPULAR PROTRACTION ──
+  if (s.includes('protraction') || s.includes('serratus') || s.includes('punchout'))
+    return 'scapular_protraction'
+
   // ── KNEE EXTENSION (isolation quad) ──
   if (
     (s.includes('leg-extension') &&
@@ -599,9 +623,8 @@ function inferMovementPattern(slug: string, muscleGroup: string): string {
   // Rétraction scapulaire dans le plan horizontal — rowing, tirage assis, face pull
   if (s.includes('rowing') || s.includes('tirage-horizontal') ||
       s.includes('seal-row') || s.includes('renegade-row') ||
-      s.includes('face-pull') || s.includes('oiseau') || s.includes('ecarte-arriere') ||
-      s.includes('pec-deck-inverse') || s.includes('rotation-externe') ||
-      s.includes('passage-depaule'))
+      s.includes('oiseau') || s.includes('ecarte-arriere') ||
+      s.includes('pec-deck-inverse') || s.includes('passage-depaule'))
     return 'horizontal_pull'
 
   // ── ELBOW FLEXION (curl) ──

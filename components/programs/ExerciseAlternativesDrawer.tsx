@@ -28,6 +28,7 @@ const MOVEMENT_PATTERNS = [
   'squat_pattern', 'hip_hinge', 'elbow_flexion', 'elbow_extension',
   'lateral_raise', 'knee_flexion', 'knee_extension', 'calf_raise',
   'core_flex', 'core_anti_flex', 'core_rotation', 'carry', 'scapular_elevation',
+  'hip_abduction', 'hip_adduction', 'shoulder_rotation', 'scapular_retraction', 'scapular_protraction',
 ]
 
 const MUSCLE_OPTIONS = [

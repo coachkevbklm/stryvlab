@@ -62,6 +62,9 @@ const PATTERN_LABEL_FR: Record<string, string> = {
   lateral_raise: 'Élév. lat.', calf_raise: 'Mollets',
   core_flex: 'Core', core_anti_flex: 'Gainage', core_rotation: 'Rotation',
   carry: 'Carry', scapular_elevation: 'Shrug',
+  hip_abduction: 'Abduction', hip_adduction: 'Adduction',
+  shoulder_rotation: 'Rot. épaule', scapular_retraction: 'Rétraction',
+  scapular_protraction: 'Protraction',
 }
 
 const PIE_COLORS = ['#1f8a65', '#3b82f6', '#f59e0b', '#8b5cf6']

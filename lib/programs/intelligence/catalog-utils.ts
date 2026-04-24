@@ -202,6 +202,11 @@ export function getStimulusCoeff(slug: string, movementPattern: string, isCompou
     case 'core_anti_flex': base = 0.30; break
     case 'core_rotation': base = 0.28; break
     case 'carry': base = 0.65; break
+    case 'hip_abduction': base = 0.38; break
+    case 'hip_adduction': base = 0.36; break
+    case 'shoulder_rotation': base = 0.30; break
+    case 'scapular_retraction': base = 0.35; break
+    case 'scapular_protraction': base = 0.28; break
     default: base = 0.50
   }
 

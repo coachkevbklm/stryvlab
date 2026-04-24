@@ -1,5 +1,6 @@
 ## 2026-04-24
 
+FEATURE: Add 5 movement patterns — hip_abduction, hip_adduction, shoulder_rotation, scapular_retraction, scapular_protraction — to scoring engine (LEGS_PATTERNS, PULL_PATTERNS, PATTERN_EQUIPMENT_REQUIREMENTS, PATTERN_EXAMPLES), catalog-utils getStimulusCoeff, MOVEMENT_PATTERNS arrays in ProgramTemplateBuilder/ExerciseCard/ExerciseAlternativesDrawer/CustomExerciseModal, PATTERN_LABEL_FR in ProgramIntelligencePanel, and inferMovementPattern in generate-exercise-catalog script
 FEATURE: Phase 3 Performance Feedback Loops — detectPerformanceTrend pure function (8 unit tests), GET /api/clients/[clientId]/performance/[exerciseName] endpoint, performance trend badges (↗/→/↘) on ExerciseCard when clientId context is active
 FEATURE: CustomExerciseModal — 6-step modal (Média, Identité, Classification, Muscles, Biomécanique, Confirmation) with Framer Motion transitions, media upload preview, full biomech sliders, DS v2.0 compliant
 FEATURE: ExercisePicker — wire CustomExerciseModal with "Créer un exercice" button; created exercise auto-added to custom list and selected

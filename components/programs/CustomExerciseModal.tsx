@@ -306,6 +306,11 @@ const MOVEMENT_PATTERNS_OPTIONS = [
   { value: 'core_rotation', label: 'Rotation core' },
   { value: 'carry', label: 'Porté (Carry)' },
   { value: 'scapular_elevation', label: 'Élévation scapulaire' },
+  { value: 'hip_abduction', label: 'Abduction hanche' },
+  { value: 'hip_adduction', label: 'Adduction hanche' },
+  { value: 'shoulder_rotation', label: 'Rotation épaule' },
+  { value: 'scapular_retraction', label: 'Rétraction scapulaire' },
+  { value: 'scapular_protraction', label: 'Protraction scapulaire' },
 ]
 
 const EQUIPMENT_OPTIONS = [
