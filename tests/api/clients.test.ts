@@ -95,7 +95,7 @@ describe('POST /api/clients', () => {
   it('creates client and returns 201 with minimal fields', async () => {
     const created = { id: 'c-new', first_name: 'Jean', last_name: 'Dupont', coach_id: 'coach-123' }
     mocks.setServiceResult(created)
-    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont' }))
+    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont', email: 'jean@test.com' }))
     expect(res.status).toBe(201)
     const body = await json(res)
     expect(body.client.id).toBe('c-new')
@@ -118,15 +118,20 @@ describe('POST /api/clients', () => {
     expect(mocks.serviceMock.from).toHaveBeenCalledWith('coach_clients')
   })
 
+  it('returns 400 when email is missing', async () => {
+    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont' }))
+    expect(res.status).toBe(400)
+  })
+
   it('returns 500 on DB error', async () => {
     mocks.setServiceResult(null, { message: 'Insert failed', code: '23505' })
-    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont' }))
+    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont', email: 'jean@test.com' }))
     expect(res.status).toBe(500)
   })
 
   it('returns helpful message when table does not exist', async () => {
     mocks.setServiceResult(null, { message: 'table not found', code: '42P01' })
-    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont' }))
+    const res = await POST(makeRequest('POST', { firstName: 'Jean', lastName: 'Dupont', email: 'jean@test.com' }))
     expect(res.status).toBe(500)
     const body = await json(res)
     expect(body.error).toMatch(/migration/i)
@@ -135,7 +140,7 @@ describe('POST /api/clients', () => {
   it('trims whitespace from firstName and lastName', async () => {
     const created = { id: 'c-new', first_name: 'Jean', last_name: 'Dupont' }
     mocks.setServiceResult(created)
-    await POST(makeRequest('POST', { firstName: '  Jean  ', lastName: '  Dupont  ' }))
+    await POST(makeRequest('POST', { firstName: '  Jean  ', lastName: '  Dupont  ', email: 'jean@test.com' }))
     // The insert chain was called — trim is applied inside the route
     expect(mocks.serviceMock.from).toHaveBeenCalledWith('coach_clients')
   })
