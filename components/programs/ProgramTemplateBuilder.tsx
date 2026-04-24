@@ -839,6 +839,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             supersetGroupColors={supersetGroupColors}
             onSave={handleSave}
             exerciseRefSetter={exerciseRefSetter}
+            clientId={clientId}
           />
         </div>
 

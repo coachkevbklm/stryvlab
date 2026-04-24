@@ -1,6 +1,7 @@
 // components/programs/studio/EditorPane.tsx
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Loader2, Save, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
@@ -90,6 +91,7 @@ interface Props {
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
   makeExDragId: (si: number, ei: number) => string
   sessionDropId: (si: number) => string
+  clientId?: string
 }
 
 export default function EditorPane({
@@ -125,7 +127,34 @@ export default function EditorPane({
   exerciseRefSetter,
   makeExDragId,
   sessionDropId,
+  clientId,
 }: Props) {
+  type TrendEntry = { trend: 'progression' | 'stagnation' | 'overtraining' | null; suggestion: string | null }
+  const [trendMap, setTrendMap] = useState<Record<string, TrendEntry>>({})
+
+  const fetchTrend = useCallback(async (exerciseName: string) => {
+    if (!clientId || !exerciseName.trim()) return
+    if (exerciseName in trendMap) return
+    try {
+      const res = await fetch(
+        `/api/clients/${clientId}/performance/${encodeURIComponent(exerciseName)}`
+      )
+      if (!res.ok) return
+      const data = await res.json()
+      setTrendMap(prev => ({ ...prev, [exerciseName]: { trend: data.trend, suggestion: data.suggestion } }))
+    } catch {
+      // non-blocking
+    }
+  }, [clientId, trendMap])
+
+  useEffect(() => {
+    if (!clientId) return
+    const names = sessions.flatMap(s => s.exercises.map(e => e.name)).filter(n => n.trim())
+    const unique = Array.from(new Set(names))
+    unique.forEach(name => fetchTrend(name))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, sessions])
+
   const presentPatterns = Array.from(new Set(
     sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter((p): p is string => !!p))
   ))
@@ -321,6 +350,8 @@ export default function EditorPane({
                       exerciseRef={exerciseRefSetter(`${si}-${ei}`)}
                       isFirst={si === 0 && ei === 0}
                       isLast={si === sessions.length - 1 && ei === session.exercises.length - 1}
+                      performanceTrend={trendMap[ex.name]?.trend ?? null}
+                      performanceSuggestion={trendMap[ex.name]?.suggestion ?? null}
                       onMoveUp={() => {
                         if (ei > 0) {
                           onMoveExercise(si, ei, si, ei - 1)

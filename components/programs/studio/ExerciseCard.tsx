@@ -101,6 +101,8 @@ interface Props {
   onMoveDown?: () => void
   isFirst?: boolean
   isLast?: boolean
+  performanceTrend?: 'progression' | 'stagnation' | 'overtraining' | null
+  performanceSuggestion?: string | null
 }
 
 const SUPERSET_COLORS = [
@@ -129,6 +131,8 @@ export default function ExerciseCard({
   onMoveDown,
   isFirst,
   isLast,
+  performanceTrend,
+  performanceSuggestion,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const altRef = useRef<ExerciseClientAlternativesHandle>(null)
@@ -305,6 +309,32 @@ export default function ExerciseCard({
                 <Trash2 size={12} />
               </button>
             </div>
+
+            {/* Performance trend badge — only when clientId context is active */}
+            {performanceTrend && (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{
+                    color: performanceTrend === 'progression' ? '#1f8a65'
+                      : performanceTrend === 'stagnation' ? '#f59e0b'
+                      : '#ef4444',
+                    backgroundColor: performanceTrend === 'progression' ? 'rgba(31,138,101,0.12)'
+                      : performanceTrend === 'stagnation' ? 'rgba(245,158,11,0.12)'
+                      : 'rgba(239,68,68,0.12)',
+                  }}
+                >
+                  {performanceTrend === 'progression' ? '↗ Progression'
+                    : performanceTrend === 'stagnation' ? '→ Stagnation'
+                    : '↘ Surmenage'}
+                </span>
+                {performanceSuggestion && (
+                  <span className="text-[10px] text-white/35 truncate max-w-[200px]" title={performanceSuggestion}>
+                    {performanceSuggestion}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Sets / Reps / Rest / RIR */}
             <div className="grid grid-cols-4 gap-1">
