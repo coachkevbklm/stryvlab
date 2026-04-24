@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stryv-client-v1'
+const CACHE_NAME = 'stryv-client-v2'
 
 // Assets statiques à pré-cacher
 const STATIC_ASSETS = [
@@ -41,25 +41,23 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Ignorer les requêtes non-GET et les patterns exclus
   if (request.method !== 'GET') return
   if (NO_CACHE_PATTERNS.some((p) => p.test(url.pathname + url.hostname))) return
 
-  // API routes → network-first (données fraîches)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request))
     return
   }
 
-  // Assets statiques (_next/static) → cache-first
+  // Assets statiques versionnés → cache-first (hash dans le nom = jamais stale)
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(cacheFirst(request))
     return
   }
 
-  // Pages client → stale-while-revalidate
+  // Pages client → network-first avec timeout 3s
   if (url.pathname.startsWith('/client')) {
-    event.respondWith(staleWhileRevalidate(request))
+    event.respondWith(networkFirstWithTimeout(request, 3000))
     return
   }
 })
@@ -94,12 +92,22 @@ async function networkFirst(request) {
   }
 }
 
-async function staleWhileRevalidate(request) {
+async function networkFirstWithTimeout(request, timeoutMs) {
   const cache = await caches.open(CACHE_NAME)
-  const cached = await cache.match(request)
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) cache.put(request, response.clone())
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), timeoutMs)
+  )
+
+  try {
+    const response = await Promise.race([fetch(request), timeoutPromise])
+    if (response.ok) {
+      cache.put(request, response.clone())
+    }
     return response
-  }).catch(() => null)
-  return cached ?? (await fetchPromise) ?? new Response('Offline', { status: 503 })
+  } catch {
+    // Timeout ou offline → servir le cache
+    const cached = await cache.match(request)
+    return cached ?? new Response('Offline', { status: 503 })
+  }
 }
