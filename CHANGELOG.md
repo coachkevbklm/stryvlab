@@ -1,5 +1,6 @@
 ## 2026-04-25
 
+FEATURE: Add GET /api/clients/[clientId]/nutrition-data — enriched biometric data for nutrition tool pre-fill
 SCHEMA: Add nutrition_protocols and nutrition_protocol_days tables with RLS
 FIX: ClientTopBarLeft — suppression de useClient() dans le composant (rendu hors ClientProvider dans la TopBar), client passé en prop via useClientTopBar
 FIX: client_set_logs — migration 20260425_set_logs_unique_fix.sql : side NOT NULL DEFAULT 'bilateral' + contrainte unique (session_log_id, exercise_name, set_number, side) pour activer le upsert live des sets (migration précédente jamais appliquée)
