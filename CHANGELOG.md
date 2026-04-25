@@ -1,5 +1,10 @@
 ## 2026-04-25
 
+FEATURE: Smart Fit — LOW_INTENSITY alert (warning) when a muscle group is both under-MEV and avg RIR > 3 (RP threshold for effective sets) — volume and intensity double-problem
+FIX: NavDock CTA — supprime les boutons d'action non-wired sur toutes les pages sauf /coach/clients (NEW_CLIENT seul actif car enregistré via useDockActions)
+FIX: MorphoAnalysisSection — affiche le message d'erreur si le job échoue (au lieu de rester silencieux) + logs poll status
+FIX: lib/morpho/analyze.ts — signed URL TTL augmenté de 5min à 10min pour éviter expiration avant analyse OpenAI
+
 FEATURE: Smart Fit — MEV/MAV/MRV volume coverage indicator: new `scoreVolumeCoverage` subscore (20% of global), weighted sets × activation per muscle sub-group, Israetel/RP thresholds scaled by goal + level, segmented gauge bars in Intelligence Panel
 FEATURE: Smart Fit — `lib/programs/intelligence/volume-targets.ts`: 60+ EN→FR sub-group mappings, BASE_TARGETS (16 groups), `getVolumeTargets(group, goal, level)`, `VOLUME_SEGMENTS`, `VOLUME_GROUP_LABELS`
 FEATURE: Smart Fit — UNDER_MEV (warning), OVER_MAV (info), OVER_MRV (critical) alerts with exact set counts

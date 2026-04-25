@@ -941,6 +941,16 @@ export function scoreVolumeCoverage(
   const level = profile?.fitnessLevel ?? meta.level
 
   // ── Accumulate weighted volume per sub-group ──────────────────────────────
+  // Also track RIR per group to detect low-intensity double-problem (under MEV + high RIR)
+  const rirByGroup: Record<string, { totalSets: number; weightedRir: number }> = {}
+
+  function trackRir(group: string, sets: number, rir: number | null) {
+    if (rir == null) return
+    if (!rirByGroup[group]) rirByGroup[group] = { totalSets: 0, weightedRir: 0 }
+    rirByGroup[group].totalSets += sets
+    rirByGroup[group].weightedRir += sets * rir
+  }
+
   for (const session of sessions) {
     for (const ex of session.exercises) {
       if (!ex.primaryMuscle || ex.primaryActivation == null) continue
@@ -948,6 +958,7 @@ export function scoreVolumeCoverage(
       const primaryGroup = MUSCLE_TO_VOLUME_GROUP[ex.primaryMuscle]
       if (primaryGroup) {
         volumeByMuscle[primaryGroup] = (volumeByMuscle[primaryGroup] ?? 0) + ex.sets * ex.primaryActivation
+        trackRir(primaryGroup, ex.sets, ex.rir)
       }
 
       if (ex.secondaryMusclesDetail && ex.secondaryActivations) {
@@ -957,6 +968,7 @@ export function scoreVolumeCoverage(
           const group = MUSCLE_TO_VOLUME_GROUP[muscle]
           if (group) {
             volumeByMuscle[group] = (volumeByMuscle[group] ?? 0) + ex.sets * activation
+            trackRir(group, ex.sets, ex.rir)
           }
         })
       }
@@ -1001,6 +1013,21 @@ export function scoreVolumeCoverage(
         explanation: `${Math.round(volume)} sets équivalents/sem — sous le minimum efficace (MEV = ${mev}). Stimulus insuffisant pour progresser.`,
         suggestion: `Ajoutez ${mev - Math.round(volume)} sets équivalents/sem sur ce groupe musculaire.`,
       })
+
+      // Double-problem: under MEV + RIR too high → sets don't count as effective
+      const rirData = rirByGroup[group]
+      if (rirData && rirData.totalSets > 0) {
+        const avgRir = rirData.weightedRir / rirData.totalSets
+        if (avgRir > 3) {
+          alerts.push({
+            severity: 'warning',
+            code: 'LOW_INTENSITY',
+            title: `Intensité insuffisante : ${label}`,
+            explanation: `RIR moyen ${avgRir.toFixed(1)} — à cette intensité, les séries ne génèrent pas de stimulus adaptatif suffisant (seuil RP : RIR ≤ 3). Couplé au volume sous-MEV, aucune progression n'est attendue.`,
+            suggestion: `Rapprochez les séries de l'échec (RIR 1–3) pour que le volume compte. Un set à RIR 5 vaut mécaniquement moins qu'un set à RIR 2.`,
+          })
+        }
+      }
     }
   }
 
