@@ -4,11 +4,25 @@ export type ClientLang = 'fr' | 'en' | 'es'
 
 export const clientDict = {
   // ── BottomNav ──
-  'nav.home':      { fr: 'Accueil',   en: 'Home',      es: 'Inicio' },
-  'nav.programme': { fr: 'Programme', en: 'Program',    es: 'Programa' },
-  'nav.progress':  { fr: 'Progrès',   en: 'Progress',   es: 'Progreso' },
-  'nav.bilans':    { fr: 'Bilans',     en: 'Assessments',es: 'Evaluaciones' },
-  'nav.profil':    { fr: 'Profil',     en: 'Profile',    es: 'Perfil' },
+  'nav.home':       { fr: 'Accueil',   en: 'Home',        es: 'Inicio' },
+  'nav.programme':  { fr: 'Programme', en: 'Program',      es: 'Programa' },
+  'nav.progress':   { fr: 'Progrès',   en: 'Progress',     es: 'Progreso' },
+  'nav.bilans':     { fr: 'Bilans',    en: 'Assessments',  es: 'Evaluaciones' },
+  'nav.nutrition':  { fr: 'Nutrition', en: 'Nutrition',    es: 'Nutrición' },
+  'nav.profil':     { fr: 'Profil',    en: 'Profile',      es: 'Perfil' },
+
+  // ── Nutrition page ──
+  'nutrition.section':         { fr: 'Nutrition',           en: 'Nutrition',           es: 'Nutrición' },
+  'nutrition.noProtocol':      { fr: 'Aucun protocole actif', en: 'No active protocol', es: 'Sin protocolo activo' },
+  'nutrition.noProtocol.desc': { fr: 'Ton coach prépare ton protocole nutritionnel.', en: 'Your coach is preparing your nutrition protocol.', es: 'Tu coach está preparando tu protocolo nutricional.' },
+  'nutrition.kcal':            { fr: 'kcal / jour',         en: 'kcal / day',           es: 'kcal / día' },
+  'nutrition.protein':         { fr: 'Protéines',           en: 'Protein',              es: 'Proteínas' },
+  'nutrition.carbs':           { fr: 'Glucides',            en: 'Carbs',                es: 'Carbohidratos' },
+  'nutrition.fat':             { fr: 'Lipides',             en: 'Fat',                  es: 'Grasas' },
+  'nutrition.hydration':       { fr: 'Hydratation',         en: 'Hydration',            es: 'Hidratación' },
+  'nutrition.carbCycle':       { fr: 'Carb Cycling',        en: 'Carb Cycling',         es: 'Carb Cycling' },
+  'nutrition.cycleSync':       { fr: 'Phase du cycle',      en: 'Cycle phase',          es: 'Fase del ciclo' },
+  'nutrition.recommendations': { fr: 'Recommandations',     en: 'Recommendations',      es: 'Recomendaciones' },
 
   // ── Home page ──
   'home.section':             { fr: 'Accueil',    en: 'Home',      es: 'Inicio' },

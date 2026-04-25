@@ -1,3 +1,10 @@
+## 2026-04-26
+
+FEATURE: Client nutrition page — /client/nutrition shows active shared protocol with macro donut, day tabs, hydration, cycle sync (female only), recommendations
+FEATURE: BottomNav — add Nutrition tab with Utensils icon linking to /client/nutrition
+FEATURE: i18n — add nutrition.* and nav.nutrition translation keys (FR/EN/ES)
+FEATURE: Nutrition protocol tool — unified create/edit page (NutritionProtocolTool) with Macros, Carb Cycling, Hydratation, Cycle Sync (female only), day tabs, save draft + save & share
+
 ## 2026-04-25
 
 REFACTOR: Redirect /outils/macros to /coach/clients — macro tool now only accessible via client context
