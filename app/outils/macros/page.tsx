@@ -1,5 +1,5 @@
-import MacroCalculator from "./MacroCalculator";
+import { redirect } from 'next/navigation'
 
 export default function MacrosPage() {
-  return <MacroCalculator />;
+  redirect('/coach/clients')
 }
