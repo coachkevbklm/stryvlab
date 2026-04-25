@@ -1,5 +1,22 @@
 ## 2026-04-25
 
+SCHEMA: Add nutrition_protocols and nutrition_protocol_days tables with RLS
+FIX: ClientTopBarLeft — suppression de useClient() dans le composant (rendu hors ClientProvider dans la TopBar), client passé en prop via useClientTopBar
+FIX: client_set_logs — migration 20260425_set_logs_unique_fix.sql : side NOT NULL DEFAULT 'bilateral' + contrainte unique (session_log_id, exercise_name, set_number, side) pour activer le upsert live des sets (migration précédente jamais appliquée)
+FEATURE: TopBar coach — contexte client injecté sur toutes les pages /coach/clients/[clientId]/* (photo/initiales + nom + objectif + niveau + statut + page active)
+FEATURE: ClientData type — ajout profile_photo_url pour affichage photo client dans TopBar et composants
+REFACTOR: Pages client coach — suppression ClientHeader inline, remplacé par useClientTopBar hook (performances, métriques, bilans, morpho, profil, nutrition, entraînement, cardio, composition)
+CHORE: Nouveaux composants — ClientTopBarLeft.tsx, useClientTopBar.tsx
+
+REFACTOR: Client app — BottomNav remplacé par dock flottant pill (glassmorphism, centré, identique au NavDock coach)
+REFACTOR: Client app — tous les headers inline sticky remplacés par glassmorphism flottant (fixed top-4, backdrop-blur-2xl, shadow, gradient)
+REFACTOR: ClientTopBar — glassmorphism flottant aligné sur CoachShell TopBar
+REFACTOR: Home hero card séance du jour — traitement accent fort (border accent, gradient vert, shadow, icône agrandie, CTA avec glow)
+REFACTOR: SessionLogger — bouton coche set avec feedback visuel (bg accent au complet, active:scale-90, shadow glow), fond ligne complétée renforcé
+FIX: morpho/analyze — remplace rate limit 24h par blocage par bilan déjà analysé (status=completed), sans limite de temps
+REFACTOR: TopBar coach — style glassmorphism aligné sur NavDock (backdrop-blur-2xl, shadow, gradient, border white/[0.08])
+
+
 FIX: /api/clients/[clientId]/performance — sets comptés si completed=true OU actual_reps not null (corrige Volume=0/Sets=0 pour séances historiques où completed était false en DB)
 FIX: morpho/analyze route — cherche maintenant le bilan complété le plus récent AVEC photos (pas juste le plus récent) — corrige le cas où le dernier bilan est sans photos
 
