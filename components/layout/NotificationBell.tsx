@@ -164,7 +164,9 @@ export default function NotificationBell() {
                   onClick={() => {
                     if (!n.read) markRead(n.id);
                     // Redirection selon le type et l’id de ressource
-                    if (n.submission_id) {
+                    if (n.type === "session_reminder" && n.client_id) {
+                      router.push(`/coach/clients/${n.client_id}/data/performances`);
+                    } else if (n.submission_id) {
                       if (n.type === "assessment_completed") {
                         router.push(`/coach/bilans/${n.submission_id}`);
                       } else if (n.type === "payment_received") {

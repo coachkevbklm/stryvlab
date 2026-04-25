@@ -9,6 +9,7 @@ FIX: programme/page.tsx — bouton Commencer remplacé par badge "Séance réali
 FEATURE: programme/page.tsx — navigation calendrier : pills de jours cliquables (?dow=N query param), prévisualisation des séances des autres jours sans démarrer une séance, label "Aperçu" sur les séances non-aujourd'hui
 SCHEMA: client_set_logs — ajout colonnes primary_muscles text[] et secondary_muscles text[] (migration 20260425_set_logs_muscles.sql, à appliquer via Supabase SQL Editor)
 
+FIX: NotificationBell — session_reminder redirige vers /coach/clients/{clientId}/data/performances au lieu de ne rien faire
 FEATURE: Smart Fit — LOW_INTENSITY alert (warning) when a muscle group is both under-MEV and avg RIR > 3 (RP threshold for effective sets) — volume and intensity double-problem
 FIX: NavDock CTA — supprime les boutons d'action non-wired sur toutes les pages sauf /coach/clients (NEW_CLIENT seul actif car enregistré via useDockActions)
 FIX: MorphoAnalysisSection — affiche le message d'erreur si le job échoue (au lieu de rester silencieux) + logs poll status
