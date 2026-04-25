@@ -1,5 +1,14 @@
 ## 2026-04-25
 
+FIX: SessionLogger — convertir actual_reps/actual_weight_kg/rir_actual en nombres avant PATCH (fix critique : stats volume/reps = 0 en recap et progrès)
+FIX: SessionLogger + recap — primary_muscles/secondary_muscles persistés dans client_set_logs (option B) pour un BodyMap précis sans re-join program_exercises
+FIX: recap/[sessionLogId] — BodyMap utilise les muscles des set_logs (plus de fallback regex uniquement par nom d'exercice)
+FIX: ExerciseSwapSheet — primary_muscles/secondary_muscles transmis au scoring d'alternatives (les alternatives étaient basées sur le pattern seul)
+FIX: session/[sessionId]/page.tsx — regex unilatéral élargie (kick.?back, extension.?hanche, fente, split.?squat, bulgarian) pour détecter les exercices non-flaggés en DB
+FIX: programme/page.tsx — bouton Commencer remplacé par badge "Séance réalisée ✓" si completed_at exists today (vérifié via client_session_logs)
+FEATURE: programme/page.tsx — navigation calendrier : pills de jours cliquables (?dow=N query param), prévisualisation des séances des autres jours sans démarrer une séance, label "Aperçu" sur les séances non-aujourd'hui
+SCHEMA: client_set_logs — ajout colonnes primary_muscles text[] et secondary_muscles text[] (migration 20260425_set_logs_muscles.sql, à appliquer via Supabase SQL Editor)
+
 FEATURE: Smart Fit — LOW_INTENSITY alert (warning) when a muscle group is both under-MEV and avg RIR > 3 (RP threshold for effective sets) — volume and intensity double-problem
 FIX: NavDock CTA — supprime les boutons d'action non-wired sur toutes les pages sauf /coach/clients (NEW_CLIENT seul actif car enregistré via useDockActions)
 FIX: MorphoAnalysisSection — affiche le message d'erreur si le job échoue (au lieu de rester silencieux) + logs poll status

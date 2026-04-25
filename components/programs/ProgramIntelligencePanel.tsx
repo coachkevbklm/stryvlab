@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
-  PieChart, Pie, Cell, Tooltip,
+  Tooltip,
 } from 'recharts'
 import { Zap, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import type { IntelligenceResult, IntelligenceAlert, TemplateMeta } from '@/lib/programs/intelligence'
@@ -137,6 +137,46 @@ function barColor(pct: number): string {
   if (pct >= 60) return '#1f8a65'
   if (pct >= 30) return '#34d399'
   return '#6ee7b7'
+}
+
+function DonutChart({ data, colors, size }: { data: { name: string; value: number }[]; colors: string[]; size: number }) {
+  const total = data.reduce((a, b) => a + b.value, 0)
+  if (total === 0) return null
+
+  const cx = size / 2
+  const cy = size / 2
+  const r = size * 0.46
+  const innerR = size * 0.28
+  const gap = 0.04 // radians gap between segments
+
+  let angle = -Math.PI / 2
+  const segments = data.map((d, i) => {
+    const sweep = (d.value / total) * (Math.PI * 2) - gap
+    const startAngle = angle + gap / 2
+    const endAngle = startAngle + sweep
+
+    const x1 = cx + r * Math.cos(startAngle)
+    const y1 = cy + r * Math.sin(startAngle)
+    const x2 = cx + r * Math.cos(endAngle)
+    const y2 = cy + r * Math.sin(endAngle)
+    const ix1 = cx + innerR * Math.cos(endAngle)
+    const iy1 = cy + innerR * Math.sin(endAngle)
+    const ix2 = cx + innerR * Math.cos(startAngle)
+    const iy2 = cy + innerR * Math.sin(startAngle)
+    const largeArc = sweep > Math.PI ? 1 : 0
+
+    const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix2} ${iy2} Z`
+    angle += (d.value / total) * Math.PI * 2
+    return { path, color: colors[i % colors.length] }
+  })
+
+  return (
+    <svg width={size} height={size} style={{ flexShrink: 0 }}>
+      {segments.map((s, i) => (
+        <path key={i} d={s.path} fill={s.color} />
+      ))}
+    </svg>
+  )
 }
 
 export default function ProgramIntelligencePanel({ result, meta, onAlertClick }: Props) {
@@ -386,30 +426,11 @@ export default function ProgramIntelligencePanel({ result, meta, onAlertClick }:
           )}
 
           {/* ── Donut patterns ── */}
-          {mounted && donutData.length > 0 && (
+          {donutData.length > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-3">Patterns de mouvement</p>
               <div className="flex items-center gap-4">
-                {donutData.length > 1 ? (
-                  <div style={{ width: 80, height: 80, flexShrink: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={donutData} cx="50%" cy="50%" innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
-                          {donutData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div
-                    style={{ width: 60, height: 60, flexShrink: 0, borderRadius: '50%', backgroundColor: PIE_COLORS[0] + '33', border: `2px solid ${PIE_COLORS[0]}` }}
-                    className="flex items-center justify-center"
-                  >
-                    <span className="text-[9px] font-bold" style={{ color: PIE_COLORS[0] }}>100%</span>
-                  </div>
-                )}
+                <DonutChart data={donutData} colors={PIE_COLORS} size={72} />
                 <div className="flex flex-col gap-1.5 flex-1">
                   {donutData.map((d, i) => {
                     const total = donutData.reduce((a, b) => a + b.value, 0)
