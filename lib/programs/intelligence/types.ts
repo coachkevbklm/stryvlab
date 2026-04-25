@@ -68,6 +68,7 @@ export interface IntelligenceResult {
     redundancy: number
     jointLoad: number
     coordination: number
+    volumeCoverage: number
   }
   alerts: IntelligenceAlert[]
   distribution: MuscleDistribution
@@ -77,6 +78,7 @@ export interface IntelligenceResult {
   sraMap: SRAPoint[]
   sraHeatmap: SRAHeatmapWeek[]
   programStats: ProgramStats
+  volumeByMuscle: Record<string, number>
 }
 
 // Exercice tel que stocké dans le builder (coach_program_template_exercises)
