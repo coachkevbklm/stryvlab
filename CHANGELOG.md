@@ -1,7 +1,15 @@
 ## 2026-04-25
 
+FEATURE: Smart Fit — MEV/MAV/MRV volume coverage indicator: new `scoreVolumeCoverage` subscore (20% of global), weighted sets × activation per muscle sub-group, Israetel/RP thresholds scaled by goal + level, segmented gauge bars in Intelligence Panel
+FEATURE: Smart Fit — `lib/programs/intelligence/volume-targets.ts`: 60+ EN→FR sub-group mappings, BASE_TARGETS (16 groups), `getVolumeTargets(group, goal, level)`, `VOLUME_SEGMENTS`, `VOLUME_GROUP_LABELS`
+FEATURE: Smart Fit — UNDER_MEV (warning), OVER_MAV (info), OVER_MRV (critical) alerts with exact set counts
+FEATURE: ProgramIntelligencePanel — new "Volume hebdomadaire" section with animated MEV/MAV/MRV gauge bars per sub-group, segmented by body region (Jambes / Push / Pull / Core)
+CHORE: Exercise catalog — enrich all 95 missing exercises with complete biomech data (primaryMuscle, primaryActivation, secondaryMuscles, secondaryActivations, stabilizers, jointStress×3, globalInstability, coordinationDemand, constraintProfile) — 458/458 complete
+
+CHORE: Exercise catalog — enrich all 95 missing exercises with complete biomech data (primaryMuscle, primaryActivation, secondaryMuscles, secondaryActivations, stabilizers, jointStress×3, globalInstability, coordinationDemand, constraintProfile) — 458/458 complete
+
 FIX: ExercisePicker — filtre Faisceau affiche uniquement les faisceaux anatomiques du groupe sélectionné (map statique FIBERS_BY_GROUP), plus de sangle/obliques/érecteurs dans "Épaules" ou "Fessiers"
-FIX: Smart Fit — radar "Distribution musculaire" utilise primaryMuscle (biomech EN) comme fallback via BIOMECH_TO_GROUP quand primary_muscles[] est vide (exercices chargés depuis DB avant la feature muscles)
+FIX: Smart Fit — radar "Distribution musculaire" : fallback catalogue au chargement du template (getMusclesFromCatalog) quand primary_muscles[] est vide en DB ; BIOMECH_TO_GROUP conservé comme fallback secondaire dans scoring.ts
 FIX: Smart Fit — "Patterns de mouvement" affiche un cercle stylisé au lieu d'un PieChart invisible quand une seule catégorie (ex: 100% Jambes)
 
 FIX: Inngest morpho-analyze function — wrong signature (triggers inside config object); now uses correct 3-argument form (config, trigger, handler)

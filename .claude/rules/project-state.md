@@ -2,11 +2,128 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-24 (Phase 3 Performance Feedback Loops — Complete)
+> Dernière mise à jour : 2026-04-25 (MEV/MAV/MRV volume coverage indicator)
 
 ---
 
-## 2026-04-24 — Phase 3 Performance Feedback Loops
+## 2026-04-25 — Smart Fit — Volume Coverage MEV/MAV/MRV (Israetel/RP)
+
+**Ce qui a été fait :**
+
+1. **`lib/programs/intelligence/volume-targets.ts`** — nouveau module de cibles volume
+   - `MUSCLE_TO_VOLUME_GROUP` : 60+ slugs EN anatomiques → 16 sous-groupes FR (quadriceps, ischio, fessiers_grand, fessiers_moyen, mollets, pectoraux_haut/bas, epaules_ant/lat/post, triceps, dos_grand_dorsal/trapezes/lombaires, biceps, abdos)
+   - `BASE_TARGETS` : [MEV, MAV, MRV] basé sur Israetel/RP Strength pour niveau intermédiaire hypertrophie
+   - `LEVEL_MULTIPLIER` : beginner 0.65×, intermediate 1.00×, advanced 1.25×, elite 1.50×
+   - `GOAL_MULTIPLIER` : hypertrophy 1.00×, strength 0.65×, fat_loss 0.80×, endurance 1.20×, recomp 0.90×, maintenance 0.75×, athletic 0.85×
+   - `getVolumeTargets(group, goal, level)` → `[MEV, MAV, MRV]` arrondis
+   - `VOLUME_SEGMENTS` : 4 segments (Jambes, Haut Push, Haut Pull, Core) avec leurs sous-groupes
+   - `VOLUME_GROUP_LABELS` : labels FR d'affichage
+
+2. **`tests/lib/intelligence/volume-coverage.test.ts`** — 11 tests unitaires (tous PASS)
+   - Volume pondéré : `sets × primaryActivation` pour muscle primaire, `sets × secondaryActivations[i]` pour secondaires
+   - Alertes UNDER_MEV / OVER_MAV / OVER_MRV avec bonnes sévérités
+   - Exercices sans biomech exclus du tracking (volumeByMuscle = {})
+   - Accumulation multi-sessions
+   - Scaling par level (beginner MEV plus bas)
+   - Scaling par goal (strength MRV plus bas)
+   - Score dégrade proportionnellement aux groupes sous le MEV
+
+3. **`lib/programs/intelligence/scoring.ts`** — `scoreVolumeCoverage` + intégration `buildIntelligenceResult`
+   - Accumule les volumes pondérés par sous-groupe (`MUSCLE_TO_VOLUME_GROUP`)
+   - Émissions : `UNDER_MEV` (+15 penalty, warning), `OVER_MAV` (+5 penalty, info), `OVER_MRV` (+20 penalty, critical)
+   - Score = 100 - penaltyMoyenne × amplification (jusqu'à 3× si tous les groupes sous MEV)
+   - `SUBSCORE_WEIGHTS` rebalancés : volumeCoverage 0.20, balance 0.15, recovery 0.15, specificity 0.15, progression 0.10, completeness 0.10, redundancy 0.08, jointLoad 0.05, coordination 0.02
+
+4. **`lib/programs/intelligence/types.ts`** — mis à jour
+   - `IntelligenceResult.subscores.volumeCoverage: number` ajouté
+   - `IntelligenceResult.volumeByMuscle: Record<string, number>` ajouté
+
+5. **`lib/programs/intelligence/index.ts`** — mis à jour
+   - `EMPTY_RESULT` : `volumeCoverage: 100`, `volumeByMuscle: {}`
+   - Re-exports : `VOLUME_SEGMENTS`, `VOLUME_GROUP_LABELS`, `getVolumeTargets`
+
+6. **`components/programs/ProgramIntelligencePanel.tsx`** — nouvelle section gauge
+   - Prop `meta: TemplateMeta` ajouté
+   - `SUBSCORE_LABELS.volumeCoverage = 'Volume MEV/MRV'`, `SUBSCORE_ACCENT.volumeCoverage = '#3b82f6'`
+   - Section "Volume hebdomadaire" avec barres animées MEV/MAV/MRV par sous-groupe
+   - Couleurs : gris = under MEV, vert = optimal (MEV→MAV), amber = over MAV, rouge = over MRV
+   - Marqueurs MEV et MAV visuels sous chaque barre
+
+7. **`components/programs/studio/IntelligencePanelShell.tsx`** — prop `meta: TemplateMeta` forwarded
+8. **`components/programs/ProgramTemplateBuilder.tsx`** — `meta={meta}` passé à `IntelligencePanelShell`
+
+**Points de vigilance :**
+- Le volume est calculé en "sets équivalents pondérés" (pas en sets bruts) — `sets × activation` — un exercice à activation primaire 0.82 contribue 82% du volume brut
+- Les exercices sans `primaryMuscle` (ancien catalog non-enrichi) ne contribuent PAS au volumeByMuscle — c'est intentionnel (évite les faux positifs sur des données incomplètes)
+- Le catalog est désormais 100% complet (458/458) — la plupart des exercices courants auront donc des données biomech
+- `OVER_MAV` est une alerte `info` (non bloquante) — surplus adaptatif acceptable, pas critique
+- Le scoring amplification formula : si tous les groupes sont sous MEV, penalty × 3 → score peut chuter à ~10/100 même avec peu de groupes trackés
+
+**Next Steps — Phase 4 Export & Webhooks :**
+- [ ] Programme export : PDF / CSV / JSON
+- [ ] Inngest jobs Phase 4 : programme complété, performance update, morpho terminée
+- [ ] Analytics dashboard coach : adherence, tendances, progression morpho
+
+---
+
+## 2026-04-25 — Phase 3 Feedback Loops — PerformanceFeedbackPanel + Proposals + Inngest
+
+**Ce qui a été fait :**
+
+1. **`lib/performance/analyzer.ts`** — logique pure, zéro dépendance DB
+   - `analyzeExercisePerformance(sessions, overloadEvents, weeksBack)` — calcule par exercice : `completion_rate`, `avg_rir`, `rir_trend` (improving/declining/stable/insufficient_data), `overloads_last_4_weeks`, `stagnation`, `overreaching`
+   - `global_overreaching` : true si ≥2 exercices en overreaching
+   - Stagnation : 0 overload sur 3 semaines ET ≥3 sessions dans la période
+   - Overreaching : completion < 0.8 sur les 2 dernières sessions consécutives (pas global)
+
+2. **`lib/performance/recommendations.ts`** — logique pure, zéro dépendance DB
+   - `generateRecommendations(analysis, currentProgram)` → `PerformanceRecommendation[]`
+   - Règles : `decrease_volume` (overreaching, high), `increase_weight` (completion>95% + RIR improving, medium), `increase_volume` (avg_rir>3 + completion>95% + pas stagnation, medium), `swap_exercise` (stagnation + completion>80%, low), `add_rest_day` (global_overreaching, high)
+   - Max 1 recommandation par exercice — la plus prioritaire l'emporte
+   - Pas d'increase_weight + increase_volume sur le même exercice
+
+3. **`supabase/migrations/20260424_program_adjustment_proposals.sql`** — nouvelle table
+   - `program_adjustment_proposals` : id, client_id, exercise_id, program_id, type, reason, proposed_value JSONB, current_value JSONB, status (pending/approved/rejected), coach_notes, created_at, reviewed_at
+   - RLS : coach manage ses propres clients
+   - Index sur (client_id, status) et (program_id)
+
+4. **`app/api/clients/[clientId]/performance-summary/route.ts`** — GET
+   - Auth + ownership coach
+   - Query param `?weeks=8` (défaut 8, max 52)
+   - Fetch session_logs + set_logs + progression_events + programme actif
+   - Appelle `analyzeExercisePerformance()` + `generateRecommendations()`
+   - Retourne `{ analysis, recommendations }`
+
+5. **`app/api/clients/[clientId]/program-adjustments/route.ts`** — GET + POST
+   - GET : proposals `status=pending` du client
+   - POST `{ proposal_id, action, coach_notes? }` : approve → applique le changement sur `program_exercises`, reject → marque rejeté
+   - Apply logic : `increase_volume`/`decrease_volume` → update sets, `increase_weight` → current_weight_kg + weight_increment_kg (arrondi 0.25kg), `swap_exercise`/`add_rest_day` → approval-only, pas d'auto-apply
+
+6. **`components/clients/PerformanceFeedbackPanel.tsx`** — UI coach DS v2.0
+   - Section "RECOMMANDATIONS PROGRAMME" au-dessus de PerformanceDashboard
+   - Skeleton loading, empty state "Aucune recommandation"
+   - Cards avec badge priority (rouge/amber/gris), type FR, reason, current→proposed, boutons Approuver/Rejeter
+   - Optimistic update : retire la card à l'approve/reject sans re-fetch
+
+7. **`app/api/clients/[clientId]/morpho/analyze/route.ts`** — Inngest wiring
+   - `setImmediate` remplacé par `await inngest.send({ name: 'morpho/analyze.requested', data: { morphoAnalysisId } })`
+   - Inngest déjà configuré : retry x3, timeout 5min, handler `/api/inngest` enregistré
+
+**Points de vigilance :**
+- La migration `20260424_program_adjustment_proposals.sql` doit être appliquée manuellement en Supabase SQL Editor
+- `rir_trend = 'improving'` signifie RIR en hausse = l'exercice devient plus FACILE (contre-intuitif)
+- Les proposals sont créés en DB uniquement quand le coach approuve ou rejette via le panel
+- Inngest nécessite `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY` en variables d'environnement Vercel + sync URL dans dashboard Inngest
+
+**Next Steps — Phase 4 Export & Webhooks :**
+- [ ] Programme export : PDF / CSV / JSON
+- [ ] Inngest jobs Phase 4 : programme complété, performance update, morpho terminée
+- [ ] Analytics dashboard coach : adherence, tendances, progression morpho
+- [x] Inngest prod config : env vars + intégration Vercel configurée (2026-04-25)
+
+---
+
+## 2026-04-24 — Phase 3 Performance Feedback Loops (ancienne entrée worktree)
 
 **Ce qui a été fait :**
 
@@ -48,9 +165,9 @@
 - [ ] Webhook triggers : programme complété, performance client update, analyse morpho terminée
 - [ ] Analytics dashboard : adherence, tendances performance, progression morpho
 
-**Inngest (configuration production restante) :**
-- [ ] Ajouter `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY` en variables d'environnement Vercel
-- [ ] Syncer l'URL de l'app dans le dashboard Inngest (https://app.inngest.com → Apps → Sync)
+**Inngest (configuration production) :**
+- [x] `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY` injectées via intégration Vercel (2026-04-25)
+- [x] Intégration Vercel ↔ Inngest configurée — auto-sync à chaque deploy sur main (2026-04-25)
 
 ---
 
@@ -259,7 +376,7 @@ Phase 2 Biomechanics [Rule-based scoring engine, profile integration, alerts]
          ↓
 Phase 3 Feedback Loops [Auto-adjust from client performance, morpho progression tracking]
          ↓
-Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
+Phase 4 Export/Automation [PDF/CSV/JSON export, Inngest jobs, analytics dashboard]
 ```
 
 **Timeline:** ~9–10 weeks (Phase 0: 1.5–2w, Phase 1: 2–3w, Phase 2: 2–2.5w, Phase 3: 2w, Phase 4: 1.5w)
@@ -576,7 +693,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 9. **`/coach/clients/[clientId]` onglet Profil** intègre MorphoAnalysisSection
 
 **Points de vigilance :**
-- Job queue : `setImmediate` (MVP) — remplacer par Inngest ou Bull en production pour la robustesse
+- Job queue : Inngest (retry x3, timeout 5min) — `setImmediate` retiré, Inngest seul en prod
 - OpenAI Vision : modèle `gpt-4o` (gpt-4-vision est déprécié depuis Dec 2024)
 - Rate limit DB-based : pas de Redis — un seul processus à la fois acceptable en Phase 0
 - `morphoStimulusAdjustments` pris en compte uniquement dans `scoreSpecificity` — `scoreRedundancy` reste sans ajustement morpho (Phase 2)
@@ -728,7 +845,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 - [ ] `lib/openai/vision.ts` — OpenAI Vision API client
 - [ ] `app/api/morpho/analyze/route.ts` — POST trigger (coach initiates)
 - [ ] `app/api/morpho/status/[analysisId]/route.ts` — GET job status (polling)
-- [ ] `app/api/morpho/callback/route.ts` — webhook receiver from n8n
+- [x] `app/api/morpho/callback/route.ts` — non nécessaire (pas de n8n, Inngest gère le flow)
 - [ ] Tests: 6 job orchestration tests + 4 OpenAI integration tests
 
 ---
@@ -741,7 +858,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
    - Table `morpho_analyses` : versioned client morphology + OpenAI Vision payloads
    - Colonnes : id (UUID PK), client_id (FK), assessment_submission_id (nullable FK), created_at, updated_at, analysis_date (DATE)
    - JSONB fields : raw_payload (unprocessed OpenAI), body_composition, dimensions, asymmetries, stimulus_adjustments
-   - Job tracking : status (pending/completed/failed), job_id (n8n), error_message, analyzed_by (UUID)
+   - Job tracking : status (pending/completed/failed), job_id (Inngest event ID), error_message, analyzed_by (UUID)
    - Indexes : (client_id, analysis_date DESC), (client_id) WHERE status='completed', (status)
    - Constraint UNIQUE : (assessment_submission_id, analysis_date)
    - Trigger : set_updated_at() on UPDATE
@@ -764,7 +881,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 - JSONB fields are untyped at DB level — validation happens at app layer (Zod) or via OpenAI contract
 - `assessment_submission_id` est nullable — analysis peut être indépendante ou liée à un bilan
-- `job_id` stocke le n8n job ID — polling depuis coach UI pour l'async job tracking
+- `job_id` stocke l'Inngest event ID — polling depuis coach UI pour l'async job tracking
 - Stimulus adjustments : Range 0.8–1.2 par pattern, appliquées en multiplicateur sur base coefficients (préserve calibration)
 - L'updated_at trigger nécessite la fonction `set_updated_at()` créée dans une migration antérieure (20260402_assessment_system.sql)
 
@@ -778,7 +895,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 
 **Next Steps — Phase 0 Task 2 (API Routes) :**
 
-- [ ] POST `/api/clients/[clientId]/morpho/analyze` — créer morpho_analyses row, queue n8n job
+- [x] POST `/api/clients/[clientId]/morpho/analyze` — créer morpho_analyses row, queue Inngest job
 - [ ] GET `/api/clients/[clientId]/morpho/latest` — latest completed analysis + body_composition
 - [ ] GET `/api/clients/[clientId]/morpho/analyses` — timeline complète (pagination)
 - [ ] GET `/api/morpho/job-status?job_id=...` — poll async job completion
@@ -1492,7 +1609,7 @@ Phase 4 Export/Webhooks [PDF/CSV/JSON export, n8n integration, analytics]
 **Next Steps :**
 - [ ] Route GET `/client/set-password` pour consommer le lien + poser le mot de passe (client side)
 - [ ] Tests unitaires sur `POST /api/clients/[clientId]/invite`
-- [ ] Workflow n8n (non configuré) : éventuellement audit des invitations via webhook
+- [ ] Audit des invitations via Inngest job si nécessaire (n8n retiré du stack)
 
 ---
 

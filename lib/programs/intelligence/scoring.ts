@@ -1,4 +1,5 @@
-import { resolveExerciseCoeff, normalizeMuscleSlug, muscleConflictsWithRestriction } from './catalog-utils'
+import { resolveExerciseCoeff, normalizeMuscleSlug, muscleConflictsWithRestriction, getPrimaryMuscleFromCatalog } from './catalog-utils'
+import { MUSCLE_TO_VOLUME_GROUP, getVolumeTargets } from './volume-targets'
 import type {
   BuilderSession, BuilderExercise, TemplateMeta,
   IntelligenceAlert, IntelligenceResult, MuscleDistribution,
@@ -9,54 +10,91 @@ import type {
 // ─── Normalisation slugs biomech précis → slugs FR affichables ───────────────
 // Utilisé dans fiberVolumes pour éviter les doublons (hamstrings + ischio-jambiers,
 // glutes + fessiers, etc.) quand primaryMuscle vient du catalogue EN.
+// Uniquement pour les slugs EN du catalogue biomech — jamais les slugs FR grossiers
+// Les slugs FR (fessiers, quadriceps, dos…) restent tels quels dans le fallback
 const BIOMECH_TO_FR: Record<string, string> = {
-  // Fessiers
+  // Fessiers EN → FR précis
   gluteus_maximus: 'grand_fessier',
   gluteus_medius: 'moyen_fessier',
   gluteus_minimus: 'petit_fessier',
-  glutes: 'grand_fessier',
-  // Ischio-jambiers
+  glutes: 'fessiers',
+  // Ischio-jambiers EN + variante avec tiret → underscore
   hamstrings: 'ischio_jambiers',
+  'ischio-jambiers': 'ischio_jambiers',
   biceps_femoris: 'biceps_femoral',
   semimembranosus: 'semi_membraneux',
   semitendinosus: 'semi_tendineux',
-  // Quadriceps
+  // Quadriceps EN précis + générique catalogue
   quadriceps: 'quadriceps',
   rectus_femoris: 'droit_femoral',
   vastus_lateralis: 'vaste_lateral',
   vastus_medialis: 'vaste_medial',
-  // Dos
+  // Dos EN précis + génériques catalogue
   latissimus_dorsi: 'grand_dorsal',
+  lats: 'grand_dorsal',
+  upper_back: 'dos_superieur',
   rhomboids: 'rhomboides',
   trapezius: 'trapeze',
   trapezius_upper: 'trapeze_superieur',
   trapezius_middle: 'trapeze_moyen',
   trapezius_lower: 'trapeze_inferieur',
+  traps: 'trapeze',
+  upper_traps: 'trapeze_superieur',
   spine_erectors: 'erecteurs_rachis',
-  // Pectoraux
+  // Pectoraux EN précis + variantes catalogue
   pectoralis_major: 'grand_pectoral',
+  pectoralis_major_upper: 'grand_pectoral_sup',
+  pectoralis_major_lower: 'grand_pectoral_inf',
   pectoralis_minor: 'petit_pectoral',
-  // Épaules
+  // Épaules EN précis + variantes catalogue
   deltoid_anterior: 'deltoide_anterieur',
   deltoid_lateral: 'deltoide_lateral',
   deltoid_posterior: 'deltoide_posterieur',
-  // Bras
+  anterior_deltoid: 'deltoide_anterieur',
+  medial_deltoid: 'deltoide_lateral',
+  posterior_deltoid: 'deltoide_posterieur',
+  rotator_cuff: 'coiffe_rotateurs',
+  subscapularis: 'subscapulaire',
+  // Bras EN
   biceps_brachii: 'biceps',
   brachialis: 'brachial_anterieur',
   brachioradialis: 'brachio_radial',
   triceps_brachii: 'triceps',
-  // Mollets
+  // Mollets EN
   gastrocnemius: 'gastrocnemien',
   soleus: 'soleaire',
-  // Core
+  // Core EN précis + variantes catalogue
   rectus_abdominis: 'droit_abdominal',
+  lower_abs: 'droit_abdominal_inf',
   obliques: 'obliques',
   transverse_abdominis: 'transverse',
   core: 'sangle_abdominale',
+  core_global: 'sangle_abdominale',
 }
 
 function normalizeFiberSlug(slug: string): string {
-  return BIOMECH_TO_FR[slug] ?? slug
+  // First try direct map lookup
+  if (BIOMECH_TO_FR[slug]) return BIOMECH_TO_FR[slug]
+  // Normalize dashes to underscores for consistency (e.g. 'ischio-jambiers' → 'ischio_jambiers')
+  return slug.replace(/-/g, '_')
+}
+
+// Maps a biomech primaryMuscle EN slug → radar muscle group key (FR slug used in RADAR_MUSCLES)
+const BIOMECH_TO_GROUP: Record<string, string> = {
+  gluteus_maximus: 'fessiers', gluteus_medius: 'fessiers', gluteus_minimus: 'fessiers', glutes: 'fessiers',
+  hamstrings: 'ischio-jambiers', biceps_femoris: 'ischio-jambiers', semimembranosus: 'ischio-jambiers', semitendinosus: 'ischio-jambiers',
+  quadriceps: 'quadriceps', rectus_femoris: 'quadriceps', vastus_lateralis: 'quadriceps', vastus_medialis: 'quadriceps',
+  latissimus_dorsi: 'dos', lats: 'dos', upper_back: 'dos', rhomboids: 'dos',
+  trapezius: 'dos', trapezius_upper: 'dos', trapezius_middle: 'dos', trapezius_lower: 'dos', traps: 'dos', upper_traps: 'dos', spine_erectors: 'dos',
+  pectoralis_major: 'pectoraux', pectoralis_major_upper: 'pectoraux', pectoralis_major_lower: 'pectoraux', pectoralis_minor: 'pectoraux',
+  deltoid_anterior: 'epaules', deltoid_lateral: 'epaules', deltoid_posterior: 'epaules',
+  anterior_deltoid: 'epaules', medial_deltoid: 'epaules', posterior_deltoid: 'epaules',
+  rotator_cuff: 'epaules', subscapularis: 'epaules',
+  biceps_brachii: 'biceps', brachialis: 'biceps', brachioradialis: 'biceps',
+  triceps_brachii: 'triceps',
+  gastrocnemius: 'mollets', soleus: 'mollets', calves: 'mollets',
+  rectus_abdominis: 'abdos', lower_abs: 'abdos', obliques: 'abdos', transverse_abdominis: 'abdos', core: 'abdos', core_global: 'abdos',
+  hip_flexors: 'abdos', adductors: 'adducteurs', abductors: 'abducteurs',
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -108,6 +146,7 @@ function getCoeff(ex: BuilderExercise): number {
     movement_pattern: ex.movement_pattern,
     primary_muscles: ex.primary_muscles,
     is_compound: ex.is_compound,
+    primaryActivation: ex.primaryActivation ?? null,
   })
 }
 
@@ -711,9 +750,17 @@ export function scoreCompleteness(
     scapular_retraction: 'Rétraction scapulaire', scapular_protraction: 'Protraction scapulaire',
   }
 
-  // Si le programme est spécialisé (1-2 séances ou fréquence ≤ 2), les patterns
-  // manquants sont informatifs — le coach l'a fait volontairement.
-  const isSpecialized = sessions.length <= 2 || meta.frequency <= 2
+  // Si le programme est spécialisé, les patterns manquants sont informatifs.
+  // Spécialisé = 1-2 séances OU fréquence ≤ 2 OU tous les patterns présents
+  // appartiennent à un seul groupe (legs-only, push-only, pull-only…)
+  const LEGS_PATTERNS = new Set(['squat_pattern','hip_hinge','knee_flexion','knee_extension','calf_raise','hip_abduction','hip_adduction'])
+  const PUSH_PATTERNS = new Set(['horizontal_push','vertical_push'])
+  const PULL_PATTERNS = new Set(['horizontal_pull','vertical_pull','scapular_retraction','scapular_elevation'])
+  const allPresent = Array.from(presentPatterns).filter((p): p is string => p !== null)
+  const isLegsOnly = allPresent.length > 0 && allPresent.every(p => LEGS_PATTERNS.has(p))
+  const isPushOnly = allPresent.length > 0 && allPresent.every(p => PUSH_PATTERNS.has(p))
+  const isPullOnly = allPresent.length > 0 && allPresent.every(p => PULL_PATTERNS.has(p))
+  const isSpecialized = sessions.length <= 2 || meta.frequency <= 2 || isLegsOnly || isPushOnly || isPullOnly
   const missingSeverity = isSpecialized ? 'info' : 'warning'
 
   missing.forEach(pattern => {
@@ -876,16 +923,108 @@ function scoreCoordination(
 
 // ─── Agrégation finale ────────────────────────────────────────────────────────
 
+// ─── 9. Volume Coverage (MEV/MAV/MRV) ────────────────────────────────────────
+
+export function scoreVolumeCoverage(
+  sessions: BuilderSession[],
+  meta: TemplateMeta,
+  profile?: IntelligenceProfile,
+): {
+  score: number
+  alerts: IntelligenceAlert[]
+  volumeByMuscle: Record<string, number>
+} {
+  const alerts: IntelligenceAlert[] = []
+  const volumeByMuscle: Record<string, number> = {}
+
+  const goal = profile?.goal ?? meta.goal
+  const level = profile?.fitnessLevel ?? meta.level
+
+  // ── Accumulate weighted volume per sub-group ──────────────────────────────
+  for (const session of sessions) {
+    for (const ex of session.exercises) {
+      if (!ex.primaryMuscle || ex.primaryActivation == null) continue
+
+      const primaryGroup = MUSCLE_TO_VOLUME_GROUP[ex.primaryMuscle]
+      if (primaryGroup) {
+        volumeByMuscle[primaryGroup] = (volumeByMuscle[primaryGroup] ?? 0) + ex.sets * ex.primaryActivation
+      }
+
+      if (ex.secondaryMusclesDetail && ex.secondaryActivations) {
+        ex.secondaryMusclesDetail.forEach((muscle, i) => {
+          const activation = ex.secondaryActivations?.[i]
+          if (activation == null) return
+          const group = MUSCLE_TO_VOLUME_GROUP[muscle]
+          if (group) {
+            volumeByMuscle[group] = (volumeByMuscle[group] ?? 0) + ex.sets * activation
+          }
+        })
+      }
+    }
+  }
+
+  // ── Score and emit alerts ─────────────────────────────────────────────────
+  const trackedGroups = Object.keys(volumeByMuscle)
+  if (trackedGroups.length === 0) return { score: 100, alerts, volumeByMuscle }
+
+  let totalPenalty = 0
+
+  for (const group of trackedGroups) {
+    const volume = volumeByMuscle[group]
+    const [mev, mav, mrv] = getVolumeTargets(group, goal, level)
+    const label = group.replace(/_/g, ' ')
+
+    if (volume > mrv) {
+      totalPenalty += 20
+      alerts.push({
+        severity: 'critical',
+        code: 'OVER_MRV',
+        title: `Volume excessif : ${label}`,
+        explanation: `${Math.round(volume)} sets équivalents/sem — dépasse le volume récupérable (MRV = ${mrv}). Risque de surentraînement.`,
+        suggestion: `Réduisez le volume sur ce groupe à moins de ${mrv} sets équivalents/sem.`,
+      })
+    } else if (volume > mav) {
+      totalPenalty += 5
+      alerts.push({
+        severity: 'info',
+        code: 'OVER_MAV',
+        title: `Volume surplus : ${label}`,
+        explanation: `${Math.round(volume)} sets équivalents/sem — au-delà du volume adaptatif optimal (MAV = ${mav}). Gains marginaux décroissants.`,
+        suggestion: `Réduisez légèrement le volume ou déplacez des séries vers un groupe sous-entraîné.`,
+      })
+    } else if (volume < mev) {
+      totalPenalty += 15
+      alerts.push({
+        severity: 'warning',
+        code: 'UNDER_MEV',
+        title: `Volume insuffisant : ${label}`,
+        explanation: `${Math.round(volume)} sets équivalents/sem — sous le minimum efficace (MEV = ${mev}). Stimulus insuffisant pour progresser.`,
+        suggestion: `Ajoutez ${mev - Math.round(volume)} sets équivalents/sem sur ce groupe musculaire.`,
+      })
+    }
+  }
+
+  // Penalty is proportional: each under-MEV group reduces score by (penalty / total groups),
+  // but the base deduction is amplified by under-MEV ratio so a fully under-MEV program drops hard.
+  const underMevGroups = alerts.filter(a => a.code === 'UNDER_MEV').length
+  const underMevRatio = trackedGroups.length > 0 ? underMevGroups / trackedGroups.length : 0
+  const penaltyReduced = totalPenalty / trackedGroups.length
+  const amplification = 1 + underMevRatio * 2  // up to 3× if all groups under MEV
+  const score = clampScore(100 - penaltyReduced * amplification)
+  return { score, alerts, volumeByMuscle }
+}
+
 // Poids des subscores dans le globalScore
 const SUBSCORE_WEIGHTS = {
-  balance: 0.20,
-  recovery: 0.20,
-  specificity: 0.15,
-  progression: 0.10,
-  completeness: 0.10,
-  redundancy: 0.10,
-  jointLoad: 0.10,
-  coordination: 0.05,
+  balance:        0.15,
+  recovery:       0.15,
+  specificity:    0.15,
+  progression:    0.10,
+  completeness:   0.10,
+  redundancy:     0.08,
+  jointLoad:      0.05,
+  coordination:   0.02,
+  volumeCoverage: 0.20,
 }
 
 function buildNarrative(subscores: IntelligenceResult['subscores'], alerts: IntelligenceAlert[]): string {
@@ -938,7 +1077,7 @@ export function buildIntelligenceResult(
     return {
       globalScore: 0,
       globalNarrative: "Ajoutez des exercices pour voir l'analyse.",
-      subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0, jointLoad: 100, coordination: 100 },
+      subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0, jointLoad: 100, coordination: 100, volumeCoverage: 100 },
       alerts: [],
       distribution: {},
       patternDistribution: { push: 0, pull: 0, legs: 0, core: 0 },
@@ -947,6 +1086,7 @@ export function buildIntelligenceResult(
       sraMap: [],
       sraHeatmap: [],
       programStats: emptyProgramStats,
+      volumeByMuscle: {},
     }
   }
 
@@ -958,6 +1098,7 @@ export function buildIntelligenceResult(
   const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
   const jointLoadResult = scoreJointLoad(filteredSessions, profile)
   const coordinationResult = scoreCoordination(filteredSessions, meta)
+  const volumeResult = scoreVolumeCoverage(filteredSessions, meta)
 
   const subscores = {
     balance: balanceResult.score,
@@ -968,6 +1109,7 @@ export function buildIntelligenceResult(
     redundancy: redundancyResult.score,
     jointLoad: jointLoadResult.score,
     coordination: coordinationResult.score,
+    volumeCoverage: volumeResult.score,
   }
 
   const globalScore = clampScore(
@@ -985,20 +1127,27 @@ export function buildIntelligenceResult(
     ...completenessResult.alerts,
     ...jointLoadResult.alerts,
     ...coordinationResult.alerts,
+    ...volumeResult.alerts,
   ].sort((a, b) => {
     const order: Record<string, number> = { critical: 0, warning: 1, info: 2 }
     return order[a.severity] - order[b.severity]
   })
 
   // Distribution musculaire (volume pondéré par groupe)
+  // Priorité : primary_muscles[] (slugs FR du builder) → fallback primaryMuscle (slug EN biomech → groupe)
   const distribution: MuscleDistribution = {}
   for (const session of filteredSessions) {
     for (const ex of session.exercises) {
       const vol = weightedVolume(ex)
-      ex.primary_muscles.forEach(m => {
-        const norm = normalizeMuscleSlug(m)
-        distribution[norm] = (distribution[norm] ?? 0) + vol
-      })
+      if (ex.primary_muscles.length > 0) {
+        ex.primary_muscles.forEach(m => {
+          const norm = normalizeMuscleSlug(m)
+          distribution[norm] = (distribution[norm] ?? 0) + vol
+        })
+      } else if (ex.primaryMuscle) {
+        const group = BIOMECH_TO_GROUP[ex.primaryMuscle]
+        if (group) distribution[group] = (distribution[group] ?? 0) + vol
+      }
     }
   }
 
@@ -1035,14 +1184,15 @@ export function buildIntelligenceResult(
         muscleVolumes[norm] = (muscleVolumes[norm] ?? 0) + vol
       })
       // Faisceau précis biomech normalisé (gluteus_medius → moyen_fessier, etc.)
-      if (ex.primaryMuscle) {
-        const fiberKey = normalizeFiberSlug(ex.primaryMuscle)
+      const resolvedPrimaryMuscle = ex.primaryMuscle ?? getPrimaryMuscleFromCatalog(ex.name)
+      if (resolvedPrimaryMuscle) {
+        const fiberKey = normalizeFiberSlug(resolvedPrimaryMuscle)
         fiberVolumes[fiberKey] = (fiberVolumes[fiberKey] ?? 0) + vol
       } else {
-        // Fallback: slug FR grossier depuis primary_muscles
+        // Fallback: slug FR grossier normalisé (ischio-jambiers → ischio_jambiers)
         ex.primary_muscles.forEach(m => {
-          const norm = normalizeMuscleSlug(m)
-          fiberVolumes[norm] = (fiberVolumes[norm] ?? 0) + vol
+          const fiberKey = normalizeFiberSlug(normalizeMuscleSlug(m))
+          fiberVolumes[fiberKey] = (fiberVolumes[fiberKey] ?? 0) + vol
         })
       }
     }
@@ -1091,5 +1241,6 @@ export function buildIntelligenceResult(
     sraMap: sraResult.sraMap,
     sraHeatmap: sraResult.sraHeatmap,
     programStats,
+    volumeByMuscle: volumeResult.volumeByMuscle,
   }
 }

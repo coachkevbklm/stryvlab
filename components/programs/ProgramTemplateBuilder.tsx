@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ExercisePicker from "./ExercisePicker";
 import { useProgramIntelligence, useLabOverrides, type IntelligenceProfile } from "@/lib/programs/intelligence";
+import { getMusclesFromCatalog } from "@/lib/programs/intelligence/catalog-utils";
 import ProgramIntelligencePanel from "./ProgramIntelligencePanel";
 import IntelligenceAlertBadge from "./IntelligenceAlertBadge";
 import ExerciseAlternativesDrawer from "./ExerciseAlternativesDrawer";
@@ -301,7 +302,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             image_url: e.image_url ?? null,
             movement_pattern: e.movement_pattern ?? null,
             equipment_required: e.equipment_required ?? [],
-            primary_muscles: e.primary_muscles ?? [],
+            primary_muscles: (e.primary_muscles ?? []).length > 0 ? e.primary_muscles : getMusclesFromCatalog(e.name),
             secondary_muscles: e.secondary_muscles ?? [],
             is_compound: e.is_compound ?? undefined,
             group_id: e.group_id ?? undefined,
@@ -859,6 +860,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
           <IntelligencePanelShell
             result={intelligenceResult}
             weeks={meta.weeks}
+            meta={meta}
             onAlertClick={handleAlertClick}
             morphoConnected={morphoConnected}
             sraHeatmap={intelligenceResult?.sraHeatmap}

@@ -9,11 +9,12 @@ export { scoreAlternatives } from './alternatives'
 export type { AlternativeScore } from './alternatives'
 export { resolveExerciseCoeff } from './catalog-utils'
 export { scoreSuperset } from './scoring'
+export { VOLUME_SEGMENTS, VOLUME_GROUP_LABELS, getVolumeTargets } from './volume-targets'
 
 const EMPTY_RESULT: IntelligenceResult = {
   globalScore: 0,
   globalNarrative: "Ajoutez des exercices pour voir l'analyse.",
-  subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0, jointLoad: 100, coordination: 100 },
+  subscores: { balance: 0, recovery: 0, specificity: 0, progression: 0, completeness: 0, redundancy: 0, jointLoad: 100, coordination: 100, volumeCoverage: 100 },
   alerts: [],
   distribution: {},
   patternDistribution: { push: 0, pull: 0, legs: 0, core: 0 },
@@ -22,6 +23,7 @@ const EMPTY_RESULT: IntelligenceResult = {
   sraMap: [],
   sraHeatmap: [],
   programStats: { totalSets: 0, totalEstimatedReps: 0, totalExercises: 0, avgExercisesPerSession: 0, sessionsStats: [] },
+  volumeByMuscle: {},
 }
 
 // ─── Lab Mode Overrides ───────────────────────────────────────────────────────

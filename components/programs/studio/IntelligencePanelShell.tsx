@@ -4,24 +4,37 @@ import { useState } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 import { Minus, Maximize2, Move, PanelRight, Zap } from 'lucide-react'
 import ProgramIntelligencePanel from '@/components/programs/ProgramIntelligencePanel'
-import type { IntelligenceResult } from '@/lib/programs/intelligence'
+import LabModeSection from './LabModeSection'
+import type { IntelligenceResult, SRAHeatmapWeek, TemplateMeta } from '@/lib/programs/intelligence'
 
 type PanelMode = 'docked' | 'floating' | 'minimized'
 
 interface Props {
   result: IntelligenceResult
   weeks: number
+  meta: TemplateMeta
   onAlertClick: (si: number, ei: number) => void
+  morphoConnected?: boolean
+  morphoDate?: string
+  sraHeatmap?: SRAHeatmapWeek[]
+  labOverrides?: Record<string, number>
+  presentPatterns?: string[]
+  onOverrideChange?: (pattern: string, value: number) => void
+  onOverrideReset?: () => void
 }
 
-export default function IntelligencePanelShell({ result, weeks, onAlertClick }: Props) {
+export default function IntelligencePanelShell({
+  result, weeks, meta, onAlertClick,
+  morphoConnected, morphoDate, sraHeatmap, labOverrides, presentPatterns,
+  onOverrideChange, onOverrideReset,
+}: Props) {
   const [mode, setMode] = useState<PanelMode>('docked')
   const dragControls = useDragControls()
 
   // Minimized: compact score bar
   if (mode === 'minimized') {
     return (
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.08] px-4 py-2.5 shadow-lg">
+      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.08] px-4 py-2.5">
         <Zap size={13} className="text-[#1f8a65]" />
         <span
           className="text-[15px] font-bold font-mono"
@@ -60,7 +73,7 @@ export default function IntelligencePanelShell({ result, weeks, onAlertClick }: 
         dragMomentum={false}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="fixed z-40 w-[360px] max-h-[80vh] rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.08] shadow-2xl overflow-hidden flex flex-col"
+        className="fixed z-40 w-[360px] max-h-[80vh] rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.08] overflow-hidden flex flex-col"
         style={{ right: 24, top: 80 }}
       >
         {/* Drag handle */}
@@ -70,7 +83,7 @@ export default function IntelligencePanelShell({ result, weeks, onAlertClick }: 
         >
           <div className="flex items-center gap-2">
             <Move size={12} className="text-white/25" />
-            <span className="text-[11px] font-semibold text-white/60">Intelligence</span>
+            <span className="text-[11px] font-semibold text-white/60">SMART FIT</span>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -88,7 +101,7 @@ export default function IntelligencePanelShell({ result, weeks, onAlertClick }: 
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <ProgramIntelligencePanel result={result} weeks={weeks} onAlertClick={onAlertClick} />
+          <ProgramIntelligencePanel result={result} weeks={weeks} meta={meta} onAlertClick={onAlertClick} />
         </div>
       </motion.div>
     )
@@ -101,7 +114,7 @@ export default function IntelligencePanelShell({ result, weeks, onAlertClick }: 
       <div className="flex items-center justify-between px-4 py-2.5 border-b-[0.3px] border-white/[0.06] shrink-0">
         <div className="flex items-center gap-2">
           <Zap size={12} className="text-[#1f8a65]" />
-          <span className="text-[11px] font-semibold text-white/70">Intelligence</span>
+          <span className="text-[11px] font-semibold text-white/70">SMART FIT</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -120,8 +133,18 @@ export default function IntelligencePanelShell({ result, weeks, onAlertClick }: 
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        <ProgramIntelligencePanel result={result} weeks={weeks} onAlertClick={onAlertClick} />
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+        <ProgramIntelligencePanel result={result} weeks={weeks} meta={meta} onAlertClick={onAlertClick} />
+        <LabModeSection
+          result={result}
+          morphoConnected={morphoConnected ?? false}
+          morphoDate={morphoDate}
+          sraHeatmap={sraHeatmap}
+          labOverrides={labOverrides}
+          presentPatterns={presentPatterns}
+          onOverrideChange={onOverrideChange}
+          onOverrideReset={onOverrideReset}
+        />
       </div>
     </div>
   )

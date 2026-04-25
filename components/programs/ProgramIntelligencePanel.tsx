@@ -7,11 +7,13 @@ import {
   PieChart, Pie, Cell, Tooltip,
 } from 'recharts'
 import { Zap, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Info } from 'lucide-react'
-import type { IntelligenceResult, IntelligenceAlert } from '@/lib/programs/intelligence'
+import type { IntelligenceResult, IntelligenceAlert, TemplateMeta } from '@/lib/programs/intelligence'
+import { VOLUME_SEGMENTS, VOLUME_GROUP_LABELS, getVolumeTargets } from '@/lib/programs/intelligence'
 
 interface Props {
   result: IntelligenceResult
   weeks: number
+  meta: TemplateMeta
   onAlertClick?: (sessionIndex: number, exerciseIndex: number) => void
 }
 
@@ -24,6 +26,7 @@ const SUBSCORE_LABELS: Record<string, string> = {
   redundancy: 'Diversité',
   jointLoad: 'Charge articulaire',
   coordination: 'Coordination',
+  volumeCoverage: 'Volume MEV/MRV',
 }
 
 const SCORE_COLOR = (score: number) =>
@@ -32,6 +35,7 @@ const SCORE_COLOR = (score: number) =>
 const SUBSCORE_ACCENT: Record<string, string> = {
   jointLoad: '#f97316',
   coordination: '#8b5cf6',
+  volumeCoverage: '#3b82f6',
 }
 
 const SEVERITY_ICON = { critical: AlertCircle, warning: AlertTriangle, info: Info }
@@ -52,13 +56,16 @@ const RADAR_MUSCLES: { key: string; label: string }[] = [
 ]
 
 // Traduction slugs normalisés → français naturel (après normalizeFiberSlug côté moteur)
+// Doit rester en sync avec BIOMECH_TO_FR dans scoring.ts
 const FIBER_LABEL_FR: Record<string, string> = {
-  // Fessiers — slugs normalisés
+  // Fessiers
   grand_fessier: 'Grand fessier',
   moyen_fessier: 'Moyen fessier',
   petit_fessier: 'Petit fessier',
+  fessiers: 'Fessiers',
   // Ischio-jambiers
   ischio_jambiers: 'Ischio-jambiers',
+  'ischio-jambiers': 'Ischio-jambiers',
   biceps_femoral: 'Biceps fémoral',
   semi_membraneux: 'Semi-membraneux',
   semi_tendineux: 'Semi-tendineux',
@@ -69,19 +76,28 @@ const FIBER_LABEL_FR: Record<string, string> = {
   vaste_medial: 'Vaste médial',
   // Dos
   grand_dorsal: 'Grand dorsal',
+  dos_superieur: 'Dos sup.',
+  dos: 'Dos',
   rhomboides: 'Rhomboïdes',
   trapeze: 'Trapèze',
   trapeze_superieur: 'Trapèze sup.',
   trapeze_moyen: 'Trapèze moy.',
   trapeze_inferieur: 'Trapèze inf.',
-  erecteurs_rachis: 'Érecteurs du rachis',
+  erecteurs_rachis: 'Érecteurs rachis',
+  lombaires: 'Lombaires',
   // Pectoraux
   grand_pectoral: 'Grand pectoral',
+  grand_pectoral_sup: 'Grand pect. sup.',
+  grand_pectoral_inf: 'Grand pect. inf.',
   petit_pectoral: 'Petit pectoral',
+  pectoraux: 'Pectoraux',
   // Épaules
   deltoide_anterieur: 'Deltoïde ant.',
   deltoide_lateral: 'Deltoïde lat.',
   deltoide_posterieur: 'Deltoïde post.',
+  coiffe_rotateurs: 'Coiffe rotateurs',
+  subscapulaire: 'Subscapulaire',
+  epaules: 'Épaules',
   // Bras
   biceps: 'Biceps',
   brachial_anterieur: 'Brachial ant.',
@@ -90,22 +106,14 @@ const FIBER_LABEL_FR: Record<string, string> = {
   // Mollets
   gastrocnemien: 'Gastrocnémien',
   soleaire: 'Soléaire',
+  mollets: 'Mollets',
   // Core
   droit_abdominal: 'Droit abdominal',
+  droit_abdominal_inf: 'Abdominaux inf.',
   obliques: 'Obliques',
   transverse: 'Transverse',
   sangle_abdominale: 'Sangle abdominale',
-  // Slugs FR grossiers (fallback quand pas de biomech)
-  dos: 'Dos',
-  pectoraux: 'Pectoraux',
-  epaules: 'Épaules',
-  fessiers: 'Fessiers',
-  'ischio-jambiers': 'Ischio-jambiers',
-  biceps_global: 'Biceps',
-  triceps_global: 'Triceps',
-  mollets: 'Mollets',
   abdos: 'Abdos',
-  lombaires: 'Lombaires',
 }
 
 const PATTERN_LABEL_FR: Record<string, string> = {
@@ -131,7 +139,7 @@ function barColor(pct: number): string {
   return '#6ee7b7'
 }
 
-export default function ProgramIntelligencePanel({ result, onAlertClick }: Props) {
+export default function ProgramIntelligencePanel({ result, meta, onAlertClick }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [alertsExpanded, setAlertsExpanded] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -226,6 +234,100 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
             })}
           </div>
 
+          {/* ── Volume MEV/MAV/MRV par groupe musculaire ── */}
+          {Object.keys(result.volumeByMuscle).length > 0 && (
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-0.5">
+                Volume hebdomadaire
+              </p>
+              <p className="text-[9px] text-white/25 mb-3">Sets équivalents · MEV / MAV / MRV</p>
+
+              <div className="flex flex-col gap-4">
+                {VOLUME_SEGMENTS.map(segment => {
+                  const groups = segment.groups.filter(g => result.volumeByMuscle[g] != null)
+                  if (groups.length === 0) return null
+                  return (
+                    <div key={segment.key}>
+                      <p className="text-[8px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2">
+                        {segment.label}
+                      </p>
+                      <div className="flex flex-col gap-2.5">
+                        {groups.map(group => {
+                          const volume = result.volumeByMuscle[group] ?? 0
+                          const [mev, mav, mrv] = getVolumeTargets(group, meta.goal, meta.level)
+                          const label = VOLUME_GROUP_LABELS[group] ?? group.replace(/_/g, ' ')
+
+                          const isUnderMev = volume < mev
+                          const isOverMrv = volume > mrv
+                          const isOverMav = volume > mav && !isOverMrv
+
+                          const barColor = isOverMrv ? '#ef4444' : isOverMav ? '#f59e0b' : isUnderMev ? '#6b7280' : '#1f8a65'
+                          const fillPct = Math.min((volume / mrv) * 100, 100)
+
+                          return (
+                            <div key={group}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[9px] text-white/50">{label}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[8px] font-mono" style={{ color: barColor }}>
+                                    {volume.toFixed(1)}
+                                  </span>
+                                  <span className="text-[8px] text-white/20 font-mono">
+                                    /{mrv}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Barre segmentée MEV / MAV / MRV */}
+                              <div className="relative h-[5px] bg-white/[0.04] rounded-full overflow-hidden">
+                                {/* Zone MEV (0→mev) en vert clair */}
+                                <div
+                                  className="absolute top-0 left-0 h-full rounded-full opacity-20"
+                                  style={{ width: `${Math.min((mev / mrv) * 100, 100)}%`, backgroundColor: '#1f8a65' }}
+                                />
+                                {/* Zone MAV (mev→mav) en vert plus soutenu */}
+                                <div
+                                  className="absolute top-0 h-full rounded-full opacity-15"
+                                  style={{
+                                    left: `${(mev / mrv) * 100}%`,
+                                    width: `${Math.min(((mav - mev) / mrv) * 100, 100 - (mev / mrv) * 100)}%`,
+                                    backgroundColor: '#1f8a65',
+                                  }}
+                                />
+                                {/* Volume réel */}
+                                <motion.div
+                                  className="absolute top-0 left-0 h-full rounded-full"
+                                  style={{ backgroundColor: barColor }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${fillPct}%` }}
+                                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                                />
+                              </div>
+                              {/* Marqueurs MEV/MAV */}
+                              <div className="relative mt-0.5 h-3">
+                                <span
+                                  className="absolute text-[7px] text-white/20 transform -translate-x-1/2"
+                                  style={{ left: `${(mev / mrv) * 100}%` }}
+                                >
+                                  MEV
+                                </span>
+                                <span
+                                  className="absolute text-[7px] text-white/20 transform -translate-x-1/2"
+                                  style={{ left: `${(mav / mrv) * 100}%` }}
+                                >
+                                  MAV
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* ── KPIs globaux ── */}
           {result.programStats.totalSets > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
@@ -288,17 +390,26 @@ export default function ProgramIntelligencePanel({ result, onAlertClick }: Props
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-3">Patterns de mouvement</p>
               <div className="flex items-center gap-4">
-                <div style={{ width: 80, height: 80, flexShrink: 0 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={donutData} cx="50%" cy="50%" innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
-                        {donutData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                {donutData.length > 1 ? (
+                  <div style={{ width: 80, height: 80, flexShrink: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={donutData} cx="50%" cy="50%" innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
+                          {donutData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div
+                    style={{ width: 60, height: 60, flexShrink: 0, borderRadius: '50%', backgroundColor: PIE_COLORS[0] + '33', border: `2px solid ${PIE_COLORS[0]}` }}
+                    className="flex items-center justify-center"
+                  >
+                    <span className="text-[9px] font-bold" style={{ color: PIE_COLORS[0] }}>100%</span>
+                  </div>
+                )}
                 <div className="flex flex-col gap-1.5 flex-1">
                   {donutData.map((d, i) => {
                     const total = donutData.reduce((a, b) => a + b.value, 0)
