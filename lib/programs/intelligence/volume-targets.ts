@@ -1,0 +1,175 @@
+// Maps EN anatomical slugs (from catalog primaryMuscle / secondaryMuscles)
+// to display sub-groups used in volume gauges.
+export const MUSCLE_TO_VOLUME_GROUP: Record<string, string> = {
+  // Jambes — Quadriceps
+  rectus_femoris: 'quadriceps',
+  vastus_lateralis: 'quadriceps',
+  vastus_medialis: 'quadriceps',
+  vastus_intermedius: 'quadriceps',
+  quadriceps: 'quadriceps',
+  // Jambes — Ischio-jambiers
+  biceps_femoris: 'ischio',
+  semimembranosus: 'ischio',
+  semitendinosus: 'ischio',
+  hamstrings: 'ischio',
+  // Jambes — Grand fessier
+  gluteus_maximus: 'fessiers_grand',
+  glutes: 'fessiers_grand',
+  // Jambes — Moyen fessier
+  gluteus_medius: 'fessiers_moyen',
+  gluteus_minimus: 'fessiers_moyen',
+  // Jambes — Mollets
+  gastrocnemius: 'mollets',
+  soleus: 'mollets',
+  calves: 'mollets',
+  // Haut push — Pectoraux haut
+  pectoralis_major_upper: 'pectoraux_haut',
+  pectoralis_major_clavicular: 'pectoraux_haut',
+  // Haut push — Pectoraux bas
+  pectoralis_major: 'pectoraux_bas',
+  pectoralis_major_lower: 'pectoraux_bas',
+  pectoralis_major_sternal: 'pectoraux_bas',
+  pectoralis_minor: 'pectoraux_bas',
+  // Haut push — Épaules antérieur
+  anterior_deltoid: 'epaules_ant',
+  deltoid_anterior: 'epaules_ant',
+  // Haut push — Épaules latéral
+  lateral_deltoid: 'epaules_lat',
+  medial_deltoid: 'epaules_lat',
+  deltoid_lateral: 'epaules_lat',
+  // Haut push — Épaules postérieur
+  posterior_deltoid: 'epaules_post',
+  deltoid_posterior: 'epaules_post',
+  // Haut push — Triceps
+  triceps_brachii: 'triceps',
+  triceps: 'triceps',
+  // Haut pull — Grand dorsal
+  latissimus_dorsi: 'dos_grand_dorsal',
+  lats: 'dos_grand_dorsal',
+  teres_major: 'dos_grand_dorsal',
+  // Haut pull — Trapèzes / Rhomboïdes
+  rhomboids: 'dos_trapezes',
+  trapezius: 'dos_trapezes',
+  trapezius_upper: 'dos_trapezes',
+  trapezius_middle: 'dos_trapezes',
+  trapezius_lower: 'dos_trapezes',
+  traps: 'dos_trapezes',
+  upper_traps: 'dos_trapezes',
+  // Haut pull — Lombaires
+  spine_erectors: 'dos_lombaires',
+  erector_spinae: 'dos_lombaires',
+  lower_back: 'dos_lombaires',
+  // Haut pull — Biceps
+  biceps_brachii: 'biceps',
+  brachialis: 'biceps',
+  brachioradialis: 'biceps',
+  // Core — Abdos
+  rectus_abdominis: 'abdos',
+  obliques: 'abdos',
+  transverse_abdominis: 'abdos',
+  core: 'abdos',
+}
+
+// Display labels for each sub-group (FR)
+export const VOLUME_GROUP_LABELS: Record<string, string> = {
+  quadriceps: 'Quadriceps',
+  ischio: 'Ischio-jambiers',
+  fessiers_grand: 'Grand fessier',
+  fessiers_moyen: 'Moyen fessier',
+  mollets: 'Mollets',
+  pectoraux_haut: 'Pectoraux — Haut',
+  pectoraux_bas: 'Pectoraux — Bas',
+  epaules_ant: 'Épaules — Antérieur',
+  epaules_lat: 'Épaules — Latéral',
+  epaules_post: 'Épaules — Postérieur',
+  triceps: 'Triceps',
+  dos_grand_dorsal: 'Grand dorsal',
+  dos_trapezes: 'Trapèzes / Rhomboïdes',
+  dos_lombaires: 'Lombaires',
+  biceps: 'Biceps',
+  abdos: 'Abdos',
+}
+
+// Body segment groupings for display (4 segments)
+export const VOLUME_SEGMENTS: { key: string; label: string; groups: string[] }[] = [
+  {
+    key: 'jambes',
+    label: 'Jambes',
+    groups: ['quadriceps', 'ischio', 'fessiers_grand', 'fessiers_moyen', 'mollets'],
+  },
+  {
+    key: 'push',
+    label: 'Haut du corps — Push',
+    groups: ['pectoraux_haut', 'pectoraux_bas', 'epaules_ant', 'epaules_lat', 'epaules_post', 'triceps'],
+  },
+  {
+    key: 'pull',
+    label: 'Haut du corps — Pull',
+    groups: ['dos_grand_dorsal', 'dos_trapezes', 'dos_lombaires', 'biceps'],
+  },
+  {
+    key: 'core',
+    label: 'Core',
+    groups: ['abdos'],
+  },
+]
+
+// MEV/MAV/MRV targets per sub-group for intermediate hypertrophy (Israetel/RP Strength base)
+// Format: [MEV, MAV, MRV] in sets/week
+const BASE_TARGETS: Record<string, [number, number, number]> = {
+  quadriceps:       [8,  16, 22],
+  ischio:           [6,  12, 18],
+  fessiers_grand:   [6,  14, 20],
+  fessiers_moyen:   [4,  10, 16],
+  mollets:          [8,  16, 24],
+  pectoraux_haut:   [6,  12, 18],
+  pectoraux_bas:    [6,  14, 20],
+  epaules_ant:      [4,  10, 16],
+  epaules_lat:      [6,  14, 20],
+  epaules_post:     [6,  14, 20],
+  triceps:          [6,  14, 20],
+  dos_grand_dorsal: [8,  16, 22],
+  dos_trapezes:     [6,  14, 20],
+  dos_lombaires:    [4,  10, 16],
+  biceps:           [6,  14, 20],
+  abdos:            [6,  16, 22],
+}
+
+// Multipliers by fitness level (applied to all three thresholds)
+const LEVEL_MULTIPLIER: Record<string, number> = {
+  beginner:     0.65,
+  intermediate: 1.00,
+  advanced:     1.25,
+  elite:        1.50,
+}
+
+// Multipliers by goal
+const GOAL_MULTIPLIER: Record<string, number> = {
+  hypertrophy: 1.00,
+  strength:    0.65,
+  fat_loss:    0.80,
+  endurance:   1.20,
+  recomp:      0.90,
+  maintenance: 0.75,
+  athletic:    0.85,
+}
+
+/**
+ * Returns [MEV, MAV, MRV] for a given sub-group, goal, and level.
+ * Values are rounded to nearest integer.
+ */
+export function getVolumeTargets(
+  group: string,
+  goal: string,
+  level: string,
+): [number, number, number] {
+  const base = BASE_TARGETS[group] ?? [6, 12, 18]
+  const levelMult = LEVEL_MULTIPLIER[level] ?? 1.0
+  const goalMult = GOAL_MULTIPLIER[goal] ?? 1.0
+  const factor = levelMult * goalMult
+  return [
+    Math.round(base[0] * factor),
+    Math.round(base[1] * factor),
+    Math.round(base[2] * factor),
+  ]
+}
