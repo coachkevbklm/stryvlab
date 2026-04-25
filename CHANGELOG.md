@@ -1,4 +1,54 @@
+## 2026-04-25
+
+FIX: ExercisePicker — filtre Faisceau affiche uniquement les faisceaux anatomiques du groupe sélectionné (map statique FIBERS_BY_GROUP), plus de sangle/obliques/érecteurs dans "Épaules" ou "Fessiers"
+FIX: Smart Fit — radar "Distribution musculaire" utilise primaryMuscle (biomech EN) comme fallback via BIOMECH_TO_GROUP quand primary_muscles[] est vide (exercices chargés depuis DB avant la feature muscles)
+FIX: Smart Fit — "Patterns de mouvement" affiche un cercle stylisé au lieu d'un PieChart invisible quand une seule catégorie (ex: 100% Jambes)
+
+FIX: Inngest morpho-analyze function — wrong signature (triggers inside config object); now uses correct 3-argument form (config, trigger, handler)
+
+REFACTOR: ExercisePicker — filtres adaptatifs en cascade : changer "Groupe musculaire" restreint "Faisceau" aux muscles du groupe, puis "Faisceau" restreint "Mouvement" aux patterns disponibles — reset automatique des filtres enfants
+REFACTOR: ExercisePicker — selects avec chevron ChevronDown visible, couleur accent vert quand actif, labels adaptatifs ("Faisceau — Fessiers" selon contexte)
+FEATURE: ExercisePicker — filtre "Faisceau musculaire" : sélectionne exercices dont le muscle apparaît en primaire, secondaire OU stabilisateur (pas uniquement primaire)
+FEATURE: ExercisePicker — barre de recherche étendue : lombaires, moyen fessier, adducteur, deltoïde, etc. désormais retrouvés via SEARCH_MUSCLE_ALIASES (FR→EN biomech slugs) + labels FIBER_LABELS + groupe musculaire + pattern + équipement
+FIX: ExercisePicker — activeFiltersCount inclut maintenant filterFiber dans le compteur
+
+
+FIX: morpho/analyze route — photo detection used non-existent field_type column; now uses field_key LIKE 'photo_%' + storage_path NOT NULL
+FIX: lib/morpho/analyze.ts — getPhotoUrlsFromSubmission read value_text (always null); now reads storage_path and generates signed URLs from assessment-photos bucket
+CHORE: Retrait de n8n du stack — remplacé par Inngest pour tous les jobs async, documentation mise à jour
+CHORE: .claude/rules/n8n-boundary.md — marqué retiré, redirect vers inngest-patterns.md
+CHORE: .claude/rules/inngest-patterns.md — nouveau fichier de référence patterns Inngest
+CHORE: .claude/skills/morphology-rules — mis à jour (flow Inngest, plus de n8n)
+CHORE: CLAUDE.md — stack mis à jour (Inngest remplace n8n)
+CHORE: master-plan — Phase 4 mise à jour (Inngest remplace webhooks n8n)
+
+FIX: catalog-utils — catalogBySlug résolution doublons : privilégie l'entrée la plus enrichie (primaryMuscle > jointStressSpine) au lieu du premier match, corrige ex. Soulevé de terre sumo landmine
+FIX: Intelligence scoring — BIOMECH_TO_FR complété (14 entrées manquantes) : lats, quadriceps, anterior/medial/posterior_deltoid, pectoralis_major_upper/lower, traps, upper_traps, upper_back, lower_abs, core_global, rotator_cuff, subscapularis — couverture 100% des 363 exercices enrichis
+FIX: Intelligence scoring — getCoeff() transmet maintenant primaryActivation à resolveExerciseCoeff() (priorité 1 biomech activée au runtime)
+FIX: ProgramIntelligencePanel — FIBER_LABEL_FR synchronisé avec BIOMECH_TO_FR : +12 nouvelles clés (grand_pectoral_sup/inf, dos_superieur, coiffe_rotateurs, subscapulaire, droit_abdominal_inf, etc.)
+FIX: catalog-utils — getPrimaryMuscleFromCatalog() sans contrainte jointStressSpine, utilisé dans fiberVolumes pour résoudre le primaryMuscle de tous les exercices catalogue (enrichis ou non)
+FIX: Intelligence scoring — fiberVolumes fallback au catalogue par nom d'exercice via getPrimaryMuscleFromCatalog, résout barres manquantes pour exercices ajoutés avant patch biomech et exercices sans jointStress
+FIX: ExercisePicker — muscle pills générées dynamiquement depuis muscleGroup réellement présents (availableMuscleGroups), élimine Lombaires/Avant-bras/Adducteurs/Abducteurs vides
+FIX: Intelligence scoring — BIOMECH_TO_FR ne mappe plus les slugs FR grossiers (fessiers→grand_fessier retiré) : le fallback conserve fessiers/quadriceps/dos lisibles dans les barres de faisceau
+FIX: Intelligence scoring — isSpecialized détecte maintenant les séances legs-only (squat/hinge/knee/hip) pour abaisser les alertes MISSING_PATTERN en info et floorer le score Couverture à 50 même sur programmes 1-séance haute fréquence
+FIX: ProgramIntelligencePanel — FIBER_LABEL_FR: suppression doublons quadriceps/ischio_jambiers; ajout 'ischio-jambiers' (avec tiret) comme alias
+
+
+
+FEATURE: Phase 3 — PerformanceFeedbackPanel coach avec recommandations programme (increase/decrease volume, increase weight, swap exercise, add rest day) — approval explicite avant application
+FEATURE: lib/performance/analyzer.ts — logique pure completion_rate, avg_rir, rir_trend, stagnation, overreaching, global_overreaching
+FEATURE: lib/performance/recommendations.ts — moteur de recommandations rule-based, max 1 recommandation par exercice
+SCHEMA: Add program_adjustment_proposals table (pending/approved/rejected workflow)
+FEATURE: GET /api/clients/[clientId]/performance-summary — analyse + recommandations sur N semaines
+FEATURE: GET+POST /api/clients/[clientId]/program-adjustments — liste proposals + approve/reject avec apply automatique
+CHORE: Remplacer setImmediate par Inngest event dispatch dans morpho/analyze route (robustesse prod)
+
 ## 2026-04-24
+
+FIX: ExercisePicker — custom exercises: all biomech fields (plane, mechanic, primaryMuscle, jointStress*, etc.) now mapped from API and CatalogEntry interface; onSelect uses typed fields instead of unsafe cast; gifUrl/muscleGroup/filters corrected on creation
+FIX: Intelligence scoring — ischio-jambiers duplicate bars eliminated: BIOMECH_TO_FR now maps 'ischio-jambiers' (dash) → 'ischio_jambiers' (underscore); fallback fiberVolumes path uses normalizeFiberSlug; normalizeFiberSlug normalizes remaining dashes to underscores; fessiers/dos/pectoraux/epaules/mollets/abdos added to BIOMECH_TO_FR
+FIX: ExercisePicker — custom exercises now appear immediately after creation (gifUrl mapped from media_url, muscleGroup passed from form, filters cleared on creation); PATTERN_LABELS expanded to all movement pattern slugs (hip_abduction → "Abduction hanche", etc.); MUSCLE_LABELS expanded with ischio_jambiers/lombaires/adducteurs/abducteurs; broken image replaced by name placeholder when gifUrl is empty
+FIX: CustomExerciseModal — muscleGroup added to CreatedExercise interface and onCreated callback so ExercisePicker receives correct group instead of hardcoded 'custom'
 
 FIX: Intelligence — normaliser slugs biomech EN dans fiberVolumes (gluteus_medius→moyen_fessier, hamstrings→ischio_jambiers) pour éliminer doublons dans les barres par faisceau
 FIX: Intelligence — MISSING_PATTERN: labels FR dans les titres d'alertes; sévérité info (au lieu de warning) pour programmes spécialisés ≤2 séances; score Couverture plafonné à min 50 pour séances ciblées

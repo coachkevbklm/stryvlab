@@ -7,8 +7,8 @@ export const morphoAnalyzeFunction = inngest.createFunction(
     name: 'MorphoPro — Analyse photo client',
     retries: 3,
     timeouts: { finish: '5m' },
-    triggers: [{ event: 'morpho/analyze.requested' }],
   },
+  { event: 'morpho/analyze.requested' },
   async ({ event }) => {
     const { morphoAnalysisId } = event.data as { morphoAnalysisId: string }
     await analyzeMorphoJob(morphoAnalysisId)
