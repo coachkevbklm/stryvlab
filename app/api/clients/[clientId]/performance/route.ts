@@ -60,12 +60,16 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
   // ── KPIs ────────────────────────────────────────────────────
   const totalSessions = logs.length
   const completedSessions = logs.filter(l => l.completed_at).length
-  const totalSets = logs.flatMap(l => l.client_set_logs ?? []).filter(s => s.completed).length
+  // Un set est "effectif" s'il est coché OU s'il a des reps réelles saisies
+  // (certaines séances anciennes ont completed=false mais actual_reps rempli)
+  const isEffective = (s: { completed: boolean; actual_reps: number | null; actual_weight_kg: number | null }) =>
+    s.completed || s.actual_reps != null
+  const totalSets = logs.flatMap(l => l.client_set_logs ?? []).filter(isEffective).length
   const totalReps = logs.flatMap(l => l.client_set_logs ?? [])
-    .filter(s => s.completed && s.actual_reps)
+    .filter(s => isEffective(s) && s.actual_reps)
     .reduce((acc, s) => acc + (s.actual_reps ?? 0), 0)
   const totalVolume = logs.flatMap(l => l.client_set_logs ?? [])
-    .filter(s => s.completed && s.actual_reps && s.actual_weight_kg)
+    .filter(s => isEffective(s) && s.actual_reps && s.actual_weight_kg)
     .reduce((acc, s) => acc + (s.actual_reps ?? 0) * (Number(s.actual_weight_kg) ?? 0), 0)
   const avgDuration = logs.filter(l => l.duration_min)
     .reduce((acc, l, _, arr) => acc + (l.duration_min ?? 0) / arr.length, 0)
@@ -77,7 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
     if (!timelineMap[date]) timelineMap[date] = { date, volume: 0, reps: 0, sets: 0, sessions: 0 }
     timelineMap[date].sessions += 1
     for (const s of (log.client_set_logs ?? [])) {
-      if (!s.completed) continue
+      if (!isEffective(s)) continue
       timelineMap[date].sets += 1
       timelineMap[date].reps += s.actual_reps ?? 0
       timelineMap[date].volume += (s.actual_reps ?? 0) * (Number(s.actual_weight_kg) ?? 0)
@@ -89,7 +93,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
   const muscleMap: Record<string, { volume: number; sets: number; reps: number }> = {}
   for (const log of logs) {
     for (const s of (log.client_set_logs ?? [])) {
-      if (!s.completed) continue
+      if (!isEffective(s)) continue
       const group = inferMuscleGroup(s.exercise_name ?? '')
       if (!muscleMap[group]) muscleMap[group] = { volume: 0, sets: 0, reps: 0 }
       muscleMap[group].sets += 1
@@ -103,7 +107,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
   const exerciseMap: Record<string, { name: string; sessions: { date: string; maxWeight: number; totalVolume: number; totalReps: number; sets: number }[] }> = {}
   for (const log of logs) {
     for (const s of (log.client_set_logs ?? [])) {
-      if (!s.completed || !s.exercise_name) continue
+      if (!isEffective(s) || !s.exercise_name) continue
       if (!exerciseMap[s.exercise_name]) exerciseMap[s.exercise_name] = { name: s.exercise_name, sessions: [] }
       const existing = exerciseMap[s.exercise_name].sessions.find(x => x.date === log.logged_at)
       if (existing) {

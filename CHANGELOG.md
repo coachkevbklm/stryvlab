@@ -1,5 +1,8 @@
 ## 2026-04-25
 
+FIX: /api/clients/[clientId]/performance — sets comptés si completed=true OU actual_reps not null (corrige Volume=0/Sets=0 pour séances historiques où completed était false en DB)
+FIX: morpho/analyze route — cherche maintenant le bilan complété le plus récent AVEC photos (pas juste le plus récent) — corrige le cas où le dernier bilan est sans photos
+
 FIX: SessionLogger — convertir actual_reps/actual_weight_kg/rir_actual en nombres avant PATCH (fix critique : stats volume/reps = 0 en recap et progrès)
 FIX: SessionLogger + recap — primary_muscles/secondary_muscles persistés dans client_set_logs (option B) pour un BodyMap précis sans re-join program_exercises
 FIX: recap/[sessionLogId] — BodyMap utilise les muscles des set_logs (plus de fallback regex uniquement par nom d'exercice)
