@@ -1,5 +1,6 @@
 ## 2026-04-25
 
+FEATURE: Nutrition protocol dashboard page — active protocol card + history with share/unshare/delete
 FEATURE: Add nutrition protocol CRUD API — list, create, update, delete, share (with annotation), unshare
 FEATURE: Add GET /api/clients/[clientId]/nutrition-data — enriched biometric data for nutrition tool pre-fill
 SCHEMA: Add nutrition_protocols and nutrition_protocol_days tables with RLS
