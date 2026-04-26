@@ -50,7 +50,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
         </div>
 
         {/* Col 2 — Calculation Engine (flex) */}
-        <div className="flex-1 border-r border-white/[0.04] overflow-hidden">
+        <div className="flex-1 border-r border-white/[0.04] overflow-hidden min-w-0">
           <CalculationEngine
             goal={studio.goal}
             onGoalChange={studio.setGoal}
@@ -69,8 +69,8 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
           />
         </div>
 
-        {/* Col 3 — Protocol Canvas (380px fixed) */}
-        <div className="w-[380px] shrink-0 overflow-hidden">
+        {/* Col 3 — Protocol Canvas (480px fixed — expanded from 380px) */}
+        <div className="w-[480px] shrink-0 overflow-hidden">
           <ProtocolCanvas
             protocolName={studio.protocolName}
             onProtocolNameChange={studio.setProtocolName}

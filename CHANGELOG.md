@@ -1,5 +1,24 @@
 ## 2026-04-26
 
+REFACTOR: Nutrition Studio — Polish UX clarity phase
+REFACTOR: Nutrition Studio — Expand Col 3 (ProtocolCanvas) from 380px → 480px for better day editor visibility
+REFACTOR: Nutrition Studio — Add tooltips to injection buttons (← Base, ← Jour haut/bas, ← Hydratation, ← Tous les calculs)
+REFACTOR: Nutrition Studio — Expand button labels: "Hydrat." → "Hydratation", "Tout ✦" → "Tous les calculs"
+REFACTOR: Nutrition Studio — Add contextual help text for Carb Cycling toggle (explain high/low day alternation)
+REFACTOR: Nutrition Studio — Add title attributes with cursor-help for all interactive elements
+
+DOCS: Strategic documentation suite created — vision, philosophy, decision framework, impact statement
+DOCS: docs/STRYVR_STRATEGIC_VISION_2026.md — Complete strategic vision, three pillars, 18-month roadmap, SWOT
+DOCS: docs/PRODUCT_PHILOSOPHY_ANTI_FRUSTRATION.md — 10 product principles, anti-patterns, design checklist
+DOCS: docs/DECISION_FRAMEWORK_VISION_ALIGNMENT.md — Feature evaluation framework, prioritization tiers, case studies
+DOCS: docs/EXECUTIVE_SUMMARY_STRYVR_2026.md — 1-page investor/partner summary, TAM, go-to-market, financials
+DOCS: docs/IMPACT_STATEMENT_STRYVR.md — Five-level impact analysis (individual to societal), 5-year targets
+DOCS: docs/STRATEGIC_DOCS_INDEX.md — Master index and quick reference cards
+DOCS: Updated CLAUDE.md — imports reference strategic vision as north star
+DOCS: Updated .claude/rules/project-state.md — header references strategic vision document
+DOCS: Created memory/user_vision_founder.md — Captured founder vision and core philosophy
+DOCS: Updated MEMORY.md index — added strategic foundation section
+
 FEATURE: Nutrition Studio — refonte totale NutritionProtocolTool en layout 3 colonnes MacroFactor-inspired
 FEATURE: Nutrition Studio — ClientIntelligencePanel avec sections biométrie/entraînement/lifestyle éditables
 FEATURE: Nutrition Studio — CalculationEngine avec TDEE waterfall, macros live, carb cycling toggle, hydratation

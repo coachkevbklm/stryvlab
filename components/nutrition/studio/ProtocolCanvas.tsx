@@ -190,7 +190,8 @@ export default function ProtocolCanvas({
                 {hasMacroResult && (
                   <button
                     onClick={() => onInjectMacros(activeDayIndex)}
-                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 hover:text-white/85 hover:bg-white/[0.07] transition-all"
+                    title="Injecter les macros calculées (calories, protéines, lipides, glucides)"
+                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 hover:text-white/85 hover:bg-white/[0.07] transition-all cursor-help"
                   >
                     ← Base
                   </button>
@@ -199,13 +200,15 @@ export default function ProtocolCanvas({
                   <>
                     <button
                       onClick={() => onInjectCCHigh(activeDayIndex)}
-                      className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] hover:bg-[#1f8a65]/15 transition-all"
+                      title="Injecter les macros d'un jour haut en carbs (pour l'entraînement)"
+                      className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] hover:bg-[#1f8a65]/15 transition-all cursor-help"
                     >
                       ← Jour haut
                     </button>
                     <button
                       onClick={() => onInjectCCLow(activeDayIndex)}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 hover:bg-blue-500/15 transition-all"
+                      title="Injecter les macros d'un jour bas en carbs (pour la récupération)"
+                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 hover:bg-blue-500/15 transition-all cursor-help"
                     >
                       ← Jour bas
                     </button>
@@ -214,17 +217,19 @@ export default function ProtocolCanvas({
                 {hasHydration && (
                   <button
                     onClick={() => onInjectHydration(activeDayIndex)}
-                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 transition-all"
+                    title="Injecter l'hydratation recommandée"
+                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 transition-all cursor-help"
                   >
-                    ← Hydrat.
+                    ← Hydratation
                   </button>
                 )}
                 {(hasMacroResult || hasHydration) && (
                   <button
                     onClick={() => onInjectAll(activeDayIndex)}
-                    className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all"
+                    title="Injecter toutes les données calculées (macros + hydratation)"
+                    className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all cursor-help"
                   >
-                    ← Tout ✦
+                    ← Tous les calculs
                   </button>
                 )}
               </div>

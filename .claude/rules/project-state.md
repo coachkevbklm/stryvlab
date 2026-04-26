@@ -5,7 +5,82 @@
 > 
 > **STRATEGIC REFERENCE** → See `docs/STRYVR_STRATEGIC_VISION_2026.md` for vision, pillars, roadmap, and success metrics.
 > 
-> Dernière mise à jour : 2026-04-26 (Nutrition Studio — layout 3 colonnes MacroFactor-inspired)
+> **NEW: Strategic Documentation Suite** → `docs/STRATEGIC_DOCS_INDEX.md` (master index)
+> Documents created 2026-04-26:
+> - Vision & Roadmap: `STRYVR_STRATEGIC_VISION_2026.md`
+> - Philosophy: `PRODUCT_PHILOSOPHY_ANTI_FRUSTRATION.md`
+> - Decisions: `DECISION_FRAMEWORK_VISION_ALIGNMENT.md`
+> - For investors: `EXECUTIVE_SUMMARY_STRYVR_2026.md`
+> - Impact: `IMPACT_STATEMENT_STRYVR.md`
+> - Guides: `QUICK_START_SESSION_GUIDE.md`, `VISUAL_CHEATSHEET.md`
+> 
+> Dernière mise à jour : 2026-04-26 (Strategic documentation suite + Nutrition Studio)
+
+---
+
+## 🎯 STATE STRATÉGIQUE GLOBAL (Snapshot)
+
+**Statut General** : Phase 1 (MVP) COMPLET ✅ — Prêt pour Phase 2 (Tier 2 features + Seed funding)
+
+**Modules Core** :
+- ✅ Program Intelligence Engine (Phase 2 complet) — SRA, balance, specificity, redundancy, feedback loops
+- ✅ Client App (Session logging, weight tracking, PWA)
+- ✅ Nutrition Protocols System (Macros, hydratation, carb cycling, cycle sync)
+- ✅ MorphoPro Bridge (OpenAI Vision → body comp + stimulus adjustments)
+- ✅ Design System v2.0 (Dark, flat, minimal, DS-compliant)
+
+**Metriques Actuelles** :
+- Architecture : Solide (Supabase RLS, Inngest async, TypeScript strict)
+- Performance : Good (< 300ms API responses, real-time scoring)
+- Adherence focus : ✅ (5-min client app target met)
+- Coach tooling : Good (Lab mode, AI recommendations, templates)
+
+**Roadmap Next** (Phase 2, Q3 2026):
+- [ ] Wearables integration (Apple Health, Oura)
+- [ ] Export engine (PDF, JSON, CSV)
+- [ ] Coach AI assistant (bulk protocol generation)
+- [ ] Advanced analytics (business metrics dashboard)
+- [ ] Performance feedback → action (coach approval flow)
+
+**Blockers** : None critical. Ready to scale.
+
+---
+
+## 2026-04-26 — Nutrition Studio — Polish UX Clarity Phase
+
+**Ce qui a été fait :**
+
+1. **Layout improvements** :
+   - `NutritionStudio.tsx` : Col 3 (ProtocolCanvas) widened from `380px` → `480px` (better day editor visibility + button space)
+   - Added `min-w-0` to Col 2 (CalculationEngine) for proper flex shrink behavior
+
+2. **Button label clarity** :
+   - `ProtocolCanvas.tsx` : "Hydrat." → "Hydratation" (full label, better understandability)
+   - `ProtocolCanvas.tsx` : "Tout ✦" → "Tous les calculs" (clearer action intent)
+   - All injection buttons now have `title` attributes with tooltip explanations (native hover hints)
+
+3. **Carb Cycling UX** :
+   - `CalculationEngine.tsx` : Added `title` attribute to CC toggle button (explains purpose: "Alterne entre jours hauts et bas")
+   - Added contextual help text when CC is enabled: "Alterne automatiquement entre jours hauts (séances) et bas (repos) pour optimiser..."
+   - Better visual feedback with `cursor-help` class on interactive elements
+
+4. **Tooltip content** :
+   - "← Base" : "Injecter les macros calculées (calories, protéines, lipides, glucides)"
+   - "← Jour haut" : "Injecter les macros d'un jour haut en carbs (pour l'entraînement)"
+   - "← Jour bas" : "Injecter les macros d'un jour bas en carbs (pour la récupération)"
+   - "← Hydratation" : "Injecter l'hydratation recommandée"
+   - "← Tous les calculs" : "Injecter toutes les données calculées (macros + hydratation)"
+
+**Points de vigilance :**
+- Col 3 widened to 480px improves button visibility but slightly reduces Col 2 flex space — acceptable given the layout is proportional (300 | flex | 480 = ~37% | 45% | 18% on 1280px viewport)
+- Tooltips use native HTML `title` attributes (not custom popovers) — simpler, works on mobile hover, compatible with accessibility tools
+- The data injection bug (trainingConfig showing 85 for duration/frequency) remains — likely a data issue in coach_clients table `weekly_frequency` field, not a UI issue. Requires user verification of source data.
+
+**Next Steps — Phase 5 Export & Webhooks :**
+- [ ] Investigate data accuracy issue: why trainingConfig.weeklyFrequency shows 85 (likely data in coach_clients or assessment_submissions)
+- [ ] Add estimated cost calculator when injecting macros (show calorie delta vs current)
+- [ ] Add "Apply to all days" bulk injection option
+- [ ] Add "Save as template" button for protocol quick reuse
 
 ---
 

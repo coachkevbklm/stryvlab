@@ -243,7 +243,8 @@ export default function CalculationEngine({
           <SectionDivider label="Carb Cycling" />
           <button
             onClick={() => onCarbCyclingChange({ enabled: !carbCycling.enabled })}
-            className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-semibold border-[0.3px] transition-all ${
+            title="Alterne entre des jours hauts (glucides élevés) et bas (glucides réduits) selon le plan d'entraînement"
+            className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-semibold border-[0.3px] transition-all cursor-help ${
               carbCycling.enabled
                 ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[#1f8a65]/30'
                 : 'bg-white/[0.04] text-white/30 border-white/[0.06]'
@@ -255,6 +256,10 @@ export default function CalculationEngine({
 
         {carbCycling.enabled && (
           <div className="space-y-2">
+            <p className="text-[9px] text-white/40 leading-relaxed">
+              Alterne automatiquement entre jours hauts (séances) et bas (repos) pour optimiser la partition des macros.
+            </p>
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[9px] text-white/35 mb-1">Protocole</p>
