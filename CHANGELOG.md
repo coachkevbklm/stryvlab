@@ -1,11 +1,20 @@
 ## 2026-04-26
 
-FEATURE: Nutrition Studio — Gold standard UX redesign (4-phase progressive disclosure refactor)
+FEATURE: Nutrition Studio — Gold standard UX redesign (11-task complete refactor)
 FEATURE: Nutrition Studio Phase 1 — Data validation: clamp session_duration_min (15–240), cardio_frequency (0–14), cardio_duration_min (0–180) to sensible ranges
 FEATURE: Nutrition Studio Phase 2 — Col 3 refactoring: replace window.prompt() with inline day name editor, elevate injection buttons to primary action (full-width green), add step indicator ("Paramètres ✓ | Calcul ✓ | Protocole →")
 FEATURE: Nutrition Studio Phase 3 — Col 1 refactoring: new ParameterAdjustmentPanel (Framer Motion slide-in), remove accordion sections, display large TDEE at bottom, breathable biometrics layout
 FEATURE: Nutrition Studio Phase 4 — Col 2 refactoring: replace Carb Cycling toggle pill with text link "▶ Activer le Carb Cycling", remove floating "?" icon, reveal config inline
+FEATURE: Nutrition Studio Phase 5 — Task 7-10 complete UX enhancements (Tasks 1-6 from previous session)
 FEATURE: Components — New ParameterAdjustmentPanel.tsx (180 lines): Framer Motion slide-in panel for Training + Lifestyle parameters, Pattern B from CustomExerciseModal
+FEATURE: Components — New InfoModal.tsx: reusable modal for injection action help with functional explanations and examples
+FEATURE: Components — New TdeeWaterfallLegend.tsx: 4-segment legend for TDEE waterfall (BMR, NEAT, EAT, TEF with colors)
+FEATURE: Components — New CalorieAdjustmentDisplay.tsx: enhanced slider with % display, delta calories, color-coded badge (red/green/neutral)
+FEATURE: Components — New MacroPercentageDisplay.tsx: displays macro grams + % of calories for P/L/G composition
+FEATURE: Nutrition Studio — Task 8: Add clickable Info icons to Carb Cycling toggle with functional explanation modal
+FEATURE: Nutrition Studio — Task 9: Optimize Carb Cycling layout with improved visual hierarchy and spacing
+FEATURE: Nutrition Studio — Task 10: Move action buttons (Aperçu, Brouillon, Partager) from footer to TopBar (useClientTopBar extended)
+FEATURE: useClientTopBar — Extended hook signature to accept optional rightContent parameter for TopBar right-side buttons
 FIX: Data accuracy — Add weekly_frequency validation (1-7 days/week bounds) to prevent nutrition math corruption
 FIX: Data accuracy — API nutrition-data endpoint now rejects invalid weekly_frequency values (< 1 or > 7)
 FIX: Data accuracy — Client PATCH endpoint validates weekly_frequency, returns 400 on invalid input
