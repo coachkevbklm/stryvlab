@@ -29,7 +29,10 @@ interface Exercise {
   rep_min: number | null
   rep_max: number | null
   progressive_overload_enabled: boolean
-  clientAlternatives?: string[]  // coach-pre-configured alternatives
+  primary_muscles?: string[]
+  secondary_muscles?: string[]
+  group_id?: string | null
+  clientAlternatives?: string[]
 }
 
 interface SetLog {
@@ -44,6 +47,8 @@ interface SetLog {
   rir_actual: string
   notes: string
   rest_sec_actual: number | null
+  primary_muscles: string[]
+  secondary_muscles: string[]
 }
 
 interface LastPerf {
@@ -82,6 +87,8 @@ function buildInitialSets(exercises: Exercise[]): SetLog[] {
             rir_actual: '',
             notes: '',
             rest_sec_actual: null,
+            primary_muscles: ex.primary_muscles ?? [],
+            secondary_muscles: ex.secondary_muscles ?? [],
           })
         }
       } else {
@@ -97,6 +104,8 @@ function buildInitialSets(exercises: Exercise[]): SetLog[] {
           rir_actual: '',
           notes: '',
           rest_sec_actual: null,
+          primary_muscles: ex.primary_muscles ?? [],
+          secondary_muscles: ex.secondary_muscles ?? [],
         })
       }
     }
@@ -166,15 +175,22 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const longPressStartRef = useRef<number | null>(null)
   const LONG_PRESS_DURATION = 3000
 
-  // Envoie un upsert des sets actuels d'un exercice vers la DB (fire-and-forget)
+  // Envoie un upsert des sets actuels vers la DB — convertit les strings en nombres pour le schema Zod
   async function patchSets(currentSets: SetLog[]) {
     const logId = sessionLogIdRef.current
     if (!logId) return
     try {
+      const payload = currentSets.map(s => ({
+        ...s,
+        actual_reps: s.actual_reps !== '' ? parseInt(s.actual_reps, 10) || null : null,
+        actual_weight_kg: s.actual_weight_kg !== '' ? parseFloat(s.actual_weight_kg) || null : null,
+        rir_actual: s.rir_actual !== '' ? parseInt(s.rir_actual, 10) || null : null,
+        planned_reps: s.planned_reps || null,
+      }))
       await fetch(`/api/session-logs/${logId}/sets`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ set_logs: currentSets }),
+        body: JSON.stringify({ set_logs: payload }),
       })
     } catch {
       // Erreur réseau silencieuse — les données sont en state React
@@ -395,6 +411,22 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     return `Atteins ${ex.rep_max} reps à RIR ${effectiveRir} sur toutes tes séries pour augmenter la charge.`
   }
 
+  // ── Supersets — couleur par group_id ──
+  const SUPERSET_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
+  const supersetColors: Record<string, string> = {}
+  let colorIdx = 0
+  for (const ex of exercises) {
+    if (ex.group_id && !supersetColors[ex.group_id]) {
+      supersetColors[ex.group_id] = SUPERSET_COLORS[colorIdx % SUPERSET_COLORS.length]
+      colorIdx++
+    }
+  }
+  const currentGroupId = currentEx?.group_id ?? null
+  const currentGroupColor = currentGroupId ? supersetColors[currentGroupId] : null
+  // Index de l'exercice dans son groupe (1-based) et taille du groupe
+  const groupMates = currentGroupId ? exercises.filter(e => e.group_id === currentGroupId) : []
+  const groupPosition = currentGroupId ? groupMates.findIndex(e => e.id === currentEx?.id) + 1 : 0
+
   // ── Chrono repos — valeurs dérivées ──
   const restRemaining = restPrescribed !== null ? restPrescribed - restElapsed : null // peut être négatif
   const isOvertime = restRemaining !== null && restRemaining < 0
@@ -431,13 +463,20 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const durationMin = Math.round(elapsed / 60)
     const logId = sessionLogIdRef.current
 
-    // Flush final de tous les sets avant de marquer completed
+    // Flush final de tous les sets avant de marquer completed — convertit les strings en nombres
     if (logId) {
       try {
+        const flushPayload = sets.map(s => ({
+          ...s,
+          actual_reps: s.actual_reps !== '' ? parseInt(s.actual_reps, 10) || null : null,
+          actual_weight_kg: s.actual_weight_kg !== '' ? parseFloat(s.actual_weight_kg) || null : null,
+          rir_actual: s.rir_actual !== '' ? parseInt(s.rir_actual, 10) || null : null,
+          planned_reps: s.planned_reps || null,
+        }))
         const flushRes = await fetch(`/api/session-logs/${logId}/sets`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ set_logs: sets }),
+          body: JSON.stringify({ set_logs: flushPayload }),
         })
         if (!flushRes.ok) {
           console.warn('[SessionLogger] flush final échoué', flushRes.status)
@@ -535,8 +574,9 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     <div className="min-h-screen bg-[#121212] font-sans pb-32">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-5 py-4">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
+        <div className="relative z-10 max-w-lg mx-auto flex items-center justify-between">
           <div className="h-9 w-9" />
           <div className="text-center">
             <p className="text-[13px] font-bold text-white">{session.name}</p>
@@ -560,7 +600,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           </div>
         </div>
         {/* Barre de progression */}
-        <div className="max-w-lg mx-auto mt-3 h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
+        <div className="relative z-10 max-w-lg mx-auto mt-3 h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
           <div
             className="h-full bg-[#1f8a65] rounded-full transition-all duration-500"
             style={{ width: `${progress * 100}%` }}
@@ -751,6 +791,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   <h2 className="text-[15px] font-bold text-white leading-tight">
                     {swappedNames[currentEx.id] ?? currentEx.name}
                   </h2>
+                  {currentGroupColor && (
+                    <span
+                      className="text-[9px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-md"
+                      style={{ backgroundColor: `${currentGroupColor}22`, color: currentGroupColor, border: `1px solid ${currentGroupColor}44` }}
+                    >
+                      {String.fromCharCode(64 + Math.min(Object.keys(supersetColors).indexOf(currentGroupId!) + 1, 26))}{groupPosition} / {groupMates.length}
+                    </span>
+                  )}
                   <button
                     onClick={() => setSwapTarget(currentEx.id)}
                     className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
@@ -841,8 +889,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                     <div className="h-px bg-white/[0.04] mx-5" />
                   )}
                   <div
-                    className={`grid items-center gap-2 px-5 py-3 transition-colors ${
-                      s.completed ? 'bg-[#1f8a65]/[0.04]' : ''
+                    className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${
+                      s.completed ? 'bg-[#1f8a65]/[0.08]' : ''
                     } ${!currentEx.is_unilateral ? 'border-t border-white/[0.04]' : ''}`}
                     style={{ gridTemplateColumns: currentEx.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
                   >
@@ -900,11 +948,15 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                       className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors"
                     />
 
-                    {/* Bouton valider — avec label explicite */}
+                    {/* Bouton valider */}
                     <button
                       onClick={() => toggleSet(currentEx.id, s.set_number, s.side, currentEx.rest_sec)}
                       title="Valider et lancer le repos"
-                      className="flex justify-center items-center h-10 w-10 rounded-xl transition-colors"
+                      className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${
+                        s.completed
+                          ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]'
+                          : 'hover:bg-white/[0.06]'
+                      }`}
                     >
                       {s.completed ? (
                         <CheckCircle2 size={22} className="text-[#1f8a65]" />

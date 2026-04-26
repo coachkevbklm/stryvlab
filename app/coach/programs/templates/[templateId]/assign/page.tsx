@@ -131,7 +131,7 @@ export default function AssignTemplatePage() {
       const d = await res.json();
       if (d.program_id) {
         setSuccess(true);
-        setTimeout(() => router.push(`/coach/clients/${selectedClient}`), 1500);
+        setTimeout(() => router.push(`/coach/clients/${selectedClient}/protocoles/entrainement`), 1500);
       } else {
         setAssignError(d.error ?? "Erreur lors de la création du programme");
       }

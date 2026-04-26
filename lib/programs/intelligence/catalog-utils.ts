@@ -10,6 +10,8 @@ interface CatalogEntry {
   movementPattern: string | null
   isCompound: boolean
   stimulus_coefficient: number
+  muscles?: string[]
+  muscleGroup?: string
   // Biomech fields (present after merge script)
   plane?: string | null
   mechanic?: string | null
@@ -28,7 +30,15 @@ interface CatalogEntry {
 }
 
 const catalog = catalogData as CatalogEntry[]
-const catalogBySlug = new Map(catalog.map(e => [e.slug, e]))
+// For duplicate slugs, prefer the most enriched entry (has primaryMuscle > has jointStressSpine > first)
+const catalogBySlug = new Map<string, CatalogEntry>()
+for (const e of catalog) {
+  const existing = catalogBySlug.get(e.slug)
+  if (!existing) { catalogBySlug.set(e.slug, e); continue }
+  const existingScore = (existing.primaryMuscle ? 2 : 0) + (existing.jointStressSpine != null ? 1 : 0)
+  const newScore = (e.primaryMuscle ? 2 : 0) + (e.jointStressSpine != null ? 1 : 0)
+  if (newScore > existingScore) catalogBySlug.set(e.slug, e)
+}
 
 // ─── toSlug helper ────────────────────────────────────────────────────────────
 
@@ -67,6 +77,19 @@ export function normalizeMuscleSlug(slug: string): string {
 // ─── getBiomechData ───────────────────────────────────────────────────────────
 // Looks up biomechanical data from the enriched catalog by exercise name.
 // Returns null if the exercise is not in the catalog or lacks biomech fields.
+
+// Returns the primaryMuscle EN slug for any catalog exercise, even non-biomech-enriched ones.
+export function getPrimaryMuscleFromCatalog(exerciseName: string): string | null {
+  const slug = toSlug(exerciseName)
+  const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)
+  return entry?.primaryMuscle ?? null
+}
+
+export function getMusclesFromCatalog(exerciseName: string): string[] {
+  const slug = toSlug(exerciseName)
+  const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)
+  return entry?.muscles ?? []
+}
 
 export function getBiomechData(exerciseName: string): BiomechData | null {
   const slug = toSlug(exerciseName)

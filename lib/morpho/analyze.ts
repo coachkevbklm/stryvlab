@@ -6,10 +6,11 @@ import OpenAI from 'openai'
 type SupabaseClientAny = any
 
 function getOpenAIClient(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPEN_AI_API_KEY
+  if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is required')
   }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return new OpenAI({ apiKey })
 }
 
 const MORPHO_ANALYSIS_PROMPT = `You are a biomechanics expert analyzing body composition and posture from photos.
@@ -76,16 +77,22 @@ export async function getPhotoUrlsFromSubmission(
 ): Promise<string[]> {
   const { data: responses, error } = await supabase
     .from('assessment_responses')
-    .select('value_text, field_key')
+    .select('storage_path, field_key')
     .eq('submission_id', submissionId)
-    .eq('field_type', 'photo')
+    .like('field_key', 'photo_%')
 
   if (error) throw new Error(`Failed to fetch submission responses: ${error.message}`)
   if (!responses || responses.length === 0) return []
 
-  return responses
-    .map((r: { value_text: string | null }) => r.value_text)
-    .filter((url: string | null): url is string => !!url && url.startsWith('http'))
+  const urls: string[] = []
+  for (const r of responses as Array<{ storage_path: string | null; field_key: string }>) {
+    if (!r.storage_path) continue
+    const { data: signedUrl } = await supabase.storage
+      .from('assessment-photos')
+      .createSignedUrl(r.storage_path, 600) // 10min TTL
+    if (signedUrl?.signedUrl) urls.push(signedUrl.signedUrl)
+  }
+  return urls
 }
 
 export async function getLatestClientBiometrics(

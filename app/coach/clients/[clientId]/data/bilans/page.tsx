@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useState, useEffect } from "react";
 import { useClient } from "@/lib/client-context";
-import ClientHeader from "@/components/clients/ClientHeader";
+import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import SubmissionsList from "@/components/assessments/dashboard/SubmissionsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SubmissionWithClient } from "@/types/assessment";
 
 export default function BilansPage() {
   const { client, clientId } = useClient();
+  useClientTopBar("Bilans");
   const [submissions, setSubmissions] = useState<SubmissionWithClient[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,18 +29,6 @@ export default function BilansPage() {
       .finally(() => setLoading(false));
   }, [clientId]);
 
-  const topBarLeft = useMemo(
-    () => (
-      <div>
-        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">Lab · Data</p>
-        <p className="text-[13px] font-semibold text-white leading-none">
-          {client.first_name} {client.last_name} — Bilans
-        </p>
-      </div>
-    ),
-    [client.first_name, client.last_name],
-  );
-  useSetTopBar(topBarLeft);
 
   async function handleSend(templateId: string, bilanDate: string, sendEmail: boolean) {
     const res = await fetch("/api/assessments/submissions", {
@@ -69,7 +57,6 @@ export default function BilansPage() {
 
   return (
     <main className="min-h-screen bg-[#121212]">
-      <ClientHeader />
       <div className="px-6 pb-24">
         {error ? (
           <p className="text-[13px] text-white/40 py-8 text-center">{error}</p>

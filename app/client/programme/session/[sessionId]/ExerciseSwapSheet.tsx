@@ -15,6 +15,8 @@ interface Exercise {
   notes: string | null
   image_url: string | null
   is_unilateral: boolean
+  primary_muscles?: string[]
+  secondary_muscles?: string[]
 }
 
 interface Props {
@@ -47,8 +49,8 @@ export default function ExerciseSwapSheet({
     notes: exercise.notes ?? '',
     movement_pattern: null,
     equipment_required: [],
-    primary_muscles: [],
-    secondary_muscles: [],
+    primary_muscles: exercise.primary_muscles ?? [],
+    secondary_muscles: exercise.secondary_muscles ?? [],
   }
 
   const sessionBuilderExercises: BuilderExercise[] = allExercises.map(ex => ({

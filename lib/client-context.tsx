@@ -18,6 +18,7 @@ export type ClientData = {
   sport_practice?: string | null;
   weekly_frequency?: number | null;
   equipment_category?: string | null;
+  profile_photo_url?: string | null;
   created_at: string;
 };
 

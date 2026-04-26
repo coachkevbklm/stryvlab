@@ -1,31 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
-import { useSetTopBar } from "@/components/layout/useSetTopBar";
-import { useClient } from "@/lib/client-context";
-import ClientHeader from "@/components/clients/ClientHeader";
+import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import Link from "next/link";
 import { HeartPulse, ArrowRight } from "lucide-react";
 
 export default function CardioPage() {
-  const { client } = useClient();
-
-  const topBarLeft = useMemo(
-    () => (
-      <div>
-        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">Lab · Protocoles</p>
-        <p className="text-[13px] font-semibold text-white leading-none">
-          {client.first_name} {client.last_name} — Cardio
-        </p>
-      </div>
-    ),
-    [client.first_name, client.last_name],
-  );
-  useSetTopBar(topBarLeft);
+  useClientTopBar("Cardio");
 
   return (
     <main className="min-h-screen bg-[#121212]">
-      <ClientHeader />
       <div className="px-6 pb-24">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
           Outils cardio

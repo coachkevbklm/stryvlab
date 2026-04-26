@@ -49,10 +49,10 @@ Transform the STRYVR programme generation system into a **studio-lab grade tool*
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│      Phase 4: Export & Integration Webhooks                  │
+│      Phase 4: Export & Automation                            │
 │  Programme export (PDF, CSV, app-native format)              │
-│  Webhook for n8n (notification, analytics, CRM)              │
-│  Performance tracking dashboard                              │
+│  Inngest jobs: programme completed, performance update       │
+│  Analytics dashboard: adherence, trends, morpho progression  │
 └─────────────────────────────────────────────────────────────┘
 ```
 

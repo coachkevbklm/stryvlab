@@ -44,6 +44,7 @@ interface CreatedExercise {
   name: string
   mediaUrl: string
   mediaType: string
+  muscleGroup: string
   movementPattern: string
   equipment: string[]
   isCompound: boolean
@@ -122,6 +123,7 @@ export default function CustomExerciseModal({ onClose, onCreated }: Props) {
         name: form.name,
         mediaUrl: form.mediaUrl,
         mediaType: form.mediaType,
+        muscleGroup: form.muscleGroup,
         movementPattern: form.movementPattern,
         equipment: form.equipment,
         isCompound: form.isCompound,

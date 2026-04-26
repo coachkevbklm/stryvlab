@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,7 +28,7 @@ import {
   ChevronDown,
   BarChart3,
 } from "lucide-react";
-import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useDockActions } from "@/components/layout/NavDock";
 import { useDock } from "@/components/layout/DockContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -168,39 +168,9 @@ export default function CoachClientsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
-  const topBarLeft = useMemo(
-    () => (
-      <p className="text-[13px] font-semibold text-white leading-none">
-        Clients
-      </p>
-    ),
-    [],
-  );
-
-  const topBarRight = useMemo(
-    () => (
-      <>
-        <button
-          onClick={() => router.push("/coach/comptabilite")}
-          className="flex items-center gap-2 px-3 h-8 rounded-lg bg-white/[0.04] text-[12px] font-medium text-white/55 hover:bg-white/[0.08] hover:text-white/80 transition-all"
-        >
-          <Euro size={13} />
-          <span className="hidden sm:inline">Comptabilité</span>
-        </button>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 h-8 rounded-lg bg-[#1f8a65] text-[12px] font-bold text-white hover:bg-[#217356] transition-colors active:scale-[0.98]"
-        >
-          <UserPlus size={13} />
-          Nouveau client
-        </button>
-      </>
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    ),
-    [],
-  );
-
-  useSetTopBar(topBarLeft, topBarRight);
+  useDockActions({
+    NEW_CLIENT: () => setShowModal(true),
+  });
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

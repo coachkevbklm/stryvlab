@@ -181,8 +181,9 @@ export default async function ClientHomePage() {
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
       {/* ── Topbar ── */}
-      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b-[0.3px] border-white/[0.06] px-4 h-14 flex items-center">
-        <div className="flex items-center justify-between w-full max-w-lg mx-auto">
+      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
+        <div className="relative z-10 flex items-center justify-between w-full max-w-lg mx-auto h-full px-4">
           <Image
             src="/images/logo.png"
             alt="STRYV"
@@ -197,7 +198,7 @@ export default async function ClientHomePage() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-5 flex flex-col gap-4">
+      <main className="max-w-lg mx-auto px-4 pt-[88px] pb-5 flex flex-col gap-4">
 
         {/* ── Salutation ── */}
         <div className="px-1">
@@ -212,56 +213,60 @@ export default async function ClientHomePage() {
 
         {/* ── Hero : Séance du jour ── */}
         {todaySession ? (
-          <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] overflow-hidden">
+          <div className="relative rounded-2xl overflow-hidden border border-[#1f8a65]/25 shadow-[0_0_32px_rgba(31,138,101,0.12)]">
+            {/* Fond accent subtil */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1f8a65]/10 via-[#1f8a65]/05 to-transparent" />
+            <div className="absolute inset-0 bg-white/[0.015]" />
+
             {/* Header card */}
-            <div className="px-4 pt-4 pb-3 border-b-[0.3px] border-white/[0.06]">
+            <div className="relative z-10 px-5 pt-5 pb-4 border-b border-[#1f8a65]/15">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#1f8a65]/80 mb-0.5">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#1f8a65] mb-1">
                     {ct(lang, 'home.session.label')}
                   </p>
-                  <p className="text-[16px] font-bold text-white leading-tight">
+                  <p className="text-[20px] font-bold text-white leading-tight">
                     {todaySession.name}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-[#1f8a65]/15 flex items-center justify-center shrink-0">
-                  <Dumbbell size={18} className="text-[#1f8a65]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#1f8a65]/20 border border-[#1f8a65]/30 flex items-center justify-center shrink-0">
+                  <Dumbbell size={20} className="text-[#1f8a65]" />
                 </div>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="flex divide-x-[0.3px] divide-white/[0.06]">
+            <div className="relative z-10 flex divide-x divide-[#1f8a65]/10">
               {durationMin && (
-                <div className="flex-1 flex flex-col items-center py-3 gap-0.5">
-                  <Clock size={13} className="text-white/30" />
-                  <p className="text-[13px] font-bold text-white">{durationMin}<span className="text-[10px] font-medium text-white/40">min</span></p>
+                <div className="flex-1 flex flex-col items-center py-4 gap-1">
+                  <Clock size={13} className="text-[#1f8a65]/60" />
+                  <p className="text-[15px] font-bold text-white">{durationMin}<span className="text-[10px] font-medium text-white/40">min</span></p>
                   <p className="text-[9px] text-white/30 uppercase tracking-wide">{ct(lang, 'home.session.duration')}</p>
                 </div>
               )}
-              <div className="flex-1 flex flex-col items-center py-3 gap-0.5">
-                <Layers size={13} className="text-white/30" />
-                <p className="text-[13px] font-bold text-white">{totalSets}</p>
+              <div className="flex-1 flex flex-col items-center py-4 gap-1">
+                <Layers size={13} className="text-[#1f8a65]/60" />
+                <p className="text-[15px] font-bold text-white">{totalSets}</p>
                 <p className="text-[9px] text-white/30 uppercase tracking-wide">{ct(lang, 'home.session.sets')}</p>
               </div>
-              <div className="flex-1 flex flex-col items-center py-3 gap-0.5">
-                <Dumbbell size={13} className="text-white/30" />
-                <p className="text-[13px] font-bold text-white">{todayExercises.length}</p>
+              <div className="flex-1 flex flex-col items-center py-4 gap-1">
+                <Dumbbell size={13} className="text-[#1f8a65]/60" />
+                <p className="text-[15px] font-bold text-white">{todayExercises.length}</p>
                 <p className="text-[9px] text-white/30 uppercase tracking-wide">{ct(lang, 'home.session.exercises')}</p>
               </div>
             </div>
 
             {/* CTA */}
-            <div className="px-4 pb-4">
+            <div className="relative z-10 px-5 pb-5">
               <Link
                 href={`/client/programme/session/${todaySession.id}`}
-                className="flex h-11 items-center justify-between rounded-xl bg-[#1f8a65] pl-5 pr-2 transition-all hover:bg-[#217356] active:scale-[0.99]"
+                className="flex h-12 items-center justify-between rounded-xl bg-[#1f8a65] pl-5 pr-2 transition-all hover:bg-[#217356] active:scale-[0.99] shadow-[0_4px_16px_rgba(31,138,101,0.35)]"
               >
                 <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
                   {ct(lang, 'home.session.start')}
                 </span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.15]">
-                  <ChevronRight size={15} className="text-white" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/[0.15]">
+                  <ChevronRight size={16} className="text-white" />
                 </div>
               </Link>
             </div>

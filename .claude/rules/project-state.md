@@ -1,8 +1,82 @@
 # STRYVR — État Vivant du Projet
 
-> Source de vérité sur l'état actuel de STRYVR.
+> Source de vérité tactique sur l'état actuel de STRYVR (modules, features, next steps).
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-26 (Système protocoles nutritionnels complet)
+> 
+> **STRATEGIC REFERENCE** → See `docs/STRYVR_STRATEGIC_VISION_2026.md` for vision, pillars, roadmap, and success metrics.
+> 
+> Dernière mise à jour : 2026-04-26 (Nutrition Studio — layout 3 colonnes MacroFactor-inspired)
+
+---
+
+## 2026-04-26 — Nutrition Studio — Layout 3 Colonnes
+
+**Ce qui a été fait :**
+
+1. **`components/nutrition/studio/useNutritionStudio.ts`** — hook centralisé
+   - State complet : clientData, protocolName, goal, calorieAdjustPct, proteinOverride, trainingConfig, lifestyleConfig, carbCycling, hydrationClimate, days, macroResult, ccResult, hydrationLiters
+   - Fetch auto `/api/clients/${clientId}/nutrition-data` au mount + pré-population goal/training/lifestyle depuis le profil client
+   - Debounce 300ms sur `recalculate()` (macros + CC + hydratation)
+   - `coherenceScore` calculé en useMemo : 5 checks (protéines ≥1.8g/kg LBM, lipides ≥0.6g/kg, calories min, glucides, hydratation)
+   - Actions injection : `injectMacrosToDay`, `injectCCHighToDay`, `injectCCLowToDay`, `injectHydrationToDay`, `injectAllToDay`
+   - Save (draft) et Share (partage + redirect) avec états loading
+
+2. **`components/nutrition/studio/MacroBar.tsx`** — barre macro segmentée réutilisable
+   - P (bleu) / L (amber) / G (vert) en pourcentage kcal
+   - Props : calories, protein_g, carbs_g, fat_g, height (défaut 6px), showLabels
+
+3. **`components/nutrition/studio/TdeeWaterfall.tsx`** — décomposition TDEE
+   - Équation inline : BMR + NEAT + EAT + TEF = TDEE
+   - Barre empilée colorée + labels source (mesuré/estimé/calculé)
+
+4. **`components/nutrition/studio/CoherenceScore.tsx`** — score 0-100
+   - Barre de progression colorée (vert/bleu/amber/rouge selon score)
+   - Checks avec icônes CheckCircle2 / AlertTriangle et messages d'avertissement
+
+5. **`components/nutrition/studio/ClientIntelligencePanel.tsx`** — colonne 1
+   - Biométrie read-only : poids, taille, BF% (mini-bar), LBM, masse musculaire
+   - Métabolisme : BMR avec source badge (balance / estimé), graisse viscérale
+   - Sections collapsibles : Entraînement (éditable) + Lifestyle (éditable) avec NumberInput
+
+6. **`components/nutrition/studio/CalculationEngine.tsx`** — colonne 2
+   - TDEE waterfall via TdeeWaterfall
+   - Sélecteur objectif (déficit/maintenance/surplus) + slider ajustement calorique -30/+30%
+   - Macros live P/F/G avec barres animées + override g/kg LBM protéines
+   - Toggle Carb Cycling (ON/OFF) + sélect protocole/objectif + preview jour haut/bas
+   - Sélect hydration climate + affichage litres
+   - Smart Alerts (critical/high uniquement, max 3) depuis `macroResult.smartProtocol`
+
+7. **`components/nutrition/studio/ClientPreviewModal.tsx`** — modal preview
+   - Vue simulée ce que le client voit : jours filtrés (avec calories seulement), MacroBar, grille P/L/G, hydratation, recommandations
+
+8. **`components/nutrition/studio/ProtocolCanvas.tsx`** — colonne 3
+   - Renommage inline du protocole (toggle edit)
+   - Grille 2 colonnes des jours : preview calories + P/L/G + MacroBar + badge CC
+   - Bouton "Ajouter un jour" en pointillés
+   - Éditeur du jour actif : injection rapide (← Base, ← Jour haut CC, ← Jour bas CC, ← Hydrat., ← Tout ✦), ajustement manuel, MacroBar live, recommandations textarea
+   - Barre sticky : Aperçu client | Brouillon | Partager ▶ [Prénom]
+
+9. **`components/nutrition/studio/NutritionStudio.tsx`** — orchestrateur 3 colonnes
+   - Layout `h-screen flex` : Col1 300px | Col2 flex-1 | Col3 380px
+   - `useClientTopBar('Nutrition Studio')` pour la TopBar
+   - `ClientPreviewModal` rendu conditionnellement
+
+10. **Pages mises à jour** :
+    - `app/coach/clients/[clientId]/protocoles/nutrition/new/page.tsx` → `NutritionStudio`
+    - `app/coach/clients/[clientId]/protocoles/nutrition/[protocolId]/edit/page.tsx` → `NutritionStudio`
+
+**Points de vigilance :**
+- `NutritionProtocolTool` (ancienne version) conservé intact — non supprimé (peut être réutilisé ou supprimé plus tard)
+- `useClientTopBar` prend un seul `string` comme argument (pas un objet) — signature corrigée par rapport au plan
+- Le layout `h-screen overflow-hidden` nécessite que le parent layout coach n'impose pas une hauteur différente — à vérifier si TopBar est ajoutée au-dessus
+- `coherenceScore` est calculé depuis `macroResult` uniquement (pas depuis les jours) — le score reflète la cohérence du calcul moteur, pas des jours saisis manuellement
+- `window.prompt()` utilisé pour renommer un jour dans ProtocolCanvas — acceptable en Phase 1 (pas de modale custom)
+- Injection `injectAllToDay` combine uniquement macros + hydratation (pas CC) — intentionnel (CC a ses propres boutons dédiés)
+
+**Next Steps — Phase 4 Export & Webhooks :**
+- [ ] Programme export : PDF / CSV / JSON
+- [ ] Inngest jobs Phase 4 : programme complété, performance update, morpho terminée
+- [ ] Analytics dashboard coach : adherence, tendances, progression morpho
 
 ---
 

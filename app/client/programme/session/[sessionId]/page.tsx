@@ -25,7 +25,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       program_exercises (
         id, name, sets, reps, rest_sec, rir, notes, position,
         target_rir, current_weight_kg, rep_min, rep_max, weight_increment_kg,
-        image_url, is_unilateral
+        image_url, is_unilateral, primary_muscles, secondary_muscles, group_id
       )
     `)
     .eq('id', params.sessionId)
@@ -53,7 +53,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       progressive_overload_enabled: progressionEnabled,
       // Détection unilatéral : flag DB OU nom contient un mot-clé unilatéral
       is_unilateral: ex.is_unilateral ||
-        /unilat[eé]ral|single|alterné|alternée|1 bras|1 jambe|un bras|une jambe/i.test(ex.name ?? ''),
+        /unilat[eé]ral|single|alterné|alternée|1 bras|1 jambe|un bras|une jambe|kick.?back|extension.?hanche|hip.?thrust.?unilat|curl.?unilat|presse.?unilat|fente|split.?squat|bulgarian/i.test(ex.name ?? ''),
       clientAlternatives: [],  // Will be populated below
     }))
 

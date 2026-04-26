@@ -27,10 +27,8 @@ export default function NewProgramTemplatePage() {
   useSetTopBar(topBarLeft)
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans">
-      <main className="px-6 py-6">
-        <ProgramTemplateBuilder />
-      </main>
+    <div className="bg-[#121212] font-sans">
+      <ProgramTemplateBuilder />
     </div>
   )
 }

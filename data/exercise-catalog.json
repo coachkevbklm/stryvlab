@@ -104,7 +104,29 @@
     "muscles": [
       "abdos"
     ],
-    "stimulus_coefficient": 0.3
+    "stimulus_coefficient": 0.3,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.52,
+    "secondaryMuscles": [
+      "transverse_abdominis",
+      "rectus_abdominis",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "shoulder_complex"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 3,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "anti_rotation_control"
   },
   {
     "id": "abdos__cercles-jambes-tendues",
@@ -992,7 +1014,29 @@
     "muscles": [
       "abdos"
     ],
-    "stimulus_coefficient": 0.3
+    "stimulus_coefficient": 0.3,
+    "primaryMuscle": "transverse_abdominis",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "rectus_abdominis",
+      "obliques",
+      "hip_flexors"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "shoulder_complex",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 3,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "anti_extension_control"
   },
   {
     "id": "abdos__hollow-hold",
@@ -1267,7 +1311,29 @@
     "muscles": [
       "abdos"
     ],
-    "stimulus_coefficient": 0.3
+    "stimulus_coefficient": 0.3,
+    "primaryMuscle": "transverse_abdominis",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "spine_erectors",
+      "triceps"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25,
+      0.15
+    ],
+    "stabilizers": [
+      "shoulder_complex",
+      "rectus_abdominis"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 4,
+    "globalInstability": 5,
+    "coordinationDemand": 4,
+    "constraintProfile": "anti_extension_control"
   },
   {
     "id": "abdos__planche-laterale-avec-rotation",
@@ -1573,7 +1639,27 @@
     "muscles": [
       "abdos"
     ],
-    "stimulus_coefficient": 0.28
+    "stimulus_coefficient": 0.28,
+    "primaryMuscle": "obliques",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "rectus_abdominis",
+      "transverse_abdominis"
+    ],
+    "secondaryActivations": [
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "hip_flexors",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 3,
+    "coordinationDemand": 4,
+    "constraintProfile": "core_rotation"
   },
   {
     "id": "abdos__rotation-buste-elastique-pallof-press",
@@ -1803,7 +1889,29 @@
     "muscles": [
       "abdos"
     ],
-    "stimulus_coefficient": 0.28
+    "stimulus_coefficient": 0.28,
+    "primaryMuscle": "obliques",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "rectus_abdominis",
+      "anterior_deltoid",
+      "transverse_abdominis"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "hip_flexors",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 4,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "core_rotation"
   },
   {
     "id": "abdos__russian-twist-poulie",
@@ -2155,7 +2263,29 @@
       "biceps",
       "dos"
     ],
-    "stimulus_coefficient": 0.92
+    "stimulus_coefficient": 0.92,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "lats",
+      "rhomboids",
+      "brachialis"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "posterior_deltoid"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 4,
+    "globalInstability": 4,
+    "coordinationDemand": 4,
+    "constraintProfile": "vertical_pull"
   },
   {
     "id": "biceps__curl-allonge-a-la-poulie",
@@ -2590,7 +2720,27 @@
     "muscles": [
       "biceps"
     ],
-    "stimulus_coefficient": 0.55
+    "stimulus_coefficient": 0.55,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.85,
+    "secondaryMuscles": [
+      "brachialis",
+      "brachioradialis"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.1
+    ],
+    "stabilizers": [
+      "anterior_deltoid",
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 3,
+    "coordinationDemand": 3,
+    "constraintProfile": "peak_stretch_isolation"
   },
   {
     "id": "biceps__curl-haltere-incline",
@@ -2732,7 +2882,27 @@
     "muscles": [
       "biceps"
     ],
-    "stimulus_coefficient": 0.55
+    "stimulus_coefficient": 0.55,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "brachialis",
+      "brachioradialis"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.1
+    ],
+    "stabilizers": [
+      "anterior_deltoid",
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "constant_tension"
   },
   {
     "id": "biceps__curl-inverse-barre",
@@ -3163,7 +3333,29 @@
     "muscles": [
       "biceps"
     ],
-    "stimulus_coefficient": 0.65
+    "stimulus_coefficient": 0.65,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.6,
+    "secondaryMuscles": [
+      "brachialis",
+      "lats",
+      "rhomboids"
+    ],
+    "secondaryActivations": [
+      0.25,
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "trapezius"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 3,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "loaded_carry"
   },
   {
     "id": "biceps__spider-curl",
@@ -3350,7 +3542,29 @@
       "dos",
       "biceps"
     ],
-    "stimulus_coefficient": 0.3
+    "stimulus_coefficient": 0.3,
+    "primaryMuscle": "spine_erectors",
+    "primaryActivation": 0.6,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "shoulder_complex",
+      "hip_flexors"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 6,
+    "coordinationDemand": 5,
+    "constraintProfile": "anti_rotation_control"
   },
   {
     "id": "dos__chin-up-traction-supination",
@@ -3457,7 +3671,27 @@
       "dos",
       "biceps"
     ],
-    "stimulus_coefficient": 0.48
+    "stimulus_coefficient": 0.48,
+    "primaryMuscle": "spine_erectors",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 3,
+    "coordinationDemand": 3,
+    "constraintProfile": "hinge_load"
   },
   {
     "id": "dos__extension-lombaire-sur-ballon-de-gym",
@@ -3564,7 +3798,29 @@
       "dos",
       "biceps"
     ],
-    "stimulus_coefficient": 0.4
+    "stimulus_coefficient": 0.4,
+    "primaryMuscle": "rhomboids",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "posterior_deltoid",
+      "trapezius",
+      "lats"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 3,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "suspension_instability"
   },
   {
     "id": "dos__overhead-shrug",
@@ -3626,7 +3882,29 @@
       "dos",
       "biceps"
     ],
-    "stimulus_coefficient": 0.74
+    "stimulus_coefficient": 0.74,
+    "primaryMuscle": "lats",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "pectoralis_major",
+      "triceps",
+      "anterior_deltoid"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.2,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 6,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "shoulder_stretch_load"
   },
   {
     "id": "dos__pull-over-barre",
@@ -4689,7 +4967,29 @@
       "ischio-jambiers",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "spine_erectors",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.35,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "dos__souleve-de-terre",
@@ -4713,7 +5013,32 @@
       "ischio-jambiers",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "spine_erectors",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "hamstrings",
+      "trapezius",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.4,
+      0.25,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 7,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "dos__superman",
@@ -5420,7 +5745,29 @@
     "muscles": [
       "epaules"
     ],
-    "stimulus_coefficient": 0.35
+    "stimulus_coefficient": 0.35,
+    "primaryMuscle": "medial_deltoid",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "anterior_deltoid",
+      "posterior_deltoid",
+      "supraspinatus"
+    ],
+    "secondaryActivations": [
+      0.25,
+      0.2,
+      0.15
+    ],
+    "stabilizers": [
+      "trapezius",
+      "core"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 5,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "lateral_raise_isolation"
   },
   {
     "id": "epaules__developpe-arnold-exercice-musculation",
@@ -6692,7 +7039,29 @@
     "muscles": [
       "epaules"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "anterior_deltoid",
+    "primaryActivation": 0.88,
+    "secondaryMuscles": [
+      "triceps",
+      "medial_deltoid",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "shoulder_complex"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 7,
+    "globalInstability": 8,
+    "coordinationDemand": 9,
+    "constraintProfile": "overhead_load"
   },
   {
     "id": "epaules__oiseau-a-la-poulie-a-45",
@@ -7258,7 +7627,31 @@
       "quadriceps",
       "fessiers"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "anterior_deltoid",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "triceps",
+      "medial_deltoid"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.38,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 5,
+    "globalInstability": 6,
+    "coordinationDemand": 8,
+    "constraintProfile": "push_press"
   },
   {
     "id": "epaules__thruster-landmine",
@@ -7282,7 +7675,31 @@
       "quadriceps",
       "fessiers"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "anterior_deltoid",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "triceps",
+      "medial_deltoid"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.35,
+      0.22,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 4,
+    "globalInstability": 5,
+    "coordinationDemand": 7,
+    "constraintProfile": "push_press"
   },
   {
     "id": "epaules__thruster",
@@ -7306,7 +7723,31 @@
       "quadriceps",
       "fessiers"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "anterior_deltoid",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "triceps",
+      "medial_deltoid"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.38,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 5,
+    "globalInstability": 6,
+    "coordinationDemand": 8,
+    "constraintProfile": "push_press"
   },
   {
     "id": "epaules__tirage-menton-avec-elastique",
@@ -7719,7 +8160,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "gluteus_medius",
+      "quadriceps",
+      "hamstrings",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.2,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 7,
+    "coordinationDemand": 7,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__deadlift-vue-avant",
@@ -7907,7 +8372,26 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.45
+    "stimulus_coefficient": 0.45,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.55,
+    "secondaryMuscles": [
+      "gluteus_medius",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "machine_isolation"
   },
   {
     "id": "fessiers__extension-hanche-machine",
@@ -8007,7 +8491,27 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.48
+    "stimulus_coefficient": 0.48,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 3,
+    "coordinationDemand": 3,
+    "constraintProfile": "hinge_load"
   },
   {
     "id": "fessiers__extension-lombaire-avec-elastique",
@@ -8071,7 +8575,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__fente-avant-barre-vue-profil-homme",
@@ -8137,7 +8663,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__fentes-avant-kettlebell",
@@ -8159,7 +8707,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__fentes-croisees",
@@ -8181,7 +8751,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "gluteus_medius",
+      "quadriceps",
+      "hamstrings",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.28,
+      0.18,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__fentes-marchees-avec-sandbag",
@@ -8204,7 +8798,30 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.65
+    "stimulus_coefficient": 0.65,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "trapezius",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 3,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "loaded_carry"
   },
   {
     "id": "fessiers__fire-hydratant",
@@ -8266,7 +8883,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.15,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 5,
+    "coordinationDemand": 6,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__glute-ham-developer-ghd",
@@ -8286,7 +8925,27 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.78
+    "stimulus_coefficient": 0.78,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__good-morning-elastique",
@@ -8306,7 +8965,27 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 1
+    "stimulus_coefficient": 1,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.62,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 4,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__good-morning-exercice",
@@ -8326,7 +9005,27 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.3
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 3,
+    "coordinationDemand": 4,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__hack-squat-assis",
@@ -8348,7 +9047,28 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.15,
+      0.15
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__hack-squat-flexion-complete",
@@ -8414,7 +9134,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__hack-squat",
@@ -8436,7 +9178,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__hip-thrust-a-la-machine",
@@ -8750,7 +9514,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.85,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.2,
+      0.18,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__hyperextension-inversee-ballon-gym",
@@ -8813,7 +9601,30 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.82
+    "stimulus_coefficient": 0.82,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 2,
+    "globalInstability": 5,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__leg-press-sur-le-cote",
@@ -8918,7 +9729,29 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.15,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__montees-sur-banc-lateral-avec-halteres",
@@ -8938,7 +9771,29 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_medius",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.25,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 1,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__montees-sur-banc-laterales-avec-barre-barbell-bench-lateral-step-up",
@@ -8958,7 +9813,29 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_medius",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.25,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__pin-squat",
@@ -8980,7 +9857,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.85,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__pistol-squat-assiste",
@@ -9129,7 +10028,28 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.15,
+      0.15
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__presse-a-cuisse-sur-le-cote",
@@ -9149,7 +10069,28 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "gluteus_medius",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "machine_isolation"
   },
   {
     "id": "fessiers__presse-a-cuisses-verticale",
@@ -9169,7 +10110,28 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.15,
+      0.15
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__pull-through-a-la-poulie",
@@ -9273,7 +10235,30 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 2,
+    "globalInstability": 3,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__reeves-deadlift",
@@ -9293,7 +10278,32 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "trapezius",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.3,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 7,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 3,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__reverse-hyperextension",
@@ -9355,7 +10365,29 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.65
+    "stimulus_coefficient": 0.65,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.25,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 3,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "loaded_carry"
   },
   {
     "id": "fessiers__souleve-de-terre-a-la-trap-bar",
@@ -9376,7 +10408,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps",
+      "spine_erectors",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.35,
+      0.3,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 3,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-avec-deficit",
@@ -9397,7 +10454,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.85,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "quadriceps",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.32,
+      0.28,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 7,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 7,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-avec-elastique",
@@ -9418,7 +10500,30 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.28,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-avec-machine",
@@ -9439,7 +10544,29 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.28,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-jambes-tendues",
@@ -9460,7 +10587,27 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 1
+    "stimulus_coefficient": 1,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 3,
+    "coordinationDemand": 4,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-roumain-kettlebell",
@@ -9481,7 +10628,28 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 1
+    "stimulus_coefficient": 1,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-roumain-landmine",
@@ -9502,7 +10670,27 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 1
+    "stimulus_coefficient": 1,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-roumain",
@@ -9609,7 +10797,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.25,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-sumo-landmine",
@@ -9630,7 +10843,31 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.32,
+      0.28,
+      0.22,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-sumo",
@@ -9651,7 +10888,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.25,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__souleve-de-terre-valise-a-un-bras",
@@ -9673,7 +10935,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "quadriceps",
+      "obliques"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.22,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 2,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "anti_rotation_control"
   },
   {
     "id": "fessiers__souleve-de-terre",
@@ -9694,7 +10981,32 @@
       "fessiers",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "trapezius",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.32,
+      0.22,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 7,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__squat-avec-rotation-du-tronc",
@@ -9716,7 +11028,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "quadriceps",
+      "obliques",
+      "hamstrings"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.3,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__squat-avec-sangles-de-suspension",
@@ -9738,7 +11072,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.18,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 3,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "suspension_instability"
   },
   {
     "id": "fessiers__squat-barre-devant-front",
@@ -9760,7 +11116,30 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.18,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "upper_back"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 7,
+    "jointStressShoulder": 3,
+    "globalInstability": 5,
+    "coordinationDemand": 7,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__squat-bulgare-halteres-exercice-musculation",
@@ -9782,7 +11161,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.18,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__squat-goblet-exercice-musculation",
@@ -9804,7 +11205,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.15,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__squat-goblet-kettlebell",
@@ -9826,7 +11249,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.15,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__squat-landmine",
@@ -9848,7 +11293,29 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.15,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__squat-pistol",
@@ -9870,7 +11337,30 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.48,
+      0.2,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "ankle_complex"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 7,
+    "jointStressShoulder": 1,
+    "globalInstability": 8,
+    "coordinationDemand": 9,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "fessiers__squat-saute-exercice-musculation-jambes",
@@ -9892,7 +11382,30 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.2,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "ankle_complex"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 6,
+    "coordinationDemand": 6,
+    "constraintProfile": "plyometric"
   },
   {
     "id": "fessiers__squat-sumo-avec-haltere",
@@ -9914,7 +11427,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "adductors",
+      "quadriceps",
+      "hamstrings",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.38,
+      0.18,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "fessiers__thruster-kettlebell",
@@ -9937,7 +11474,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.75,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "anterior_deltoid",
+      "triceps"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.2,
+      0.3,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 5,
+    "globalInstability": 6,
+    "coordinationDemand": 8,
+    "constraintProfile": "push_press"
   },
   {
     "id": "fessiers__thruster",
@@ -9960,7 +11521,31 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.8
+    "stimulus_coefficient": 0.8,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "anterior_deltoid",
+      "triceps"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.2,
+      0.3,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 5,
+    "globalInstability": 6,
+    "coordinationDemand": 8,
+    "constraintProfile": "push_press"
   },
   {
     "id": "fessiers__zercher-deadlift",
@@ -9980,7 +11565,31 @@
     "muscles": [
       "fessiers"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "hamstrings",
+      "spine_erectors",
+      "quadriceps",
+      "biceps_brachii"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.3,
+      0.28,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 3,
+    "globalInstability": 5,
+    "coordinationDemand": 7,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "fessiers__zercher-squat",
@@ -10002,7 +11611,32 @@
       "quadriceps",
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "gluteus_maximus",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "biceps_brachii",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.48,
+      0.18,
+      0.22,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "upper_back"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 7,
+    "jointStressShoulder": 4,
+    "globalInstability": 5,
+    "coordinationDemand": 8,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__extension-lombaire-au-banc-45",
@@ -10064,7 +11698,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.55,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.3,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "ischio-jambiers__fentes-avant-kettlebell",
@@ -10084,7 +11740,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.98
+    "stimulus_coefficient": 0.98,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.52,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.3,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "ischio-jambiers__front-squat-avec-halteres",
@@ -10104,7 +11782,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.4,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.38,
+      0.36,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 5,
+    "coordinationDemand": 6,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__glute-ham-developer-ghd",
@@ -10252,7 +11952,31 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.45,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.42,
+      0.18,
+      0.15
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__kettlebell-back-squat",
@@ -10272,7 +11996,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.48,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.4,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__kettlebell-swing",
@@ -10714,7 +12460,32 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.65
+    "stimulus_coefficient": 0.65,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.45,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "trapezius",
+      "core"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.3,
+      0.3,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "shoulder_complex"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 3,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "loaded_carry"
   },
   {
     "id": "ischio-jambiers__nordic-hamstring-curl-avec-elastique",
@@ -10778,7 +12549,28 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.48,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.38,
+      0.15
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "machine_isolation"
   },
   {
     "id": "ischio-jambiers__presse-a-cuisses-verticale",
@@ -10798,7 +12590,28 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.72
+    "stimulus_coefficient": 0.72,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.45,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "adductors"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.4,
+      0.15
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "machine_isolation"
   },
   {
     "id": "ischio-jambiers__rack-pull",
@@ -10908,7 +12721,32 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "spine_erectors",
+      "trapezius"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.38,
+      0.32,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 3,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-avec-deficit",
@@ -11111,7 +12949,29 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 1
+    "stimulus_coefficient": 1,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "spine_erectors",
+      "lats"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.28,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 2,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-roumain-landmine",
@@ -11179,7 +13039,32 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.7,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.3,
+      0.25,
+      0.22
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-sumo-landmine",
@@ -11202,7 +13087,31 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.48,
+      0.28,
+      0.22,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-sumo",
@@ -11225,7 +13134,32 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.72,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "adductors",
+      "quadriceps",
+      "spine_erectors"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.3,
+      0.25,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre-valise-a-un-bras",
@@ -11249,7 +13183,32 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.65,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "spine_erectors",
+      "quadriceps",
+      "obliques"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.3,
+      0.22,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 3,
+    "jointStressShoulder": 2,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "anti_rotation_control"
   },
   {
     "id": "ischio-jambiers__souleve-de-terre",
@@ -11272,7 +13231,32 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.78,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "spine_erectors",
+      "trapezius",
+      "quadriceps"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.32,
+      0.22,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis",
+      "lats"
+    ],
+    "jointStressSpine": 7,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 6,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "ischio-jambiers__squat-avec-rotation-du-tronc",
@@ -11292,7 +13276,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.42,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "obliques"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.35,
+      0.3
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 5,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 2,
+    "globalInstability": 6,
+    "coordinationDemand": 7,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__squat-goblet-kettlebell",
@@ -11312,7 +13318,29 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.42,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.4,
+      0.4,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 6,
+    "jointStressShoulder": 2,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__squat-pistol",
@@ -11332,7 +13360,30 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.48,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.45,
+      0.45,
+      0.28
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors",
+      "ankle_complex"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 7,
+    "jointStressShoulder": 1,
+    "globalInstability": 8,
+    "coordinationDemand": 9,
+    "constraintProfile": "unilateral_instability"
   },
   {
     "id": "ischio-jambiers__squat-sumo-avec-haltere",
@@ -11352,7 +13403,31 @@
     "muscles": [
       "ischio-jambiers"
     ],
-    "stimulus_coefficient": 0.9
+    "stimulus_coefficient": 0.9,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.45,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "adductors",
+      "quadriceps",
+      "gluteus_medius"
+    ],
+    "secondaryActivations": [
+      0.42,
+      0.35,
+      0.36,
+      0.18
+    ],
+    "stabilizers": [
+      "core",
+      "spine_erectors"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 5,
+    "jointStressShoulder": 1,
+    "globalInstability": 4,
+    "coordinationDemand": 5,
+    "constraintProfile": "knee_dominant"
   },
   {
     "id": "ischio-jambiers__zercher-deadlift",
@@ -11375,7 +13450,31 @@
       "dos",
       "quadriceps"
     ],
-    "stimulus_coefficient": 0.95
+    "stimulus_coefficient": 0.95,
+    "primaryMuscle": "hamstrings",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "gluteus_maximus",
+      "spine_erectors",
+      "quadriceps",
+      "biceps_brachii"
+    ],
+    "secondaryActivations": [
+      0.5,
+      0.3,
+      0.28,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "transverse_abdominis"
+    ],
+    "jointStressSpine": 6,
+    "jointStressKnee": 4,
+    "jointStressShoulder": 3,
+    "globalInstability": 5,
+    "coordinationDemand": 7,
+    "constraintProfile": "hip_dominant"
   },
   {
     "id": "mollets__extension-des-mollets-donkey",
@@ -12369,7 +14468,27 @@
       "triceps",
       "epaules"
     ],
-    "stimulus_coefficient": 0.82
+    "stimulus_coefficient": 0.82,
+    "primaryMuscle": "pectoralis_major",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "triceps",
+      "anterior_deltoid"
+    ],
+    "secondaryActivations": [
+      0.35,
+      0.25
+    ],
+    "stabilizers": [
+      "core",
+      "shoulder_complex"
+    ],
+    "jointStressSpine": 3,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 6,
+    "globalInstability": 5,
+    "coordinationDemand": 5,
+    "constraintProfile": "horizontal_push"
   },
   {
     "id": "pectoraux__ecarte-a-la-poulie-vis-a-vis-haute-a-genoux",
@@ -12874,7 +14993,29 @@
     "muscles": [
       "pectoraux"
     ],
-    "stimulus_coefficient": 0.82
+    "stimulus_coefficient": 0.82,
+    "primaryMuscle": "pectoralis_major",
+    "primaryActivation": 0.68,
+    "secondaryMuscles": [
+      "triceps",
+      "anterior_deltoid",
+      "transverse_abdominis"
+    ],
+    "secondaryActivations": [
+      0.3,
+      0.22,
+      0.2
+    ],
+    "stabilizers": [
+      "core",
+      "shoulder_complex"
+    ],
+    "jointStressSpine": 4,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 5,
+    "globalInstability": 4,
+    "coordinationDemand": 4,
+    "constraintProfile": "horizontal_push"
   },
   {
     "id": "quadriceps__air-squat",

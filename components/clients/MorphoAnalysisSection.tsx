@@ -29,6 +29,7 @@ export function MorphoAnalysisSection({ clientId }: Props) {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [pollingJobId, setPollingJobId] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -58,6 +59,7 @@ export function MorphoAnalysisSection({ clientId }: Props) {
           body: JSON.stringify({ job_id: pollingJobId }),
         })
         const data = await res.json()
+        console.log('[morpho/job-status] poll:', data)
 
         if (data.status === 'completed') {
           clearInterval(interval)
@@ -66,6 +68,7 @@ export function MorphoAnalysisSection({ clientId }: Props) {
         } else if (data.status === 'failed') {
           clearInterval(interval)
           setPollingJobId(null)
+          setErrorMsg(data.error_message ?? 'Analyse échouée. Vérifiez les photos du bilan.')
         }
       } catch {
         // silently ignore polling errors
@@ -77,16 +80,23 @@ export function MorphoAnalysisSection({ clientId }: Props) {
 
   async function handleAnalyze() {
     setSubmitting(true)
+    setErrorMsg(null)
     try {
       const res = await fetch(`/api/clients/${clientId}/morpho/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      const data = await res.json()
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : {}
+      console.log('[morpho/analyze] status:', res.status, 'body:', data)
       if (res.ok) {
         setPollingJobId(data.job_id)
+      } else {
+        setErrorMsg(data.error ?? `Erreur ${res.status}`)
       }
+    } catch (e) {
+      setErrorMsg(String(e))
     } finally {
       setSubmitting(false)
     }
@@ -120,6 +130,12 @@ export function MorphoAnalysisSection({ clientId }: Props) {
           </button>
         )}
       </div>
+
+      {errorMsg && !isAnalyzing && (
+        <div className="bg-red-500/[0.08] rounded-xl px-4 py-3 border-[0.3px] border-red-500/20">
+          <p className="text-[11px] text-red-400">{errorMsg}</p>
+        </div>
+      )}
 
       {isAnalyzing && (
         <div className="flex items-center gap-2 bg-white/[0.03] rounded-xl px-4 py-3 border-[0.3px] border-[#1f8a65]/20">

@@ -29,7 +29,7 @@ export default function ConditionalClientShell({ children }: Props) {
 
   return (
     <>
-      <div className="pb-20">{children}</div>
+      <div className="pb-28">{children}</div>
       <BottomNav />
     </>
   )

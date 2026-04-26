@@ -1,5 +1,18 @@
 ## 2026-04-26
 
+FEATURE: Nutrition Studio — refonte totale NutritionProtocolTool en layout 3 colonnes MacroFactor-inspired
+FEATURE: Nutrition Studio — ClientIntelligencePanel avec sections biométrie/entraînement/lifestyle éditables
+FEATURE: Nutrition Studio — CalculationEngine avec TDEE waterfall, macros live, carb cycling toggle, hydratation
+FEATURE: Nutrition Studio — ProtocolCanvas avec gestion jours, injection one-click, Coherence Score
+FEATURE: Nutrition Studio — CoherenceScore 0-100 avec validation protéines/lipides/calories/hydratation
+FEATURE: Nutrition Studio — ClientPreviewModal simulant la vue client avant partage
+FEATURE: Nutrition Studio — debounce 300ms sur tous les calculs (macros + CC + hydratation)
+REFACTOR: nutrition/new et nutrition/edit pages branchées sur NutritionStudio
+FIX: NutritionProtocolTool — cardioFreq field mapping bug (session_duration_min was displayed in cardio sessions/week field instead of cardio_frequency)
+FIX: NutritionProtocolTool — MacroCalculator right panel now auto-calculates on mount when client data is injected (dataInjected flag + useEffect)
+FIX: NutritionProtocolTool — ccGoal now syncs from main goal via MACRO_TO_CC_GOAL mapping (deficit→moderate, maintenance→recomp, surplus→bulk) instead of defaulting to moderate
+FIX: NutritionProtocolTool — /new page now uses full NutritionProtocolTool (same as /edit) — behavior consistent
+FEATURE: NutritionProtocolTool — "Générer tous les jours" button fills all days using carb cycling (high/low based on day name detection) + hydration data in one click
 REFACTOR: SmartFit — merge ProgramIntelligencePanel + LabModeSection into single unified panel
 REFACTOR: SmartFit — remove duplicate subscores grid from main panel (now only in Lab Mode)
 REFACTOR: SmartFit — remove alerts section from panel (inline exercise badges only)

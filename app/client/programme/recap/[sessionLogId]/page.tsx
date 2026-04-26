@@ -34,7 +34,8 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
       client_set_logs (
         id, exercise_name, exercise_id, set_number, side,
         planned_reps, actual_reps, actual_weight_kg, completed,
-        rir_actual, rest_sec_actual, notes
+        rir_actual, rest_sec_actual, notes,
+        primary_muscles, secondary_muscles
       )
     `)
     .eq('id', params.sessionLogId)
@@ -68,10 +69,21 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
   }
   const exercises = Object.values(exerciseMap)
 
-  // ── Schéma corporel ──
-  const { primary: primaryGroups, secondary: secondaryGroups } = detectMuscleGroups(
-    exercises.map(e => ({ name: e.name }))
-  )
+  // ── Schéma corporel — utilise les muscles persistés dans les set_logs (option B) ──
+  // Agrège les muscles uniques de tous les sets complétés (dédupliqués par exercice)
+  const seenExercises = new Set<string>()
+  const muscleInputs: { name: string; primary_muscles: string[]; secondary_muscles: string[] }[] = []
+  for (const s of completedSets) {
+    if (!seenExercises.has(s.exercise_name)) {
+      seenExercises.add(s.exercise_name)
+      muscleInputs.push({
+        name: s.exercise_name,
+        primary_muscles: (s as any).primary_muscles ?? [],
+        secondary_muscles: (s as any).secondary_muscles ?? [],
+      })
+    }
+  }
+  const { primary: primaryGroups, secondary: secondaryGroups } = detectMuscleGroups(muscleInputs)
 
   // ── Comparaison dernière séance du même nom ──
   const { data: prevLogs } = await service
@@ -114,11 +126,12 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
     <div className="min-h-screen bg-[#121212] font-sans pb-10">
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
+      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
+        <div className="relative z-10 max-w-lg mx-auto flex items-center gap-3 h-full px-4">
           <Link
             href="/client/programme"
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.07] hover:text-white/70 transition-colors shrink-0"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:bg-white/[0.10] hover:text-white/70 transition-colors shrink-0"
           >
             <ChevronLeft size={16} />
           </Link>
@@ -129,7 +142,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 py-5 flex flex-col gap-4">
+      <main className="max-w-lg mx-auto px-5 pt-[88px] pb-5 flex flex-col gap-4">
 
         {/* ── Bannière succès ── */}
         <div className="flex items-center gap-3 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-2xl px-5 py-4">

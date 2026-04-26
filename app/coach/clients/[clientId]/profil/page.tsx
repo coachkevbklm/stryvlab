@@ -1,10 +1,9 @@
 // app/coach/clients/[clientId]/profil/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
-import { useSetTopBar } from "@/components/layout/useSetTopBar";
+import { useState } from "react";
 import { useClient } from "@/lib/client-context";
-import ClientHeader from "@/components/clients/ClientHeader";
+import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import ClientAccessToken from "@/components/clients/ClientAccessToken";
 import RestrictionsWidget from "@/components/clients/RestrictionsWidget";
 import ClientFormulasTab from "@/components/crm/ClientFormulasTab";
@@ -48,6 +47,7 @@ const EQUIPMENT_CATEGORIES = [
 
 export default function ProfilPage() {
   const { client, clientId, refetch } = useClient();
+  useClientTopBar("Profil");
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,18 +62,6 @@ export default function ProfilPage() {
     notes: client.notes ?? "",
   });
 
-  const topBarLeft = useMemo(
-    () => (
-      <div>
-        <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.18em]">Lab</p>
-        <p className="text-[13px] font-semibold text-white leading-none">
-          {client.first_name} {client.last_name} — Profil
-        </p>
-      </div>
-    ),
-    [client.first_name, client.last_name],
-  );
-  useSetTopBar(topBarLeft);
 
   async function save() {
     setSaving(true);
@@ -103,8 +91,6 @@ export default function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-[#121212]">
-      <ClientHeader />
-
       <div className="px-6 pb-24 space-y-4">
         {/* Infos contact */}
         <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-5">

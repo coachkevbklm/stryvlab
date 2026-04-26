@@ -21,6 +21,7 @@ const bodySchema = z.object({
 type Params = { params: { clientId: string } }
 
 export async function POST(req: NextRequest, { params }: Params) {
+  try {
   const supabase = createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -61,46 +62,55 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     submissionId = sub.id
   } else {
-    const { data: sub } = await db
+    // Chercher la soumission complétée la plus récente qui contient des photos
+    const { data: subs } = await db
       .from('assessment_submissions')
       .select('id')
       .eq('client_id', params.clientId)
       .eq('status', 'completed')
       .order('bilan_date', { ascending: false })
-      .limit(1)
-      .single()
-    if (!sub) {
+      .limit(10)
+
+    if (!subs || subs.length === 0) {
       return NextResponse.json({ error: 'Aucun bilan complété trouvé' }, { status: 422 })
     }
-    submissionId = sub.id
+
+    // Trouver le premier bilan qui a des photos
+    for (const candidate of subs) {
+      const { count } = await db
+        .from('assessment_responses')
+        .select('*', { count: 'exact', head: true })
+        .eq('submission_id', candidate.id)
+        .like('field_key', 'photo_%')
+        .not('storage_path', 'is', null)
+
+      if (count && count > 0) {
+        submissionId = candidate.id
+        break
+      }
+    }
+
+    if (!submissionId) {
+      return NextResponse.json({ error: 'Aucune photo trouvée dans les bilans récents. Ajoutez des photos à un bilan pour démarrer.' }, { status: 422 })
+    }
   }
 
-  // Vérifier que la soumission contient des photos
-  const { count: photoCount } = await db
-    .from('assessment_responses')
-    .select('*', { count: 'exact', head: true })
-    .eq('submission_id', submissionId)
-    .eq('field_type', 'photo')
+  // Bloquer si ce bilan a déjà une analyse completed (évite de réanalyser les mêmes photos)
+  if (submissionId) {
+    const { data: existing } = await db
+      .from('morpho_analyses')
+      .select('id')
+      .eq('client_id', params.clientId)
+      .eq('assessment_submission_id', submissionId)
+      .eq('status', 'completed')
+      .limit(1)
 
-  if (!photoCount || photoCount === 0) {
-    return NextResponse.json({ error: 'Aucune photo dans ce bilan' }, { status: 422 })
-  }
-
-  // Rate limit : max 1 analyse par client par jour
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { data: recent } = await db
-    .from('morpho_analyses')
-    .select('id')
-    .eq('client_id', params.clientId)
-    .gte('created_at', since)
-    .limit(1)
-    .single()
-
-  if (recent) {
-    return NextResponse.json(
-      { error: 'Maximum 1 analyse par client par 24h' },
-      { status: 429 }
-    )
+    if (existing && existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Ce bilan a déjà été analysé. Sélectionnez un autre bilan ou relancez depuis la liste.' },
+        { status: 409 }
+      )
+    }
   }
 
   // Créer l'enregistrement morpho_analyses avec status=pending
@@ -121,7 +131,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     .single()
 
   if (insertError || !morphoAnalysis) {
-    return NextResponse.json({ error: 'Erreur création analyse' }, { status: 500 })
+    console.error('[morpho/analyze] insert error:', insertError)
+    return NextResponse.json({ error: 'Erreur création analyse', detail: insertError?.message }, { status: 500 })
   }
 
   // Envoyer l'événement Inngest — job géré avec retry, timeout et observabilité
@@ -139,4 +150,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
     { status: 202 }
   )
+  } catch (err) {
+    console.error('[morpho/analyze] unhandled error:', err)
+    return NextResponse.json({ error: 'Erreur inattendue', detail: String(err) }, { status: 500 })
+  }
 }
