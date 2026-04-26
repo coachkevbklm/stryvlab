@@ -14,7 +14,7 @@
 > - Impact: `IMPACT_STATEMENT_STRYVR.md`
 > - Guides: `QUICK_START_SESSION_GUIDE.md`, `VISUAL_CHEATSHEET.md`
 > 
-> Dernière mise à jour : 2026-04-26 (Strategic documentation suite + Nutrition Studio)
+> Dernière mise à jour : 2026-04-26 (Nutrition Studio gold standard UX redesign — Phase 1-4 complete)
 
 ---
 
@@ -43,6 +43,74 @@
 - [ ] Performance feedback → action (coach approval flow)
 
 **Blockers** : None critical. Ready to scale.
+
+---
+
+## 2026-04-26 — Nutrition Studio — Gold Standard UX Redesign (4-Phase Complete)
+
+**Ce qui a été fait :**
+
+1. **Phase 1 — Data Validation** (5 min)
+   - `app/api/clients/[clientId]/nutrition-data/route.ts` : Added clamping logic (lines 118-127)
+   - `session_duration_min` : 15–240 min bounds
+   - `cardio_frequency` : 0–14 sessions/week bounds
+   - `cardio_duration_min` : 0–180 min bounds
+   - De-risks downstream phases by fixing "85" anomalies at source
+
+2. **Phase 2 — Col 3 Refactoring** (30 min)
+   - `components/nutrition/studio/ProtocolCanvas.tsx` : 85 lines added/modified
+   - Replaced `window.prompt()` with inline day name editor (editingDayIndex state + inline input)
+   - Added step indicator before Coherence Score: "Paramètres ✓ | Calcul ✓ | Protocole →" (CheckCircle2 icons)
+   - Elevated injection buttons: Primary full-width green "Injecter les macros dans ce jour" (h-11), secondary "Jour haut/bas" (flex row), tertiary "Hydratation"+"Tous" (flex row)
+   - Removed "←" prefixes from button labels for cleaner hierarchy
+
+3. **Phase 3 — Col 1 Refactoring** (60 min)
+   - Created `components/nutrition/studio/ParameterAdjustmentPanel.tsx` (180 lines, NEW)
+     - Framer Motion Pattern B: Spring-animated slide-in from right (x: 400→0)
+     - Backdrop overlay (motion.div, opacity)
+     - Training section (5 fields: weekly_frequency, session_duration_min, training_calories, cardio_frequency, cardio_duration_min)
+     - Lifestyle section (6 fields: daily_steps, sleep_duration_h, sleep_quality, stress_level, energy_level, work_hours_per_week)
+     - Footer with Retour button
+     - Subcomponents: NumberInput, SectionLabel (inline)
+   - Updated `components/nutrition/studio/ClientIntelligencePanel.tsx` (refactored, 120 lines from 236)
+     - Removed accordion Training + Lifestyle sections
+     - Added "⚙ Ajuster les paramètres" button that opens slide-in panel
+     - Added large TDEE display at bottom (28px font, #1f8a65 accent)
+     - Biometrics breathe: Poids, Taille, Composition, Métabolisme, then spacer, then TDEE card
+     - Integrated ParameterAdjustmentPanel with field mapping (snake_case DB → camelCase hook)
+
+4. **Phase 4 — Col 2 Refactoring** (20 min)
+   - `components/nutrition/studio/CalculationEngine.tsx` : Replaced Carb Cycling toggle pill
+   - OFF state: Text link "▶ Activer le Carb Cycling" (green, no border)
+   - ON state: Text link "▼ Carb Cycling activé" + description + protocol/goal selects + preview cards
+   - Removed floating "?" icon entirely (was title on pill)
+   - Carb Cycling is now self-explanatory without icons
+
+**Points de vigilance :**
+
+- Data clamping happens AFTER field collection, BEFORE result serialization — idempotent, zero data loss
+- `window.prompt()` pattern replaced with controlled inline input + Enter/Escape handlers — matches protocol name header pattern
+- Step indicator uses CheckCircle2 (completed ✓) + filled ring (current →) for visual clarity
+- ParameterAdjustmentPanel uses `fixed inset-0` for backdrop + `fixed right-0 bottom-0 w-[400px]` for panel — does not interfere with 3-column layout
+- TDEE display is `flex-1` spacer + fixed card at bottom — biometrics section can scroll without TDEE leaving viewport
+- CC toggle now purely text-based (no pill styling) — reduces visual noise, makes interaction clearer
+- All changes are UI-only — zero logic changes, zero API changes, zero schema changes
+- Injection buttons maintain existing onClick handlers (no refactoring) — just reordered and restyled
+- Field mapping in ClientIntelligencePanel converts snake_case (DB) ↔ camelCase (hook): `weekly_frequency → weeklyFrequency`, etc.
+
+**Résultat visuel attendu :**
+
+- Col 1 : Client name, Composition cards (Poids, Taille, Masse grasse bar, LBM), Métabolisme, [spacer], Large TDEE card, "Ajuster les paramètres" button
+- Col 2 : TDEE waterfall, Goal selector, Calorie adjuster, Macros display (P/L/G bars), "▶ Activer le Carb Cycling" text link
+- Col 3 : Step indicator (Paramètres ✓ | Calcul ✓ | Protocole →), Coherence Score, Days overview, Active day editor with large green "Injecter les macros" button, secondary "Jour haut"/"Jour bas", tertiary buttons, Manual fine-tune, Live macro bar, Recommendations
+- Panel (overlay) : Parameters adjustment with Training + Lifestyle number inputs, Retour button
+
+**Next Steps — Phase 5 (Future) :**
+- [ ] Investigate why original "85" values were entered (coaching input error or data migration issue)
+- [ ] Add estimated cost calculator when injecting macros (show calorie delta vs current)
+- [ ] Add "Apply to all days" bulk injection option
+- [ ] Add "Save as template" button for protocol quick reuse
+- [ ] Connect annotations `lab_protocol` to MetricsSection (visual markers on graphs)
 
 ---
 

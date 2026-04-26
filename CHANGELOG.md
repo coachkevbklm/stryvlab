@@ -1,5 +1,11 @@
 ## 2026-04-26
 
+FEATURE: Nutrition Studio — Gold standard UX redesign (4-phase progressive disclosure refactor)
+FEATURE: Nutrition Studio Phase 1 — Data validation: clamp session_duration_min (15–240), cardio_frequency (0–14), cardio_duration_min (0–180) to sensible ranges
+FEATURE: Nutrition Studio Phase 2 — Col 3 refactoring: replace window.prompt() with inline day name editor, elevate injection buttons to primary action (full-width green), add step indicator ("Paramètres ✓ | Calcul ✓ | Protocole →")
+FEATURE: Nutrition Studio Phase 3 — Col 1 refactoring: new ParameterAdjustmentPanel (Framer Motion slide-in), remove accordion sections, display large TDEE at bottom, breathable biometrics layout
+FEATURE: Nutrition Studio Phase 4 — Col 2 refactoring: replace Carb Cycling toggle pill with text link "▶ Activer le Carb Cycling", remove floating "?" icon, reveal config inline
+FEATURE: Components — New ParameterAdjustmentPanel.tsx (180 lines): Framer Motion slide-in panel for Training + Lifestyle parameters, Pattern B from CustomExerciseModal
 FIX: Data accuracy — Add weekly_frequency validation (1-7 days/week bounds) to prevent nutrition math corruption
 FIX: Data accuracy — API nutrition-data endpoint now rejects invalid weekly_frequency values (< 1 or > 7)
 FIX: Data accuracy — Client PATCH endpoint validates weekly_frequency, returns 400 on invalid input

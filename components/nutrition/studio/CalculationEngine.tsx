@@ -239,23 +239,21 @@ export default function CalculationEngine({
 
       {/* ── CARB CYCLING ─────────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <SectionDivider label="Carb Cycling" />
+        {!carbCycling.enabled ? (
           <button
-            onClick={() => onCarbCyclingChange({ enabled: !carbCycling.enabled })}
-            title="Alterne entre des jours hauts (glucides élevés) et bas (glucides réduits) selon le plan d'entraînement"
-            className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-semibold border-[0.3px] transition-all cursor-help ${
-              carbCycling.enabled
-                ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[#1f8a65]/30'
-                : 'bg-white/[0.04] text-white/30 border-white/[0.06]'
-            }`}
+            onClick={() => onCarbCyclingChange({ enabled: true })}
+            className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors mb-3"
           >
-            {carbCycling.enabled ? '● ON' : '○ OFF'}
+            ▶ Activer le Carb Cycling
           </button>
-        </div>
-
-        {carbCycling.enabled && (
+        ) : (
           <div className="space-y-2">
+            <button
+              onClick={() => onCarbCyclingChange({ enabled: false })}
+              className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
+            >
+              ▼ Carb Cycling activé
+            </button>
             <p className="text-[9px] text-white/40 leading-relaxed">
               Alterne automatiquement entre jours hauts (séances) et bas (repos) pour optimiser la partition des macros.
             </p>

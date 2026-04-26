@@ -124,6 +124,17 @@ export async function GET(
     if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
   }
 
+  // Clamp training fields to sensible ranges
+  if (entry.session_duration_min !== null) {
+    entry.session_duration_min = Math.max(15, Math.min(240, entry.session_duration_min))
+  }
+  if (entry.cardio_frequency !== null) {
+    entry.cardio_frequency = Math.max(0, Math.min(14, entry.cardio_frequency))
+  }
+  if (entry.cardio_duration_min !== null) {
+    entry.cardio_duration_min = Math.max(0, Math.min(180, entry.cardio_duration_min))
+  }
+
   // Validate weekly_frequency bounds (1-7 days/week)
   let validWeeklyFrequency = client.weekly_frequency ?? entry.training_frequency
   if (validWeeklyFrequency != null && (validWeeklyFrequency < 1 || validWeeklyFrequency > 7)) {

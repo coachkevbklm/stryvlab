@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, Eye, Send, Save, Pencil, Check } from 'lucide-react'
+import { Plus, X, Eye, Send, Save, Pencil, Check, CheckCircle2 } from 'lucide-react'
 import MacroBar from './MacroBar'
 import CoherenceScore from './CoherenceScore'
 import type { DayDraft } from '@/lib/nutrition/types'
@@ -65,6 +65,8 @@ export default function ProtocolCanvas({
 }: Props) {
   const [editingName, setEditingName] = useState(false)
   const [tempName, setTempName] = useState(protocolName)
+  const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
+  const [tempDayName, setTempDayName] = useState('')
   const activeDay = days[activeDayIndex]
 
   return (
@@ -100,6 +102,24 @@ export default function ProtocolCanvas({
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 p-4">
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-3 text-[10px] font-semibold text-white/50">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 size={12} className="text-[#1f8a65]" />
+            <span>Paramètres</span>
+          </div>
+          <span>|</span>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 size={12} className="text-[#1f8a65]" />
+            <span>Calcul</span>
+          </div>
+          <span>|</span>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-full border-[1px] border-[#1f8a65] bg-[#1f8a65]/20" />
+            <span className="text-[#1f8a65]">Protocole</span>
+          </div>
+        </div>
 
         {/* Coherence Score */}
         <CoherenceScore score={coherenceScore.score} checks={coherenceScore.checks} />
@@ -171,65 +191,97 @@ export default function ProtocolCanvas({
         {activeDay && (
           <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold text-white">{activeDay.name}</p>
-              <button
-                onClick={() => {
-                  const name = window.prompt('Renommer le jour', activeDay.name)
-                  if (name) onUpdateDay(activeDayIndex, { name })
-                }}
-                className="text-white/25 hover:text-white/60 transition-colors"
-              >
-                <Pencil size={10} />
-              </button>
+              {editingDayIndex === activeDayIndex ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    autoFocus
+                    value={tempDayName}
+                    onChange={e => setTempDayName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        onUpdateDay(activeDayIndex, { name: tempDayName })
+                        setEditingDayIndex(null)
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingDayIndex(null)
+                      }
+                    }}
+                    className="flex-1 rounded-lg bg-white/[0.04] border-[0.3px] border-[#1f8a65]/40 px-2 py-1 text-[11px] font-semibold text-white outline-none"
+                  />
+                  <button
+                    onClick={() => {
+                      onUpdateDay(activeDayIndex, { name: tempDayName })
+                      setEditingDayIndex(null)
+                    }}
+                    className="text-[#1f8a65] hover:text-[#217356]"
+                  >
+                    <Check size={12} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-[11px] font-semibold text-white">{activeDay.name}</p>
+                  <button
+                    onClick={() => {
+                      setTempDayName(activeDay.name)
+                      setEditingDayIndex(activeDayIndex)
+                    }}
+                    className="text-white/25 hover:text-white/60 transition-colors"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Injection buttons */}
-            <div>
-              <p className="text-[9px] text-white/30 mb-1.5">Injection rapide</p>
-              <div className="flex flex-wrap gap-1.5">
-                {hasMacroResult && (
-                  <button
-                    onClick={() => onInjectMacros(activeDayIndex)}
-                    title="Injecter les macros calculées (calories, protéines, lipides, glucides)"
-                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 hover:text-white/85 hover:bg-white/[0.07] transition-all cursor-help"
-                  >
-                    ← Base
-                  </button>
-                )}
+            <div className="space-y-2">
+              {hasMacroResult && (
+                <button
+                  onClick={() => onInjectMacros(activeDayIndex)}
+                  title="Injecter les macros calculées (calories, protéines, lipides, glucides)"
+                  className="w-full h-11 rounded-xl bg-[#1f8a65] text-white text-[11px] font-bold hover:bg-[#217356] active:scale-[0.98] transition-all"
+                >
+                  Injecter les macros dans ce jour
+                </button>
+              )}
+              <div className="flex gap-2">
                 {hasCcResult && (
                   <>
                     <button
                       onClick={() => onInjectCCHigh(activeDayIndex)}
                       title="Injecter les macros d'un jour haut en carbs (pour l'entraînement)"
-                      className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] hover:bg-[#1f8a65]/15 transition-all cursor-help"
+                      className="flex-1 px-2 py-1.5 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] font-medium hover:bg-[#1f8a65]/15 transition-all cursor-help"
                     >
-                      ← Jour haut
+                      Jour haut
                     </button>
                     <button
                       onClick={() => onInjectCCLow(activeDayIndex)}
                       title="Injecter les macros d'un jour bas en carbs (pour la récupération)"
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 hover:bg-blue-500/15 transition-all cursor-help"
+                      className="flex-1 px-2 py-1.5 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 font-medium hover:bg-blue-500/15 transition-all cursor-help"
                     >
-                      ← Jour bas
+                      Jour bas
                     </button>
                   </>
                 )}
+              </div>
+              <div className="flex gap-2">
                 {hasHydration && (
                   <button
                     onClick={() => onInjectHydration(activeDayIndex)}
                     title="Injecter l'hydratation recommandée"
-                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 transition-all cursor-help"
+                    className="flex-1 px-2 py-1.5 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 hover:bg-white/[0.06] transition-all cursor-help"
                   >
-                    ← Hydratation
+                    Hydratation
                   </button>
                 )}
                 {(hasMacroResult || hasHydration) && (
                   <button
                     onClick={() => onInjectAll(activeDayIndex)}
                     title="Injecter toutes les données calculées (macros + hydratation)"
-                    className="px-2.5 py-1 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all cursor-help"
+                    className="flex-1 px-2 py-1.5 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all cursor-help"
                   >
-                    ← Tous les calculs
+                    Tous les calculs
                   </button>
                 )}
               </div>
