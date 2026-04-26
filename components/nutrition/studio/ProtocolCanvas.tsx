@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, Eye, Send, Save, Pencil, Check, CheckCircle2 } from 'lucide-react'
+import { Plus, X, Pencil, Check, CheckCircle2, Info } from 'lucide-react'
 import MacroBar from './MacroBar'
 import CoherenceScore from './CoherenceScore'
+import InfoModal from './InfoModal'
+import { INJECTION_INFO_MODALS } from '@/lib/nutrition/infoModalDefinitions'
 import type { DayDraft } from '@/lib/nutrition/types'
 import type { CarbCyclingResult } from '@/lib/formulas/carbCycling'
 
@@ -26,12 +28,6 @@ interface Props {
   ccResult: CarbCyclingResult | null
   hasHydration: boolean
   coherenceScore: { score: number; checks: { label: string; ok: boolean; warning?: string }[] }
-  clientName: string
-  saving: boolean
-  sharing: boolean
-  onSave: () => void
-  onShare: () => void
-  onPreview: () => void
 }
 
 function NumberField({ label, value, onChange, unit }: {
@@ -67,6 +63,7 @@ export default function ProtocolCanvas({
   const [tempName, setTempName] = useState(protocolName)
   const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
   const [tempDayName, setTempDayName] = useState('')
+  const [openInfoModal, setOpenInfoModal] = useState<string | null>(null)
   const activeDay = days[activeDayIndex]
 
   return (
@@ -239,10 +236,18 @@ export default function ProtocolCanvas({
               {hasMacroResult && (
                 <button
                   onClick={() => onInjectMacros(activeDayIndex)}
-                  title="Injecter les macros calculées (calories, protéines, lipides, glucides)"
-                  className="w-full h-11 rounded-xl bg-[#1f8a65] text-white text-[11px] font-bold hover:bg-[#217356] active:scale-[0.98] transition-all"
+                  className="w-full h-11 rounded-xl bg-[#1f8a65] text-white text-[11px] font-bold hover:bg-[#217356] active:scale-[0.98] transition-all flex items-center justify-between px-4"
                 >
-                  Injecter les macros dans ce jour
+                  <span>Injecter les macros dans ce jour</span>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      setOpenInfoModal('base')
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.1] hover:bg-white/[0.2]"
+                  >
+                    <Info size={13} />
+                  </button>
                 </button>
               )}
               <div className="flex gap-2">
@@ -250,17 +255,33 @@ export default function ProtocolCanvas({
                   <>
                     <button
                       onClick={() => onInjectCCHigh(activeDayIndex)}
-                      title="Injecter les macros d'un jour haut en carbs (pour l'entraînement)"
-                      className="flex-1 px-2 py-1.5 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] font-medium hover:bg-[#1f8a65]/15 transition-all cursor-help"
+                      className="flex-1 flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] font-medium hover:bg-[#1f8a65]/15 transition-all"
                     >
-                      Jour haut
+                      <span>Jour haut</span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          setOpenInfoModal('carbCycleHigh')
+                        }}
+                        className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
+                      >
+                        <Info size={11} />
+                      </button>
                     </button>
                     <button
                       onClick={() => onInjectCCLow(activeDayIndex)}
-                      title="Injecter les macros d'un jour bas en carbs (pour la récupération)"
-                      className="flex-1 px-2 py-1.5 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 font-medium hover:bg-blue-500/15 transition-all cursor-help"
+                      className="flex-1 flex items-center justify-between px-2 py-1.5 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 font-medium hover:bg-blue-500/15 transition-all"
                     >
-                      Jour bas
+                      <span>Jour bas</span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          setOpenInfoModal('carbCycleLow')
+                        }}
+                        className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
+                      >
+                        <Info size={11} />
+                      </button>
                     </button>
                   </>
                 )}
@@ -269,19 +290,35 @@ export default function ProtocolCanvas({
                 {hasHydration && (
                   <button
                     onClick={() => onInjectHydration(activeDayIndex)}
-                    title="Injecter l'hydratation recommandée"
-                    className="flex-1 px-2 py-1.5 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 hover:bg-white/[0.06] transition-all cursor-help"
+                    className="flex-1 flex items-center justify-between px-2 py-1.5 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-blue-400/70 hover:text-blue-400 hover:bg-white/[0.06] transition-all"
                   >
-                    Hydratation
+                    <span>Hydratation</span>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        setOpenInfoModal('hydration')
+                      }}
+                      className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
+                    >
+                      <Info size={11} />
+                    </button>
                   </button>
                 )}
                 {(hasMacroResult || hasHydration) && (
                   <button
                     onClick={() => onInjectAll(activeDayIndex)}
-                    title="Injecter toutes les données calculées (macros + hydratation)"
-                    className="flex-1 px-2 py-1.5 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all cursor-help"
+                    className="flex-1 flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#1f8a65]/15 border-[0.3px] border-[#1f8a65]/30 text-[10px] text-[#1f8a65] font-semibold hover:bg-[#1f8a65]/20 transition-all"
                   >
-                    Tous les calculs
+                    <span>Tous les calculs</span>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        setOpenInfoModal('allCalculations')
+                      }}
+                      className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
+                    >
+                      <Info size={11} />
+                    </button>
                   </button>
                 )}
               </div>
@@ -331,34 +368,18 @@ export default function ProtocolCanvas({
         )}
       </div>
 
-      {/* Sticky save bar */}
-      <div className="border-t border-white/[0.06] px-4 py-3 space-y-2">
-        <button
-          onClick={onPreview}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] text-white/50 hover:text-white/75 hover:bg-white/[0.06] transition-all"
-        >
-          <Eye size={12} />
-          Aperçu client
-        </button>
-        <div className="flex gap-2">
-          <button
-            onClick={onSave}
-            disabled={saving}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] font-medium text-white/60 hover:text-white/80 disabled:opacity-40 transition-all"
-          >
-            <Save size={12} />
-            {saving ? 'Sauvegarde...' : 'Brouillon'}
-          </button>
-          <button
-            onClick={onShare}
-            disabled={sharing}
-            className="flex-[2] flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1f8a65] text-[11px] font-bold text-white hover:bg-[#217356] disabled:opacity-40 active:scale-[0.98] transition-all"
-          >
-            <Send size={12} />
-            {sharing ? 'Partage...' : `Partager ▶ ${clientName.split(' ')[0]}`}
-          </button>
-        </div>
-      </div>
+
+      {/* Info modals */}
+      {openInfoModal && INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS] && (
+        <InfoModal
+          isOpen={true}
+          title={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].title}
+          description={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].description}
+          example={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].example}
+          whenToUse={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].whenToUse}
+          onClose={() => setOpenInfoModal(null)}
+        />
+      )}
     </div>
   )
 }
