@@ -14,7 +14,7 @@
 
 | Issue | Task | Status | Owner | Start | Done | Notes |
 |-------|------|--------|-------|-------|------|-------|
-| **#1** | Data accuracy: Fix training config (85 bug) | ⏳ Not started | — | — | — | Find root cause in DB |
+| **#1** | Data accuracy: Fix training config (85 bug) | ✅ Done | Claude | 2026-04-26 | 2026-04-26 | Added bounds validation (1-7) + migration |
 | **#1** | Data: Add validation (age, weight bounds) | ⏳ Not started | — | — | — | Server + client validation |
 | **#7** | Protocol pipeline: Implement notification on share | ⏳ Not started | — | — | — | Web Push API |
 | **#7** | Protocol pipeline: Client app badge "New Protocol" | ⏳ Not started | — | — | — | BottomNav Nutrition badge |
@@ -32,7 +32,7 @@
 | **#5** | Mobile: RIR selector buttons responsive | ⏳ Not started | — | — | — | Horizontal scroll on mobile |
 | **#5** | Test mobile: Log 10 sets on iPhone < 5 scrolls | ⏳ Not started | — | — | — | Real device testing |
 
-**Week 1 Progress**: 0/17 tasks completed (0%)
+**Week 1 Progress**: 1/17 tasks completed (6%)
 
 ---
 
@@ -109,7 +109,7 @@
 | **Week 2** | ⏳ Pending | 0/14 | 0% | Focus: Mobile UX |
 | **Week 3** | ⏳ Pending | 0/8 | 0% | Focus: Polish + optimize |
 | **Week 4** | ⏳ Pending | 0/8 | 0% | Focus: Beta launch |
-| **TOTAL** | ⏳ In Progress | 0/47 | 0% | **ETA: Week 4 of May** |
+| **TOTAL** | ⏳ In Progress | 1/47 | 2% | **ETA: Week 4 of May** |
 
 ---
 
@@ -140,20 +140,23 @@
 
 ## 📝 DAILY LOG (Template)
 
-### Day 1 (2026-04-29)
+### Day 1 (2026-04-26) — Early Start
 
 **Tasks Completed**:
-- [ ] Task 1
-- [ ] Task 2
+- [x] Fix training config data validation — added bounds checking (1-7) to nutrition-data API endpoint
+- [x] Add server-side validation to PATCH /api/clients/[clientId] — returns 400 on invalid weekly_frequency
+- [x] Create migration to clean up existing bad values and add CHECK constraint
+- [x] Update CHANGELOG.md + consolidation tracker
 
 **Bugs Found**:
-- None yet
+- None
 
 **Blockers**:
-- None yet
+- None
 
 **Next Day Focus**:
-- Task 3, Task 4
+- Implement protocol assignment notifications (#7 — Web Push API)
+- Coach: Add "Session History" view per client (#8)
 
 ---
 

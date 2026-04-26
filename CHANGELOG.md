@@ -1,5 +1,10 @@
 ## 2026-04-26
 
+FIX: Data accuracy — Add weekly_frequency validation (1-7 days/week bounds) to prevent nutrition math corruption
+FIX: Data accuracy — API nutrition-data endpoint now rejects invalid weekly_frequency values (< 1 or > 7)
+FIX: Data accuracy — Client PATCH endpoint validates weekly_frequency, returns 400 on invalid input
+SCHEMA: Add CHECK constraint to coach_clients.weekly_frequency (1-7 or NULL) via migration
+
 REFACTOR: Nutrition Studio — Polish UX clarity phase
 REFACTOR: Nutrition Studio — Expand Col 3 (ProtocolCanvas) from 380px → 480px for better day editor visibility
 REFACTOR: Nutrition Studio — Add tooltips to injection buttons (← Base, ← Jour haut/bas, ← Hydratation, ← Tous les calculs)
