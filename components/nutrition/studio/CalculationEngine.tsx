@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { AlertTriangle, CheckCircle2, Info, Droplets } from 'lucide-react'
 import TdeeWaterfall from './TdeeWaterfall'
 import TdeeWaterfallLegend from './TdeeWaterfallLegend'
 import CalorieAdjustmentDisplay from './CalorieAdjustmentDisplay'
 import MacroPercentageDisplay from './MacroPercentageDisplay'
+import InfoModal from './InfoModal'
+import { INJECTION_INFO_MODALS } from '@/lib/nutrition/infoModalDefinitions'
 import type { MacroResult, MacroGoal } from '@/lib/formulas/macros'
 import type { CarbCyclingResult, CarbCycleProtocol, CarbCycleGoal, CarbCycleIntensity, CarbCyclePhase, CarbCycleInsulin } from '@/lib/formulas/carbCycling'
 import type { HydrationClimate } from '@/lib/formulas/hydration'
@@ -102,6 +105,7 @@ export default function CalculationEngine({
   hydrationLiters,
   leanMass,
 }: Props) {
+  const [openInfoModal, setOpenInfoModal] = useState<string | null>(null)
 
   const actionableSuggestions = (macroResult?.smartProtocol ?? [])
     .filter(s => ['critical', 'high'].includes(s.priority))
@@ -197,24 +201,44 @@ export default function CalculationEngine({
       {/* ── CARB CYCLING ─────────────────────────────────────────────── */}
       <div>
         {!carbCycling.enabled ? (
-          <button
-            onClick={() => onCarbCyclingChange({ enabled: true })}
-            className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors mb-3"
-          >
-            ▶ Activer le Carb Cycling
-          </button>
-        ) : (
-          <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2 mb-3">
             <button
-              onClick={() => onCarbCyclingChange({ enabled: false })}
+              onClick={() => onCarbCyclingChange({ enabled: true })}
               className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
             >
-              ▼ Carb Cycling activé
+              ▶ Activer le Carb Cycling
             </button>
+            <button
+              onClick={() => setOpenInfoModal('carbCyclingToggle')}
+              className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors"
+            >
+              <Info size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Toggle + info */}
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => onCarbCyclingChange({ enabled: false })}
+                className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
+              >
+                ▼ Carb Cycling activé
+              </button>
+              <button
+                onClick={() => setOpenInfoModal('carbCyclingToggle')}
+                className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors"
+              >
+                <Info size={14} />
+              </button>
+            </div>
+
+            {/* Description */}
             <p className="text-[9px] text-white/40 leading-relaxed">
               Alterne automatiquement entre jours hauts (séances) et bas (repos) pour optimiser la partition des macros.
             </p>
 
+            {/* Protocol + Goal selects */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[9px] text-white/35 mb-1">Protocole</p>
@@ -236,17 +260,18 @@ export default function CalculationEngine({
               </div>
             </div>
 
+            {/* High / Low day preview cards */}
             {ccResult && (
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-xl bg-[#1f8a65]/[0.08] border-[0.3px] border-[#1f8a65]/20 p-3">
-                  <p className="text-[9px] text-[#1f8a65] font-semibold mb-1">🔥 JOUR HAUT</p>
-                  <p className="text-[14px] font-bold text-white">{ccResult.high.kcal} <span className="text-[10px] font-normal text-white/40">kcal</span></p>
-                  <p className="text-[10px] text-white/50 mt-0.5">P{ccResult.high.p} · L{ccResult.high.f} · G{ccResult.high.c}</p>
+                  <p className="text-[9px] text-[#1f8a65] font-semibold mb-1.5">🔥 JOUR HAUT</p>
+                  <p className="text-[13px] font-bold text-white">{ccResult.high.kcal} <span className="text-[10px] font-normal text-white/40">kcal</span></p>
+                  <p className="text-[9px] text-white/50 mt-1">P{ccResult.high.p} · L{ccResult.high.f} · G{ccResult.high.c}</p>
                 </div>
                 <div className="rounded-xl bg-blue-500/[0.08] border-[0.3px] border-blue-500/20 p-3">
-                  <p className="text-[9px] text-blue-400 font-semibold mb-1">🧊 JOUR BAS</p>
-                  <p className="text-[14px] font-bold text-white">{ccResult.low.kcal} <span className="text-[10px] font-normal text-white/40">kcal</span></p>
-                  <p className="text-[10px] text-white/50 mt-0.5">P{ccResult.low.p} · L{ccResult.low.f} · G{ccResult.low.c}</p>
+                  <p className="text-[9px] text-blue-400 font-semibold mb-1.5">🧊 JOUR BAS</p>
+                  <p className="text-[13px] font-bold text-white">{ccResult.low.kcal} <span className="text-[10px] font-normal text-white/40">kcal</span></p>
+                  <p className="text-[9px] text-white/50 mt-1">P{ccResult.low.p} · L{ccResult.low.f} · G{ccResult.low.c}</p>
                 </div>
               </div>
             )}
@@ -301,6 +326,17 @@ export default function CalculationEngine({
         </div>
       )}
 
+      {/* Info modals */}
+      {openInfoModal && INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS] && (
+        <InfoModal
+          isOpen={true}
+          title={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].title}
+          description={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].description}
+          example={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].example}
+          whenToUse={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].whenToUse}
+          onClose={() => setOpenInfoModal(null)}
+        />
+      )}
     </div>
   )
 }
