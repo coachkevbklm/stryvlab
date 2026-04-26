@@ -2,6 +2,9 @@
 
 import { AlertTriangle, CheckCircle2, Info, Droplets } from 'lucide-react'
 import TdeeWaterfall from './TdeeWaterfall'
+import TdeeWaterfallLegend from './TdeeWaterfallLegend'
+import CalorieAdjustmentDisplay from './CalorieAdjustmentDisplay'
+import MacroPercentageDisplay from './MacroPercentageDisplay'
 import type { MacroResult, MacroGoal } from '@/lib/formulas/macros'
 import type { CarbCyclingResult, CarbCycleProtocol, CarbCycleGoal, CarbCycleIntensity, CarbCyclePhase, CarbCycleInsulin } from '@/lib/formulas/carbCycling'
 import type { HydrationClimate } from '@/lib/formulas/hydration'
@@ -111,7 +114,10 @@ export default function CalculationEngine({
       <div>
         <SectionDivider label="Dépense énergétique" />
         {macroResult ? (
-          <TdeeWaterfall result={macroResult} />
+          <>
+            <TdeeWaterfall result={macroResult} />
+            <TdeeWaterfallLegend className="mt-2" />
+          </>
         ) : (
           <div className="h-12 rounded-lg bg-white/[0.04] animate-pulse" />
         )}
@@ -137,22 +143,12 @@ export default function CalculationEngine({
         </div>
 
         {macroResult && (
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-white/40">Ajustement calorique</span>
-              <span className="text-[11px] font-mono text-white/70">
-                {calorieAdjustPct > 0 ? '+' : ''}{calorieAdjustPct}%
-              </span>
-            </div>
-            <input
-              type="range" min={-30} max={30} step={1}
+          <div className="mt-3">
+            <CalorieAdjustmentDisplay
               value={calorieAdjustPct}
-              onChange={e => onCalorieAdjustChange(Number(e.target.value))}
-              className="w-full h-1 accent-[#1f8a65] cursor-pointer"
+              tdee={macroResult.tdee ?? null}
+              onChange={onCalorieAdjustChange}
             />
-            <div className="flex justify-between text-[9px] text-white/25">
-              <span>-30%</span><span>0</span><span>+30%</span>
-            </div>
           </div>
         )}
       </div>
@@ -167,67 +163,28 @@ export default function CalculationEngine({
               <span className="text-[16px] font-bold text-white">{macroResult.calories} <span className="text-[11px] font-normal text-white/40">kcal</span></span>
             </div>
 
-            {/* Protein */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400" />
-                  <span className="text-[11px] text-white/70">Protéines</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-white/35">
-                    {leanMass ? (macroResult.macros.p / leanMass).toFixed(1) : '—'}g/kg LBM
-                  </span>
-                  <span className="text-[13px] font-semibold text-white">{macroResult.macros.p}g</span>
-                </div>
-              </div>
-              <div className="h-[3px] w-full rounded-full bg-white/[0.04] overflow-hidden">
-                <div className="h-full bg-blue-400 transition-all duration-300" style={{ width: `${macroResult.percents.p}%` }} />
-              </div>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[9px] text-white/30">Override g/kg LBM</span>
-                <input
-                  type="number" step="0.1" min={1.5} max={4}
-                  value={proteinOverride ?? ''}
-                  placeholder="auto"
-                  onChange={e => onProteinOverrideChange(e.target.value ? Number(e.target.value) : null)}
-                  className="w-16 rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-0.5 text-[10px] text-white/70 text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
-                />
-                {proteinOverride && (
-                  <button onClick={() => onProteinOverrideChange(null)} className="text-[9px] text-white/30 hover:text-white/60">
-                    reset
-                  </button>
-                )}
-              </div>
-            </div>
+            <MacroPercentageDisplay
+              proteinG={macroResult.macros.p}
+              fatG={macroResult.macros.f}
+              carbsG={macroResult.macros.c}
+              totalCalories={macroResult.calories}
+            />
 
-            {/* Fat */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="text-[11px] text-white/70">Lipides</span>
-                </div>
-                <span className="text-[13px] font-semibold text-white">{macroResult.macros.f}g</span>
-              </div>
-              <div className="h-[3px] w-full rounded-full bg-white/[0.04] overflow-hidden">
-                <div className="h-full bg-amber-400 transition-all duration-300" style={{ width: `${macroResult.percents.f}%` }} />
-              </div>
-            </div>
-
-            {/* Carbs */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#1f8a65]" />
-                  <span className="text-[11px] text-white/70">Glucides</span>
-                </div>
-                <span className="text-[13px] font-semibold text-white">{macroResult.macros.c}g</span>
-              </div>
-              <div className="h-[3px] w-full rounded-full bg-white/[0.04] overflow-hidden">
-                <div className="h-full bg-[#1f8a65] transition-all duration-300" style={{ width: `${macroResult.percents.c}%` }} />
-              </div>
-              <p className="text-[9px] text-white/25 mt-0.5">↳ glucides recalculés automatiquement</p>
+            {/* Protein override */}
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[9px] text-white/30">Override g/kg LBM</span>
+              <input
+                type="number" step="0.1" min={1.5} max={4}
+                value={proteinOverride ?? ''}
+                placeholder="auto"
+                onChange={e => onProteinOverrideChange(e.target.value ? Number(e.target.value) : null)}
+                className="w-16 rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-0.5 text-[10px] text-white/70 text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
+              />
+              {proteinOverride && (
+                <button onClick={() => onProteinOverrideChange(null)} className="text-[9px] text-white/30 hover:text-white/60">
+                  reset
+                </button>
+              )}
             </div>
           </div>
         ) : (
