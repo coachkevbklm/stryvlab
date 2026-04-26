@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+import { Eye, Save, Send, Loader2 } from 'lucide-react'
 import { useNutritionStudio } from './useNutritionStudio'
 import ClientIntelligencePanel from './ClientIntelligencePanel'
 import CalculationEngine from './CalculationEngine'
@@ -18,8 +20,6 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
   const router = useRouter()
   const studio = useNutritionStudio(clientId, existingProtocol)
 
-  useClientTopBar('Nutrition Studio')
-
   const handleSave = async () => {
     await studio.save()
   }
@@ -31,6 +31,36 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
 
   const clientName = studio.clientData?.name ?? 'Client'
   const leanMass = studio.clientData?.lean_mass_kg ?? studio.macroResult?.leanMass ?? null
+
+  const rightContent = useMemo(() => (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => studio.setShowPreview(true)}
+        className="h-8 px-3 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/80 transition-all flex items-center gap-1.5"
+      >
+        <Eye size={14} />
+        Aperçu
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={studio.saving}
+        className="h-8 px-3 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/80 disabled:opacity-50 transition-all flex items-center gap-1.5"
+      >
+        {studio.saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+        {studio.saving ? 'Sauvegarde' : 'Brouillon'}
+      </button>
+      <button
+        onClick={handleShare}
+        disabled={studio.sharing}
+        className="h-8 px-4 rounded-lg bg-[#1f8a65] text-[12px] font-bold text-white hover:bg-[#217356] disabled:opacity-50 active:scale-[0.98] transition-all flex items-center gap-1.5"
+      >
+        {studio.sharing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+        {studio.sharing ? 'Partage' : 'Partager'}
+      </button>
+    </div>
+  ), [studio.saving, studio.sharing, studio.setShowPreview])
+
+  useClientTopBar('Nutrition Studio', rightContent)
 
   return (
     <main className="h-screen bg-[#121212] flex flex-col overflow-hidden">
@@ -90,12 +120,6 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             ccResult={studio.ccResult}
             hasHydration={studio.hydrationLiters !== null}
             coherenceScore={studio.coherenceScore}
-            clientName={clientName}
-            saving={studio.saving}
-            sharing={studio.sharing}
-            onSave={handleSave}
-            onShare={handleShare}
-            onPreview={() => studio.setShowPreview(true)}
           />
         </div>
       </div>
