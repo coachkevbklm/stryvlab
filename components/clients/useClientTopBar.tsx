@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, ReactNode } from "react";
 import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import { useClient } from "@/lib/client-context";
 import ClientTopBarLeft from "@/components/clients/ClientTopBarLeft";
 
-export function useClientTopBar(pageLabel: string) {
+export function useClientTopBar(pageLabel: string, rightContent?: ReactNode) {
   const { client } = useClient();
 
   const left = useMemo(
@@ -14,5 +14,7 @@ export function useClientTopBar(pageLabel: string) {
     [pageLabel, client]
   );
 
-  useSetTopBar(left);
+  const right = useMemo(() => rightContent, [rightContent]);
+
+  useSetTopBar(left, right);
 }
