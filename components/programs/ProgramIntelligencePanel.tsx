@@ -6,14 +6,20 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import { Zap, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Info } from 'lucide-react'
-import type { IntelligenceResult, IntelligenceAlert, TemplateMeta } from '@/lib/programs/intelligence'
+import { Zap, ChevronDown, ChevronUp, Sliders, FlaskConical, Microscope, HelpCircle } from 'lucide-react'
+import type { IntelligenceResult, TemplateMeta, SRAHeatmapWeek } from '@/lib/programs/intelligence'
 import { VOLUME_SEGMENTS, VOLUME_GROUP_LABELS, getVolumeTargets } from '@/lib/programs/intelligence'
 
 interface Props {
   result: IntelligenceResult
-  weeks: number
   meta: TemplateMeta
+  morphoConnected?: boolean
+  morphoDate?: string
+  sraHeatmap?: SRAHeatmapWeek[]
+  labOverrides?: Record<string, number>
+  presentPatterns?: string[]
+  onOverrideChange?: (pattern: string, value: number) => void
+  onOverrideReset?: () => void
   onAlertClick?: (sessionIndex: number, exerciseIndex: number) => void
 }
 
@@ -38,8 +44,35 @@ const SUBSCORE_ACCENT: Record<string, string> = {
   volumeCoverage: '#3b82f6',
 }
 
-const SEVERITY_ICON = { critical: AlertCircle, warning: AlertTriangle, info: Info }
-const SEVERITY_COLOR = { critical: 'text-red-400', warning: 'text-amber-400', info: 'text-white/40' }
+const SUBSCORE_TOOLTIPS: Record<string, string> = {
+  balance: 'Ratio push/pull selon l\'objectif. Un déséquilibre chronique crée des compensations posturales et augmente le risque de blessure à l\'épaule.',
+  recovery: 'Fenêtre SRA (Stimulus-Récupération-Adaptation) : temps minimum entre deux sollicitations du même muscle. Trop fréquent = fatigue cumulée sans adaptation.',
+  specificity: 'Les exercices correspondent-ils à l\'objectif ? Hypertrophie = 6–15 reps, RIR 1–3, exercices polyarticulaires lourds.',
+  progression: 'RIR semaine 1 doit être ≥ 1 pour laisser une marge d\'intensification. Commencer à RIR = 0 = stagnation rapide et surmenage précoce.',
+  completeness: 'Patterns de mouvement requis par l\'objectif tous présents ? Hypertrophie = push + pull + jambes + core minimum.',
+  redundancy: 'Exercices en doublon (même pattern + mêmes muscles + coeff similaire) diluent le stimulus sans apporter de nouveau signal d\'adaptation.',
+  jointLoad: 'Stress cumulé sur épaule, genou et rachis. Croise avec les restrictions du profil client. Un score faible = risque articulaire élevé.',
+  coordination: 'Complexité motrice moyenne du programme. Un débutant avec des exercices très techniques risque une mauvaise exécution et des blessures.',
+  volumeCoverage: 'Volume hebdomadaire par groupe musculaire comparé aux seuils Israetel/RP : MEV (minimum efficace), MAV (optimal), MRV (maximum récupérable).',
+}
+
+const OVERRIDE_TOOLTIPS: Record<string, string> = {
+  horizontal_push: 'Multiplie le coefficient stimulus des poussées horizontales (développé couché, dips…)',
+  vertical_push: 'Multiplie le coefficient stimulus des poussées verticales (développé militaire, push press…)',
+  horizontal_pull: 'Multiplie le coefficient stimulus des tirages horizontaux (rowing, tirage buste penché…)',
+  vertical_pull: 'Multiplie le coefficient stimulus des tirages verticaux (traction, tirage poulie haute…)',
+  elbow_flexion: 'Multiplie le coefficient stimulus des exercices de biceps (curl barre, curl haltères…)',
+  elbow_extension: 'Multiplie le coefficient stimulus des exercices de triceps (extensions, pushdown…)',
+  squat_pattern: 'Multiplie le coefficient stimulus des squats (squat barre, goblet squat, leg press…)',
+  hip_hinge: 'Multiplie le coefficient stimulus des charnières hanche (soulevé de terre, hip thrust, good morning…)',
+  knee_flexion: 'Multiplie le coefficient stimulus des flexions genou (leg curl couché ou assis…)',
+  core_flex: 'Multiplie le coefficient stimulus des exercices de flexion abdominale (crunch, relevé de jambes…)',
+  core_anti_flex: 'Multiplie le coefficient stimulus du gainage (planche, pallof press, ab wheel…)',
+  core_rotation: 'Multiplie le coefficient stimulus des rotations de tronc (russian twist, woodchop…)',
+  lateral_raise: 'Multiplie le coefficient stimulus des élévations latérales et exercices épaules isolés',
+  calf_raise: 'Multiplie le coefficient stimulus des exercices de mollets',
+  scapular_elevation: 'Multiplie le coefficient stimulus des haussements d\'épaules (shrug…)',
+}
 
 // Muscles affichés dans le radar — 10 axes
 const RADAR_MUSCLES: { key: string; label: string }[] = [
@@ -130,8 +163,6 @@ const PATTERN_LABEL_FR: Record<string, string> = {
   scapular_protraction: 'Protraction',
 }
 
-const PIE_COLORS = ['#1f8a65', '#3b82f6', '#f59e0b', '#8b5cf6']
-
 // Couleur de barre selon intensité relative (% du max dans la séance)
 function barColor(pct: number): string {
   if (pct >= 60) return '#1f8a65'
@@ -139,49 +170,14 @@ function barColor(pct: number): string {
   return '#6ee7b7'
 }
 
-function DonutChart({ data, colors, size }: { data: { name: string; value: number }[]; colors: string[]; size: number }) {
-  const total = data.reduce((a, b) => a + b.value, 0)
-  if (total === 0) return null
-
-  const cx = size / 2
-  const cy = size / 2
-  const r = size * 0.46
-  const innerR = size * 0.28
-  const gap = 0.04 // radians gap between segments
-
-  let angle = -Math.PI / 2
-  const segments = data.map((d, i) => {
-    const sweep = (d.value / total) * (Math.PI * 2) - gap
-    const startAngle = angle + gap / 2
-    const endAngle = startAngle + sweep
-
-    const x1 = cx + r * Math.cos(startAngle)
-    const y1 = cy + r * Math.sin(startAngle)
-    const x2 = cx + r * Math.cos(endAngle)
-    const y2 = cy + r * Math.sin(endAngle)
-    const ix1 = cx + innerR * Math.cos(endAngle)
-    const iy1 = cy + innerR * Math.sin(endAngle)
-    const ix2 = cx + innerR * Math.cos(startAngle)
-    const iy2 = cy + innerR * Math.sin(startAngle)
-    const largeArc = sweep > Math.PI ? 1 : 0
-
-    const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix2} ${iy2} Z`
-    angle += (d.value / total) * Math.PI * 2
-    return { path, color: colors[i % colors.length] }
-  })
-
-  return (
-    <svg width={size} height={size} style={{ flexShrink: 0 }}>
-      {segments.map((s, i) => (
-        <path key={i} d={s.path} fill={s.color} />
-      ))}
-    </svg>
-  )
-}
-
-export default function ProgramIntelligencePanel({ result, meta, onAlertClick }: Props) {
+export default function ProgramIntelligencePanel({
+  result, meta, onAlertClick,
+  morphoConnected, morphoDate, sraHeatmap,
+  labOverrides, presentPatterns, onOverrideChange, onOverrideReset,
+}: Props) {
   const [collapsed, setCollapsed] = useState(false)
-  const [alertsExpanded, setAlertsExpanded] = useState(false)
+  const [labOpen, setLabOpen] = useState(false)
+  const [expandedSubscore, setExpandedSubscore] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
@@ -198,16 +194,6 @@ export default function ProgramIntelligencePanel({ result, meta, onAlertClick }:
     muscle: d.muscle,
     volume: Math.round((d.volume / radarMax) * 100),
   }))
-
-  // Donut patterns
-  const donutData = [
-    { name: 'Push', value: result.patternDistribution.push },
-    { name: 'Pull', value: result.patternDistribution.pull },
-    { name: 'Jambes', value: result.patternDistribution.legs },
-    { name: 'Core', value: result.patternDistribution.core },
-  ].filter(d => d.value > 0)
-
-  const shownAlerts = alertsExpanded ? result.alerts.slice(0, 8) : result.alerts.slice(0, 3)
 
   return (
     <div className="flex flex-col gap-3">
@@ -253,27 +239,6 @@ export default function ProgramIntelligencePanel({ result, meta, onAlertClick }:
 
       {!collapsed && (
         <>
-          {/* ── Grille subscores ── */}
-          <div className="grid grid-cols-2 gap-1.5">
-            {Object.entries(result.subscores).map(([key, val]) => {
-              const labelAccent = SUBSCORE_ACCENT[key]
-              return (
-                <div
-                  key={key}
-                  className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5"
-                  style={labelAccent ? { borderColor: `${labelAccent}22` } : undefined}
-                >
-                  <p className="text-[18px] font-black leading-none" style={{ color: SCORE_COLOR(val) }}>
-                    {val}
-                  </p>
-                  <p className="text-[9px] mt-0.5" style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.4)' }}>
-                    {SUBSCORE_LABELS[key] ?? key}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-
           {/* ── Volume MEV/MAV/MRV par groupe musculaire ── */}
           {Object.keys(result.volumeByMuscle).length > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
@@ -425,30 +390,6 @@ export default function ProgramIntelligencePanel({ result, meta, onAlertClick }:
             </div>
           )}
 
-          {/* ── Donut patterns ── */}
-          {donutData.length > 0 && (
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-3">Patterns de mouvement</p>
-              <div className="flex items-center gap-4">
-                <DonutChart data={donutData} colors={PIE_COLORS} size={72} />
-                <div className="flex flex-col gap-1.5 flex-1">
-                  {donutData.map((d, i) => {
-                    const total = donutData.reduce((a, b) => a + b.value, 0)
-                    const pct = total > 0 ? Math.round((d.value / total) * 100) : 0
-                    return (
-                      <div key={d.name} className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-[9px] text-white/50 flex-1">{d.name}</span>
-                        <span className="text-[9px] font-mono text-white/35">{d.value}s</span>
-                        <span className="text-[9px] font-mono text-white/25 w-7 text-right">{pct}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ── Répartition par faisceau musculaire — par séance ── */}
           {result.programStats.sessionsStats.length > 0 && (
             <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
@@ -534,42 +475,220 @@ export default function ProgramIntelligencePanel({ result, meta, onAlertClick }:
             </div>
           )}
 
-          {/* ── Alertes ── */}
-          {result.alerts.length > 0 && (
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40 mb-2">
-                Alertes ({result.alerts.length})
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {shownAlerts.map((alert, i) => {
-                  const Icon = SEVERITY_ICON[alert.severity]
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => {
-                        if (alert.sessionIndex !== undefined && alert.exerciseIndex !== undefined) {
-                          onAlertClick?.(alert.sessionIndex, alert.exerciseIndex)
-                        }
-                      }}
-                      className="flex items-start gap-2 text-left hover:bg-white/[0.03] rounded-lg p-1.5 transition-colors"
-                    >
-                      <Icon size={11} className={`${SEVERITY_COLOR[alert.severity]} mt-0.5 shrink-0`} />
-                      <p className="text-[10px] text-white/60 leading-snug">{alert.title}</p>
-                    </button>
-                  )
-                })}
+          {/* ── Section Lab ── */}
+          <div className="rounded-xl border-[0.3px] border-[#8b5cf6]/30 bg-[#8b5cf6]/[0.03] overflow-hidden">
+            <button
+              onClick={() => setLabOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#8b5cf6]/[0.04] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <FlaskConical size={13} className="text-[#8b5cf6]" />
+                <span className="text-[11px] font-semibold text-[#8b5cf6]">Lab Mode</span>
+                <span className="text-[9px] text-[#8b5cf6]/50 bg-[#8b5cf6]/10 px-1.5 py-0.5 rounded-full">BETA</span>
+                {morphoConnected && (
+                  <span className="text-[9px] text-[#1f8a65] bg-[#1f8a65]/10 px-1.5 py-0.5 rounded-full">
+                    Morpho {morphoDate ? `(${morphoDate})` : 'connecté'}
+                  </span>
+                )}
               </div>
-              {result.alerts.length > 3 && (
-                <button
-                  onClick={() => setAlertsExpanded(!alertsExpanded)}
-                  className="text-[9px] text-white/30 hover:text-white/50 transition-colors mt-2"
-                >
-                  {alertsExpanded ? 'Voir moins' : `+${result.alerts.length - 3} alertes`}
-                </button>
-              )}
-            </div>
-          )}
+              {labOpen
+                ? <ChevronUp size={13} className="text-[#8b5cf6]/50" />
+                : <ChevronDown size={13} className="text-[#8b5cf6]/50" />
+              }
+            </button>
+
+            {labOpen && (
+              <div className="px-4 pb-4 space-y-4">
+
+                {/* Score global anchor */}
+                <div className="flex items-end gap-2 pt-1">
+                  <span className="text-[2rem] font-black leading-none" style={{ color: globalColor }}>
+                    {result.globalScore}
+                  </span>
+                  <span className="text-[11px] text-white/30 mb-0.5">/100</span>
+                  <span className="text-[10px] text-white/30 mb-0.5 ml-1">score global</span>
+                </div>
+
+                {/* Subscores avec tooltips */}
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2 flex items-center gap-1.5">
+                    <Microscope size={10} />
+                    Sous-scores détaillés
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {Object.entries(result.subscores).map(([key, score]) => {
+                      const labelAccent = key === 'jointLoad' ? '#f97316' : key === 'coordination' ? '#8b5cf6' : key === 'volumeCoverage' ? '#3b82f6' : undefined
+                      const tooltip = SUBSCORE_TOOLTIPS[key]
+                      return (
+                        <div key={key} className="rounded-lg bg-black/20 px-2.5 py-2">
+                          <div className="flex items-start justify-between gap-1 mb-0.5">
+                            <span
+                              className="text-[9px] capitalize leading-tight flex-1"
+                              style={{ color: labelAccent ? `${labelAccent}99` : 'rgba(255,255,255,0.35)' }}
+                            >
+                              {SUBSCORE_LABELS[key] ?? key}
+                            </span>
+                            {tooltip && (
+                              <button
+                                onClick={() => setExpandedSubscore(expandedSubscore === key ? null : key)}
+                                className="shrink-0 text-white/20 hover:text-white/50 transition-colors"
+                              >
+                                <HelpCircle size={9} />
+                              </button>
+                            )}
+                          </div>
+                          <span
+                            className="text-[18px] font-black font-mono leading-none"
+                            style={{ color: score >= 75 ? '#1f8a65' : score >= 50 ? '#f59e0b' : '#ef4444' }}
+                          >
+                            {Math.round(score)}
+                          </span>
+                          {expandedSubscore === key && tooltip && (
+                            <p className="text-[9px] text-white/40 mt-1.5 leading-relaxed border-t border-white/[0.06] pt-1.5">
+                              {tooltip}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Heatmap fatigue restructurée */}
+                {sraHeatmap && sraHeatmap.some(w => w.muscles.length > 0) && (() => {
+                  const heatmapWeeks = sraHeatmap
+                  const allMuscles = Array.from(new Set(heatmapWeeks.flatMap(w => w.muscles.map(m => m.name))))
+                  return (
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-1 flex items-center gap-1.5">
+                        <Zap size={10} />
+                        Charge musculaire simulée
+                      </p>
+                      <p className="text-[8px] text-white/20 mb-2 leading-relaxed">
+                        Simulation statique — même programme répété 4 semaines · surcharge progressive à venir
+                      </p>
+                      <div className="flex items-center gap-3 mb-2">
+                        {[
+                          { color: '#1f8a65', label: 'Optimal (<30%)' },
+                          { color: '#f59e0b', label: 'Élevé (30–60%)' },
+                          { color: '#ef4444', label: 'Critique (>60%)' },
+                        ].map(({ color, label }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: color, opacity: 0.7 }} />
+                            <span className="text-[8px] text-white/30">{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[9px]">
+                          <thead>
+                            <tr>
+                              <th className="text-left text-white/25 pr-2 pb-1 font-normal">Muscle</th>
+                              {heatmapWeeks.map(w => (
+                                <th key={w.week} className="text-center text-white/25 px-1 pb-1 font-normal w-12">S{w.week}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allMuscles.map(muscle => (
+                              <tr key={muscle}>
+                                <td className="text-white/40 pr-2 py-0.5 capitalize">{muscle}</td>
+                                {heatmapWeeks.map(week => {
+                                  const entry = week.muscles.find(x => x.name === muscle)
+                                  const fatigue = entry?.fatigue ?? 0
+                                  const bg = fatigue > 60 ? 'rgba(239,68,68,0.3)' : fatigue > 30 ? 'rgba(245,158,11,0.25)' : fatigue > 0 ? 'rgba(31,138,101,0.2)' : 'rgba(255,255,255,0.02)'
+                                  return (
+                                    <td key={week.week} className="px-1 py-0.5">
+                                      <div
+                                        className="h-4 rounded"
+                                        style={{ backgroundColor: bg }}
+                                        title={fatigue > 0 ? `${fatigue}%` : '—'}
+                                      />
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Overrides coefficients */}
+                {presentPatterns && presentPatterns.length > 0 && onOverrideChange && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 flex items-center gap-1.5">
+                        <Sliders size={10} />
+                        Overrides coefficients
+                      </p>
+                      {onOverrideReset && Object.keys(labOverrides ?? {}).some(k => (labOverrides ?? {})[k] !== 1.0) && (
+                        <button
+                          onClick={onOverrideReset}
+                          className="text-[9px] text-[#8b5cf6]/60 hover:text-[#8b5cf6] transition-colors"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[8px] text-white/20 mb-2 leading-relaxed">
+                      Multiplie le coefficient stimulus de tous les exercices d&apos;un pattern. Utile pour corriger des exercices non enrichis ou adapter à l&apos;activation réelle du client.
+                    </p>
+                    <div className="space-y-2">
+                      {presentPatterns.map(pattern => {
+                        const currentVal = (labOverrides ?? {})[pattern] ?? 1.0
+                        const tooltip = OVERRIDE_TOOLTIPS[pattern]
+                        return (
+                          <div key={pattern}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] text-white/40 w-32 shrink-0 truncate capitalize">
+                                {pattern.replace(/_/g, ' ')}
+                              </span>
+                              <input
+                                type="range"
+                                min={0.5}
+                                max={1.5}
+                                step={0.05}
+                                value={currentVal}
+                                onChange={e => onOverrideChange(pattern, parseFloat(e.target.value))}
+                                className="flex-1 accent-[#8b5cf6] h-1"
+                              />
+                              <span
+                                className="text-[9px] font-mono w-8 text-right shrink-0"
+                                style={{ color: currentVal !== 1.0 ? '#8b5cf6' : 'rgba(255,255,255,0.3)' }}
+                              >
+                                {currentVal.toFixed(2)}
+                              </span>
+                            </div>
+                            {tooltip && (
+                              <p className="text-[8px] text-white/20 ml-32 mt-0.5 leading-relaxed pl-2">{tooltip}</p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Badge Morpho */}
+                <div className="pt-1 border-t border-white/[0.04]">
+                  {morphoConnected ? (
+                    <p className="text-[9px] text-[#1f8a65]/70 leading-relaxed">
+                      Ajustements morpho actifs{morphoDate ? ` (analyse du ${morphoDate})` : ''} — les coefficients stimulus sont modulés par les asymétries mesurées.
+                    </p>
+                  ) : (
+                    <p className="text-[9px] text-white/25 leading-relaxed">
+                      Aucune analyse morpho disponible — coefficients standards du catalogue.
+                    </p>
+                  )}
+                </div>
+
+              </div>
+            )}
+          </div>
+
         </>
       )}
     </div>

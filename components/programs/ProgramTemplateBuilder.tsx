@@ -382,6 +382,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [intelligenceProfile, setIntelligenceProfile] = useState<IntelligenceProfile | undefined>(undefined);
   const [morphoAdjustments, setMorphoAdjustments] = useState<Record<string, number> | undefined>(undefined);
+  const [morphoDate, setMorphoDate] = useState<string | undefined>(undefined);
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const exerciseRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { overrides: labOverrides, setOverride: onOverrideChange, resetOverrides: onOverrideReset } = useLabOverrides()
@@ -399,6 +400,9 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
       if (profile) setIntelligenceProfile(profile)
       if (morpho?.data?.stimulus_adjustments) {
         setMorphoAdjustments(morpho.data.stimulus_adjustments)
+      }
+      if (morpho?.data?.analysis_date) {
+        setMorphoDate(new Date(morpho.data.analysis_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }))
       }
     }).catch(() => {})
   }, [clientId]);
@@ -859,10 +863,10 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
         <div style={{ flexGrow: intelWidth, flexShrink: 1, flexBasis: 0, minWidth: 260, overflow: 'hidden' }}>
           <IntelligencePanelShell
             result={intelligenceResult}
-            weeks={meta.weeks}
             meta={meta}
             onAlertClick={handleAlertClick}
             morphoConnected={morphoConnected}
+            morphoDate={morphoDate}
             sraHeatmap={intelligenceResult?.sraHeatmap}
             labOverrides={labOverrides}
             presentPatterns={Array.from(new Set(sessions.flatMap(s => s.exercises.map(e => e.movement_pattern).filter(Boolean) as string[])))}

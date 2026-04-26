@@ -1,5 +1,15 @@
 ## 2026-04-26
 
+REFACTOR: SmartFit — merge ProgramIntelligencePanel + LabModeSection into single unified panel
+REFACTOR: SmartFit — remove duplicate subscores grid from main panel (now only in Lab Mode)
+REFACTOR: SmartFit — remove alerts section from panel (inline exercise badges only)
+REFACTOR: SmartFit — remove donut patterns chart
+REFACTOR: SmartFit — delete LabModeSection.tsx
+FEATURE: SmartFit Lab Mode — subscore tooltips (? button inline per subscore)
+FEATURE: SmartFit Lab Mode — heatmap legend + note explicative "simulation statique"
+FEATURE: SmartFit Lab Mode — override sliders with per-pattern description tooltips
+FEATURE: SmartFit — morphoDate extracted from morpho/latest and displayed in Lab badge
+REFACTOR: NutritionProtocolTool — complete rewrite as unified multi-tool (MacroCalculator + Carb Cycling + Hydratation + Cycle Sync), full DS v2.0, max-w-[1400px] mx-auto, auto-inject client data, "Appliquer à [jour]" button
 FEATURE: Client nutrition page — /client/nutrition shows active shared protocol with macro donut, day tabs, hydration, cycle sync (female only), recommendations
 FEATURE: BottomNav — add Nutrition tab with Utensils icon linking to /client/nutrition
 FEATURE: i18n — add nutrition.* and nav.nutrition translation keys (FR/EN/ES)

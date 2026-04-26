@@ -4,14 +4,12 @@ import { useState } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 import { Minus, Maximize2, Move, PanelRight, Zap } from 'lucide-react'
 import ProgramIntelligencePanel from '@/components/programs/ProgramIntelligencePanel'
-import LabModeSection from './LabModeSection'
 import type { IntelligenceResult, SRAHeatmapWeek, TemplateMeta } from '@/lib/programs/intelligence'
 
 type PanelMode = 'docked' | 'floating' | 'minimized'
 
 interface Props {
   result: IntelligenceResult
-  weeks: number
   meta: TemplateMeta
   onAlertClick: (si: number, ei: number) => void
   morphoConnected?: boolean
@@ -24,7 +22,7 @@ interface Props {
 }
 
 export default function IntelligencePanelShell({
-  result, weeks, meta, onAlertClick,
+  result, meta, onAlertClick,
   morphoConnected, morphoDate, sraHeatmap, labOverrides, presentPatterns,
   onOverrideChange, onOverrideReset,
 }: Props) {
@@ -101,7 +99,18 @@ export default function IntelligencePanelShell({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <ProgramIntelligencePanel result={result} weeks={weeks} meta={meta} onAlertClick={onAlertClick} />
+          <ProgramIntelligencePanel
+            result={result}
+            meta={meta}
+            onAlertClick={onAlertClick}
+            morphoConnected={morphoConnected}
+            morphoDate={morphoDate}
+            sraHeatmap={sraHeatmap}
+            labOverrides={labOverrides}
+            presentPatterns={presentPatterns}
+            onOverrideChange={onOverrideChange}
+            onOverrideReset={onOverrideReset}
+          />
         </div>
       </motion.div>
     )
@@ -133,11 +142,12 @@ export default function IntelligencePanelShell({
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-        <ProgramIntelligencePanel result={result} weeks={weeks} meta={meta} onAlertClick={onAlertClick} />
-        <LabModeSection
+      <div className="flex-1 overflow-y-auto px-3 py-3">
+        <ProgramIntelligencePanel
           result={result}
-          morphoConnected={morphoConnected ?? false}
+          meta={meta}
+          onAlertClick={onAlertClick}
+          morphoConnected={morphoConnected}
           morphoDate={morphoDate}
           sraHeatmap={sraHeatmap}
           labOverrides={labOverrides}

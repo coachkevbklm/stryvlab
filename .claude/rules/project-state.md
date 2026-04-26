@@ -2,7 +2,95 @@
 
 > Source de vérité sur l'état actuel de STRYVR.
 > À lire au début de chaque session. À mettre à jour après chaque feature significative.
-> Dernière mise à jour : 2026-04-25 (MEV/MAV/MRV volume coverage indicator)
+> Dernière mise à jour : 2026-04-26 (Système protocoles nutritionnels complet)
+
+---
+
+## 2026-04-26 — Système Protocoles Nutritionnels Complet
+
+**Ce qui a été fait :**
+
+1. **`supabase/migrations/20260425_nutrition_protocols.sql`** — 2 nouvelles tables
+   - `nutrition_protocols` : id, client_id, coach_id, name, status CHECK('draft','shared'), notes, timestamps
+   - `nutrition_protocol_days` : id, protocol_id, name, position, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations
+   - RLS : coach CRUD complet via `coach_clients.coach_id`, client SELECT uniquement sur `status='shared'`
+   - Trigger `set_nutrition_protocols_updated_at` sur UPDATE
+   - ⚠️ À appliquer manuellement via Supabase Dashboard SQL Editor
+
+2. **`lib/nutrition/types.ts`** — types partagés
+   - `NutritionProtocol`, `NutritionProtocolDay`, `DayDraft` (champs string pour binding inputs), `NutritionClientData`
+   - Helpers : `emptyDayDraft(name)`, `dayDraftFromDb(day)`
+
+3. **`app/api/clients/[clientId]/nutrition-data/route.ts`** — GET
+   - Retourne `NutritionClientData` : poids, MG%, objectif, genre, activité, age, taille depuis `assessment_submissions` agrégées
+
+4. **Routes API protocoles** :
+   - `GET/POST /api/clients/[clientId]/nutrition-protocols` — liste + création
+   - `GET/PATCH/DELETE /api/clients/[clientId]/nutrition-protocols/[protocolId]` — édition (replace days via delete+reinsert)
+   - `POST /api/clients/[clientId]/nutrition-protocols/[protocolId]/share` — archive le précédent shared, partage celui-ci, crée `metric_annotation` event_type='nutrition'
+   - `POST /api/clients/[clientId]/nutrition-protocols/[protocolId]/unshare` — repasse en draft
+
+5. **`components/nutrition/NutritionProtocolDashboard.tsx`** — dashboard coach
+   - Protocole actif (bordure verte) en premier, puis brouillons
+   - MacroDonut SVG par jour en preview
+   - Boutons Share/Unshare/Delete/Edit avec états loading
+   - Empty state avec CTA
+
+6. **`app/coach/clients/[clientId]/protocoles/nutrition/page.tsx`** — page coach réécrite
+   - Fetche les protocoles, skeleton, rendu NutritionProtocolDashboard
+   - Bouton "+ Nouveau" → `/new`
+
+7. **`components/nutrition/NutritionProtocolTool.tsx`** — outil unifié création/édition
+   - Fetche auto les données biométriques du client (nutrition-data), badge "Données injectées"
+   - Sections collapsibles : Calories & Macros, Carb Cycling, Hydratation, Cycle Sync (uniquement si `gender='female'`), Recommandations
+   - Multi-jours : tabs avec renommage inline, ajout/suppression, navigation
+   - Boutons : "Sauvegarder brouillon" et "Sauvegarder & Partager" (partage immédiat)
+   - `useClientTopBar()` pour TopBar contextualisée
+
+8. **Composants sections** (tous dans `components/nutrition/`) :
+   - `NutritionProtocolDayTabs.tsx` — tabs jours avec renommage inline, +/× buttons
+   - `NutritionMacrosSection.tsx` — sélecteur objectif + auto-calc depuis `calculateMacros`, ajustement manuel
+   - `NutritionCarbCyclingSection.tsx` — sélecteur type (high/medium/low/rest/refeed) avec description
+   - `NutritionHydratationSection.tsx` — calcul auto (35ml/kg + activité), ajustement manuel
+   - `NutritionCycleSyncSection.tsx` — 4 phases (follicular/ovulatory/luteal/menstrual) avec description nutritionnelle
+
+9. **Pages routes** :
+   - `app/coach/clients/[clientId]/protocoles/nutrition/new/page.tsx` — `useParams()` → `NutritionProtocolTool`
+   - `app/coach/clients/[clientId]/protocoles/nutrition/[protocolId]/edit/page.tsx` — fetch protocole existant → `NutritionProtocolTool` avec `existingProtocol`
+
+10. **`app/client/nutrition/page.tsx`** — page client (Server Component)
+    - Fetche le protocole actif shared du client (status='shared')
+    - Affiche : nom protocole, jours avec calories, MacroDonut SVG, lignes macros colorées, carb cycling badge, hydratation, cycle sync (uniquement si female), recommandations
+    - Empty state si aucun protocole actif
+
+11. **`components/client/BottomNav.tsx`** — onglet Nutrition ajouté
+    - Icône `Utensils`, route `/client/nutrition`, entre Progrès et Bilans (6 onglets total)
+
+12. **`lib/i18n/clientTranslations.ts`** — nouvelles clés i18n
+    - `nav.nutrition` (FR/EN/ES)
+    - `nutrition.*` : section, noProtocol, noProtocol.desc, kcal, protein, carbs, fat, hydration, carbCycle, cycleSync, recommendations
+
+13. **`app/outils/macros/page.tsx`** — redirect vers `/coach/clients`
+    - L'outil macro n'est plus accessible en standalone
+
+**Points de vigilance :**
+- Migration `20260425_nutrition_protocols.sql` doit être appliquée manuellement en Supabase Dashboard
+- `nutrition_protocol_days` sont delete+reinsert à chaque PATCH (pas un merge) — les `id` des jours changent à chaque édition
+- Le partage (`/share`) archive le précédent protocole shared (`status → 'draft'`) — un seul actif à la fois
+- La création d'annotation metric (`event_type='nutrition'`) se fait au moment du partage seulement
+- `NutritionProtocolTool` appelle `useClientTopBar()` — doit être sous `ClientProvider` (layouts coach/clients/[clientId] gèrent ça)
+- `cycle_sync_phase` et `NutritionCycleSyncSection` ne s'affichent que si `clientData?.gender === 'female'` (coach) ou `(client as any)?.gender === 'female'` (client page)
+- Le `select` de `resolveClientFromUser` côté client nutrition page inclut `'id, gender'` pour avoir le genre
+
+**Phase 2 (documentée, non implémentée) :**
+- Synchronisation calendrier avec le programme d'entraînement (jours training/repos auto-mappés)
+- Vue jour-par-jour dans la page client (navigation par date)
+- Alignement Cycle Sync sur dates de cycle réelles
+
+**Next Steps — Phase 4 Export & Webhooks :**
+- [ ] Programme export : PDF / CSV / JSON
+- [ ] Inngest jobs Phase 4 : programme complété, performance update, morpho terminée
+- [ ] Analytics dashboard coach : adherence, tendances, progression morpho
 
 ---
 
