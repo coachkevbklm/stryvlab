@@ -56,6 +56,17 @@ export async function PATCH(
     if (key in body) update[key] = body[key]
   }
 
+  // Validate weekly_frequency bounds (1-7 days/week)
+  if ('weekly_frequency' in update && update.weekly_frequency != null) {
+    const freq = Number(update.weekly_frequency)
+    if (isNaN(freq) || freq < 1 || freq > 7) {
+      return NextResponse.json(
+        { error: 'weekly_frequency must be between 1 and 7' },
+        { status: 400 }
+      )
+    }
+  }
+
   const service = serviceClient()
 
   const { data, error } = await service

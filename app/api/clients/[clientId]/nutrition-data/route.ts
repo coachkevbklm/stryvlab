@@ -124,6 +124,12 @@ export async function GET(
     if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
   }
 
+  // Validate weekly_frequency bounds (1-7 days/week)
+  let validWeeklyFrequency = client.weekly_frequency ?? entry.training_frequency
+  if (validWeeklyFrequency != null && (validWeeklyFrequency < 1 || validWeeklyFrequency > 7)) {
+    validWeeklyFrequency = null
+  }
+
   const result: NutritionClientData = {
     id:                       client.id,
     name:                     [client.first_name, client.last_name].filter(Boolean).join(' '),
@@ -136,7 +142,7 @@ export async function GET(
     lean_mass_kg:             entry.lean_mass_kg,
     bmr_kcal_measured:        entry.bmr_kcal_measured,
     visceral_fat_level:       entry.visceral_fat_level,
-    weekly_frequency:         client.weekly_frequency ?? entry.training_frequency,
+    weekly_frequency:         validWeeklyFrequency,
     training_goal:            client.training_goal ?? null,
     sport_practice:           client.sport_practice ?? null,
     session_duration_min:     entry.session_duration_min,
