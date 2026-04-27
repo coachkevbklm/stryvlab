@@ -11,7 +11,6 @@ import {
   Loader2,
   Mail,
   Phone,
-  Target,
   FileText,
   Search,
   CheckCircle2,
@@ -23,8 +22,6 @@ import {
   Tag,
   CreditCard,
   TrendingUp,
-  Clock,
-  Euro,
   ChevronDown,
   BarChart3,
 } from "lucide-react";
@@ -54,6 +51,7 @@ type Client = {
   training_goal: string | null;
   fitness_level: string | null;
   created_at: string;
+  profile_photo_url?: string | null;
   // enriched client-side
   tags?: Tag[];
   subscriptions?: Subscription[];
@@ -71,20 +69,6 @@ const TRAINING_GOALS = [
   { value: "maintenance", label: "Maintenance" },
   { value: "athletic", label: "Athletic" },
 ];
-const FITNESS_LEVELS = [
-  { value: "beginner", label: "Débutant" },
-  { value: "intermediate", label: "Intermédiaire" },
-  { value: "advanced", label: "Avancé" },
-  { value: "elite", label: "Élite" },
-];
-const SPORT_PRACTICES = [
-  { value: "sedentary", label: "Sédentaire" },
-  { value: "light", label: "Légèrement actif" },
-  { value: "moderate", label: "Modérément actif" },
-  { value: "active", label: "Actif" },
-  { value: "athlete", label: "Athlète" },
-];
-
 const GOAL_LABELS: Record<string, string> = {
   hypertrophy: "Hypertrophie",
   strength: "Force",
@@ -118,10 +102,6 @@ type FormState = {
   lastName: string;
   email: string;
   phone: string;
-  training_goal: string;
-  fitness_level: string;
-  sport_practice: string;
-  weekly_frequency: string;
   notes: string;
 };
 const EMPTY_FORM: FormState = {
@@ -129,10 +109,6 @@ const EMPTY_FORM: FormState = {
   lastName: "",
   email: "",
   phone: "",
-  training_goal: "",
-  fitness_level: "",
-  sport_practice: "",
-  weekly_frequency: "",
   notes: "",
 };
 
@@ -293,15 +269,7 @@ export default function CoachClientsPage() {
     const res = await fetch("/api/clients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        training_goal: form.training_goal || null,
-        fitness_level: form.fitness_level || null,
-        sport_practice: form.sport_practice || null,
-        weekly_frequency: form.weekly_frequency
-          ? parseInt(form.weekly_frequency)
-          : null,
-      }),
+      body: JSON.stringify(form),
     });
 
     const data = await res.json();
@@ -782,62 +750,6 @@ export default function CoachClientsPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      {
-                        label: "Objectif",
-                        field: "training_goal" as const,
-                        options: TRAINING_GOALS,
-                      },
-                      {
-                        label: "Niveau",
-                        field: "fitness_level" as const,
-                        options: FITNESS_LEVELS,
-                      },
-                      {
-                        label: "Pratique sportive",
-                        field: "sport_practice" as const,
-                        options: SPORT_PRACTICES,
-                      },
-                    ].map(({ label, field, options }) => (
-                      <div key={field} className="space-y-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1">
-                          {label}
-                        </label>
-                        <select
-                          value={form[field]}
-                          onChange={(e) => setField(field, e.target.value)}
-                          className="w-full rounded-xl bg-[#0a0a0a] px-3 h-10 text-[13px] text-white outline-none"
-                        >
-                          <option value="">— Non renseigné</option>
-                          {options.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                    <div className="space-y-1">
-                      <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1">
-                        Fréquence
-                      </label>
-                      <select
-                        value={form.weekly_frequency}
-                        onChange={(e) =>
-                          setField("weekly_frequency", e.target.value)
-                        }
-                        className="w-full rounded-xl bg-[#0a0a0a] px-3 h-10 text-[13px] text-white outline-none tabular-nums"
-                      >
-                        <option value="">— Non renseigné</option>
-                        {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                          <option key={n} value={n}>
-                            {n}j/sem.
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
                   <div className="space-y-1">
                     <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1">
                       Notes
@@ -896,23 +808,47 @@ function ClientCard({
   const activeSub = client.subscriptions?.find((s) => s.status === "active");
   const color = avatarColor(client.id);
   const statusCfg = STATUS_CONFIG[client.status] ?? STATUS_CONFIG.active;
+  const [entering, setEntering] = useState(false);
+
+  function handleClick() {
+    if (entering) return;
+    setEntering(true);
+    setTimeout(() => onClick(), 320);
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
-      onClick={onClick}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: entering ? 0.97 : 1,
+        backgroundColor: entering ? "rgba(31,138,101,0.08)" : undefined,
+      }}
+      transition={
+        entering
+          ? { duration: 0.18, ease: "easeIn" }
+          : { delay: index * 0.04 }
+      }
+      onClick={handleClick}
       className="bg-[#181818] border-subtle rounded-2xl p-5 hover:bg-white/[0.06] transition-colors duration-150 cursor-pointer"
     >
       {/* Avatar + name + status */}
       <div className="flex items-start gap-3 mb-4">
-        <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
-          style={{ backgroundColor: color }}
-        >
-          {getInitials(client)}
-        </div>
+        {client.profile_photo_url ? (
+          <img
+            src={client.profile_photo_url}
+            alt={`${client.first_name} ${client.last_name}`}
+            className="w-11 h-11 rounded-xl object-cover shrink-0"
+          />
+        ) : (
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+            style={{ backgroundColor: color }}
+          >
+            {getInitials(client)}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="font-bold text-white text-sm truncate">
             {client.first_name} {client.last_name}
@@ -1016,23 +952,38 @@ function ClientRow({
     client.subscriptions?.filter((s) => s.status === "active") ?? [];
   const color = avatarColor(client.id);
   const statusCfg = STATUS_CONFIG[client.status] ?? STATUS_CONFIG.active;
+  const [entering, setEntering] = useState(false);
+
+  function handleClick() {
+    if (entering) return;
+    setEntering(true);
+    setTimeout(() => onClick(), 280);
+  }
 
   return (
     <motion.tr
       initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
-      onClick={onClick}
+      animate={{ opacity: entering ? 0.6 : 1, x: 0 }}
+      transition={entering ? { duration: 0.15 } : { delay: index * 0.03 }}
+      onClick={handleClick}
       className="border-b border-white/[0.07] last:border-0 hover:bg-white/[0.04] cursor-pointer transition-colors"
     >
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs shrink-0"
-            style={{ backgroundColor: color }}
-          >
-            {getInitials(client)}
-          </div>
+          {client.profile_photo_url ? (
+            <img
+              src={client.profile_photo_url}
+              alt={`${client.first_name} ${client.last_name}`}
+              className="w-8 h-8 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs shrink-0"
+              style={{ backgroundColor: color }}
+            >
+              {getInitials(client)}
+            </div>
+          )}
           <span className="font-semibold text-white text-sm">
             {client.first_name} {client.last_name}
           </span>

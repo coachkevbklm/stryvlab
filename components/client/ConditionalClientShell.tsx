@@ -11,6 +11,7 @@ const AUTH_PATHS = [
   '/client/set-password',
   '/client/auth',
   '/client/access',
+  '/client/onboarding',
   '/client/acces-suspendu',
 ]
 

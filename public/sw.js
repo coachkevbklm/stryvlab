@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stryv-client-v2'
+const CACHE_NAME = 'stryv-client-v3'
 
 // Assets statiques à pré-cacher
 const STATIC_ASSETS = [
