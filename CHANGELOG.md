@@ -5,6 +5,8 @@
 
 ## 2026-04-27
 
+FIX: MetricsSection — annotation emoji icons rendered via foreignObject (SVG <text> ne rend pas les emojis cross-browser)
+FIX: client/onboarding — setSession() manuel depuis hash (supabase/ssr ne traite pas le hash automatiquement contrairement au SDK browser)
 FIX: invite/route — utilise type 'recovery' au lieu de 'invite'/'magiclink' — seul type qui produit un hash #access_token fiable sur mobile Safari
 FIX: client/onboarding — polling getSession() toutes les 300ms en fallback si INITIAL_SESSION sans session (mobile Safari ne fire pas SIGNED_IN de façon fiable)
 FIX: client/login — forward automatique vers /client/onboarding si hash access_token présent (token d'invitation arrivant sur la mauvaise page)

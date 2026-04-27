@@ -46,78 +46,41 @@ function OnboardingFlow() {
       return
     }
 
-    // Check for errors in hash (Supabase puts them there too)
     const hash = typeof window !== 'undefined' ? window.location.hash : ''
-
-    // DEBUG: affiche l'URL complète dans le titre de la page pour diagnostic mobile
-    if (typeof document !== 'undefined') {
-      document.title = hash ? 'HASH:' + hash.slice(0, 40) : 'NO-HASH url=' + window.location.href.slice(-60)
-    }
 
     if (hash.includes('error=') || hash.includes('error_code=')) {
       fail('Le lien a expiré ou a déjà été utilisé. Demande à ton coach un nouveau lien d\'invitation.')
       return
     }
 
-    let pollInterval: ReturnType<typeof setInterval> | null = null
+    // @supabase/ssr does NOT process the hash automatically unlike the browser SDK.
+    // We must extract access_token + refresh_token from the hash and call setSession() manually.
+    if (hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''))
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
 
-    function startPolling() {
-      // Poll getSession() every 300ms for up to 10s.
-      // On mobile Safari the SDK processes the hash asynchronously and
-      // SIGNED_IN may never fire — polling is the reliable fallback.
-      let attempts = 0
-      pollInterval = setInterval(async () => {
-        attempts++
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session && !resolved.current) {
-          clearInterval(pollInterval!)
-          succeed()
-          return
-        }
-        if (attempts >= 33) { // ~10s
-          clearInterval(pollInterval!)
-          if (!resolved.current) {
-            fail('Lien invalide ou expiré. Demande à ton coach un nouveau lien d\'invitation.')
-          }
-        }
-      }, 300)
-    }
-
-    // Primary path: listen for auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') && session) {
-        subscription.unsubscribe()
-        if (pollInterval) clearInterval(pollInterval)
-        succeed()
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ data, error }) => {
+            if (error || !data.session) {
+              fail('Impossible d\'établir la session. Demande à ton coach un nouveau lien.')
+            } else {
+              succeed()
+            }
+          })
         return
       }
-
-      // INITIAL_SESSION with no session on mobile Safari = hash not yet processed.
-      // Fall back to polling.
-      if (event === 'INITIAL_SESSION' && !session) {
-        startPolling()
-      }
-
-      if (event === 'INITIAL_SESSION' && session) {
-        subscription.unsubscribe()
-        if (pollInterval) clearInterval(pollInterval)
-        succeed()
-      }
-    })
-
-    // Also check immediately in case session already exists
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !resolved.current) {
-        subscription.unsubscribe()
-        if (pollInterval) clearInterval(pollInterval)
-        succeed()
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-      if (pollInterval) clearInterval(pollInterval)
     }
+
+    // Fallback: no hash — check for existing session (user revisiting the page)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        succeed()
+      } else {
+        fail('Lien invalide ou expiré. Demande à ton coach un nouveau lien d\'invitation.')
+      }
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePasswordSubmit(e: React.FormEvent) {
