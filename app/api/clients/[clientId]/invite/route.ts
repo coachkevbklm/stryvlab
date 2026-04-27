@@ -115,14 +115,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     authUserId = existingUser.id
   }
 
-  // generateLink type 'recovery' generates the reset-password link WITHOUT sending a
-  // Supabase built-in email. redirectTo must be whitelisted in Supabase → Auth → Redirect URLs.
-  // The callback at /client/auth/callback exchanges the PKCE code for a session server-side,
-  // then forwards the user to /client/set-password where they define their password.
+  // type 'recovery' works for both new and existing users (no 422 on existing email),
+  // and reliably produces a #access_token hash on all browsers including mobile Safari.
+  // type 'invite' / 'magiclink' can strip the hash on some mobile redirects.
   const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
     type: 'recovery',
     email: client.email,
-    options: { redirectTo: `${siteUrl}/client/auth/callback` },
+    options: { redirectTo: `${siteUrl}/client/onboarding` },
   })
 
   if (linkError || !linkData?.properties?.action_link) {

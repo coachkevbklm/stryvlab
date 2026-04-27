@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { clientLogin } from './actions'
-import { createClient } from '@/utils/supabase/client'
 
 export default function ClientLoginPage() {
   const router = useRouter()
@@ -13,10 +12,17 @@ export default function ClientLoginPage() {
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const [hashError, setHashError] = useState<string | null>(null)
-  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // If an invite/magiclink token lands here (misconfigured redirect URL),
+    // forward to the correct onboarding page instead of staying on login.
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token=')) {
+      window.location.replace('/client/onboarding' + hash)
+      return
+    }
 
     const queryParams = new URLSearchParams(window.location.search)
     if (queryParams.get('error') === 'link_expired') {
@@ -24,22 +30,7 @@ export default function ClientLoginPage() {
       return
     }
 
-    const hash = window.location.hash
-    if (!hash) return
-    const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
-
-    if (hashParams.get('type') === 'recovery' && hashParams.get('access_token')) {
-      setRedirecting(true)
-      const supabase = createClient()
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-          subscription.unsubscribe()
-          window.location.href = '/client/set-password'
-        }
-      })
-      return () => subscription.unsubscribe()
-    }
-
+    const hashParams = new URLSearchParams((hash ?? '').replace(/^#/, ''))
     const errorCode = hashParams.get('error_code')
     if (!errorCode) return
     if (errorCode === 'otp_expired') {
@@ -61,14 +52,6 @@ export default function ClientLoginPage() {
         router.push('/client')
       }
     })
-  }
-
-  if (redirecting) {
-    return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <Loader2 size={22} className="animate-spin text-[#1f8a65]" />
-      </div>
-    )
   }
 
   return (
