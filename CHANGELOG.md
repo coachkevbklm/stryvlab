@@ -5,6 +5,10 @@
 
 ## 2026-04-28
 
+FIX: MorphoPro — actions sélection (Comparer/Annoter/Analyser IA) déplacées dans la TopBar, floating bar supprimée
+FIX: MorphoPro — grille 4 colonnes, aspect-[2/3], lazy loading images pour réduire la latence
+
+
 FEATURE: MorphoPro coach — galerie photos, canvas annotation Fabric.js, analyse IA GPT-4o structurée (JSON), score postural, flags zones, recommandations, comparaison multi-photos
 SCHEMA: Add morpho_photos table (index centralisé photos bilans + uploads coach)
 SCHEMA: Add morpho_annotations table (canvas Fabric.js persisté par photo/coach)
