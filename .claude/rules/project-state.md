@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-04-27**
+**Dernière mise à jour : 2026-04-28**
 
 ---
 
@@ -29,7 +29,7 @@
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
 | **Client App** | ✅ Session logging, PWA, weights | 2026-04-27 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
-| **MorphoPro Bridge** | ✅ Phase 0 complet (OpenAI Vision) | 2026-04-25 |
+| **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
@@ -37,7 +37,19 @@
 
 ---
 
-## 🚀 Dernières Avancées (2026-04-27)
+## 🚀 Dernières Avancées (2026-04-28)
+
+### MorphoPro — Refonte Complète Phase 1 (COMPLET)
+- ✅ `morpho_photos` + `morpho_annotations` tables + RLS (migrations `20260428_morpho_photos_annotations.sql` + `20260428_morpho_analyses_extend.sql`)
+- ✅ Prompt GPT-4o structuré (`response_format: json_object`) — analyse posturale + asymétries + flags + recommandations + score 0–100
+- ✅ Analyse synchrone (plus Inngest) — résultat immédiat avec `maxDuration = 60` sur la route `/api/morpho/analyze`
+- ✅ Galerie avec filtres position/source, sélection multi, barre flottante (Comparer/Annoter/Analyser)
+- ✅ Upload coach direct (bucket `morpho-photos`) + auto-sync photos des bilans
+- ✅ Canvas Fabric.js v6 : 7 outils (select/ligne/crayon/rect/cercle/texte/gomme), undo/redo, zoom, save thumbnail, export PNG
+- ✅ Panel résultats : score 0–100, flags zones, attention_points, recommandations, asymétries cm, stimulus chips, évolution chart
+- ✅ Comparaison multi-photos : layouts 1×2 / 2×2 / 1+3, overlay opacité
+- ✅ `stimulus_adjustments` conservés → scoring programme inchangé
+- ⚠️ Actions manuelles requises : appliquer les 2 migrations SQL via Supabase Dashboard + créer bucket `morpho-photos` dans Supabase Storage
 
 ### Client Onboarding — 5-Screen Tour + Guided Tooltip (COMPLET)
 - ✅ `/app/client/onboarding/page.tsx` : flow complet (exchange → password → 5 écrans welcome)

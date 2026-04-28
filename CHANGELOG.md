@@ -3,6 +3,15 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-04-28
+
+FEATURE: MorphoPro coach — galerie photos, canvas annotation Fabric.js, analyse IA GPT-4o structurée (JSON), score postural, flags zones, recommandations, comparaison multi-photos
+SCHEMA: Add morpho_photos table (index centralisé photos bilans + uploads coach)
+SCHEMA: Add morpho_annotations table (canvas Fabric.js persisté par photo/coach)
+SCHEMA: Extend morpho_analyses with photo_ids and analysis_result columns
+REFACTOR: Replace Inngest morpho job with synchronous GPT-4o analysis (response_format: json_object)
+CHORE: Remove legacy analyzeMorphoJob, job-status route, morpho-analyze Inngest function
+
 ## 2026-04-27
 
 FEATURE: Client onboarding — 5 écrans swipables (bienvenue personnalisé, programme, séance, progression/nutrition, hub) remplacent la page welcome statique
