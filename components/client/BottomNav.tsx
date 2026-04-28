@@ -2,22 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, ClipboardList, User, Dumbbell, TrendingUp, Utensils } from 'lucide-react'
+import { Home, Dumbbell, Utensils, User } from 'lucide-react'
 import { useClientT } from './ClientI18nProvider'
 import type { ClientDictKey } from '@/lib/i18n/clientTranslations'
+
+const NAV: { href: string; labelKey: ClientDictKey; icon: React.ElementType }[] = [
+  { href: '/client',           labelKey: 'nav.home',      icon: Home },
+  { href: '/client/programme', labelKey: 'nav.programme', icon: Dumbbell },
+  { href: '/client/nutrition', labelKey: 'nav.nutrition', icon: Utensils },
+  { href: '/client/profil',    labelKey: 'nav.profil',    icon: User },
+]
 
 export default function BottomNav() {
   const pathname = usePathname()
   const { t } = useClientT()
-
-  const NAV: { href: string; labelKey: ClientDictKey; icon: React.ElementType }[] = [
-    { href: '/client',             labelKey: 'nav.home',      icon: Home },
-    { href: '/client/programme',   labelKey: 'nav.programme', icon: Dumbbell },
-    { href: '/client/progress',    labelKey: 'nav.progress',  icon: TrendingUp },
-    { href: '/client/nutrition',   labelKey: 'nav.nutrition', icon: Utensils },
-    { href: '/client/bilans',      labelKey: 'nav.bilans',    icon: ClipboardList },
-    { href: '/client/profil',      labelKey: 'nav.profil',    icon: User },
-  ]
 
   return (
     <nav
@@ -25,21 +23,30 @@ export default function BottomNav() {
       style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
     >
       <div className="pointer-events-auto w-full max-w-[480px] px-4">
-        <div className="flex items-center gap-1 rounded-2xl border-[0.3px] border-white/[0.06] bg-[#121212] px-3 h-14">
+        <div className="flex items-center justify-around rounded-2xl border-[0.3px] border-white/[0.06] bg-[#181818] shadow-[0_-1px_0_rgba(255,255,255,0.04),0_-8px_32px_rgba(0,0,0,0.4)] px-2 h-16">
           {NAV.map(({ href, labelKey, icon: Icon }) => {
             const active = href === '/client' ? pathname === '/client' : pathname.startsWith(href)
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl h-9 transition-all duration-150 active:scale-95 ${
+                className={`relative flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl transition-all duration-150 active:scale-95 ${
                   active
-                    ? 'bg-[#1f8a65]/10 text-[#1f8a65]'
-                    : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
+                    ? 'text-[#1f8a65]'
+                    : 'text-white/35 hover:text-white/60'
                 }`}
               >
-                <Icon size={16} strokeWidth={active ? 2 : 1.75} />
-                <span className="text-[8px] font-medium leading-none">{t(labelKey)}</span>
+                {active && (
+                  <span className="absolute inset-0 rounded-xl bg-[#1f8a65]/10" />
+                )}
+                <Icon
+                  size={20}
+                  strokeWidth={active ? 2 : 1.5}
+                  className="relative z-10"
+                />
+                {active && (
+                  <span className="absolute bottom-2 w-1 h-1 rounded-full bg-[#1f8a65]" />
+                )}
               </Link>
             )
           })}
