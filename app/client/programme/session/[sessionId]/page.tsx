@@ -36,7 +36,15 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   // Vérifier que la session appartient à un programme actif du client
   const { data: program } = await service
     .from('programs')
-    .select('id, progressive_overload_enabled')
+    .select(`
+      id,
+      progressive_overload_enabled,
+      template_id,
+      coach_program_templates (
+        goal,
+        level
+      )
+    `)
     .eq('id', (session as any).program_id)
     .eq('client_id', client.id)
     .eq('status', 'active')
@@ -45,6 +53,8 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   if (!program) notFound()
 
   const progressionEnabled = (program as any).progressive_overload_enabled ?? false
+  const goal: string = (program as any).coach_program_templates?.goal ?? 'hypertrophy'
+  const level: string = (program as any).coach_program_templates?.level ?? 'intermediate'
 
   const exercises = (session.program_exercises ?? [])
     .sort((a: any, b: any) => a.position - b.position)
@@ -102,14 +112,14 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   // On récupère les set_logs de la dernière session_log pour chaque exercice de cette séance
   const exerciseNames = exercises.map((ex: any) => ex.name)
 
-  let lastPerformance: Record<string, { weight: number | null; reps: number | null; side?: string | null }[]> = {}
+  let lastPerformance: Record<string, { weight: number | null; reps: number | null; rir?: number | null; side?: string | null }[]> = {}
 
   if (exerciseNames.length > 0) {
     // Dernière session log du client (hors session actuelle en cours)
     // Filtre via client_session_logs pour garantir l'isolation par client
     const { data: lastLogs } = await service
       .from('client_set_logs')
-      .select('exercise_name, set_number, actual_weight_kg, actual_reps, side, completed, client_session_logs!inner(client_id)')
+      .select('exercise_name, set_number, actual_weight_kg, actual_reps, rir_actual, side, completed, client_session_logs!inner(client_id)')
       .eq('completed', true)
       .eq('client_session_logs.client_id', client.id)
       .in('exercise_name', exerciseNames)
@@ -127,6 +137,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
           lastPerformance[log.exercise_name].push({
             weight: log.actual_weight_kg,
             reps: log.actual_reps,
+            rir: (log as any).rir_actual ?? null,
             side: log.side,
           })
         }
@@ -147,6 +158,8 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       session={{ id: session.id, name: session.name }}
       exercises={exercisesWithAlternatives}
       lastPerformance={lastPerformance}
+      goal={goal}
+      level={level}
     />
   )
 }
