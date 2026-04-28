@@ -12,7 +12,7 @@ interface Props {
   onOpenCanvas: (photo: MorphoPhoto) => void
   onOpenCompare: (photos: MorphoPhoto[]) => void
   onOpenUpload: () => void
-  onAnalysisComplete: (result: MorphoAnalysisResult) => void
+  onAnalysisComplete: (result: MorphoAnalysisResult, stimulus?: Record<string, number>) => void
   refreshToken: number
 }
 
@@ -101,7 +101,7 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
         setErrorMsg(data.error ?? 'Erreur analyse')
       } else {
         setSelected(new Set())
-        onAnalysisComplete(data.analysis_result)
+        onAnalysisComplete(data.analysis_result, data.stimulus_adjustments)
       }
     } catch {
       setErrorMsg('Erreur réseau')
