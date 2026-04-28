@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, X } from 'lucide-react'
 import type { NutritionClientData } from '@/lib/nutrition/types'
+import type { TrainingConfig, LifestyleConfig } from './useNutritionStudio'
 
 interface Props {
   isOpen: boolean
@@ -10,8 +11,8 @@ interface Props {
   clientData: NutritionClientData | null
   onUpdateTraining: (field: string, value: string) => void
   onUpdateLifestyle: (field: string, value: string) => void
-  trainingConfig: Record<string, string | number | null>
-  lifestyleConfig: Record<string, string | number | null>
+  trainingConfig: TrainingConfig
+  lifestyleConfig: LifestyleConfig
 }
 
 function NumberInput({
@@ -69,7 +70,7 @@ export default function ParameterAdjustmentPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/50 z-40"
           />
 
           {/* Panel */}
@@ -97,72 +98,78 @@ export default function ParameterAdjustmentPanel({
               <SectionLabel>Entraînement</SectionLabel>
               <NumberInput
                 label="Fréquence hebdomadaire"
-                value={trainingConfig.weekly_frequency ?? ''}
+                value={trainingConfig.weeklyFrequency ?? ''}
                 onChange={v => onUpdateTraining('weekly_frequency', v)}
                 unit="jours"
               />
               <NumberInput
                 label="Durée séance"
-                value={trainingConfig.session_duration_min ?? ''}
+                value={trainingConfig.sessionDurationMin ?? ''}
                 onChange={v => onUpdateTraining('session_duration_min', v)}
                 unit="min"
               />
               <NumberInput
                 label="Calories entraînement"
-                value={trainingConfig.training_calories ?? ''}
-                onChange={v => onUpdateTraining('training_calories', v)}
+                value={trainingConfig.trainingCaloriesWeekly ?? ''}
+                onChange={v => onUpdateTraining('training_calories_weekly', v)}
                 unit="kcal"
               />
               <NumberInput
                 label="Fréquence cardio"
-                value={trainingConfig.cardio_frequency ?? ''}
+                value={trainingConfig.cardioFrequency ?? ''}
                 onChange={v => onUpdateTraining('cardio_frequency', v)}
                 unit="séances"
               />
               <NumberInput
                 label="Durée cardio"
-                value={trainingConfig.cardio_duration_min ?? ''}
+                value={trainingConfig.cardioDurationMin ?? ''}
                 onChange={v => onUpdateTraining('cardio_duration_min', v)}
                 unit="min"
+              />
+              <NumberInput
+                label="Étapes quotidiennes"
+                value={trainingConfig.dailySteps ?? ''}
+                onChange={v => onUpdateTraining('daily_steps', v)}
+                unit="pas"
               />
 
               {/* Lifestyle Section */}
               <SectionLabel>Hygiène de vie</SectionLabel>
               <NumberInput
-                label="Étapes quotidiennes"
-                value={lifestyleConfig.daily_steps ?? ''}
-                onChange={v => onUpdateLifestyle('daily_steps', v)}
-                unit="pas"
-              />
-              <NumberInput
                 label="Heures sommeil"
-                value={lifestyleConfig.sleep_duration_h ?? ''}
+                value={lifestyleConfig.sleepDurationH ?? ''}
                 onChange={v => onUpdateLifestyle('sleep_duration_h', v)}
                 unit="h"
               />
               <NumberInput
                 label="Qualité sommeil"
-                value={lifestyleConfig.sleep_quality ?? ''}
+                value={lifestyleConfig.sleepQuality ?? ''}
                 onChange={v => onUpdateLifestyle('sleep_quality', v)}
                 unit="/ 10"
               />
               <NumberInput
                 label="Niveau de stress"
-                value={lifestyleConfig.stress_level ?? ''}
+                value={lifestyleConfig.stressLevel ?? ''}
                 onChange={v => onUpdateLifestyle('stress_level', v)}
                 unit="/ 10"
               />
               <NumberInput
-                label="Niveau d'énergie"
-                value={lifestyleConfig.energy_level ?? ''}
-                onChange={v => onUpdateLifestyle('energy_level', v)}
-                unit="/ 10"
-              />
-              <NumberInput
                 label="Heures travail"
-                value={lifestyleConfig.work_hours_per_week ?? ''}
+                value={lifestyleConfig.workHoursPerWeek ?? ''}
                 onChange={v => onUpdateLifestyle('work_hours_per_week', v)}
                 unit="h"
+              />
+              <NumberInput
+                label="Caféine quotidienne"
+                value={lifestyleConfig.caffeineDailyMg ?? ''}
+                onChange={v => onUpdateLifestyle('caffeine_daily_mg', v)}
+                unit="mg"
+              />
+              <NumberInput
+                label="Alcool hebdomadaire"
+                value={lifestyleConfig.alcoholWeekly ?? ''}
+                onChange={v => onUpdateLifestyle('alcohol_weekly', v)}
+                unit="verre"
               />
             </div>
 

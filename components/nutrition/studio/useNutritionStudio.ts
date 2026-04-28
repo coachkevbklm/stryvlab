@@ -98,17 +98,23 @@ export function useNutritionStudio(clientId: string, existingProtocol?: Nutritio
     phase: 'hypertrophie', intensity: 'moderee', insulin: 'normale',
   })
   const [hydrationClimate, setHydrationClimate] = useState<HydrationClimate>('temperate')
+  const [hydrationPhase, setHydrationPhase]     = useState(100) // 0–200, 100 = baseline
+  // Separate ref for the base hydration (before phase factor) — updated by debounced recalc
+  const baseHydrationLitersRef = useRef<number | null>(null)
   const [days, setDays]                         = useState<DayDraft[]>([
     emptyDayDraft('Jour entraînement'),
     emptyDayDraft('Jour repos'),
   ])
   const [activeDayIndex, setActiveDayIndex]     = useState(0)
   const [macroResult, setMacroResult]           = useState<MacroResult | null>(null)
+  // Calories after goal factor but before calorieAdjustPct — used by the adjustment slider display
+  const [goalCalories, setGoalCalories]         = useState<number | null>(null)
   const [ccResult, setCcResult]                 = useState<CarbCyclingResult | null>(null)
   const [hydrationLiters, setHydrationLiters]   = useState<number | null>(null)
   const [saving, setSaving]                     = useState(false)
   const [sharing, setSharing]                   = useState(false)
   const [showPreview, setShowPreview]           = useState(false)
+  const [savedProtocolId, setSavedProtocolId]   = useState<string | null>(existingProtocol?.id ?? null)
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -153,91 +159,107 @@ export function useNutritionStudio(clientId: string, existingProtocol?: Nutritio
   }, [existingProtocol])
 
   // ── Debounced recalculation ────────────────────────────────────────────────
-  const recalculate = useCallback(() => {
-    if (!clientData) return
+  useEffect(() => {
+    if (!clientData || !clientData.weight_kg || !clientData.height_cm || !clientData.age) return
+
     const cd = clientData
     const gender: MacroGender = cd.gender === 'female' ? 'female' : 'male'
-    if (!cd.weight_kg || !cd.height_cm || !cd.age) return
 
-    const input = {
-      weight: cd.weight_kg,
-      height: cd.height_cm,
-      age: cd.age,
-      gender,
-      goal,
-      bodyFat: cd.body_fat_pct ?? undefined,
-      muscleMassKg: cd.muscle_mass_kg ?? undefined,
-      bmrKcalMeasured: cd.bmr_kcal_measured ?? undefined,
-      visceralFatLevel: cd.visceral_fat_level ?? undefined,
-      steps: trainingConfig.dailySteps || undefined,
-      occupationMultiplier: cd.occupation_multiplier ?? undefined,
-      workHoursPerWeek: lifestyleConfig.workHoursPerWeek ?? undefined,
-      workouts: trainingConfig.weeklyFrequency,
-      sessionDurationMin: trainingConfig.sessionDurationMin,
-      trainingCaloriesWeekly: trainingConfig.trainingCaloriesWeekly ?? undefined,
-      cardioFrequency: trainingConfig.cardioFrequency || undefined,
-      cardioDurationMin: trainingConfig.cardioDurationMin || undefined,
-      stressLevel: lifestyleConfig.stressLevel ?? undefined,
-      sleepDurationH: lifestyleConfig.sleepDurationH ?? undefined,
-      sleepQuality: lifestyleConfig.sleepQuality ?? undefined,
-      caffeineDaily: lifestyleConfig.caffeineDailyMg ?? undefined,
-      alcoholWeekly: lifestyleConfig.alcoholWeekly ?? undefined,
-    }
-
-    const result = calculateMacros(input)
-    if (calorieAdjustPct !== 0) {
-      const factor = 1 + calorieAdjustPct / 100
-      result.calories = Math.round(result.calories * factor)
-      const pKcal = proteinOverride != null
-        ? Math.round(proteinOverride * result.leanMass) * 4
-        : result.macros.p * 4
-      const fKcal = result.macros.f * 9
-      result.macros.c = Math.max(0, Math.round((result.calories - pKcal - fKcal) / 4))
-    }
-    if (proteinOverride != null) {
-      result.macros.p = Math.round(proteinOverride * result.leanMass)
-      const remaining = result.calories - result.macros.p * 4 - result.macros.f * 9
-      result.macros.c = Math.max(0, Math.round(remaining / 4))
-    }
-    setMacroResult(result)
-
-    if (carbCycling.enabled) {
-      const ccInput = {
-        gender: gender as 'male' | 'female',
-        age: cd.age,
+    const recalculate = () => {
+      const input = {
         weight: cd.weight_kg,
         height: cd.height_cm,
+        age: cd.age,
+        gender,
+        goal,
         bodyFat: cd.body_fat_pct ?? undefined,
-        occupation: 'sedentaire' as const,
-        sessionsPerWeek: trainingConfig.weeklyFrequency,
-        sessionDuration: trainingConfig.sessionDurationMin,
-        intensity: carbCycling.intensity,
-        goal: carbCycling.goal,
-        phase: carbCycling.phase,
-        protocol: carbCycling.protocol,
-        insulin: carbCycling.insulin,
+        muscleMassKg: cd.muscle_mass_kg ?? undefined,
+        bmrKcalMeasured: cd.bmr_kcal_measured ?? undefined,
+        visceralFatLevel: cd.visceral_fat_level ?? undefined,
+        steps: trainingConfig.dailySteps || undefined,
+        occupationMultiplier: cd.occupation_multiplier ?? undefined,
+        workHoursPerWeek: lifestyleConfig.workHoursPerWeek ?? undefined,
+        workouts: trainingConfig.weeklyFrequency,
+        sessionDurationMin: trainingConfig.sessionDurationMin,
+        trainingCaloriesWeekly: trainingConfig.trainingCaloriesWeekly ?? undefined,
+        cardioFrequency: trainingConfig.cardioFrequency || undefined,
+        cardioDurationMin: trainingConfig.cardioDurationMin || undefined,
+        stressLevel: lifestyleConfig.stressLevel ?? undefined,
+        sleepDurationH: lifestyleConfig.sleepDurationH ?? undefined,
+        sleepQuality: lifestyleConfig.sleepQuality ?? undefined,
+        caffeineDaily: lifestyleConfig.caffeineDailyMg ?? undefined,
+        alcoholWeekly: lifestyleConfig.alcoholWeekly ?? undefined,
       }
-      setCcResult(calculateCarbCycling(ccInput))
-    } else {
-      setCcResult(null)
+
+      const result = calculateMacros(input)
+      // Store calories after goal factor, before manual adjustment — used by slider display
+      const caloriesAfterGoal = result.calories
+      setGoalCalories(caloriesAfterGoal)
+      if (calorieAdjustPct !== 0) {
+        const factor = 1 + calorieAdjustPct / 100
+        result.calories = Math.round(result.calories * factor)
+        const pKcal = proteinOverride != null
+          ? Math.round(proteinOverride * result.leanMass) * 4
+          : result.macros.p * 4
+        const fKcal = result.macros.f * 9
+        result.macros.c = Math.max(0, Math.round((result.calories - pKcal - fKcal) / 4))
+      }
+      if (proteinOverride != null) {
+        result.macros.p = Math.round(proteinOverride * result.leanMass)
+        const remaining = result.calories - result.macros.p * 4 - result.macros.f * 9
+        result.macros.c = Math.max(0, Math.round(remaining / 4))
+      }
+      setMacroResult(result)
+
+      if (carbCycling.enabled) {
+        const ccInput = {
+          gender: gender as 'male' | 'female',
+          age: cd.age,
+          weight: cd.weight_kg,
+          height: cd.height_cm,
+          bodyFat: cd.body_fat_pct ?? undefined,
+          occupation: 'sedentaire' as const,
+          sessionsPerWeek: trainingConfig.weeklyFrequency,
+          sessionDuration: trainingConfig.sessionDurationMin,
+          intensity: carbCycling.intensity,
+          goal: carbCycling.goal,
+          phase: carbCycling.phase,
+          protocol: carbCycling.protocol,
+          insulin: carbCycling.insulin,
+        }
+        setCcResult(calculateCarbCycling(ccInput))
+      } else {
+        setCcResult(null)
+      }
+
+      const actLevel = getActivityLevel(cd)
+      const hydInput = {
+        weight: cd.weight_kg,
+        gender: gender as 'male' | 'female',
+        activity: HYDRATION_ACTIVITY_MAP[actLevel],
+        climate: hydrationClimate,
+      }
+      const hydResult = calculateHydration(hydInput)
+      // Store base liters (without phase factor) so phase slider updates are instant
+      baseHydrationLitersRef.current = hydResult.liters
+      const phaseFactor = hydrationPhase / 100
+      setHydrationLiters(Math.round(hydResult.liters * phaseFactor * 10) / 10)
     }
 
-    const actLevel = getActivityLevel(cd)
-    const hydInput = {
-      weight: cd.weight_kg,
-      gender: gender as 'male' | 'female',
-      activity: HYDRATION_ACTIVITY_MAP[actLevel],
-      climate: hydrationClimate,
-    }
-    const hydResult = calculateHydration(hydInput)
-    setHydrationLiters(hydResult.liters)
-  }, [clientData, goal, calorieAdjustPct, proteinOverride, trainingConfig, lifestyleConfig, carbCycling, hydrationClimate])
-
-  useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(recalculate, 300)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [recalculate])
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [clientData, goal, calorieAdjustPct, proteinOverride, trainingConfig, lifestyleConfig, carbCycling, hydrationClimate])
+
+  // Instant update when only hydrationPhase changes — no debounce needed (pure multiplication)
+  useEffect(() => {
+    if (baseHydrationLitersRef.current === null) return
+    const phaseFactor = hydrationPhase / 100
+    setHydrationLiters(Math.round(baseHydrationLitersRef.current * phaseFactor * 10) / 10)
+  }, [hydrationPhase])
 
   // ── Coherence Score ────────────────────────────────────────────────────────
   const coherenceScore = useMemo((): { score: number; checks: { label: string; ok: boolean; warning?: string }[] } => {
@@ -356,24 +378,27 @@ export function useNutritionStudio(clientId: string, existingProtocol?: Nutritio
     setSaving(true)
     try {
       const payload = buildPayload()
-      if (existingProtocol) {
-        await fetch(`/api/clients/${clientId}/nutrition-protocols/${existingProtocol.id}`, {
+      const currentId = savedProtocolId ?? existingProtocol?.id
+      if (currentId) {
+        await fetch(`/api/clients/${clientId}/nutrition-protocols/${currentId}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
-        return existingProtocol.id
+        return currentId
       } else {
         const r = await fetch(`/api/clients/${clientId}/nutrition-protocols`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const d = await r.json()
-        return d.protocol?.id ?? null
+        const newId = d.protocol?.id ?? null
+        if (newId) setSavedProtocolId(newId)
+        return newId
       }
     } finally {
       setSaving(false)
     }
-  }, [buildPayload, clientId, existingProtocol])
+  }, [buildPayload, clientId, existingProtocol, savedProtocolId])
 
   const share = useCallback(async () => {
     setSharing(true)
@@ -395,8 +420,9 @@ export function useNutritionStudio(clientId: string, existingProtocol?: Nutritio
     lifestyleConfig, setLifestyleConfig,
     carbCycling, setCarbCycling,
     hydrationClimate, setHydrationClimate,
+    hydrationPhase, setHydrationPhase,
     days, activeDayIndex, setActiveDayIndex,
-    macroResult, ccResult, hydrationLiters, coherenceScore,
+    macroResult, goalCalories, ccResult, hydrationLiters, coherenceScore,
     updateDay, addDay, removeDay,
     injectMacrosToDay, injectCCHighToDay, injectCCLowToDay,
     injectHydrationToDay, injectAllToDay,

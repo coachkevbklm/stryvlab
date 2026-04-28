@@ -164,6 +164,18 @@ export async function POST(
     submissionId: program.id,
   });
 
+  // Metric annotation — programme assigné (source_id = program.id pour nettoyage à la suppression)
+  const today = new Date().toISOString().split("T")[0];
+  await db.from("metric_annotations").insert({
+    client_id: client_id,
+    coach_id: user.id,
+    event_type: "program_change",
+    event_date: today,
+    label: `Nouveau programme : ${programName}`,
+    body: `Programme assigné depuis le template "${template.name}"`,
+    source_id: program.id,
+  });
+
   return NextResponse.json(
     { program_id: program.id, client_id },
     { status: 201 },

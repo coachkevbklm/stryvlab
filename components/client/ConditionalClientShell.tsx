@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import BottomNav from './BottomNav'
+import OnboardingTour from './OnboardingTour'
 
 // Routes that are NOT part of the authenticated client shell
 // (login, set-password, auth callbacks, error pages).
@@ -30,8 +31,12 @@ export default function ConditionalClientShell({ children }: Props) {
 
   return (
     <>
-      <div className="pb-28">{children}</div>
+      {/* pb = BottomNav h-14 (56) + safe-area min 24px + 16px breathing room = ~96px */}
+      <div className="pb-24" style={{ paddingBottom: 'max(96px, calc(56px + env(safe-area-inset-bottom) + 16px))' }}>
+        {children}
+      </div>
       <BottomNav />
+      <OnboardingTour />
     </>
   )
 }

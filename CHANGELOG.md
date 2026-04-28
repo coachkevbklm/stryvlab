@@ -5,6 +5,15 @@
 
 ## 2026-04-27
 
+FEATURE: Client onboarding — 5 écrans swipables (bienvenue personnalisé, programme, séance, progression/nutrition, hub) remplacent la page welcome statique
+FEATURE: OnboardingTour — tooltip tour guidé au premier lancement sur le dashboard (5 étapes, non-skippable, persisté en localStorage)
+CHORE: Daily Check-ins spec documentée (docs/superpowers/specs/2026-04-27-daily-checkins-spec.md) — DB schema, API routes, gamification, intégration onboarding
+
+FIX: muscleDetection — couverture complète slugs catalogue (rear_delts, levator_scapulae, trapezius, anconeus, adductors, upper_chest, pec_major, quads, calves, shoulders...) + fallback lookup catalogue par nom d'exercice quand primary_muscles[] est vide (exercices créés sans enrichissement biomech)
+FIX: muscleDetection — ajout CATALOG_SLUG_MAP pour traduire les slugs catalogue (FR courts: dos/pectoraux/epaules + EN anatomiques: lats/pectoralis_major/anterior_deltoid...) vers les MuscleGroup BodyMap ; les muscles du BodyMap étaient systématiquement faux (seuls biceps/triceps s'allumaient) car isValidMuscleGroup rejetait tous les slugs catalogue
+REFACTOR: Client app — DS v2.0 alignment : ClientTopBar flat dark (border-[0.3px] bg-[#121212], no blur/shadow/gradient), BottomNav max-w-[480px] + safe-area-inset-bottom + border-[0.3px], tous les headers hardcodés remplacés par ClientTopBar (home, profil, programme, bilans, progress), ConditionalClientShell padding safe-area aware
+FIX: /api/client/restrictions — include coach_id in metric_annotations insert (NOT NULL constraint caused silent insert failure, restrictions added by client never appeared in coach dashboard)
+
 FIX: MetricsSection — annotation emoji icons rendered via foreignObject (SVG <text> ne rend pas les emojis cross-browser)
 FIX: sw.js — bump cache v2→v3 pour forcer réinstallation SW (vieux cache servait une page /client périmée après déploiement)
 FIX: ConditionalClientShell — ajout /client/onboarding aux AUTH_PATHS (BottomNav ne doit pas s'afficher pendant l'onboarding)

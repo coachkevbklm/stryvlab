@@ -50,9 +50,10 @@ const EQUIPMENT_OPTIONS = [
 
 interface Props {
   clientId: string
+  section?: 'all' | 'restrictions' | 'equipment'
 }
 
-export default function RestrictionsWidget({ clientId }: Props) {
+export default function RestrictionsWidget({ clientId, section = 'all' }: Props) {
   const [restrictions, setRestrictions] = useState<Restriction[]>([])
   const [equipment, setEquipment] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,9 +160,9 @@ export default function RestrictionsWidget({ clientId }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* Restrictions physiques */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Restrictions physiques</p>
+      {section !== 'equipment' && <div>
+        <div className={`flex items-center mb-3 ${section === 'all' ? 'justify-between' : 'justify-end'}`}>
+          {section === 'all' && <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Restrictions</p>}
           <button
             type="button"
             onClick={() => setShowForm(v => !v)}
@@ -282,11 +283,11 @@ export default function RestrictionsWidget({ clientId }: Props) {
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Équipement disponible */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 mb-3">Équipement disponible</p>
+      {section !== 'restrictions' && <div>
+        {section === 'all' && <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 mb-3">Équipement</p>}
         <div className="flex flex-wrap gap-2">
           {EQUIPMENT_OPTIONS.map(eq => {
             const active = equipment.includes(eq.slug)
@@ -306,7 +307,7 @@ export default function RestrictionsWidget({ clientId }: Props) {
             )
           })}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

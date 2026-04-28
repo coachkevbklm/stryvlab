@@ -3,10 +3,70 @@
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { Loader2, Eye, EyeOff, CheckCircle2, XCircle, ArrowRight, Smartphone, Zap, BarChart3, Settings } from 'lucide-react'
+import { Loader2, Eye, EyeOff, XCircle, ArrowRight, Dumbbell, Activity, TrendingUp, LayoutDashboard, ChevronRight, Target, Timer, CheckSquare, BarChart2, MessageSquare, LineChart, Utensils, Camera, ClipboardList, Bell, UserCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
 type Step = 'exchanging' | 'password' | 'welcome' | 'error'
+
+function FeatureRow({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded-lg bg-[#1f8a65]/10 flex items-center justify-center shrink-0">
+        <Icon size={15} className="text-[#1f8a65]" strokeWidth={1.75} />
+      </div>
+      <p className="text-[13px] text-white/70 leading-snug">{text}</p>
+    </div>
+  )
+}
+
+const WELCOME_SCREENS = [
+  {
+    icon: null,
+    title: (firstName: string) => `Bienvenue, ${firstName}.`,
+    subtitle: 'Ton coach a préparé ton espace. Voici comment en tirer le meilleur.',
+    rows: null,
+  },
+  {
+    icon: Dumbbell,
+    title: () => 'Ton programme d\'entraînement',
+    subtitle: 'Ton coach a conçu un programme sur mesure, basé sur ton profil et tes objectifs. Chaque séance est structurée — exercices, séries et niveau d\'effort adapté à toi.',
+    rows: [
+      { icon: Target, text: 'Séances organisées jour par jour' },
+      { icon: Activity, text: 'Exercices et effort calibrés par ton coach (RIR)' },
+      { icon: UserCircle, text: 'Adapté à tes restrictions et ton profil' },
+    ],
+  },
+  {
+    icon: CheckSquare,
+    title: () => 'Pendant ta séance',
+    subtitle: 'Quand tu démarres une séance, l\'app t\'accompagne en temps réel. Tu valides chaque série, tu notes ton effort ressenti — et ta progression se construit automatiquement.',
+    rows: [
+      { icon: CheckSquare, text: 'Valide tes séries au fur et à mesure' },
+      { icon: BarChart2, text: 'Ton historique se construit à chaque séance' },
+      { icon: MessageSquare, text: 'Ajoute tes ressentis pour ton coach' },
+    ],
+  },
+  {
+    icon: TrendingUp,
+    title: () => 'Ta progression et ta nutrition',
+    subtitle: 'Ton évolution est visible dans le temps — performances, morpho, métriques. Ton coach te prépare aussi un protocole nutritionnel personnalisé, directement accessible depuis l\'app.',
+    rows: [
+      { icon: LineChart, text: 'Tes métriques et performances dans le temps' },
+      { icon: Utensils, text: 'Ton protocole nutritionnel préparé par ton coach' },
+      { icon: Camera, text: 'Ton suivi morphologique au fil des mois' },
+    ],
+  },
+  {
+    icon: LayoutDashboard,
+    title: () => 'Ton espace, ton hub',
+    subtitle: 'Ton dashboard centralise tout. Ton coach t\'envoie des bilans à compléter régulièrement. Pense aussi à compléter ton profil pour que tout soit parfaitement calibré.',
+    rows: [
+      { icon: ClipboardList, text: 'Bilans envoyés par ton coach à compléter' },
+      { icon: Bell, text: 'Actions à faire visibles directement sur ton dashboard' },
+      { icon: UserCircle, text: 'Ton profil à compléter pour un suivi optimal' },
+    ],
+  },
+]
 
 function OnboardingFlow() {
   const router = useRouter()
@@ -19,6 +79,8 @@ function OnboardingFlow() {
   const [showPassword, setShowPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [welcomeIndex, setWelcomeIndex] = useState(0)
+  const [firstName, setFirstName] = useState('')
 
   // Prevent double-resolution from onAuthStateChange firing multiple events
   const resolved = useRef(false)
@@ -30,9 +92,14 @@ function OnboardingFlow() {
     setStep('error')
   }
 
-  function succeed() {
+  async function succeed() {
     if (resolved.current) return
     resolved.current = true
+    // Fetch first name from session user metadata
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const name = user?.user_metadata?.first_name ?? user?.email?.split('@')[0] ?? ''
+    setFirstName(name)
     setStep('password')
   }
 
@@ -216,48 +283,99 @@ function OnboardingFlow() {
     )
   }
 
-  // ─── Welcome ───────────────────────────────────────────────────────────────
+  // ─── Welcome (5-screen swipable tour) ─────────────────────────────────────
   if (step === 'welcome') {
-    const features = [
-      { icon: Smartphone, title: 'Séances rapides', desc: '5 min max — log tes résultats en temps réel.' },
-      { icon: BarChart3,   title: 'Suivi progressif', desc: 'Poids, force et morpho au fil du temps.' },
-      { icon: Zap,         title: 'Programmes intelligents', desc: 'Conçus par ton coach, adaptés à toi.' },
-      { icon: Settings,    title: 'Ton profil', desc: 'Préférences et limitations physiques.' },
-    ]
+    const screen = WELCOME_SCREENS[welcomeIndex]
+    const isLast = welcomeIndex === WELCOME_SCREENS.length - 1
+    const isFirst = welcomeIndex === 0
+    const IconComponent = screen.icon
+
+    const goNext = () => {
+      if (isLast) {
+        localStorage.setItem('onboarding_tour_done', 'false') // tour will run on dashboard
+        router.push('/client')
+      } else {
+        setWelcomeIndex((i) => i + 1)
+      }
+    }
 
     return (
-      <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <Image src="/images/logo.png" alt="STRYV" width={48} height={48} className="w-12 h-12 object-contain" />
-          <span className="font-unbounded font-semibold text-base text-white tracking-tight leading-none">
-            STRYV<span className="font-light text-white/60"> lab</span>
-          </span>
+      <div className="min-h-screen bg-[#121212] flex flex-col">
+        {/* Logo */}
+        <div className="flex items-center justify-center pt-12 pb-6">
+          <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain" />
         </div>
 
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <CheckCircle2 size={44} className="text-[#1f8a65] mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Compte créé !</h2>
-            <p className="text-sm text-white/55">Voici ce qui t'attend dans ton espace.</p>
-          </div>
+        {/* Content */}
+        <div className="flex-1 flex flex-col px-6 max-w-sm mx-auto w-full">
+          {/* Icon (screens 2-5) */}
+          {IconComponent && (
+            <div className="w-14 h-14 rounded-2xl bg-[#1f8a65]/10 flex items-center justify-center mb-6">
+              <IconComponent size={26} className="text-[#1f8a65]" strokeWidth={1.75} />
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {features.map(({ icon: Icon, title, desc }, i) => (
-              <div key={i} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
-                <Icon size={18} className="text-[#1f8a65] mb-2" />
-                <p className="text-[12px] font-semibold text-white mb-1">{title}</p>
-                <p className="text-[11px] text-white/45 leading-snug">{desc}</p>
-              </div>
+          {/* Title */}
+          <h1 className={`font-black text-white mb-3 leading-tight ${isFirst ? 'text-[28px]' : 'text-[22px]'}`}>
+            {screen.title(firstName)}
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-[13px] text-white/55 leading-relaxed mb-8">
+            {screen.subtitle}
+          </p>
+
+          {/* Feature rows (screens 2-5) */}
+          {screen.rows && (
+            <div className="flex flex-col gap-4 mb-8">
+              {screen.rows.map((row, i) => (
+                <FeatureRow key={i} icon={row.icon} text={row.text} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom controls */}
+        <div className="px-6 pb-10 max-w-sm mx-auto w-full">
+          {/* Progress dots */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {WELCOME_SCREENS.map((_, i) => (
+              <div
+                key={i}
+                className={`rounded-full transition-all duration-300 ${
+                  i === welcomeIndex
+                    ? 'w-5 h-1.5 bg-[#1f8a65]'
+                    : 'w-1.5 h-1.5 bg-white/20'
+                }`}
+              />
             ))}
           </div>
 
+          {/* CTA button */}
           <button
-            onClick={() => router.push('/client')}
-            className="w-full h-11 flex items-center justify-center gap-2 bg-[#1f8a65] hover:bg-[#217356] active:scale-[0.98] text-white font-bold rounded-xl transition-all"
+            onClick={goNext}
+            className="group w-full h-12 flex items-center justify-between bg-[#1f8a65] hover:bg-[#217356] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
           >
-            Accéder à mon espace
-            <ArrowRight size={16} />
+            <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+              {isLast ? 'Accéder à mon espace' : 'Suivant'}
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/[0.12]">
+              <ArrowRight size={16} className="text-white" />
+            </div>
           </button>
+
+          {/* Skip on non-last screens */}
+          {!isLast && !isFirst && (
+            <button
+              onClick={() => {
+                localStorage.setItem('onboarding_tour_done', 'false')
+                router.push('/client')
+              }}
+              className="w-full mt-3 py-2 text-[11px] text-white/25 hover:text-white/45 transition-colors text-center"
+            >
+              Passer l'introduction
+            </button>
+          )}
         </div>
       </div>
     )

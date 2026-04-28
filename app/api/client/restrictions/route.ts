@@ -18,13 +18,14 @@ const createSchema = z.object({
   annotationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
-async function resolveClientId(db: ReturnType<typeof serviceClient>, userId: string): Promise<string | null> {
+async function resolveClient(db: ReturnType<typeof serviceClient>, userId: string): Promise<{ clientId: string; coachId: string } | null> {
   const { data } = await db
     .from('coach_clients')
-    .select('id')
+    .select('id, coach_id')
     .eq('user_id', userId)
     .maybeSingle()
-  return data?.id ?? null
+  if (!data) return null
+  return { clientId: data.id, coachId: data.coach_id }
 }
 
 export async function GET(_req: NextRequest) {
@@ -33,8 +34,9 @@ export async function GET(_req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = serviceClient()
-  const clientId = await resolveClientId(db, user.id)
-  if (!clientId) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  const client = await resolveClient(db, user.id)
+  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  const { clientId } = client
 
   const { data, error } = await db
     .from('metric_annotations')
@@ -57,8 +59,9 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues.map(i => i.message).join(', ') }, { status: 400 })
 
   const db = serviceClient()
-  const clientId = await resolveClientId(db, user.id)
-  if (!clientId) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  const client = await resolveClient(db, user.id)
+  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  const { clientId, coachId } = client
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
     .from('metric_annotations')
     .insert({
       client_id: clientId,
+      coach_id: coachId,
       event_type: 'injury',
       label: parsed.data.label,
       body: parsed.data.note ?? null,

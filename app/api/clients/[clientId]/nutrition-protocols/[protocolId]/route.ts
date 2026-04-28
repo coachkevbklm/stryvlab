@@ -125,6 +125,14 @@ export async function DELETE(
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const db = serviceClient()
+
+  // Remove metric annotations created when this protocol was shared
+  await db
+    .from('metric_annotations')
+    .delete()
+    .eq('source_id', protocolId)
+    .eq('client_id', clientId)
+
   await db.from('nutrition_protocols').delete().eq('id', protocolId)
 
   return NextResponse.json({ success: true })

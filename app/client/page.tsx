@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Dumbbell, ChevronRight, ClipboardList, MessageSquare, Clock, Layers, CalendarDays, Sparkles } from 'lucide-react'
 import ContextualGreeting from '@/components/client/ContextualGreeting'
+import ClientTopBar from '@/components/client/ClientTopBar'
 import { ct, cta, type ClientLang } from '@/lib/i18n/clientTranslations'
 
 function getTodayDow() {
@@ -180,23 +181,12 @@ export default async function ClientHomePage() {
 
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
-      {/* ── Topbar ── */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
-        <div className="relative z-10 flex items-center justify-between w-full max-w-lg mx-auto h-full px-4">
-          <Image
-            src="/images/logo.png"
-            alt="STRYV"
-            width={28}
-            height={28}
-            className="w-7 h-7 object-contain"
-          />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/20">
-            STRYV
-          </span>
-          <div className="w-7" />
-        </div>
-      </header>
+      <ClientTopBar
+        title="STRYV"
+        right={
+          <Image src="/images/logo.png" alt="STRYV" width={24} height={24} className="w-6 h-6 object-contain opacity-40" />
+        }
+      />
 
       <main className="max-w-lg mx-auto px-4 pt-[88px] pb-5 flex flex-col gap-4">
 

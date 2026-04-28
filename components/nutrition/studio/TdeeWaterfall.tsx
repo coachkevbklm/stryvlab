@@ -7,64 +7,76 @@ interface TdeeWaterfallProps {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  measured: '● Mesuré',
-  'katch-mcardle': '◐ Katch',
-  mifflin: '◌ Mifflin',
-  steps: '● Pas',
-  'activity-level': '◐ Activité',
-  tracker: '● Tracker',
-  'duration-met': '◐ MET',
-  table: '◌ Table',
-  'duration-met_cardio': '◐ MET',
+  measured: 'balance',
+  'katch-mcardle': 'Katch',
+  mifflin: 'Mifflin',
+  steps: 'pas',
+  'activity-level': 'activité',
+  tracker: 'tracker',
+  'duration-met': 'MET',
+  table: 'table',
+  'duration-met_cardio': 'MET',
   none: '',
 }
 
+const SEGMENTS = [
+  { key: 'bmr',  label: 'BMR',  color: '#3b82f6', desc: 'métabolisme de base' },
+  { key: 'neat', label: 'NEAT', color: '#8b5cf6', desc: 'activité quotidienne' },
+  { key: 'eat',  label: 'EAT',  color: '#1f8a65', desc: 'thermolyse' },
+  { key: 'tef',  label: 'TEF',  color: '#f59e0b', desc: 'digestion · 10% BMR' },
+]
+
 export default function TdeeWaterfall({ result }: TdeeWaterfallProps) {
   const { breakdown, tdee, dataProvenance } = result
-  const total = tdee
 
   const items = [
-    { key: 'bmr',  label: 'BMR',  value: breakdown.bmr,                           color: 'bg-blue-500',   source: SOURCE_LABELS[dataProvenance.bmrSource] },
-    { key: 'neat', label: 'NEAT', value: breakdown.neat,                           color: 'bg-purple-400', source: SOURCE_LABELS[dataProvenance.neatSource] },
-    { key: 'eat',  label: 'EAT',  value: breakdown.eat + breakdown.eatCardio,      color: 'bg-[#1f8a65]',  source: SOURCE_LABELS[dataProvenance.eatSource] },
-    { key: 'tef',  label: 'TEF',  value: breakdown.tef,                            color: 'bg-amber-400',  source: '● 10% BMR' },
+    { key: 'bmr',  value: breakdown.bmr,                        source: SOURCE_LABELS[dataProvenance.bmrSource]  ?? '' },
+    { key: 'neat', value: breakdown.neat,                       source: SOURCE_LABELS[dataProvenance.neatSource] ?? '' },
+    { key: 'eat',  value: breakdown.eat + breakdown.eatCardio,  source: SOURCE_LABELS[dataProvenance.eatSource]  ?? '' },
+    { key: 'tef',  value: breakdown.tef,                        source: '10% BMR' },
   ]
 
   return (
-    <div className="space-y-2">
-      {/* Equation header */}
-      <div className="flex items-center gap-1 text-[11px] font-mono flex-wrap">
-        {items.map((item, i) => (
-          <span key={item.key} className="flex items-center gap-1">
-            {i > 0 && <span className="text-white/30">+</span>}
-            <span className="text-white/70">{item.value}</span>
-            <span className="text-white/30 text-[9px]">{item.label}</span>
-          </span>
-        ))}
-        <span className="text-white/30">=</span>
-        <span className="text-white font-bold">{total}</span>
-        <span className="text-white/30 text-[9px]">TDEE</span>
-      </div>
+    <div className="space-y-3">
 
-      {/* Stacked bar */}
-      <div className="flex w-full h-[6px] overflow-hidden rounded-full bg-white/[0.04]">
+      {/* Barre empilée */}
+      <div className="flex w-full h-[8px] overflow-hidden rounded-full bg-white/[0.04]">
         {items.map(item => (
           <div
             key={item.key}
-            className={`${item.color} transition-all duration-500`}
-            style={{ width: `${Math.round((item.value / total) * 100)}%` }}
+            className="transition-all duration-500"
+            style={{
+              width: `${Math.round((item.value / tdee) * 100)}%`,
+              backgroundColor: SEGMENTS.find(s => s.key === item.key)?.color,
+            }}
           />
         ))}
       </div>
 
-      {/* Source labels */}
-      <div className="flex gap-3 flex-wrap">
-        {items.map(item => item.source ? (
-          <span key={item.key} className="text-[9px] text-white/35">
-            {item.label} {item.source}
-          </span>
-        ) : null)}
+      {/* Grille 4 segments */}
+      <div className="grid grid-cols-4 gap-2">
+        {items.map(item => {
+          const seg = SEGMENTS.find(s => s.key === item.key)!
+          const pct = Math.round((item.value / tdee) * 100)
+          return (
+            <div key={item.key} className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                <span className="text-[10px] font-semibold text-white/70">{seg.label}</span>
+              </div>
+              <p className="text-[13px] font-bold text-white leading-none">{item.value}</p>
+              <p className="text-[9px] text-white/35">{pct}% · {item.source || seg.desc}</p>
+            </div>
+          )
+        })}
       </div>
+
+      {/* Total */}
+      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
+        <span className="text-[10px] text-white/40">TDEE estimé</span>
+        <span className="text-[15px] font-bold text-white">{tdee} <span className="text-[10px] font-normal text-white/40">kcal</span></span>
+      </div>
+
     </div>
   )
 }

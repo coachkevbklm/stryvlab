@@ -34,5 +34,12 @@ export async function POST(
     .eq('id', protocolId)
     .eq('client_id', clientId)
 
+  // Remove metric annotation created when this protocol was shared
+  await db
+    .from('metric_annotations')
+    .delete()
+    .eq('source_id', protocolId)
+    .eq('client_id', clientId)
+
   return NextResponse.json({ success: true })
 }

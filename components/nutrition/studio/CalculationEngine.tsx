@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { AlertTriangle, CheckCircle2, Info, Droplets } from 'lucide-react'
 import TdeeWaterfall from './TdeeWaterfall'
-import TdeeWaterfallLegend from './TdeeWaterfallLegend'
 import CalorieAdjustmentDisplay from './CalorieAdjustmentDisplay'
 import MacroPercentageDisplay from './MacroPercentageDisplay'
 import InfoModal from './InfoModal'
@@ -21,11 +20,14 @@ interface Props {
   proteinOverride: number | null
   onProteinOverrideChange: (v: number | null) => void
   macroResult: MacroResult | null
+  goalCalories: number | null
   carbCycling: CarbCyclingConfig
   onCarbCyclingChange: (patch: Partial<CarbCyclingConfig>) => void
   ccResult: CarbCyclingResult | null
   hydrationClimate: HydrationClimate
   onHydrationClimateChange: (c: HydrationClimate) => void
+  hydrationPhase: number
+  onHydrationPhaseChange: (v: number) => void
   hydrationLiters: number | null
   leanMass: number | null
 }
@@ -56,6 +58,40 @@ const CLIMATE_OPTIONS: { value: HydrationClimate; label: string }[] = [
   { value: 'hot',       label: '☀️ Chaud' },
   { value: 'veryHot',   label: '🔥 Très chaud' },
 ]
+
+// ─── Hydratation phase helpers ────────────────────────────────────────────────
+
+const PHASE_MARKERS = [
+  { value: 40,  label: 'Pré-compet.' },
+  { value: 80,  label: 'Sèche' },
+  { value: 100, label: 'Base' },
+  { value: 130, label: 'Sèche int.' },
+  { value: 160, label: 'Water load' },
+]
+
+function getPhaseLabel(v: number): string {
+  if (v < 60)  return 'Pré-compétition'
+  if (v < 90)  return 'Phase de sèche'
+  if (v < 115) return 'Hors-saison'
+  if (v < 145) return 'Sèche intensive'
+  return 'Water loading'
+}
+
+function getPhaseDescription(v: number): string {
+  if (v < 60)  return 'Réduction avant compétition — maintien minimal pour éviter la flatness musculaire.'
+  if (v < 90)  return 'Sèche progressive — hydratation légèrement réduite pour minimiser la rétention extracellulaire.'
+  if (v < 115) return 'Baseline EFSA — hydratation optimale pour la performance et la récupération.'
+  if (v < 145) return 'Sèche intensive — volume accru pour soutenir le métabolisme sous déficit calorique fort.'
+  return 'Water loading (RP Strength) — signal osmotique pour purger la rétention sous-cutanée avant la peak week.'
+}
+
+function getPhaseColor(v: number): string {
+  if (v < 60)  return '#f59e0b'   // amber — attention pré-compet
+  if (v < 90)  return '#3b82f6'   // bleu — sèche
+  if (v < 115) return '#1f8a65'   // vert — baseline optimal
+  if (v < 145) return '#3b82f6'   // bleu — sèche intensive
+  return '#8b5cf6'                  // violet — water loading
+}
 
 const PRIORITY_ICON = {
   critical: <AlertTriangle size={11} className="text-red-400 shrink-0" />,
@@ -99,9 +135,11 @@ export default function CalculationEngine({
   calorieAdjustPct, onCalorieAdjustChange,
   proteinOverride, onProteinOverrideChange,
   macroResult,
+  goalCalories,
   carbCycling, onCarbCyclingChange,
   ccResult,
   hydrationClimate, onHydrationClimateChange,
+  hydrationPhase, onHydrationPhaseChange,
   hydrationLiters,
   leanMass,
 }: Props) {
@@ -112,18 +150,40 @@ export default function CalculationEngine({
     .slice(0, 3)
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-hide space-y-5 p-4 pb-8">
+    <div className="h-full flex flex-col">
+      {/* ── TITRE COLONNE — aligné avec Col 1 et Col 3 ───────────────── */}
+      <div className="px-4 pt-4 pb-3 border-b border-white/[0.04] shrink-0">
+        <p className="text-[13px] font-semibold text-white">Calcul nutritionnel</p>
+      </div>
+
+      {/* ── CONTENU SCROLLABLE ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 p-4 pb-8">
 
       {/* ── DÉPENSE ÉNERGÉTIQUE ───────────────────────────────────────── */}
       <div>
         <SectionDivider label="Dépense énergétique" />
         {macroResult ? (
-          <>
-            <TdeeWaterfall result={macroResult} />
-            <TdeeWaterfallLegend className="mt-2" />
-          </>
+          <TdeeWaterfall result={macroResult} />
         ) : (
-          <div className="h-12 rounded-lg bg-white/[0.04] animate-pulse" />
+          <div className="space-y-3 animate-pulse">
+            {/* Stacked bar */}
+            <div className="h-[8px] w-full rounded-full bg-white/[0.06]" />
+            {/* 4-segment grid */}
+            <div className="grid grid-cols-4 gap-2">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="space-y-1">
+                  <div className="h-2 w-10 rounded bg-white/[0.05]" />
+                  <div className="h-4 w-12 rounded bg-white/[0.07]" />
+                  <div className="h-2 w-8 rounded bg-white/[0.04]" />
+                </div>
+              ))}
+            </div>
+            {/* TDEE total row */}
+            <div className="flex justify-between pt-1 border-t border-white/[0.04]">
+              <div className="h-2.5 w-16 rounded bg-white/[0.04]" />
+              <div className="h-4 w-20 rounded bg-white/[0.06]" />
+            </div>
+          </div>
         )}
       </div>
 
@@ -150,7 +210,8 @@ export default function CalculationEngine({
           <div className="mt-3">
             <CalorieAdjustmentDisplay
               value={calorieAdjustPct}
-              tdee={macroResult.tdee ?? null}
+              baseCalories={goalCalories}
+              targetCalories={macroResult.calories}
               onChange={onCalorieAdjustChange}
             />
           </div>
@@ -161,83 +222,71 @@ export default function CalculationEngine({
       <div>
         <SectionDivider label="Macronutriments" />
         {macroResult ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
-              <span className="text-[11px] text-white/50">Calories cibles</span>
-              <span className="text-[16px] font-bold text-white">{macroResult.calories} <span className="text-[11px] font-normal text-white/40">kcal</span></span>
-            </div>
-
-            <MacroPercentageDisplay
-              proteinG={macroResult.macros.p}
-              fatG={macroResult.macros.f}
-              carbsG={macroResult.macros.c}
-              totalCalories={macroResult.calories}
-            />
-
-            {/* Protein override */}
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[9px] text-white/30">Override g/kg LBM</span>
-              <input
-                type="number" step="0.1" min={1.5} max={4}
-                value={proteinOverride ?? ''}
-                placeholder="auto"
-                onChange={e => onProteinOverrideChange(e.target.value ? Number(e.target.value) : null)}
-                className="w-16 rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-0.5 text-[10px] text-white/70 text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
-              />
-              {proteinOverride && (
-                <button onClick={() => onProteinOverrideChange(null)} className="text-[9px] text-white/30 hover:text-white/60">
-                  reset
-                </button>
-              )}
-            </div>
-          </div>
+          <MacroPercentageDisplay
+            proteinG={macroResult.macros.p}
+            fatG={macroResult.macros.f}
+            carbsG={macroResult.macros.c}
+            totalCalories={macroResult.calories}
+            proteinOverride={proteinOverride}
+            onProteinOverrideChange={onProteinOverrideChange}
+          />
         ) : (
-          <div className="space-y-2">
-            {[1,2,3].map(i => <div key={i} className="h-6 rounded bg-white/[0.04] animate-pulse" />)}
+          <div className="space-y-2.5 animate-pulse">
+            {/* 3 macro rows: label + bar + grams + % */}
+            {[1,2,3].map(i => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-white/[0.08] shrink-0" />
+                <div className="w-16 h-2.5 rounded bg-white/[0.05]" />
+                <div className="flex-1 h-[3px] rounded-full bg-white/[0.06]" />
+                <div className="w-8 h-2.5 rounded bg-white/[0.05]" />
+                <div className="w-10 h-2.5 rounded bg-white/[0.04]" />
+              </div>
+            ))}
           </div>
         )}
       </div>
 
       {/* ── CARB CYCLING ─────────────────────────────────────────────── */}
       <div>
-        {!carbCycling.enabled ? (
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <button
-              onClick={() => onCarbCyclingChange({ enabled: true })}
-              className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
-            >
-              ▶ Activer le Carb Cycling
-            </button>
-            <button
-              onClick={() => setOpenInfoModal('carbCyclingToggle')}
-              className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors"
-            >
-              <Info size={14} />
-            </button>
-          </div>
-        ) : (
+        <div className="flex items-center gap-2 py-1 mb-2">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35 whitespace-nowrap">
+            Carb Cycling
+          </span>
+          <div className="flex-1 h-px bg-white/[0.06]" />
+          <button
+            onClick={() => setOpenInfoModal('carbCyclingToggle')}
+            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors shrink-0"
+          >
+            <Info size={13} />
+          </button>
+        </div>
+
+        {/* ON / OFF toggle — same style as goal buttons */}
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          <button
+            onClick={() => onCarbCyclingChange({ enabled: false })}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+              !carbCycling.enabled
+                ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30'
+                : 'bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70'
+            }`}
+          >
+            Désactivé
+          </button>
+          <button
+            onClick={() => onCarbCyclingChange({ enabled: true })}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+              carbCycling.enabled
+                ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30'
+                : 'bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70'
+            }`}
+          >
+            Activé — Haut / Bas
+          </button>
+        </div>
+
+        {carbCycling.enabled && (
           <div className="space-y-3">
-            {/* Toggle + info */}
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={() => onCarbCyclingChange({ enabled: false })}
-                className="text-[11px] font-semibold text-[#1f8a65] hover:text-[#217356] transition-colors"
-              >
-                ▼ Carb Cycling activé
-              </button>
-              <button
-                onClick={() => setOpenInfoModal('carbCyclingToggle')}
-                className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors"
-              >
-                <Info size={14} />
-              </button>
-            </div>
-
-            {/* Description */}
-            <p className="text-[9px] text-white/40 leading-relaxed">
-              Alterne automatiquement entre jours hauts (séances) et bas (repos) pour optimiser la partition des macros.
-            </p>
-
             {/* Protocol + Goal selects */}
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -282,20 +331,105 @@ export default function CalculationEngine({
       {/* ── HYDRATATION ──────────────────────────────────────────────── */}
       <div>
         <SectionDivider label="Hydratation" />
-        <div className="flex items-center gap-2 mb-2">
+
+        {/* Climat */}
+        <div className="flex items-center gap-2 mb-4">
           <SelectInput<HydrationClimate>
             value={hydrationClimate}
             options={CLIMATE_OPTIONS}
             onChange={onHydrationClimateChange}
           />
         </div>
-        {hydrationLiters && (
-          <div className="flex items-center gap-3">
-            <Droplets size={14} className="text-blue-400 shrink-0" />
-            <span className="text-[15px] font-bold text-white">{hydrationLiters.toFixed(1)} L</span>
-            <span className="text-[10px] text-white/40">{Math.round(hydrationLiters * 4)} verres · EFSA 2010 ✓</span>
+
+        {/* Phase d'hydratation — slider continu */}
+        <div className="space-y-3">
+          {/* Label phase + valeur résultante */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold" style={{ color: getPhaseColor(hydrationPhase) }}>{getPhaseLabel(hydrationPhase)}</span>
+            {hydrationLiters && (
+              <div className="flex items-center gap-1.5">
+                <Droplets size={12} className="text-blue-400 shrink-0" />
+                <span className="text-[15px] font-bold text-white">{hydrationLiters.toFixed(1)}</span>
+                <span className="text-[11px] text-white/40">L</span>
+                <span className="text-[10px] text-white/30 ml-1">· {Math.round(hydrationLiters * 4)} verres</span>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Description courte de la phase */}
+          <p className="text-[10px] text-white/40 leading-relaxed">{getPhaseDescription(hydrationPhase)}</p>
+
+          {/* Slider continu 0–200 */}
+          <div className="relative">
+            <style>{`
+              .hydration-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: var(--thumb-color);
+                cursor: pointer;
+                border: 2px solid rgba(255,255,255,0.15);
+                box-shadow: 0 0 0 3px rgba(0,0,0,0.3);
+                transition: transform 0.1s ease;
+              }
+              .hydration-slider::-moz-range-thumb {
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: var(--thumb-color);
+                cursor: pointer;
+                border: 2px solid rgba(255,255,255,0.15);
+                box-shadow: 0 0 0 3px rgba(0,0,0,0.3);
+              }
+              .hydration-slider:active::-webkit-slider-thumb {
+                transform: scale(1.2);
+              }
+            `}</style>
+            <input
+              type="range"
+              min={40}
+              max={200}
+              step={1}
+              value={hydrationPhase}
+              onChange={e => onHydrationPhaseChange(Number(e.target.value))}
+              className="hydration-slider w-full h-1.5 rounded-full outline-none appearance-none cursor-pointer"
+              style={{
+                '--thumb-color': getPhaseColor(hydrationPhase),
+                background: `linear-gradient(to right, ${getPhaseColor(hydrationPhase)} 0%, ${getPhaseColor(hydrationPhase)} ${((hydrationPhase - 40) / 160) * 100}%, rgba(255,255,255,0.06) ${((hydrationPhase - 40) / 160) * 100}%, rgba(255,255,255,0.06) 100%)`,
+              } as React.CSSProperties}
+            />
+            {/* Marqueurs indicatifs non-magnétiques */}
+            <div className="relative mt-2 h-4">
+              {PHASE_MARKERS.map((m, i) => {
+                const pct = ((m.value - 40) / 160) * 100
+                const isFirst = i === 0
+                const isLast = i === PHASE_MARKERS.length - 1
+                const transform = isFirst ? 'translateX(0%)' : isLast ? 'translateX(-100%)' : 'translateX(-50%)'
+                const align = isFirst ? 'items-start' : isLast ? 'items-end' : 'items-center'
+                return (
+                  <div
+                    key={m.value}
+                    className={`absolute flex flex-col ${align}`}
+                    style={{ left: `${pct}%`, transform }}
+                  >
+                    <div className="w-px h-1.5 bg-white/[0.15]" />
+                    <span className="text-[8px] text-white/30 whitespace-nowrap mt-0.5">{m.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Indicateur % baseline */}
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-white/25">Base EFSA × {(hydrationPhase / 100).toFixed(2)}</span>
+            <span className={`font-semibold ${hydrationPhase < 80 ? 'text-amber-400' : hydrationPhase > 150 ? 'text-blue-400' : 'text-white/50'}`}>
+              {hydrationPhase < 100 ? '' : '+'}{hydrationPhase - 100}%
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ── SMART ALERTS ─────────────────────────────────────────────── */}
@@ -337,6 +471,7 @@ export default function CalculationEngine({
           onClose={() => setOpenInfoModal(null)}
         />
       )}
+      </div>{/* end scrollable */}
     </div>
   )
 }

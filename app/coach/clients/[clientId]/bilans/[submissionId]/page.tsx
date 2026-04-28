@@ -22,7 +22,6 @@ import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import AssessmentForm from "@/components/assessments/form/AssessmentForm";
 import { BlockConfig, AssessmentResponse, SubmissionStatus } from "@/types/assessment";
-import { createClient } from "@/utils/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +79,21 @@ function formatValue(val: string | number | string[] | boolean | null | undefine
 
 // ─── Photo viewer modal ────────────────────────────────────────────────────────
 
+async function fetchSignedUrl(path: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/assessments/photos/signed-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.signedUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function PhotoViewer({
   path,
   label,
@@ -92,13 +106,7 @@ function PhotoViewer({
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.storage
-      .from("assessment-photos")
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (data?.signedUrl) setUrl(data.signedUrl);
-      });
+    fetchSignedUrl(path).then((u) => { if (u) setUrl(u); });
   }, [path]);
 
   return (
@@ -148,13 +156,7 @@ function PhotoThumb({ path, label }: { path: string; label: string }) {
   const [viewer, setViewer] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.storage
-      .from("assessment-photos")
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (data?.signedUrl) setUrl(data.signedUrl);
-      });
+    fetchSignedUrl(path).then((u) => { if (u) setUrl(u); });
   }, [path]);
 
   return (

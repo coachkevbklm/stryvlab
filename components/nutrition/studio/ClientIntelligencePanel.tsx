@@ -72,10 +72,42 @@ export default function ClientIntelligencePanel({
 
   if (loading) {
     return (
-      <div className="space-y-3 p-4">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="h-8 rounded-lg bg-white/[0.04] animate-pulse" />
-        ))}
+      <div className="p-4 space-y-4 animate-pulse">
+        {/* Client header */}
+        <div className="space-y-1.5">
+          <div className="h-3.5 w-32 rounded bg-white/[0.06]" />
+          <div className="h-2.5 w-20 rounded bg-white/[0.04]" />
+        </div>
+        {/* Section label + rows */}
+        <div className="space-y-2">
+          <div className="h-2 w-16 rounded bg-white/[0.04]" />
+          <div className="h-3 w-full rounded bg-white/[0.05]" />
+          <div className="h-3 w-full rounded bg-white/[0.05]" />
+          {/* BF% bar */}
+          <div className="py-1 space-y-1.5">
+            <div className="flex justify-between">
+              <div className="h-2.5 w-20 rounded bg-white/[0.04]" />
+              <div className="h-2.5 w-8 rounded bg-white/[0.04]" />
+            </div>
+            <div className="h-[3px] w-full rounded-full bg-white/[0.06]" />
+          </div>
+          <div className="h-3 w-full rounded bg-white/[0.05]" />
+          <div className="h-3 w-full rounded bg-white/[0.05]" />
+        </div>
+        {/* Métabolisme */}
+        <div className="space-y-2">
+          <div className="h-2 w-20 rounded bg-white/[0.04]" />
+          <div className="h-3 w-full rounded bg-white/[0.05]" />
+          <div className="h-3 w-3/4 rounded bg-white/[0.05]" />
+        </div>
+        {/* Button */}
+        <div className="h-8 w-full rounded-lg bg-white/[0.04]" />
+        {/* TDEE card */}
+        <div className="rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] p-4 flex flex-col items-center gap-2">
+          <div className="h-2 w-16 rounded bg-white/[0.04]" />
+          <div className="h-8 w-20 rounded bg-white/[0.06]" />
+          <div className="h-2 w-12 rounded bg-white/[0.04]" />
+        </div>
       </div>
     )
   }
@@ -91,7 +123,7 @@ export default function ClientIntelligencePanel({
 
   return (
     <>
-      <div className="h-full flex flex-col overflow-y-auto scrollbar-hide p-4">
+      <div className="overflow-y-auto scrollbar-hide p-4 space-y-4">
 
         {/* Client header */}
         <div>
@@ -102,7 +134,7 @@ export default function ClientIntelligencePanel({
         </div>
 
         {/* Composition */}
-        <div className="mt-5">
+        <div>
           <SectionLabel>Composition</SectionLabel>
           <DataRow label="Poids" value={cd.weight_kg} unit="kg" />
           <DataRow label="Taille" value={cd.height_cm} unit="cm" />
@@ -123,7 +155,7 @@ export default function ClientIntelligencePanel({
         </div>
 
         {/* Métabolisme */}
-        <div className="mt-5">
+        <div>
           <SectionLabel>Métabolisme</SectionLabel>
           {bmr && <DataRow label="BMR" value={Math.round(bmr)} unit="kcal" source={bmrSource} />}
           {cd.visceral_fat_level != null && (
@@ -135,10 +167,16 @@ export default function ClientIntelligencePanel({
           )}
         </div>
 
-        {/* Spacer to push TDEE to bottom */}
-        <div className="flex-1" />
+        {/* Parameters button */}
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] font-medium text-white/60 hover:text-white/80 hover:bg-white/[0.06] transition-all"
+        >
+          <Settings size={12} />
+          Ajuster les paramètres
+        </button>
 
-        {/* Large TDEE display at bottom */}
+        {/* Large TDEE display */}
         {tdee && (
           <div className="rounded-xl bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 p-4 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f8a65]/60 mb-1">
@@ -150,15 +188,6 @@ export default function ClientIntelligencePanel({
             <p className="text-[10px] text-[#1f8a65]/50 mt-1">kcal/jour</p>
           </div>
         )}
-
-        {/* Parameters button */}
-        <button
-          onClick={() => setPanelOpen(true)}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] font-medium text-white/60 hover:text-white/80 hover:bg-white/[0.06] transition-all"
-        >
-          <Settings size={12} />
-          Ajuster les paramètres
-        </button>
       </div>
 
       {/* Slide-in panel */}
@@ -171,9 +200,10 @@ export default function ClientIntelligencePanel({
           const fieldMap: Record<string, keyof TrainingConfig> = {
             weekly_frequency: 'weeklyFrequency',
             session_duration_min: 'sessionDurationMin',
-            training_calories: 'trainingCalories',
+            training_calories_weekly: 'trainingCaloriesWeekly',
             cardio_frequency: 'cardioFrequency',
             cardio_duration_min: 'cardioDurationMin',
+            daily_steps: 'dailySteps',
           }
           const key = fieldMap[field]
           if (key) onTrainingChange({ [key]: numValue } as Partial<TrainingConfig>)
@@ -181,12 +211,12 @@ export default function ClientIntelligencePanel({
         onUpdateLifestyle={(field, value) => {
           const numValue = value === '' ? null : Number(value)
           const fieldMap: Record<string, keyof LifestyleConfig> = {
-            daily_steps: 'dailySteps',
             sleep_duration_h: 'sleepDurationH',
             sleep_quality: 'sleepQuality',
             stress_level: 'stressLevel',
-            energy_level: 'energyLevel',
             work_hours_per_week: 'workHoursPerWeek',
+            caffeine_daily_mg: 'caffeineDailyMg',
+            alcohol_weekly: 'alcoholWeekly',
           }
           const key = fieldMap[field]
           if (key) onLifestyleChange({ [key]: numValue } as Partial<LifestyleConfig>)

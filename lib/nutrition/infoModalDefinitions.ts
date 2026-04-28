@@ -43,13 +43,13 @@ export const INJECTION_INFO_MODALS: Record<string, InfoModalDef> = {
       'Utilisez ce bouton après avoir sélectionné votre climat pour obtenir une recommandation d\'hydratation personnalisée.',
   },
   allCalculations: {
-    title: 'Injecter tous les calculs',
+    title: 'Appliquer les paramètres nutritionnels',
     description:
-      'Cette action va remplacer toutes les données du jour sélectionné : macros (protéines, lipides, glucides) + hydratation.',
+      'Cette action applique l\'ensemble des paramètres calculés dans la colonne centrale sur le jour sélectionné : calories cibles, protéines, lipides, glucides et hydratation.',
     example:
-      'Injecter tous les calculs va remplir 2731 kcal, 122g protéines, 64g lipides, 417g glucides et 3.8L hydratation en une seule action.',
+      'Si le calcul nutritionnel donne 2436 kcal — 141g P · 64g L · 339g G avec 3.8L d\'hydratation, ces valeurs remplaceront intégralement les données du jour actif.',
     whenToUse:
-      'Utilisez ce bouton pour populer rapidement un jour complet avec tous les paramètres optimisés.',
+      'Utilisez ce bouton une fois votre objectif, votre ajustement calorique et vos paramètres configurés dans la colonne centrale. Chaque jour du protocole peut recevoir des paramètres différents (ex : +10% entraînement, -5% repos).',
   },
   carbCyclingToggle: {
     title: 'Carb Cycling — Alimentation cyclique en glucides',

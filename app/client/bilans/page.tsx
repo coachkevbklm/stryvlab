@@ -11,6 +11,7 @@ import {
   PenLine,
   Clock,
 } from "lucide-react";
+import ClientTopBar from "@/components/client/ClientTopBar";
 
 function StatusBadge({ status, lang }: { status: string; lang: ClientLang }) {
   const labelMap: Record<string, string> = {
@@ -82,23 +83,15 @@ export default async function ClientBilansPage() {
 
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
-      {/* ── Topbar ── */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
-        <div className="relative z-10 max-w-lg mx-auto w-full flex items-center justify-between h-full px-4">
-          <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">
-              {ct(lang, 'bilans.section')}
-            </p>
-            <p className="text-[13px] font-semibold text-white leading-tight">
-              {ct(lang, 'bilans.title')}
-            </p>
-          </div>
-          <span className="text-[11px] font-medium text-white/20">
+      <ClientTopBar
+        section={ct(lang, 'bilans.section')}
+        title={ct(lang, 'bilans.title')}
+        right={
+          <span className="text-[11px] font-medium text-white/30">
             {ctp(lang, 'bilans.count', submissions.length)}
           </span>
-        </div>
-      </header>
+        }
+      />
 
       <main className="max-w-lg mx-auto px-4 pt-[88px] pb-5 flex flex-col gap-6">
 

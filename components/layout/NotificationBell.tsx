@@ -36,28 +36,55 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isFetchingRef = useRef(false);
   const router = useRouter();
 
   const unread = notifications.filter((n) => !n.read);
 
   async function fetchNotifications() {
-    const res = await fetch("/api/assessments/notify");
-    if (res.ok) {
-      const data = await res.json();
-      // On mappe pour inclure submission_id si présent
-      setNotifications(
-        (data.notifications ?? []).map((n: any) => ({
-          ...n,
-          submission_id: n.submission_id ?? null,
-        })),
-      );
+    // Debounce: skip if already fetching
+    if (isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    try {
+      const res = await fetch("/api/assessments/notify");
+      if (res.ok) {
+        const data = await res.json();
+        // On mappe pour inclure submission_id si présent
+        setNotifications(
+          (data.notifications ?? []).map((n: any) => ({
+            ...n,
+            submission_id: n.submission_id ?? null,
+          })),
+        );
+      }
+    } finally {
+      isFetchingRef.current = false;
     }
   }
 
   useEffect(() => {
     fetchNotifications();
-    const iv = setInterval(fetchNotifications, 30_000);
-    return () => clearInterval(iv);
+
+    // Polling interval: 60 seconds instead of 30
+    const iv = setInterval(fetchNotifications, 60_000);
+
+    // Stop polling when tab is hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearInterval(iv);
+      } else {
+        fetchNotifications();
+        // Resume polling when tab becomes visible
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // Fermer au clic extérieur
@@ -168,7 +195,11 @@ export default function NotificationBell() {
                       router.push(`/coach/clients/${n.client_id}/data/performances`);
                     } else if (n.submission_id) {
                       if (n.type === "assessment_completed") {
-                        router.push(`/coach/bilans/${n.submission_id}`);
+                        if (n.client_id) {
+                          router.push(`/coach/clients/${n.client_id}/bilans/${n.submission_id}`);
+                        } else {
+                          router.push(`/coach/clients`);
+                        }
                       } else if (n.type === "payment_received") {
                         router.push(`/coach/paiements/${n.submission_id}`);
                       } else if (n.type === "program_assigned") {

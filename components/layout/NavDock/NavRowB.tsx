@@ -2,12 +2,12 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  FlaskConical,
-  Layers,
+  House,
+  Users,
+  Stack,
   Briefcase,
   UserCircle,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { NavCTA } from "./NavCTA";
 import type { CTAConfig } from "./useNavConfig";
@@ -16,21 +16,21 @@ const NAV_ITEMS = [
   {
     id: "accueil",
     label: "Accueil",
-    icon: LayoutDashboard,
+    icon: House,
     href: "/coach/organisation",
     match: (p: string) => p === "/coach/organisation" || p === "/dashboard",
   },
   {
     id: "lab",
-    label: "Lab",
-    icon: FlaskConical,
+    label: "Athlètes",
+    icon: Users,
     href: "/coach/clients",
     match: (p: string) => p.startsWith("/coach/clients"),
   },
   {
     id: "studio",
     label: "Studio",
-    icon: Layers,
+    icon: Stack,
     href: "/coach/programs/templates",
     match: (p: string) =>
       p.startsWith("/coach/programs") || p.startsWith("/coach/assessments"),
@@ -61,39 +61,35 @@ export function NavRowB({ cta }: NavRowBProps) {
   const router = useRouter();
 
   return (
-    <div className="relative flex items-center gap-2 rounded-2xl px-3 h-14">
-      {/* Background glassmorphism */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
-      </div>
+    <div className="flex items-center gap-1 rounded-2xl px-3 h-14 border-[0.3px] border-white/[0.06] bg-[#121212]">
+      {NAV_ITEMS.map((item) => {
+        const active = item.match(pathname);
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            onClick={() => router.push(item.href)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 h-9 transition-all duration-150 active:scale-95",
+              active
+                ? "bg-[#1f8a65]/10 text-[#1f8a65]"
+                : "text-white/40 hover:bg-white/[0.04] hover:text-white/70"
+            )}
+          >
+            <Icon
+              size={16}
+              weight={active ? "fill" : "regular"}
+            />
+            <span className="text-[8px] font-medium leading-none">{item.label}</span>
+          </button>
+        );
+      })}
 
-      <div className="relative z-10 flex items-center gap-1">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = item.match(pathname);
-          return (
-            <button
-              key={item.id}
-              onClick={() => router.push(item.href)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 rounded-xl border px-3 h-9 transition-all duration-200 hover:scale-105 active:scale-95",
-                active
-                  ? "border-[#1f8a65]/30 bg-[#1f8a65]/20 text-[#1f8a65]"
-                  : "border-white/[0.06] bg-white/[0.06] text-white/40 hover:bg-white/[0.09] hover:text-white/70"
-              )}
-            >
-              <Icon size={15} strokeWidth={active ? 2 : 1.75} />
-              <span className="text-[8px] font-medium leading-none">{item.label}</span>
-            </button>
-          );
-        })}
+      {cta.type !== "hidden" && (
+        <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.07]" />
+      )}
 
-        {cta.type !== "hidden" && (
-          <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.07]" />
-        )}
-
-        <NavCTA cta={cta} />
-      </div>
+      <NavCTA cta={cta} />
     </div>
   );
 }

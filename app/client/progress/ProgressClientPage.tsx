@@ -8,6 +8,7 @@ import ProgressHeatmap from './ProgressHeatmap'
 import PRsPodium from './PRsPodium'
 import ProgressVolumeChart from './ProgressVolumeChart'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import ClientTopBar from '@/components/client/ClientTopBar'
 
 type Period = '7' | '30' | '90' | 'all'
 
@@ -172,17 +173,11 @@ export default function ProgressClientPage({
 
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
-      {/* Header */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
-        <div className="relative z-10 max-w-lg mx-auto flex items-center justify-between h-full px-4">
-          <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Progression</p>
-            <p className="text-[13px] font-bold text-white">
-              {firstName || 'Mes stats'}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 bg-white/[0.06] rounded-lg p-1">
+      <ClientTopBar
+        section="Progression"
+        title={firstName || 'Mes stats'}
+        right={
+          <div className="flex items-center gap-0.5 bg-white/[0.04] rounded-lg p-1">
             {PERIODS.map(p => (
               <button
                 key={p.value}
@@ -198,8 +193,8 @@ export default function ProgressClientPage({
               </button>
             ))}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="max-w-lg mx-auto px-5 pt-[88px] pb-5 flex flex-col gap-5">
 

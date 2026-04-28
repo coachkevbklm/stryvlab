@@ -174,7 +174,15 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
-  const { error } = await service()
+  const db = service()
+
+  // Remove metric annotation created when this program was assigned
+  await db
+    .from('metric_annotations')
+    .delete()
+    .eq('source_id', params.programId)
+
+  const { error } = await db
     .from('programs')
     .delete()
     .eq('id', params.programId)

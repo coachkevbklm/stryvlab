@@ -6,34 +6,82 @@ import { useParams, useRouter } from 'next/navigation'
 import { CheckCircle2, Clock, Plus, Edit2, Trash2, Share2, EyeOff } from 'lucide-react'
 import type { NutritionProtocol, NutritionProtocolDay } from '@/lib/nutrition/types'
 
-function MacroDonut({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
-  const total = protein * 4 + carbs * 4 + fat * 9
-  if (total === 0) return null
+function DeleteConfirmModal({ name, onConfirm, onCancel, loading }: {
+  name: string
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#181818] rounded-2xl p-6 w-full max-w-sm border-[0.3px] border-white/[0.06]">
+        <h3 className="text-[15px] font-bold text-white mb-2">Supprimer ce protocole ?</h3>
+        <p className="text-[13px] text-white/50 mb-5">
+          <span className="text-white/80 font-medium">"{name}"</span> sera définitivement supprimé. Cette action est irréversible.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-[13px] text-white/55 hover:text-white/80 transition-colors font-medium disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-red-500/80 text-white text-[13px] font-bold hover:bg-red-500 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Suppression...' : 'Supprimer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  const proteinPct = (protein * 4) / total
-  const carbsPct   = (carbs * 4) / total
-  const fatPct     = (fat * 9) / total
-
-  const r = 28, cx = 36, cy = 36
-  const circ = 2 * Math.PI * r
-
-  const proteinDash = `${proteinPct * circ} ${circ - proteinPct * circ}`
-  const carbsDash   = `${carbsPct * circ} ${circ - carbsPct * circ}`
-  const fatDash     = `${fatPct * circ} ${circ - fatPct * circ}`
+function DayMacroRow({ day }: { day: NutritionProtocolDay }) {
+  const hasMacros = day.calories != null && day.protein_g != null && day.carbs_g != null && day.fat_g != null
+  const total = hasMacros ? (day.protein_g! * 4 + day.carbs_g! * 4 + day.fat_g! * 9) : 0
+  const pPct = total > 0 ? Math.round((day.protein_g! * 4 / total) * 100) : 0
+  const fPct = total > 0 ? Math.round((day.fat_g! * 9 / total) * 100) : 0
+  const cPct = total > 0 ? 100 - pPct - fPct : 0
 
   return (
-    <svg width={72} height={72} viewBox="0 0 72 72" className="shrink-0">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={8} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f8a65" strokeWidth={8}
-        strokeDasharray={proteinDash} strokeDashoffset={0}
-        transform={`rotate(-90 ${cx} ${cy})`} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#3b82f6" strokeWidth={8}
-        strokeDasharray={carbsDash} strokeDashoffset={-(proteinPct * circ)}
-        transform={`rotate(-90 ${cx} ${cy})`} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f59e0b" strokeWidth={8}
-        strokeDasharray={fatDash} strokeDashoffset={-((proteinPct + carbsPct) * circ)}
-        transform={`rotate(-90 ${cx} ${cy})`} />
-    </svg>
+    <div className="py-2 border-b-[0.3px] border-white/[0.04] last:border-0 space-y-1.5">
+      {/* Nom + calories */}
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[11px] font-semibold text-white truncate">{day.name}</p>
+        <p className="text-[11px] font-bold text-white shrink-0">
+          {day.calories != null ? `${day.calories} kcal` : <span className="text-white/25 font-normal">—</span>}
+        </p>
+      </div>
+      {hasMacros && (
+        <>
+          {/* Grammes P / L / G avec dots */}
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 text-[9px] text-white/50">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#3b82f6]" />
+              P {day.protein_g}g · {pPct}%
+            </span>
+            <span className="flex items-center gap-1 text-[9px] text-white/50">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#f59e0b]" />
+              L {day.fat_g}g · {fPct}%
+            </span>
+            <span className="flex items-center gap-1 text-[9px] text-white/50">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#1f8a65]" />
+              G {day.carbs_g}g · {cPct}%
+            </span>
+          </div>
+          {/* Barre segmentée */}
+          <div className="flex w-full h-[3px] rounded-full overflow-hidden bg-white/[0.04]">
+            <div style={{ width: `${pPct}%`, backgroundColor: '#3b82f6' }} />
+            <div style={{ width: `${fPct}%`, backgroundColor: '#f59e0b' }} />
+            <div style={{ width: `${cPct}%`, backgroundColor: '#1f8a65' }} />
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -47,6 +95,7 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
   const router   = useRouter()
   const clientId = params.clientId as string
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const shared = protocols.find(p => p.status === 'shared')
   const drafts = protocols.filter(p => p.status !== 'shared')
@@ -65,31 +114,17 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
     onRefresh()
   }
 
-  async function handleDelete(protocolId: string) {
-    if (!confirm('Supprimer ce protocole ?')) return
-    setActionLoading(`delete-${protocolId}`)
-    await fetch(`/api/clients/${clientId}/nutrition-protocols/${protocolId}`, { method: 'DELETE' })
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setActionLoading(`delete-${deleteTarget.id}`)
+    await fetch(`/api/clients/${clientId}/nutrition-protocols/${deleteTarget.id}`, { method: 'DELETE' })
     setActionLoading(null)
+    setDeleteTarget(null)
     onRefresh()
   }
 
   function renderDay(day: NutritionProtocolDay) {
-    return (
-      <div key={day.id} className="flex items-center gap-3 py-2 border-b-[0.3px] border-white/[0.04] last:border-0">
-        <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold text-white truncate">{day.name}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">
-            {day.calories != null ? `${day.calories} kcal` : '—'}
-            {day.protein_g != null ? ` · P ${day.protein_g}g` : ''}
-            {day.carbs_g != null ? ` · G ${day.carbs_g}g` : ''}
-            {day.fat_g != null ? ` · L ${day.fat_g}g` : ''}
-          </p>
-        </div>
-        {day.calories != null && day.protein_g != null && day.carbs_g != null && day.fat_g != null && (
-          <MacroDonut protein={day.protein_g} carbs={day.carbs_g} fat={day.fat_g} />
-        )}
-      </div>
-    )
+    return <DayMacroRow key={day.id} day={day} />
   }
 
   function renderProtocolCard(protocol: NutritionProtocol, isActive: boolean) {
@@ -146,9 +181,8 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
             )}
             {!isActive && (
               <button
-                onClick={() => handleDelete(protocol.id)}
-                disabled={actionLoading === `delete-${protocol.id}`}
-                className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] text-white/30 hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-40"
+                onClick={() => setDeleteTarget({ id: protocol.id, name: protocol.name })}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] text-white/30 hover:bg-red-500/10 hover:text-red-400 transition-all"
               >
                 <Trash2 size={12} />
               </button>
@@ -186,10 +220,24 @@ export default function NutritionProtocolDashboard({ protocols, onRefresh }: Pro
     )
   }
 
+  const allProtocols = [
+    ...(shared ? [{ protocol: shared, isActive: true }] : []),
+    ...drafts.map(p => ({ protocol: p, isActive: false })),
+  ]
+
   return (
-    <div className="space-y-3">
-      {shared && renderProtocolCard(shared, true)}
-      {drafts.map(p => renderProtocolCard(p, false))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        {allProtocols.map(({ protocol, isActive }) => renderProtocolCard(protocol, isActive))}
+      </div>
+      {deleteTarget && (
+        <DeleteConfirmModal
+          name={deleteTarget.name}
+          loading={actionLoading === `delete-${deleteTarget.id}`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+    </>
   )
 }

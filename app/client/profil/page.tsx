@@ -9,6 +9,7 @@ import NotificationsPanel from "@/components/client/profile/NotificationsPanel";
 import PasswordResetButton from "@/components/client/profile/PasswordResetButton";
 import ClientLogoutButton from "./LogoutButton";
 import ClientRestrictionsSection from "@/components/client/ClientRestrictionsSection";
+import ClientTopBar from "@/components/client/ClientTopBar";
 import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
 
 export const metadata = { title: "Mon profil" };
@@ -74,35 +75,20 @@ export default async function ClientProfilPage() {
 
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
-      {/* ── Topbar ── */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
-        <div className="relative z-10 flex items-center justify-between w-full max-w-lg mx-auto h-full px-4">
-          <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">
-              {ct(lang, 'profil.section')}
-            </p>
-            <p className="text-[13px] font-semibold text-white leading-tight">
-              {ct(lang, 'profil.title')}
-            </p>
-          </div>
-          {/* Avatar mini */}
-          <div className="w-8 h-8 rounded-full bg-[#1f8a65]/20 border-[0.3px] border-[#1f8a65]/30 flex items-center justify-center shrink-0">
+      <ClientTopBar
+        section={ct(lang, 'profil.section')}
+        title={ct(lang, 'profil.title')}
+        right={
+          <div className="w-8 h-8 rounded-full bg-[#1f8a65]/20 border-[0.3px] border-[#1f8a65]/30 flex items-center justify-center shrink-0 overflow-hidden">
             {client?.profile_photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={client.profile_photo_url}
-                alt={fullName}
-                className="w-full h-full rounded-full object-cover"
-              />
+              <img src={client.profile_photo_url} alt={fullName} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-[11px] font-bold text-[#1f8a65]">
-                {initials}
-              </span>
+              <span className="text-[11px] font-bold text-[#1f8a65]">{initials}</span>
             )}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="max-w-lg mx-auto px-4 pt-[88px] pb-5 flex flex-col gap-4">
         {/* ── Infos personnelles + photo ── */}

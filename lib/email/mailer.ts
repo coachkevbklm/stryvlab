@@ -38,9 +38,18 @@ function emailTemplate({ body, senderLabel }: { body: string; senderLabel?: stri
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
   <title>STRYV</title>
+  <style>
+    :root { color-scheme: dark; }
+    /* Prevent email clients from auto-inverting our dark design in dark mode */
+    @media (prefers-color-scheme: dark) {
+      body, table, td, div { background-color: inherit !important; color: inherit !important; }
+    }
+  </style>
 </head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0a0a0a;margin:0;padding:40px 16px;">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0a0a0a;margin:0;padding:40px 16px;color-scheme:dark;">
   <div style="max-width:520px;margin:0 auto;">
 
     <!-- Header -->

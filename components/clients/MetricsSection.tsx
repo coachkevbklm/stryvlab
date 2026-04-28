@@ -47,6 +47,9 @@ import {
   Line,
   BarChart,
   Bar,
+  useXAxisScale,
+  useOffset,
+  usePlotArea,
 } from "recharts";
 import {
   ChartContainer,
@@ -378,7 +381,8 @@ type AnnotationType =
   | "injury"
   | "travel"
   | "nutrition"
-  | "note";
+  | "note"
+  | "lab_protocol";
 
 interface TrainingPhase {
   id: string;
@@ -431,6 +435,7 @@ const ANNOTATION_ICONS: Record<AnnotationType, string> = {
   travel: "✈️",
   nutrition: "🥗",
   note: "📌",
+  lab_protocol: "🧪",
 };
 
 const ANNOTATION_LABELS: Record<AnnotationType, string> = {
@@ -439,6 +444,7 @@ const ANNOTATION_LABELS: Record<AnnotationType, string> = {
   travel: "Voyage",
   nutrition: "Nutrition",
   note: "Note",
+  lab_protocol: "Protocole Lab",
 };
 
 // ─── Scientific plateau thresholds ───────────────────────────────────────────
@@ -1411,6 +1417,112 @@ function MultiTooltip({ active, payload, label }: MultiTooltipProps) {
   );
 }
 
+// ─── Annotations overlay layer — uses Recharts v3 hooks to get correct pixel coords ──
+function AnnotationsLayer({
+  annotations,
+  phases,
+  onHover,
+  onLeave,
+  onClick,
+}: {
+  annotations: MetricAnnotation[];
+  phases: TrainingPhase[];
+  onHover: (ann: MetricAnnotation, x: number, y: number) => void;
+  onLeave: () => void;
+  onClick?: (id: string) => void;
+}) {
+  const xScale = useXAxisScale();
+  const offset = useOffset();
+  const plotArea = usePlotArea();
+  if (!xScale || !offset || !plotArea) return null;
+  const chartTop = offset.top ?? 8;
+  const chartHeight = plotArea.height ?? 300;
+
+  return (
+    <g>
+      {/* Phase lines */}
+      {phases.map((phase) => {
+        const px = xScale(phase.date_start as never);
+        if (typeof px !== "number" || isNaN(px)) return null;
+        const c = PHASE_COLORS[phase.phase_type];
+        return (
+          <g key={phase.id}>
+            <line
+              x1={px} y1={chartTop}
+              x2={px} y2={chartTop + chartHeight}
+              stroke={c.text}
+              strokeOpacity={phase.date_end ? 0.5 : 0.35}
+              strokeWidth={1.5}
+              strokeDasharray="4 2"
+            />
+            <text
+              x={px + 4}
+              y={chartTop + 12}
+              fontSize={9}
+              fill={c.text}
+              style={{ pointerEvents: "none", userSelect: "none" }}
+            >
+              {phase.label}
+            </text>
+          </g>
+        );
+      })}
+      {/* Annotation icons */}
+      {annotations.map((ann, annIdx) => {
+        const px = xScale(ann.event_date as never);
+        if (typeof px !== "number" || isNaN(px)) return null;
+        const stackIndex = annotations.slice(0, annIdx).filter((a) => a.event_date === ann.event_date).length;
+        const emoji = ANNOTATION_ICONS[ann.event_type] ?? "📌";
+        const yOffset = stackIndex * 26;
+        const cy = chartTop + 14 + yOffset;
+        return (
+          <g
+            key={ann.id}
+            onMouseEnter={(e) => {
+              const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+              onHover(ann, rect.left + rect.width / 2, rect.top);
+            }}
+            onMouseLeave={onLeave}
+            onClick={(e) => { e.stopPropagation(); onClick?.(ann.id); }}
+            style={{ cursor: "pointer" }}
+          >
+            <line
+              x1={px} y1={chartTop}
+              x2={px} y2={chartTop + chartHeight}
+              stroke="rgba(255,255,255,0.20)"
+              strokeWidth={1}
+              strokeDasharray="2 3"
+            />
+            <circle cx={px} cy={cy} r={16} fill="transparent" />
+            <circle cx={px} cy={cy} r={11} fill="rgba(18,18,18,0.92)" stroke="rgba(255,255,255,0.18)" strokeWidth={0.5} />
+            <foreignObject
+              x={px - 11}
+              y={cy - 11}
+              width={22}
+              height={22}
+              style={{ pointerEvents: "none", userSelect: "none", overflow: "visible" }}
+            >
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  lineHeight: 1,
+                }}
+              >
+                {emoji}
+              </div>
+            </foreignObject>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 // ─── Annotation label for ReferenceLine — captures hover events ──────────────
 function AnnotationLabelContent({
   viewBox,
@@ -1418,6 +1530,7 @@ function AnnotationLabelContent({
   onHover,
   onLeave,
   onClick,
+  stackIndex = 0,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   viewBox?: any;
@@ -1425,10 +1538,21 @@ function AnnotationLabelContent({
   onHover: (ann: MetricAnnotation, x: number, y: number) => void;
   onLeave: () => void;
   onClick?: (id: string) => void;
+  stackIndex?: number;
 }) {
   if (!viewBox) return null;
-  const { x, y } = viewBox;
-  const emoji = ANNOTATION_ICONS[ann.event_type];
+  // In Recharts v3, viewBox for a vertical ReferenceLine is the chart area:
+  // { x: leftOffset, y: topOffset, width: chartWidth, height: chartHeight }
+  // The line's pixel x-coordinate is viewBox.x (for leftmost) but actually
+  // Recharts passes the line's computed x in viewBox.x for vertical lines.
+  const lineX = typeof viewBox.x === "number" ? viewBox.x : 0;
+  const chartTop = typeof viewBox.y === "number" ? viewBox.y : 8;
+  if (isNaN(lineX)) return null;
+  const emoji = ANNOTATION_ICONS[ann.event_type] ?? "📌";
+  // Stack icons vertically when multiple annotations share the same date
+  const yOffset = stackIndex * 26;
+  const cx = lineX;
+  const cy = chartTop + 14 + yOffset;
   return (
     <g
       onMouseEnter={(e) => {
@@ -1442,12 +1566,11 @@ function AnnotationLabelContent({
       }}
       style={{ cursor: "pointer" }}
     >
-      {/* Hit area — larger than visual circle for easier targeting */}
-      <circle cx={x} cy={y + 14} r={16} fill="transparent" />
-      <circle cx={x} cy={y + 14} r={11} fill="rgba(255,255,255,0.10)" />
+      <circle cx={cx} cy={cy} r={16} fill="transparent" />
+      <circle cx={cx} cy={cy} r={11} fill="rgba(20,20,20,0.90)" stroke="rgba(255,255,255,0.18)" strokeWidth={0.5} />
       <text
-        x={x}
-        y={y + 19}
+        x={cx}
+        y={cy + 5}
         textAnchor="middle"
         fontSize={12}
         style={{ userSelect: "none", pointerEvents: "none" }}
@@ -1595,10 +1718,12 @@ function MultiSeriesChart({
   }, [selectedMetrics, series]);
 
   const merged = useMemo(() => {
-    // Include annotation/phase dates so ReferenceLine x= always finds a match
+    const today = new Date().toISOString().split("T")[0];
+    // Include annotation/phase dates + today so chart always extends to current date
     const annotationDates = [
       ...annotations.map((a) => a.event_date),
       ...phases.map((p) => p.date_start),
+      today,
     ].filter((d) => !dates.includes(d));
     const allDates = [...dates, ...annotationDates].sort();
 
@@ -1611,10 +1736,10 @@ function MultiSeriesChart({
           if (baseline !== undefined && baseline !== 0) {
             row[`__pct_${k}`] =
               ((point.value - baseline) / Math.abs(baseline)) * 100;
-          } else {
-            row[`__pct_${k}`] = 0;
           }
+          // baseline === 0: leave key absent (null) — avoids division by zero and phantom zero points
         }
+        // no point: leave key absent so connectNulls bridges over phantom dates
       });
       return row;
     });
@@ -1676,15 +1801,18 @@ function MultiSeriesChart({
       value: d.value,
     }));
     const existingDates = new Set(dataPoints.map((d) => d.date));
-    // Inject annotation/phase dates so ReferenceLine x= always finds a match
+    const today = new Date().toISOString().split("T")[0];
+    // Inject annotation/phase dates + today so chart always extends to current date
     const extraDates = [
       ...annotations.map((a) => a.event_date),
       ...phases.map((p) => p.date_start),
+      today,
     ].filter((d) => !existingDates.has(d));
     const combined = [
       ...dataPoints,
       ...extraDates.map((date) => ({ date, value: undefined as unknown as number })),
     ].sort((a, b) => a.date.localeCompare(b.date));
+
     return combined;
   }, [singleVisibleMetric, series, annotations, phases]);
 
@@ -2201,7 +2329,7 @@ function MultiSeriesChart({
         {/* ── Zone graphique ── */}
         <div
           ref={chartDivRef}
-          className="relative overflow-hidden"
+          className="relative"
           style={{ height: chartHeight }}
         >
         {/* ── Chart empty state ── */}
@@ -2221,13 +2349,13 @@ function MultiSeriesChart({
 
           <ChartContainer
             config={chartConfig}
-            className="w-full"
+            className="w-full [&_svg]:overflow-visible"
             style={{ height: "100%" }}
           >
             {useAbsoluteAxis ? (
               <LineChart
                 data={absoluteData}
-                margin={{ top: 8, right: 16, bottom: 4, left: 4 }}
+                margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onMouseDown={(payload: any, e: any) => {
                   const date = getDateFromChartEvent(payload);
@@ -2340,50 +2468,13 @@ function MultiSeriesChart({
                     strokeDasharray: "4 3",
                   }}
                 />
-                {phases.map((phase) => (
-                  <ReferenceLine
-                    key={phase.id}
-                    x={phase.date_start}
-                    stroke={PHASE_COLORS[phase.phase_type].text}
-                    strokeOpacity={0.5}
-                    strokeWidth={1.5}
-                    strokeDasharray="4 2"
-                    label={{
-                      value: phase.label,
-                      position: "insideTopLeft",
-                      fontSize: 9,
-                      fill: PHASE_COLORS[phase.phase_type].text,
-                      dy: -2,
-                    }}
-                  />
-                ))}
-                {annotations.map((ann) => (
-                  <ReferenceLine
-                    key={ann.id}
-                    x={ann.event_date}
-                    stroke="rgba(255,255,255,0.25)"
-                    strokeWidth={1}
-                    strokeDasharray="2 3"
-                    label={(props) => (
-                      <AnnotationLabelContent
-                        {...props}
-                        ann={ann}
-                        onHover={(a, sx, sy) =>
-                          setHoveredAnnotation({
-                            ann: a,
-                            screenX: sx,
-                            screenY: sy,
-                          })
-                        }
-                        onLeave={() => setHoveredAnnotation(null)}
-                        onClick={(id) => {
-                          annotationClickedRef.current = true;
-                          onAnnotationClick?.(id);
-                        }}
-                      />
-                    )}
-                  />
-                ))}
+                <AnnotationsLayer
+                  annotations={annotations}
+                  phases={phases}
+                  onHover={(a, sx, sy) => setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })}
+                  onLeave={() => setHoveredAnnotation(null)}
+                  onClick={(id) => { annotationClickedRef.current = true; onAnnotationClick?.(id); }}
+                />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -2399,7 +2490,7 @@ function MultiSeriesChart({
             ) : (
               <LineChart
                 data={merged}
-                margin={{ top: 8, right: 16, bottom: 4, left: 4 }}
+                margin={{ top: 8, right: 32, bottom: 4, left: 4 }}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onMouseDown={(payload: any, e: any) => {
                   const date = getDateFromChartEvent(payload);
@@ -2491,53 +2582,13 @@ function MultiSeriesChart({
                     strokeDasharray: "4 3",
                   }}
                 />
-                {phases.map((phase) => {
-                  const c = PHASE_COLORS[phase.phase_type];
-                  return (
-                    <ReferenceLine
-                      key={phase.id}
-                      x={phase.date_start}
-                      stroke={c.text}
-                      strokeOpacity={phase.date_end ? 0.5 : 0.35}
-                      strokeWidth={1.5}
-                      strokeDasharray="4 2"
-                      label={{
-                        value: phase.label,
-                        position: "insideTopLeft",
-                        fontSize: 9,
-                        fill: c.text,
-                        dy: -2,
-                      }}
-                    />
-                  );
-                })}
-                {annotations.map((ann) => (
-                  <ReferenceLine
-                    key={ann.id}
-                    x={ann.event_date}
-                    stroke="rgba(255,255,255,0.25)"
-                    strokeWidth={1}
-                    strokeDasharray="2 3"
-                    label={(props) => (
-                      <AnnotationLabelContent
-                        {...props}
-                        ann={ann}
-                        onHover={(a, sx, sy) =>
-                          setHoveredAnnotation({
-                            ann: a,
-                            screenX: sx,
-                            screenY: sy,
-                          })
-                        }
-                        onLeave={() => setHoveredAnnotation(null)}
-                        onClick={(id) => {
-                          annotationClickedRef.current = true;
-                          onAnnotationClick?.(id);
-                        }}
-                      />
-                    )}
-                  />
-                ))}
+                <AnnotationsLayer
+                  annotations={annotations}
+                  phases={phases}
+                  onHover={(a, sx, sy) => setHoveredAnnotation({ ann: a, screenX: sx, screenY: sy })}
+                  onLeave={() => setHoveredAnnotation(null)}
+                  onClick={(id) => { annotationClickedRef.current = true; onAnnotationClick?.(id); }}
+                />
                 {selectedMetrics.map((k) => {
                   if (!visibleSeries.has(k)) return null;
                   const color = getMetricColor(k);

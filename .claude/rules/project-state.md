@@ -32,18 +32,22 @@
 | **MorphoPro Bridge** | ✅ Phase 0 complet (OpenAI Vision) | 2026-04-25 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
-| **Client Onboarding** | ✅ Single-page, zero redirects | 2026-04-27 |
+| **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
+| **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
 
 ---
 
 ## 🚀 Dernières Avancées (2026-04-27)
 
-### Client Onboarding — Single-Page Flow (COMPLET)
-- ✅ `/app/client/onboarding/page.tsx` : 3 steps (exchange → password → welcome)
-- ✅ Éliminé redirects : `/client/set-password`, `/client/auth/callback`
-- ✅ Support PKCE code + implicit flow hash (Supabase dual flow)
-- ✅ Timeout 15s, retry button, non-bloquant email send
-- ✅ Session établie AVANT form render → élimine race conditions
+### Client Onboarding — 5-Screen Tour + Guided Tooltip (COMPLET)
+- ✅ `/app/client/onboarding/page.tsx` : flow complet (exchange → password → 5 écrans welcome)
+- ✅ 5 écrans swipables : bienvenue personnalisé (prénom), programme, séance en temps réel, progression/nutrition, hub dashboard
+- ✅ Prénom récupéré depuis `user.user_metadata.first_name` après session établie
+- ✅ `components/client/OnboardingTour.tsx` : tooltip tour guidé, 5 étapes, non-skippable
+- ✅ Tour déclenché au premier load `/client` via `localStorage('onboarding_tour_done')`
+- ✅ Tour intégré dans `ConditionalClientShell` — disponible sur toutes les pages authentifiées
+- ✅ Placeholder conditionnel prévu pour la feature Daily Check-ins (Phase 2)
+- ✅ Spec Daily Check-ins documentée : `docs/superpowers/specs/2026-04-27-daily-checkins-spec.md`
 
 ### Nutrition Studio — 11-Task UX Refactor (COMPLET)
 - ✅ Tasks 1-10 : info modals, carb cycling toggle, action buttons TopBar
@@ -65,7 +69,9 @@
 
 ## 📅 Next Steps — Phase 2 (Immédiat)
 
-- [ ] E2E test : invite → onboarding → dashboard complet
+- [ ] E2E test : invite → onboarding → 5 écrans → dashboard → tooltip tour complet
+- [ ] Daily Check-ins Phase 2 : DB schema, coach config UI, client time picker, Inngest cron, Web Push
+- [ ] Système de points gamification (check-ins, séances, bilans)
 - [ ] Mobile : TopBar buttons responsive, SessionLogger < 480px
 - [ ] Monitoring : dropoff rates onboarding par step
 - [ ] Optional : profil rapide ou sélection programme dans onboarding

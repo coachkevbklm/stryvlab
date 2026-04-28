@@ -50,7 +50,7 @@ export async function POST(
     .update({ status: 'shared' })
     .eq('id', protocolId)
 
-  // Create metric annotation
+  // Create metric annotation (source_id = protocolId for cleanup on delete/unshare)
   const today = new Date().toISOString().split('T')[0]
   await db
     .from('metric_annotations')
@@ -61,6 +61,7 @@ export async function POST(
       event_date: today,
       label: `Protocole nutritionnel : ${protocol.name}`,
       body: `Protocole partagé avec le client`,
+      source_id: protocolId,
     })
 
   return NextResponse.json({ success: true })

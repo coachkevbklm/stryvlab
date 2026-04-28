@@ -67,7 +67,7 @@ interface NavRowAProps {
 
 export function NavRowA({ items }: NavRowAProps) {
   return (
-    <div className="flex items-center gap-1 rounded-xl border-[0.3px] border-white/[0.06] bg-white/[0.03] px-2 py-1 backdrop-blur-xl">
+    <div className="flex items-center gap-1 rounded-xl border-[0.3px] border-white/[0.06] bg-[#121212] px-2 py-1">
       {items.map((item) => (
         <RowAButton key={item.id} item={item} />
       ))}
