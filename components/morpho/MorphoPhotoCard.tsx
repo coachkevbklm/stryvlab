@@ -21,7 +21,7 @@ export function MorphoPhotoCard({ photo, selected, onToggle, onAnnotate }: Props
       }`}
       onClick={() => onToggle(photo.id)}
     >
-      <div className="aspect-[3/4] bg-white/[0.03] relative">
+      <div className="aspect-[2/3] bg-white/[0.03] relative">
         {photo.signed_url ? (
           <Image
             src={photo.signed_url}
@@ -29,6 +29,8 @@ export function MorphoPhotoCard({ photo, selected, onToggle, onAnnotate }: Props
             fill
             className="object-cover"
             unoptimized
+            loading="lazy"
+            sizes="(max-width: 768px) 25vw, 20vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

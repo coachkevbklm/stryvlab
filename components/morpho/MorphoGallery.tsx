@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Upload, RefreshCw } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MorphoPhotoCard } from './MorphoPhotoCard'
-import { MorphoFloatingBar } from './MorphoFloatingBar'
 import { POSITION_LABELS, type MorphoPhoto, type MorphoPhotoPosition, type MorphoAnalysisResult } from '@/lib/morpho/types'
 
 interface Props {
@@ -13,6 +12,7 @@ interface Props {
   onOpenCompare: (photos: MorphoPhoto[]) => void
   onOpenUpload: () => void
   onAnalysisComplete: (result: MorphoAnalysisResult, stimulus?: Record<string, number>) => void
+  onSelectionChange: (selected: Set<string>, photos: MorphoPhoto[], analyzing: boolean, onAnalyze: () => void) => void
   refreshToken: number
 }
 
@@ -26,10 +26,9 @@ const POSITIONS: Array<{ value: MorphoPhotoPosition | 'all'; label: string }> = 
   { value: 'three_quarter_front_right', label: '¾ D' },
 ]
 
-// Suppress unused import warning — POSITION_LABELS used in MorphoPhotoCard
 void POSITION_LABELS
 
-export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpload, onAnalysisComplete, refreshToken }: Props) {
+export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpload, onAnalysisComplete, onSelectionChange, refreshToken }: Props) {
   const [photos, setPhotos] = useState<MorphoPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -78,15 +77,7 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positionFilter, sourceFilter, refreshToken])
 
-  function toggleSelect(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  async function handleAnalyze() {
+  const handleAnalyze = useCallback(async () => {
     const photoIds = Array.from(selected)
     setAnalyzing(true)
     setErrorMsg(null)
@@ -108,9 +99,20 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
     } finally {
       setAnalyzing(false)
     }
-  }
+  }, [selected, clientId, onAnalysisComplete])
 
-  const selectedPhotos = photos.filter(p => selected.has(p.id))
+  useEffect(() => {
+    const selectedPhotos = photos.filter(p => selected.has(p.id))
+    onSelectionChange(selected, selectedPhotos, analyzing, handleAnalyze)
+  }, [selected, photos, analyzing, handleAnalyze, onSelectionChange])
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   if (loading || syncing) {
     return (
@@ -118,8 +120,8 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
         <div className="flex gap-2">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-7 w-16 rounded-lg" />)}
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
+        <div className="grid grid-cols-4 gap-2">
+          {[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="aspect-[2/3] rounded-xl" />)}
         </div>
       </div>
     )
@@ -162,10 +164,7 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
             {s === 'all' ? 'Toutes sources' : s === 'assessment' ? 'Bilans' : 'Uploads'}
           </button>
         ))}
-        <button
-          onClick={fetchPhotos}
-          className="ml-auto p-1.5 text-white/30 hover:text-white/60 transition-colors"
-        >
+        <button onClick={fetchPhotos} className="ml-auto p-1.5 text-white/30 hover:text-white/60 transition-colors">
           <RefreshCw size={13} />
         </button>
       </div>
@@ -184,7 +183,7 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {photos.map(photo => (
             <MorphoPhotoCard
               key={photo.id}
@@ -196,15 +195,6 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
           ))}
         </div>
       )}
-
-      <MorphoFloatingBar
-        count={selected.size}
-        onCompare={() => onOpenCompare(selectedPhotos)}
-        onAnnotate={() => selectedPhotos[0] && onOpenCanvas(selectedPhotos[0])}
-        onAnalyze={handleAnalyze}
-        onClear={() => setSelected(new Set())}
-        analyzing={analyzing}
-      />
     </div>
   )
 }
