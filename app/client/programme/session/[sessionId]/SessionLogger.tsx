@@ -140,6 +140,21 @@ function recKey(exerciseId: string, setNumber: number, side: string): string {
   return `${exerciseId}_set${setNumber}_${side}`
 }
 
+function DeltaBadge({ rec }: { rec: SetRecommendation }) {
+  if (rec.delta_vs_last === null) return null
+  const isLowConfidence = rec.confidence === 'low'
+  const delta = rec.delta_vs_last
+  const colorClass = isLowConfidence
+    ? 'text-white/40'
+    : delta > 0
+      ? 'text-[#1f8a65]'
+      : delta < 0
+        ? 'text-amber-400'
+        : 'text-white/40'
+  const label = delta > 0 ? `↑ +${delta}kg` : delta < 0 ? `↓ ${delta}kg` : `= S-1`
+  return <span className={`text-[10px] font-semibold ${colorClass}`}>{label}</span>
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level }: Props) {
@@ -1078,23 +1093,30 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                         />
 
                         {/* Kg */}
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step={0.5}
-                          value={s.actual_weight_kg}
-                          onFocus={() => { activeInputRef.current = true }}
-                          onBlur={() => { activeInputRef.current = false }}
-                          onChange={e => {
+                        <div className="flex flex-col gap-0.5">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step={0.5}
+                            value={s.actual_weight_kg}
+                            onFocus={() => { activeInputRef.current = true }}
+                            onBlur={() => { activeInputRef.current = false }}
+                            onChange={e => {
+                              const key = recKey(ex.id, s.set_number, s.side)
+                              setManuallyEdited(prev => new Set(prev).add(key))
+                              setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
+                              updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
+                            }}
+                            placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                            className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
+                          />
+                          {(() => {
                             const key = recKey(ex.id, s.set_number, s.side)
-                            setManuallyEdited(prev => new Set(prev).add(key))
-                            setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
-                            updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
-                          }}
-                          placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
-                        />
+                            const rec = recommendations[key]
+                            return rec ? <DeltaBadge rec={rec} /> : null
+                          })()}
+                        </div>
 
                         {/* RIR */}
                         <input

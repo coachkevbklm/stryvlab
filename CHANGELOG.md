@@ -5,6 +5,30 @@
 
 ## 2026-04-28
 
+FEATURE(session-logger): Add in-session set recommendation engine — pre-fills next set weight/reps using 1RM calculation blended with last week history. Badge shows delta vs previous week (↑ green / ↓ amber / = S-1 grey)
+FIX(morpho): MorphoCanvas — bug ligne/rect/cercle dessinés derrière la photo corrigé (fc.selection=false + objets non-interactifs en mode outil)
+FIX(morpho): MorphoCanvas — photo verrouillée en mode outil (evented:false permanent, selection désactivée, curseur adapt)
+FEATURE(morpho): MorphoCanvas — fond grille de points infinie style Figma synchronisée avec le zoom/pan Fabric
+FEATURE(morpho): MorphoCanvas — zoom molette centré sur le curseur + pan clic molette
+PERF(morpho): sync bilan photos fire-and-forget — galerie s'affiche immédiatement sans attendre la sync
+PERF(morpho): signed URLs en batch par bucket (createSignedUrls) — N appels Supabase Storage → 3 appels max
+PERF(morpho): MorphoCanvas en dynamic import — Fabric.js (~500kb) chargé uniquement à l'ouverture du canvas
+FIX(morpho): MorphoCanvas toolbar — icônes Lucide au lieu de labels tronqués, tooltips contextuels avec description de chaque outil
+FIX(morpho): MorphoCanvas — implémentation du dessin ligne/rectangle/cercle via mouse:down/move/up Fabric.js (était non fonctionnel)
+FIX(morpho): MorphoCanvas — curseur adapté à l'outil actif (crosshair, text, cell, default)
+FIX(morpho): MorphoCanvas — color picker remplacé par overlay lisible avec icône Palette + point de couleur actuel
+FIX(morpho): MorphoCanvas — slider épaisseur remplacé par sélecteur visuel 5 niveaux avec aperçu du trait
+FIX(morpho): MorphoCanvas — outil Texte revient automatiquement en mode Sélection après placement
+
+## 2026-04-28
+
+FIX: SessionLogger — parseSetForApi corrige le bug || null qui transformait 0 en null pour reps/poids/RIR
+FIX: Home page client — affiche "Séance réalisée ✓" après complétion en vérifiant client_session_logs du jour
+FIX: muscleDetection — CATALOG_SLUG_MAP étendu aux slugs FR anatomiques (trapeze_superieur, grand_dorsal, etc.)
+FIX: SessionLogger — rest timer modal retardé à 8s et bloqué pendant saisie active (activeInputRef)
+FEATURE: SessionLogger — supersets affichés en cartes empilées verticalement, repos déclenché après le dernier exercice du groupe
+REFACTOR: SessionLogger — navigation par groupe (superset ou solo) au lieu d'index exercice individuel
+
 FIX: MorphoPro — actions sélection (Comparer/Annoter/Analyser IA) déplacées dans la TopBar, floating bar supprimée
 FIX: MorphoPro — grille 4 colonnes, aspect-[2/3], lazy loading images pour réduire la latence
 
