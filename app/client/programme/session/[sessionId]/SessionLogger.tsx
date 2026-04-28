@@ -11,6 +11,7 @@ import {
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
 import ClientAlternativesSheet from '@/components/client/ClientAlternativesSheet'
+import { recommendNextSet, type SetRecommendation } from '@/lib/training/setRecommendation'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ interface SetLog {
 interface LastPerf {
   weight: number | null
   reps: number | null
+  rir?: number | null
   side?: string | null
 }
 
@@ -63,6 +65,8 @@ interface Props {
   session: { id: string; name: string }
   exercises: Exercise[]
   lastPerformance: Record<string, LastPerf[]>
+  goal: string
+  level: string
 }
 
 type SaveState = 'idle' | 'saving' | 'error'
@@ -132,13 +136,18 @@ function sideColor(side: 'left' | 'right' | 'bilateral') {
   return ''
 }
 
+function recKey(exerciseId: string, setNumber: number, side: string): string {
+  return `${exerciseId}_set${setNumber}_${side}`
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance }: Props) {
+export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level }: Props) {
   const router = useRouter()
   const { t } = useClientT()
   const [sets, setSets] = useState<SetLog[]>(() => buildInitialSets(exercises))
-  const [currentExIndex, setCurrentExIndex] = useState(0)
+  // Navigation par "groupe" (superset ou exercice solo)
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(0)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [startTime] = useState(Date.now())
@@ -149,6 +158,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
   const [altSheetTarget, setAltSheetTarget] = useState<number | null>(null)
+  const [recommendations, setRecommendations] = useState<Record<string, SetRecommendation>>({})
+  const [manuallyEdited, setManuallyEdited] = useState<Set<string>>(new Set())
 
   // ── Live save ──
   const sessionLogIdRef = useRef<string | null>(null)
@@ -167,6 +178,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   // Délai d'inactivité avant ouverture du modal
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Track si un input est focused pour ne pas ouvrir le modal pendant la saisie
+  const activeInputRef = useRef(false)
 
   // ── Bouton Terminer — appui long ──
   const [longPressProgress, setLongPressProgress] = useState(0) // 0→1
@@ -175,18 +188,26 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const longPressStartRef = useRef<number | null>(null)
   const LONG_PRESS_DURATION = 3000
 
-  // Envoie un upsert des sets actuels vers la DB — convertit les strings en nombres pour le schema Zod
+  // Convertit les strings en nombres — || null bug: "0" → 0 → falsy → null. Utiliser ?? null après parse.
+  function parseSetForApi(s: SetLog) {
+    const reps = s.actual_reps !== '' ? parseInt(s.actual_reps, 10) : null
+    const weight = s.actual_weight_kg !== '' ? parseFloat(s.actual_weight_kg) : null
+    const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
+    return {
+      ...s,
+      actual_reps: reps !== null && !isNaN(reps) ? reps : null,
+      actual_weight_kg: weight !== null && !isNaN(weight) ? weight : null,
+      rir_actual: rir !== null && !isNaN(rir) ? rir : null,
+      planned_reps: s.planned_reps || null,
+    }
+  }
+
+  // Envoie un upsert des sets actuels vers la DB
   async function patchSets(currentSets: SetLog[]) {
     const logId = sessionLogIdRef.current
     if (!logId) return
     try {
-      const payload = currentSets.map(s => ({
-        ...s,
-        actual_reps: s.actual_reps !== '' ? parseInt(s.actual_reps, 10) || null : null,
-        actual_weight_kg: s.actual_weight_kg !== '' ? parseFloat(s.actual_weight_kg) || null : null,
-        rir_actual: s.rir_actual !== '' ? parseInt(s.rir_actual, 10) || null : null,
-        planned_reps: s.planned_reps || null,
-      }))
+      const payload = currentSets.map(parseSetForApi)
       await fetch(`/api/session-logs/${logId}/sets`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -197,9 +218,73 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     }
   }
 
-  const currentEx = exercises[currentExIndex]
-  const isFirst = currentExIndex === 0
-  const isLast = currentExIndex === exercises.length - 1
+  const triggerRecommendation = useCallback((completedSet: SetLog) => {
+    const { exercise_id, exercise_name, set_number, side, actual_reps, actual_weight_kg, rir_actual } = completedSet
+
+    if (!actual_reps || !actual_weight_kg || !rir_actual) return
+    const reps = parseInt(actual_reps, 10)
+    const weight = parseFloat(actual_weight_kg)
+    const rir = parseInt(rir_actual, 10)
+    if (isNaN(reps) || isNaN(weight) || isNaN(rir)) return
+
+    const exerciseSets = sets.filter(s => s.exercise_id === exercise_id && s.side === side)
+    const currentIdx = exerciseSets.findIndex(s => s.set_number === set_number)
+    if (currentIdx === -1 || currentIdx >= exerciseSets.length - 1) return
+    const nextSet = exerciseSets[currentIdx + 1]
+
+    const nextKey = recKey(exercise_id, nextSet.set_number, side)
+    if (manuallyEdited.has(nextKey)) return
+
+    const history = lastPerformance[exercise_name] ?? []
+    const historyEntry = history.find(h => side === 'bilateral' ? true : h.side === side)
+    const lastWeek = historyEntry && historyEntry.weight != null && historyEntry.reps != null
+      ? { weight_kg: historyEntry.weight, reps: historyEntry.reps, rir_actual: historyEntry.rir ?? 2 }
+      : undefined
+
+    const plannedReps = parseInt(nextSet.planned_reps, 10) || 0
+
+    const rec = recommendNextSet({
+      actual_weight_kg: weight,
+      actual_reps: reps,
+      rir_actual: rir,
+      goal,
+      level,
+      planned_reps: plannedReps,
+      set_number: nextSet.set_number,
+      lastWeek,
+    })
+
+    if (!rec) return
+
+    setRecommendations(prev => ({ ...prev, [nextKey]: rec }))
+    setSets(prev => prev.map(s => {
+      if (s.exercise_id === exercise_id && s.set_number === nextSet.set_number && s.side === side) {
+        return { ...s, actual_weight_kg: String(rec.weight_kg), actual_reps: String(rec.reps) }
+      }
+      return s
+    }))
+  }, [sets, lastPerformance, goal, level, manuallyEdited])
+
+  // ── Groupes d'exercices (supersets regroupés) ──
+  // Un "groupe" = soit un exercice solo, soit une liste d'exercices avec le même group_id
+  const exerciseGroups: Exercise[][] = []
+  const seenGroupIds = new Set<string>()
+  for (const ex of exercises) {
+    if (ex.group_id) {
+      if (!seenGroupIds.has(ex.group_id)) {
+        seenGroupIds.add(ex.group_id)
+        exerciseGroups.push(exercises.filter(e => e.group_id === ex.group_id))
+      }
+    } else {
+      exerciseGroups.push([ex])
+    }
+  }
+  const currentGroup = exerciseGroups[currentGroupIndex] ?? []
+  const currentEx = currentGroup[0] // pour compatibilité — exercice principal du groupe
+  const isFirst = currentGroupIndex === 0
+  const isLast = currentGroupIndex === exerciseGroups.length - 1
+  // currentExIndex virtuel pour rétro-compat (index du premier ex du groupe dans exercises[])
+  const currentExIndex = currentEx ? exercises.indexOf(currentEx) : 0
 
   const completedCount = sets.filter(s => s.completed).length
   const totalSets = sets.length
@@ -289,12 +374,17 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     return () => clearInterval(restIntervalRef.current!)
   }, [restStartedAt])
 
-  // ── Ouvrir le modal après 3s d'inactivité ──
+  // ── Ouvrir le modal après 8s d'inactivité, seulement si aucun input n'est actif ──
   function scheduleModalOpen() {
     if (inactivityRef.current) clearTimeout(inactivityRef.current)
     inactivityRef.current = setTimeout(() => {
-      setRestModalOpen(true)
-    }, 3000)
+      if (!activeInputRef.current) {
+        setRestModalOpen(true)
+      } else {
+        // Un input est encore actif — replanifier dans 5s
+        scheduleModalOpen()
+      }
+    }, 8000)
   }
 
   function startRest(exId: string, setNum: number, side: string, prescribed: number | null) {
@@ -374,6 +464,9 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
   function toggleSet(exId: string, setNum: number, side: string, restSec: number | null) {
     setSets(prev => {
+      const current = prev.find(s => s.exercise_id === exId && s.set_number === setNum && s.side === side)
+      const wasCompleted = current?.completed ?? false
+
       const next = prev.map(s => {
         if (s.exercise_id !== exId || s.set_number !== setNum || s.side !== side) return s
         const nowCompleted = !s.completed
@@ -388,13 +481,22 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       // Patch immédiat sur la coche — intentionnel, pas de debounce
       const exSetsUpdated = next.filter(s => s.exercise_id === exId)
       patchSets(exSetsUpdated)
+
+      // Trigger recommendation when completing (not uncompleting)
+      if (!wasCompleted && current) {
+        triggerRecommendation(current)
+      }
+
       return next
     })
   }
 
-  // Sets de l'exercice courant
+  // Sets du groupe courant (tous les exercices du superset)
+  const groupSets = currentGroup.flatMap(ex => sets.filter(s => s.exercise_id === ex.id))
   const exSets = currentEx ? sets.filter(s => s.exercise_id === currentEx.id) : []
-  const allCurrentDone = exSets.length > 0 && exSets.every(s => s.completed)
+  const allCurrentDone = groupSets.length > 0 && groupSets.every(s => s.completed)
+  // Vrai si tous les sets du groupe sont complétés (pour déclencher le repos de fin de superset)
+  const allGroupDone = groupSets.length > 0 && groupSets.every(s => s.completed)
 
   const lastPerf = currentEx ? (lastPerformance[currentEx.name] ?? []) : []
   function getLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
@@ -421,11 +523,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       colorIdx++
     }
   }
-  const currentGroupId = currentEx?.group_id ?? null
-  const currentGroupColor = currentGroupId ? supersetColors[currentGroupId] : null
-  // Index de l'exercice dans son groupe (1-based) et taille du groupe
-  const groupMates = currentGroupId ? exercises.filter(e => e.group_id === currentGroupId) : []
-  const groupPosition = currentGroupId ? groupMates.findIndex(e => e.id === currentEx?.id) + 1 : 0
+  const isSuperset = currentGroup.length > 1
 
   // ── Chrono repos — valeurs dérivées ──
   const restRemaining = restPrescribed !== null ? restPrescribed - restElapsed : null // peut être négatif
@@ -463,16 +561,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const durationMin = Math.round(elapsed / 60)
     const logId = sessionLogIdRef.current
 
-    // Flush final de tous les sets avant de marquer completed — convertit les strings en nombres
+    // Flush final — on attend la réponse avant de marquer completed
+    // Le PATCH /sets requiert completed_at IS NULL, donc flush AVANT la completion
     if (logId) {
       try {
-        const flushPayload = sets.map(s => ({
-          ...s,
-          actual_reps: s.actual_reps !== '' ? parseInt(s.actual_reps, 10) || null : null,
-          actual_weight_kg: s.actual_weight_kg !== '' ? parseFloat(s.actual_weight_kg) || null : null,
-          rir_actual: s.rir_actual !== '' ? parseInt(s.rir_actual, 10) || null : null,
-          planned_reps: s.planned_reps || null,
-        }))
+        const flushPayload = sets.map(parseSetForApi)
         const flushRes = await fetch(`/api/session-logs/${logId}/sets`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -509,19 +602,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             program_session_id: session.id,
             session_name: session.name,
             exercise_notes: exerciseNotes,
-            set_logs: sets.map(s => ({
-              exercise_id: s.exercise_id,
-              exercise_name: s.exercise_name,
-              set_number: s.set_number,
-              side: s.side,
-              planned_reps: s.planned_reps,
-              actual_reps: s.actual_reps ? parseInt(s.actual_reps) : null,
-              actual_weight_kg: s.actual_weight_kg ? parseFloat(s.actual_weight_kg) : null,
-              completed: s.completed,
-              rir_actual: s.rir_actual ? parseInt(s.rir_actual) : null,
-              notes: s.notes || null,
-              rest_sec_actual: s.rest_sec_actual ?? null,
-            })),
+            set_logs: sets.map(s => parseSetForApi(s)),
           }),
         })
         if (!res.ok) {
@@ -558,7 +639,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     setSwapTarget(null)
   }
 
-  if (!currentEx) {
+  if (currentGroup.length === 0) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <p className="text-white/40 text-sm">Aucun exercice dans cette séance.</p>
@@ -566,8 +647,6 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     )
   }
 
-  const effectiveRir = currentEx.target_rir ?? currentEx.rir
-  const progressionHint = getProgressionHint(currentEx)
   const remainingSets = totalSets - completedCount
 
   return (
@@ -715,32 +794,42 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
       <main className="max-w-lg mx-auto px-5 py-5 flex flex-col gap-4">
 
-        {/* ── Navigation exercices ── */}
+        {/* ── Navigation groupes ── */}
         <div className="flex items-center justify-between gap-3">
           <button
-            onClick={() => setCurrentExIndex(i => Math.max(0, i - 1))}
+            onClick={() => setCurrentGroupIndex(i => Math.max(0, i - 1))}
             disabled={isFirst}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.07] hover:text-white/70 disabled:opacity-20 transition-colors"
           >
             <ChevronLeft size={15} />
           </button>
           <div className="flex gap-1.5 items-center flex-1 justify-center">
-            {exercises.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentExIndex(i)}
-                className={`h-1.5 rounded-full transition-all duration-200 ${
-                  i === currentExIndex
-                    ? 'w-6 bg-[#1f8a65]'
-                    : sets.filter(s => s.exercise_id === exercises[i].id).every(s => s.completed)
-                    ? 'w-1.5 bg-[#1f8a65]/50'
-                    : 'w-1.5 bg-white/[0.12]'
-                }`}
-              />
-            ))}
+            {exerciseGroups.map((grp, i) => {
+              const grpDone = grp.every(ex => sets.filter(s => s.exercise_id === ex.id).every(s => s.completed))
+              const grpColor = grp[0].group_id ? supersetColors[grp[0].group_id] : undefined
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentGroupIndex(i)}
+                  className={`h-1.5 rounded-full transition-all duration-200 ${
+                    i === currentGroupIndex
+                      ? 'w-6'
+                      : grpDone
+                      ? 'w-1.5 opacity-50'
+                      : 'w-1.5 bg-white/[0.12]'
+                  }`}
+                  style={i === currentGroupIndex
+                    ? { backgroundColor: grpColor ?? '#1f8a65' }
+                    : grpDone
+                    ? { backgroundColor: grpColor ?? '#1f8a65' }
+                    : undefined
+                  }
+                />
+              )
+            })}
           </div>
           <button
-            onClick={() => setCurrentExIndex(i => Math.min(exercises.length - 1, i + 1))}
+            onClick={() => setCurrentGroupIndex(i => Math.min(exerciseGroups.length - 1, i + 1))}
             disabled={isLast}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40 hover:bg-white/[0.07] hover:text-white/70 disabled:opacity-20 transition-colors"
           >
@@ -748,270 +837,347 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           </button>
         </div>
 
-        {/* ── Card exercice courant ── */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
-
-          {/* Image de l'exercice — ouverte par défaut, format carré */}
-          {currentEx.image_url && (
-            <div className="relative">
-              {showImage ? (
-                <div className="relative w-full aspect-square bg-black/20 overflow-hidden">
-                  <Image
-                    src={currentEx.image_url}
-                    alt={currentEx.name}
-                    fill
-                    className="object-cover"
-                    unoptimized={currentEx.image_url.endsWith('.gif')}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 to-transparent" />
-                  <button
-                    onClick={() => setShowImage(false)}
-                    className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg hover:bg-black/60 transition-colors"
-                  >
-                    <ChevronUp size={11} />
-                    {t('logger.demo.hide')}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowImage(true)}
-                  className="w-full h-14 bg-black/20 flex items-center justify-center gap-2 text-[10px] font-medium text-white/35 hover:text-white/55 hover:bg-black/30 transition-colors"
-                >
-                  <span>{t('logger.demo.show')}</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* En-tête exercice */}
-          <div className="px-5 pt-4 pb-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-[15px] font-bold text-white leading-tight">
-                    {swappedNames[currentEx.id] ?? currentEx.name}
-                  </h2>
-                  {currentGroupColor && (
-                    <span
-                      className="text-[9px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-md"
-                      style={{ backgroundColor: `${currentGroupColor}22`, color: currentGroupColor, border: `1px solid ${currentGroupColor}44` }}
-                    >
-                      {String.fromCharCode(64 + Math.min(Object.keys(supersetColors).indexOf(currentGroupId!) + 1, 26))}{groupPosition} / {groupMates.length}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => setSwapTarget(currentEx.id)}
-                    className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
-                    title="Remplacer temporairement"
-                  >
-                    <ArrowLeftRight size={13} />
-                  </button>
-                  {currentEx.clientAlternatives && currentEx.clientAlternatives.length > 0 && !swappedNames[currentEx.id] && (
-                    <button
-                      type="button"
-                      onClick={() => setAltSheetTarget(currentExIndex)}
-                      className="text-[10px] font-semibold text-white/30 hover:text-amber-400 transition-colors"
-                    >
-                      Indisponible ?
-                    </button>
-                  )}
-                  {currentEx.progressive_overload_enabled && currentEx.rep_min !== null && (
-                    <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />
-                  )}
-                  {currentEx.is_unilateral && (
-                    <span className="text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
-                      Unilatéral
-                    </span>
-                  )}
-                  {allCurrentDone && (
-                    <CheckCircle2 size={14} className="text-[#1f8a65] shrink-0" />
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3 mt-1.5">
-                  <span className="text-[11px] font-mono font-bold text-[#1f8a65]">
-                    {currentEx.sets} × {currentEx.reps}
-                  </span>
-                  {currentEx.rest_sec && (
-                    <span className="flex items-center gap-1 text-[11px] text-white/40">
-                      <Clock size={10} />{currentEx.rest_sec}s repos
-                    </span>
-                  )}
-                  {effectiveRir !== null && effectiveRir !== undefined && (
-                    <span className="text-[11px] text-white/40">
-                      {t('logger.rir.target')} : <span className="text-white/70 font-semibold">{effectiveRir}</span>
-                    </span>
-                  )}
-                  {currentEx.current_weight_kg !== null && (
-                    <span className="text-[11px] text-white/40">
-                      Suggéré : <span className="text-white/70 font-semibold">{currentEx.current_weight_kg}kg</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <span className="text-[10px] font-bold text-white/25 shrink-0 mt-1">
-                {currentExIndex + 1}/{exercises.length}
-              </span>
-            </div>
-
-            {progressionHint && (
-              <div className="mt-3 px-3 py-2 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-xl">
-                <p className="text-[10px] text-[#1f8a65] font-medium leading-relaxed">{progressionHint}</p>
-              </div>
-            )}
-
-            {currentEx.notes && (
-              <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{currentEx.notes}</p>
-            )}
-          </div>
-
-          {/* ── Sets ── */}
-          <div className="border-t border-white/[0.05]">
+        {/* ── Superset label ── */}
+        {isSuperset && currentGroup[0].group_id && (
+          <div className="flex items-center gap-2">
             <div
-              className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25"
-              style={{ gridTemplateColumns: currentEx.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
+              className="h-px flex-1 rounded-full"
+              style={{ backgroundColor: `${supersetColors[currentGroup[0].group_id]}40` }}
+            />
+            <span
+              className="text-[10px] font-black uppercase tracking-[0.18em] px-2.5 py-1 rounded-lg"
+              style={{
+                backgroundColor: `${supersetColors[currentGroup[0].group_id]}18`,
+                color: supersetColors[currentGroup[0].group_id],
+              }}
             >
-              <div>#</div>
-              {currentEx.is_unilateral && <div>{t('logger.set')}</div>}
-              <div>{t('logger.target.label')}</div>
-              <div>{t('logger.actual.label')}</div>
-              <div>Kg</div>
-              <div>{t('logger.rir.label')}</div>
-              <div className="text-center">✓</div>
-            </div>
-
-            {exSets.map((s, idx) => {
-              const lastP = getLastPerfLabel(s.set_number, s.side)
-              const isFirstOfSet = !currentEx.is_unilateral || s.side === 'left'
-
-              return (
-                <div key={`${s.set_number}-${s.side}`}>
-                  {currentEx.is_unilateral && isFirstOfSet && idx > 0 && (
-                    <div className="h-px bg-white/[0.04] mx-5" />
-                  )}
-                  <div
-                    className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${
-                      s.completed ? 'bg-[#1f8a65]/[0.08]' : ''
-                    } ${!currentEx.is_unilateral ? 'border-t border-white/[0.04]' : ''}`}
-                    style={{ gridTemplateColumns: currentEx.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
-                  >
-                    <div className="text-[12px] font-mono font-bold text-white/30">
-                      {(!currentEx.is_unilateral || s.side === 'left') ? s.set_number : ''}
-                    </div>
-
-                    {currentEx.is_unilateral && (
-                      <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>
-                        {sideLabel(s.side)}
-                      </div>
-                    )}
-
-                    <div>
-                      <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
-                      {lastP && (!currentEx.is_unilateral || s.side === 'left') && (
-                        <div className="text-[9px] text-white/20 mt-0.5 truncate">
-                          ↩ {lastP.weight ? `${lastP.weight}kg` : '—'} × {lastP.reps ?? '—'}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Reps */}
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      value={s.actual_reps}
-                      onChange={e => updateSet(currentEx.id, s.set_number, s.side, { actual_reps: e.target.value })}
-                      placeholder={lastP?.reps ? String(lastP.reps) : '—'}
-                      className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
-                    />
-
-                    {/* Kg */}
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step={0.5}
-                      value={s.actual_weight_kg}
-                      onChange={e => updateSet(currentEx.id, s.set_number, s.side, { actual_weight_kg: e.target.value })}
-                      placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                      className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
-                    />
-
-                    {/* RIR */}
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={10}
-                      value={s.rir_actual}
-                      onChange={e => updateSet(currentEx.id, s.set_number, s.side, { rir_actual: e.target.value })}
-                      placeholder={effectiveRir !== null && effectiveRir !== undefined ? String(effectiveRir) : '—'}
-                      className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors"
-                    />
-
-                    {/* Bouton valider */}
-                    <button
-                      onClick={() => toggleSet(currentEx.id, s.set_number, s.side, currentEx.rest_sec)}
-                      title="Valider et lancer le repos"
-                      className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${
-                        s.completed
-                          ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]'
-                          : 'hover:bg-white/[0.06]'
-                      }`}
-                    >
-                      {s.completed ? (
-                        <CheckCircle2 size={22} className="text-[#1f8a65]" />
-                      ) : (
-                        <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+              Superset · {currentGroup.length} exercices
+            </span>
+            <div
+              className="h-px flex-1 rounded-full"
+              style={{ backgroundColor: `${supersetColors[currentGroup[0].group_id]}40` }}
+            />
           </div>
+        )}
 
-          {/* ── Note de ressenti ── */}
-          <div className="border-t border-white/[0.05] px-5 py-3">
-            {showNoteInput === currentEx.id ? (
-              <div className="flex flex-col gap-2">
-                <textarea
-                  autoFocus
-                  rows={3}
-                  value={exerciseNotes[currentEx.id] ?? ''}
-                  onChange={e => setExerciseNotes(prev => ({ ...prev, [currentEx.id]: e.target.value }))}
-                  placeholder={t('logger.note.placeholder')}
-                  className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] text-white/80 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-[#1f8a65]/30 focus:border-[#1f8a65]/20 resize-none transition-colors leading-relaxed"
+        {/* ── Cards exercices (une par exercice dans le groupe) ── */}
+        {currentGroup.map((ex, exInGroupIdx) => {
+          const exSetsForEx = sets.filter(s => s.exercise_id === ex.id)
+          const allExDone = exSetsForEx.length > 0 && exSetsForEx.every(s => s.completed)
+          const exLastPerf = lastPerformance[ex.name] ?? []
+          const exEffectiveRir = ex.target_rir ?? ex.rir
+          const exProgressionHint = getProgressionHint(ex)
+          const groupColor = ex.group_id ? supersetColors[ex.group_id] : null
+
+          function getExLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
+            if (exLastPerf.length === 0) return null
+            const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+            return match ?? exLastPerf[0]
+          }
+
+          return (
+            <div
+              key={ex.id}
+              className="bg-white/[0.02] border rounded-2xl overflow-hidden"
+              style={{ borderColor: groupColor ? `${groupColor}30` : 'rgba(255,255,255,0.06)' }}
+            >
+              {/* Connecteur superset entre les cards */}
+              {isSuperset && exInGroupIdx > 0 && groupColor && (
+                <div
+                  className="absolute -mt-4 left-1/2 -translate-x-1/2 w-0.5 h-4 rounded-full"
+                  style={{ backgroundColor: `${groupColor}60` }}
                 />
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setShowNoteInput(null)}
-                    className="px-4 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white/60 transition-colors"
-                  >
-                    Fermer
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowNoteInput(currentEx.id)}
-                className="flex items-center gap-2 text-[11px] font-medium text-white/30 hover:text-white/55 transition-colors"
-              >
-                <MessageSquare size={13} />
-                {exerciseNotes[currentEx.id]
-                  ? <span className="text-white/50 truncate max-w-[260px]">{exerciseNotes[currentEx.id]}</span>
-                  : 'Ajouter un ressenti'}
-              </button>
-            )}
-          </div>
-        </div>
+              )}
 
-        {/* ── Exercice suivant ── */}
+              {/* Image de l'exercice — uniquement pour le premier du groupe ou les solos */}
+              {ex.image_url && (!isSuperset || exInGroupIdx === 0) && (
+                <div className="relative">
+                  {showImage ? (
+                    <div className="relative w-full aspect-square bg-black/20 overflow-hidden">
+                      <Image
+                        src={ex.image_url}
+                        alt={ex.name}
+                        fill
+                        className="object-cover"
+                        unoptimized={ex.image_url.endsWith('.gif')}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 to-transparent" />
+                      <button
+                        onClick={() => setShowImage(false)}
+                        className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-white/60 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg hover:bg-black/60 transition-colors"
+                      >
+                        <ChevronUp size={11} />
+                        {t('logger.demo.hide')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowImage(true)}
+                      className="w-full h-14 bg-black/20 flex items-center justify-center gap-2 text-[10px] font-medium text-white/35 hover:text-white/55 hover:bg-black/30 transition-colors"
+                    >
+                      <span>{t('logger.demo.show')}</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* En-tête exercice */}
+              <div className="px-5 pt-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isSuperset && groupColor && (
+                        <span
+                          className="text-[9px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-md shrink-0"
+                          style={{ backgroundColor: `${groupColor}22`, color: groupColor, border: `1px solid ${groupColor}44` }}
+                        >
+                          {exInGroupIdx + 1}
+                        </span>
+                      )}
+                      <h2 className="text-[15px] font-bold text-white leading-tight">
+                        {swappedNames[ex.id] ?? ex.name}
+                      </h2>
+                      <button
+                        onClick={() => setSwapTarget(ex.id)}
+                        className="flex items-center gap-1 h-7 px-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                        title="Remplacer temporairement"
+                      >
+                        <ArrowLeftRight size={13} />
+                      </button>
+                      {ex.clientAlternatives && ex.clientAlternatives.length > 0 && !swappedNames[ex.id] && (
+                        <button
+                          type="button"
+                          onClick={() => setAltSheetTarget(exercises.indexOf(ex))}
+                          className="text-[10px] font-semibold text-white/30 hover:text-amber-400 transition-colors"
+                        >
+                          Indisponible ?
+                        </button>
+                      )}
+                      {ex.progressive_overload_enabled && ex.rep_min !== null && (
+                        <TrendingUp size={12} className="text-[#1f8a65] shrink-0" />
+                      )}
+                      {ex.is_unilateral && (
+                        <span className="text-[9px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                          Unilatéral
+                        </span>
+                      )}
+                      {allExDone && (
+                        <CheckCircle2 size={14} className="text-[#1f8a65] shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-1.5">
+                      <span className="text-[11px] font-mono font-bold text-[#1f8a65]">
+                        {ex.sets} × {ex.reps}
+                      </span>
+                      {/* Temps de repos : affiché seulement sur le dernier exercice du groupe */}
+                      {ex.rest_sec && (!isSuperset || exInGroupIdx === currentGroup.length - 1) && (
+                        <span className="flex items-center gap-1 text-[11px] text-white/40">
+                          <Clock size={10} />{ex.rest_sec}s repos
+                        </span>
+                      )}
+                      {isSuperset && exInGroupIdx < currentGroup.length - 1 && (
+                        <span className="text-[11px] text-white/25 italic">Enchaîner directement</span>
+                      )}
+                      {exEffectiveRir !== null && exEffectiveRir !== undefined && (
+                        <span className="text-[11px] text-white/40">
+                          {t('logger.rir.target')} : <span className="text-white/70 font-semibold">{exEffectiveRir}</span>
+                        </span>
+                      )}
+                      {ex.current_weight_kg !== null && (
+                        <span className="text-[11px] text-white/40">
+                          Suggéré : <span className="text-white/70 font-semibold">{ex.current_weight_kg}kg</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-white/25 shrink-0 mt-1">
+                    {exercises.indexOf(ex) + 1}/{exercises.length}
+                  </span>
+                </div>
+
+                {exProgressionHint && (
+                  <div className="mt-3 px-3 py-2 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-xl">
+                    <p className="text-[10px] text-[#1f8a65] font-medium leading-relaxed">{exProgressionHint}</p>
+                  </div>
+                )}
+
+                {ex.notes && (
+                  <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>
+                )}
+              </div>
+
+              {/* ── Sets ── */}
+              <div className="border-t border-white/[0.05]">
+                <div
+                  className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25"
+                  style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
+                >
+                  <div>#</div>
+                  {ex.is_unilateral && <div>{t('logger.set')}</div>}
+                  <div>{t('logger.target.label')}</div>
+                  <div>{t('logger.actual.label')}</div>
+                  <div>Kg</div>
+                  <div>{t('logger.rir.label')}</div>
+                  <div className="text-center">✓</div>
+                </div>
+
+                {exSetsForEx.map((s, idx) => {
+                  const lastP = getExLastPerfLabel(s.set_number, s.side)
+                  const isFirstOfSet = !ex.is_unilateral || s.side === 'left'
+                  // Pour supersets : le repos démarre uniquement sur le dernier exercice du groupe
+                  const restSecForToggle = isSuperset && exInGroupIdx < currentGroup.length - 1
+                    ? null
+                    : ex.rest_sec
+
+                  return (
+                    <div key={`${s.set_number}-${s.side}`}>
+                      {ex.is_unilateral && isFirstOfSet && idx > 0 && (
+                        <div className="h-px bg-white/[0.04] mx-5" />
+                      )}
+                      <div
+                        className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${
+                          s.completed ? 'bg-[#1f8a65]/[0.08]' : ''
+                        } ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`}
+                        style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}
+                      >
+                        <div className="text-[12px] font-mono font-bold text-white/30">
+                          {(!ex.is_unilateral || s.side === 'left') ? s.set_number : ''}
+                        </div>
+
+                        {ex.is_unilateral && (
+                          <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>
+                            {sideLabel(s.side)}
+                          </div>
+                        )}
+
+                        <div>
+                          <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
+                          {lastP && (!ex.is_unilateral || s.side === 'left') && (
+                            <div className="text-[9px] text-white/20 mt-0.5 truncate">
+                              ↩ {lastP.weight ? `${lastP.weight}kg` : '—'} × {lastP.reps ?? '—'}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reps */}
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          value={s.actual_reps}
+                          onFocus={() => { activeInputRef.current = true }}
+                          onBlur={() => { activeInputRef.current = false }}
+                          onChange={e => {
+                            const key = recKey(ex.id, s.set_number, s.side)
+                            setManuallyEdited(prev => new Set(prev).add(key))
+                            setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
+                            updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value })
+                          }}
+                          placeholder={lastP?.reps ? String(lastP.reps) : '—'}
+                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
+                        />
+
+                        {/* Kg */}
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step={0.5}
+                          value={s.actual_weight_kg}
+                          onFocus={() => { activeInputRef.current = true }}
+                          onBlur={() => { activeInputRef.current = false }}
+                          onChange={e => {
+                            const key = recKey(ex.id, s.set_number, s.side)
+                            setManuallyEdited(prev => new Set(prev).add(key))
+                            setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
+                            updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
+                          }}
+                          placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
+                        />
+
+                        {/* RIR */}
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={10}
+                          value={s.rir_actual}
+                          onFocus={() => { activeInputRef.current = true }}
+                          onBlur={() => { activeInputRef.current = false }}
+                          onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
+                          placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
+                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors"
+                        />
+
+                        {/* Bouton valider */}
+                        <button
+                          onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)}
+                          title="Valider et lancer le repos"
+                          className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${
+                            s.completed
+                              ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]'
+                              : 'hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          {s.completed ? (
+                            <CheckCircle2 size={22} className="text-[#1f8a65]" />
+                          ) : (
+                            <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* ── Note de ressenti ── */}
+              <div className="border-t border-white/[0.05] px-5 py-3">
+                {showNoteInput === ex.id ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      autoFocus
+                      rows={3}
+                      value={exerciseNotes[ex.id] ?? ''}
+                      onFocus={() => { activeInputRef.current = true }}
+                      onBlur={() => { activeInputRef.current = false }}
+                      onChange={e => setExerciseNotes(prev => ({ ...prev, [ex.id]: e.target.value }))}
+                      placeholder={t('logger.note.placeholder')}
+                      className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] text-white/80 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-[#1f8a65]/30 focus:border-[#1f8a65]/20 resize-none transition-colors leading-relaxed"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setShowNoteInput(null)}
+                        className="px-4 py-1.5 rounded-lg text-[11px] font-medium text-white/40 hover:text-white/60 transition-colors"
+                      >
+                        Fermer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNoteInput(ex.id)}
+                    className="flex items-center gap-2 text-[11px] font-medium text-white/30 hover:text-white/55 transition-colors"
+                  >
+                    <MessageSquare size={13} />
+                    {exerciseNotes[ex.id]
+                      ? <span className="text-white/50 truncate max-w-[260px]">{exerciseNotes[ex.id]}</span>
+                      : 'Ajouter un ressenti'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* ── Groupe suivant ── */}
         {!isLast && (
           <button
-            onClick={() => setCurrentExIndex(i => i + 1)}
+            onClick={() => setCurrentGroupIndex(i => i + 1)}
             className="w-full flex items-center justify-center gap-2 bg-white/[0.04] border border-white/[0.06] text-white/60 font-semibold py-3.5 rounded-xl hover:bg-white/[0.06] hover:text-white/80 transition-colors text-[12px]"
           >
-            Exercice suivant
+            {exerciseGroups[currentGroupIndex + 1]?.length > 1 ? 'Superset suivant' : 'Exercice suivant'}
             <ChevronRight size={14} />
           </button>
         )}
