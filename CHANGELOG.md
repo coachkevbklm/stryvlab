@@ -3,8 +3,59 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-04-29
+
+FEATURE(client-nav): BottomNav refonte — 4 items (Home, Programme, Nutrition, Profil), bg-[#181818], dot actif vert, icônes 20px strokeWidth 1.5/2, shadow élévation — aligné design DockLeft coach
+FIX(client-nav): suppression items Bilans et Progrès de la nav — Bilans accessible via lien direct home, Progrès dans Programme
+FIX(onboarding-tour): 4 steps alignés sur la nouvelle nav — index corrigés, step Bilans supprimé, step Progrès fusionné dans Programme
+FIX(home): lien "Bilan en attente" redirige directement vers /client/bilans/[submissionId] — plus de page liste intermédiaire
+FIX(recap): RecapNavButtons — router.refresh() avant push vers /client invalide le cache Next.js App Router; "Séance réalisée ✓" visible immédiatement sans relancer l'app
+FIX(session-logger): router.refresh() appelé à chaque submitSession() pour pré-invalider le cache de /client pendant la lecture du recap
+FIX(session-logger): submitSession() — flush final avec fallback POST atomique garanti + vérification obligatoire des réponses HTTP avant redirect; plus de perte de données silencieuse si l'upsert live échoue
+FIX(session-logs/sets): Logging serveur de l'erreur upsert (code + message) pour diagnostiquer les échecs en prod
+SCHEMA: 20260429_set_logs_upsert_fix.sql — contrainte UNIQUE (session_log_id, exercise_name, set_number, side) idempotente; side backfill + NOT NULL garantis en prod
+REFACTOR(topbar): Nutrition page — "Nouveau protocole" moved to TopBar, inline header removed
+REFACTOR(topbar): Bilans page — "Envoyer un bilan" moved to TopBar; SubmissionsList supports controlled sendModalOpen/onSendModalClose props
+REFACTOR(topbar): Formules page — "Nouvelle formule" full label + DS v2.0 button style (h-8, tracking, uppercase)
+REFACTOR(topbar): Studio/Templates page — "Nouveau template" full label + DS v2.0 button; cards use bg-white/[0.02] border DS, no green top bar, icon buttons aligned
+FIX(builder): intelligenceSessions + intelligenceMeta now wrapped in useMemo — were recreated on every render, causing useProgramIntelligence debounce to reset infinitely and Smart Fit to always show 0/100
+FIX(intelligence): expandSessionsByDays wrapped in try/catch — crash fallback returns original sessions instead of breaking the scoring engine
+FIX(intelligence): useProgramIntelligence catches buildIntelligenceResult crashes and logs to console instead of silently keeping EMPTY_RESULT forever
+REFACTOR(builder): "Template" + "Enregistrer" buttons moved to TopBar via onTopBarActions callback — global actions leave the sub-header; sub-header now contains name input only
+FIX(save-as-template): sessions insert now logs error + rolls back template on failure instead of silently producing empty sessions; days_of_week included only if non-empty to avoid column-missing failure on unmigrated envs
+FIX(intelligence): Multi-day sessions now count as multiple volume occurrences in Smart Fit — expandSessionsByDays() duplicates sessions before passing to scoreBalance/scoreSRA/scoreVolumeCoverage/scoreSpecificity/scoreCompleteness/scoreJointLoad/scoreCoordination; session stats display (sessionsStats) keeps per-session-unique view
+FIX(intelligence): EQUIPMENT_MISMATCH alerts now normalize catalog EN slugs (cable, barbell, dumbbell…) to profile FR slugs (cables, barre, halteres…) before comparison — eliminates false-positive equipment missing alerts
+FIX(topbar): useSetTopBar now clears right slot on unmount — TopBar buttons no longer persist across pages when navigating away from Entraînement
+FIX(programmes): BookmarkPlus and Trash2 buttons on programme cards are always visible (removed opacity-0 group-hover:opacity-100)
+
 ## 2026-04-28
 
+FEATURE: Multi-day sessions — days_of_week int[] replaces day_of_week int; coach can assign a session to multiple days (e.g. Pectoraux: Mardi + Vendredi); client app resolves sessions by array membership; SRA uses first scheduled day
+SCHEMA: program_sessions + coach_program_template_sessions — add days_of_week int[] with GIN index; migrate existing data; keep day_of_week for backward compat
+
+FIX(assign): copy goal/level/frequency/session_mode/equipment_archetype/muscle_tags from template to program on assign — metadata was lost
+FIX(assign): copy movement_pattern/equipment_required/group_id from template exercises to program exercises — supersets and intelligence engine lost these fields
+FIX(assign): sort exercises by position with null-safe fallback before insert
+FIX(programs PATCH): log and skip failed session inserts instead of silently losing their exercises
+FEATURE: Programme ↔ Template bidirectional flow — assign template via modal (with compatibility scoring) from client training page, save any client programme as reusable template (from builder TopBar + programme card)
+FEATURE: TopBar Entraînement — "Assigner un template" + "+ Nouveau programme" buttons moved to TopBar (DS v2.0 compliant), inline buttons removed from list
+FEATURE: AssignTemplateModal — modal with full rankTemplates scoring, compatible/incompatible split, substitutions display, name override input
+FEATURE: SaveAsTemplateModal — modal to copy programme → coach_program_templates with name + optional description
+FEATURE: POST /api/programs/[programId]/save-as-template — copies programme sessions + exercises to template, programme client untouched
+
+PERF(morpho): Thumbnail URLs via Supabase Image Transform — gallery grid loads 400px@60% images (~30KB) instead of originals (3-8MB); full_url kept for canvas/compare only
+PERF(morpho): Cache signed URLs in DB (morpho_photos.signed_url_cache, 24h TTL) — API skips createSignedUrls() for fresh photos, regenerates only stale ones, saves in background non-blocking
+PERF(morpho): Module-level URL cache in MorphoGallery (50min TTL Map) — filter changes reuse cached URLs instantly without waiting for API
+SCHEMA: Add signed_url_cache + signed_url_expires_at columns on morpho_photos (migration 20260428_morpho_photos_url_cache.sql)
+PERF(morpho): Paginate /api/morpho/photos — limit 24 + offset, returns hasMore flag to avoid loading 100+ signed URLs at once
+FIX(morpho): MorphoGallery — paginated loading with "Charger plus" button, grid-cols-6 (smaller cards), optimized image sizes
+FIX(morpho): Fix position filter — photos with unrecognized field_key were silently assigned 'front'; they are now excluded from sync. Added aliases (face, dos, profil_g, etc.). Upsert now updates position on re-sync.
+FIX(session-logger): Recommended inputs visually distinct — green-tinted border+text when system pre-filled, resets to white on manual edit
+FIX(session-logger): Guard `!rir_actual` replaced by `rir_actual === ''` — RIR 0 (à l'échec) now triggers recommendation instead of silently skipping
+FIX(setRecommendation): Blend weights corrected — live set now 70%, history 30% (was inverted); reduces over-reliance on last week when fatigue is present
+FIX(setRecommendation): Round to 0.5kg instead of 0.25kg — avoids display truncation (56.25 → 56.5), matches real gym plate increments
+FIX(setRecommendation): confidence threshold lowered from >10 to >8 reps — matches 1RM formula precision boundary (±2.5% up to 8 reps)
+FIX(session): Fix 404 on session start — query used non-existent `template_id` FK + `coach_program_templates` JOIN on `programs`; replaced with direct `goal`/`level` columns (added in migration 20260420)
 FEATURE(session-logger): Add in-session set recommendation engine — pre-fills next set weight/reps using 1RM calculation blended with last week history. Badge shows delta vs previous week (↑ green / ↓ amber / = S-1 grey)
 FIX(morpho): MorphoCanvas — bug ligne/rect/cercle dessinés derrière la photo corrigé (fc.selection=false + objets non-interactifs en mode outil)
 FIX(morpho): MorphoCanvas — photo verrouillée en mode outil (evented:false permanent, selection désactivée, curseur adapt)
