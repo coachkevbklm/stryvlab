@@ -3,7 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Dumbbell, ChevronRight, ClipboardList, MessageSquare, Clock, Layers, CalendarDays, Sparkles } from 'lucide-react'
+import { Dumbbell, ChevronRight, ClipboardList, MessageSquare, Clock, Layers, CalendarDays, Sparkles, CheckCircle2 } from 'lucide-react'
 import ContextualGreeting from '@/components/client/ContextualGreeting'
 import ClientTopBar from '@/components/client/ClientTopBar'
 import { ct, cta, type ClientLang } from '@/lib/i18n/clientTranslations'
@@ -81,12 +81,19 @@ export default async function ClientHomePage() {
   const { monday, sunday } = getWeekBounds()
 
   // ── Parallel fetches ──
+  // Bornes "aujourd'hui" pour vérifier si la séance du jour est déjà complétée
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
   const [
     programResult,
     pendingResult,
     logsThisWeekResult,
     coachNoteResult,
     prefsLangResult,
+    todayLogsResult,
   ] = await Promise.all([
     // Programme actif + sessions
     clientId
@@ -95,7 +102,7 @@ export default async function ClientHomePage() {
           .select(`
             id, name,
             program_sessions (
-              id, name, day_of_week, position,
+              id, name, day_of_week, days_of_week, position,
               program_exercises ( id, sets, rest_sec )
             )
           `)
@@ -105,14 +112,15 @@ export default async function ClientHomePage() {
           .limit(1)
       : Promise.resolve({ data: null }),
 
-    // Bilans en attente
+    // Bilans en attente — fetch IDs pour lien direct
     clientId
       ? service
           .from('assessment_submissions')
-          .select('id', { count: 'exact', head: true })
+          .select('id')
           .eq('client_id', clientId)
           .in('status', ['pending', 'in_progress'])
-      : Promise.resolve({ count: 0 }),
+          .order('created_at', { ascending: true })
+      : Promise.resolve({ data: [] }),
 
     // Séances faites cette semaine
     clientId
@@ -143,6 +151,17 @@ export default async function ClientHomePage() {
           .eq('client_id', clientId)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+
+    // Séances complétées aujourd'hui — pour savoir si la séance du jour est déjà faite
+    clientId
+      ? service
+          .from('client_session_logs')
+          .select('id, session_name, completed_at')
+          .eq('client_id', clientId)
+          .not('completed_at', 'is', null)
+          .gte('completed_at', todayStart.toISOString())
+          .lte('completed_at', todayEnd.toISOString())
+      : Promise.resolve({ data: [] }),
   ])
 
   const rawLang = (prefsLangResult as any)?.data?.language
@@ -155,12 +174,21 @@ export default async function ClientHomePage() {
     ? ((program.program_sessions ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
     : []
 
-  const pendingCount = (pendingResult as any)?.count ?? 0
+  const pendingSubmissions: { id: string }[] = (pendingResult as any)?.data ?? []
+  const pendingCount = pendingSubmissions.length
+  const firstPendingId = pendingSubmissions[0]?.id ?? null
   const doneThisWeek = (logsThisWeekResult as any)?.count ?? 0
   const coachNote = (coachNoteResult as any)?.data ?? null
+  const todayCompletedLogs: any[] = (todayLogsResult as any)?.data ?? []
 
-  // Séance du jour
-  const todaySession = sessions.find((s: any) => s.day_of_week === todayDow) ?? null
+  // Séance du jour — masquée si déjà complétée aujourd'hui (session du même nom)
+  const rawTodaySession = sessions.find((s: any) =>
+    (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(todayDow)
+  ) ?? null
+  const todaySessionAlreadyDone = rawTodaySession
+    ? todayCompletedLogs.some((log: any) => log.session_name === rawTodaySession.name)
+    : false
+  const todaySession = todaySessionAlreadyDone ? null : rawTodaySession
   const todayExercises = todaySession
     ? ((todaySession.program_exercises ?? []) as any[])
     : []
@@ -170,9 +198,9 @@ export default async function ClientHomePage() {
   // Prochaine séance si pas aujourd'hui
   const nextSession = !todaySession
     ? sessions
-        .filter((s: any) => s.day_of_week > todayDow)
-        .sort((a: any, b: any) => a.day_of_week - b.day_of_week)[0] ??
-      sessions.sort((a: any, b: any) => a.day_of_week - b.day_of_week)[0] ??
+        .filter((s: any) => (s.days_of_week?.length ? Math.min(...s.days_of_week) : s.day_of_week ?? 0) > todayDow)
+        .sort((a: any, b: any) => (a.days_of_week?.[0] ?? a.day_of_week ?? 0) - (b.days_of_week?.[0] ?? b.day_of_week ?? 0))[0] ??
+      sessions.sort((a: any, b: any) => (a.days_of_week?.[0] ?? a.day_of_week ?? 0) - (b.days_of_week?.[0] ?? b.day_of_week ?? 0))[0] ??
       null
     : null
 
@@ -261,6 +289,26 @@ export default async function ClientHomePage() {
               </Link>
             </div>
           </div>
+        ) : todaySessionAlreadyDone && rawTodaySession ? (
+          /* Séance du jour déjà complétée */
+          <div className="relative rounded-2xl overflow-hidden border border-[#1f8a65]/20">
+            <div className="absolute inset-0 bg-[#1f8a65]/[0.05]" />
+            <div className="relative z-10 px-5 py-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#1f8a65]/20 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={20} className="text-[#1f8a65]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-white">Séance réalisée ✓</p>
+                <p className="text-[11px] text-white/40 mt-0.5">{rawTodaySession.name}</p>
+              </div>
+              <Link
+                href={`/client/programme/session/${rawTodaySession.id}`}
+                className="shrink-0 text-[10px] font-bold text-[#1f8a65] bg-[#1f8a65]/10 px-3 py-1.5 rounded-lg hover:bg-[#1f8a65]/20 transition-colors"
+              >
+                Refaire
+              </Link>
+            </div>
+          </div>
         ) : (
           /* Pas de séance aujourd'hui */
           <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4 flex items-center gap-4">
@@ -273,7 +321,7 @@ export default async function ClientHomePage() {
                 <p className="text-[11px] text-white/30 mt-0.5">
                   {ct(lang, 'home.rest.next')}{' '}
                   <span className="text-white/60 font-medium">
-                    {daysFull[(nextSession.day_of_week ?? 1) - 1]} — {nextSession.name}
+                    {daysFull[((nextSession.days_of_week?.[0] ?? nextSession.day_of_week) ?? 1) - 1]} — {nextSession.name}
                   </span>
                 </p>
               ) : program ? (
@@ -340,7 +388,7 @@ export default async function ClientHomePage() {
         {/* ── Bilans en attente ── */}
         {pendingCount > 0 && (
           <Link
-            href="/client/bilans"
+            href={firstPendingId ? `/client/bilans/${firstPendingId}` : '/client/bilans'}
             className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4 flex items-center gap-4 active:scale-[0.99] transition-transform"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
