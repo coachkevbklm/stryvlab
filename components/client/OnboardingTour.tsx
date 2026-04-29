@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { useTour } from './TourContext'
 
 type TourStep = {
   navIndex: number // index in BottomNav (0=Home, 1=Programme, 2=Nutrition, 3=Profil)
@@ -36,11 +37,11 @@ export default function OnboardingTour() {
   const [active, setActive] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [navItemRects, setNavItemRects] = useState<DOMRect[]>([])
+  const { setHighlightedNavIndex } = useTour()
 
   useEffect(() => {
     const done = localStorage.getItem('onboarding_tour_done')
     if (done === 'false') {
-      // Small delay so nav renders fully before we measure
       const timer = setTimeout(() => {
         measureNavItems()
         setActive(true)
@@ -48,6 +49,15 @@ export default function OnboardingTour() {
       return () => clearTimeout(timer)
     }
   }, [])
+
+  // Synchronise l'index highlighté dans le contexte à chaque step
+  useEffect(() => {
+    if (active) {
+      setHighlightedNavIndex(TOUR_STEPS[stepIndex].navIndex)
+    } else {
+      setHighlightedNavIndex(null)
+    }
+  }, [active, stepIndex, setHighlightedNavIndex])
 
   function measureNavItems() {
     const nav = document.querySelector('nav')
@@ -63,6 +73,7 @@ export default function OnboardingTour() {
       setStepIndex((i) => i + 1)
     } else {
       localStorage.setItem('onboarding_tour_done', 'true')
+      setHighlightedNavIndex(null)
       setActive(false)
     }
   }

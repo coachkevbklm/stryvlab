@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Dumbbell, Utensils, User } from 'lucide-react'
 import { useClientT } from './ClientI18nProvider'
+import { useTour } from './TourContext'
 import type { ClientDictKey } from '@/lib/i18n/clientTranslations'
 
 const NAV: { href: string; labelKey: ClientDictKey; icon: React.ElementType }[] = [
@@ -16,6 +17,7 @@ const NAV: { href: string; labelKey: ClientDictKey; icon: React.ElementType }[] 
 export default function BottomNav() {
   const pathname = usePathname()
   const { t } = useClientT()
+  const { highlightedNavIndex } = useTour()
 
   return (
     <nav
@@ -24,8 +26,9 @@ export default function BottomNav() {
     >
       <div className="pointer-events-auto w-full max-w-[480px] px-4">
         <div className="flex items-center justify-around rounded-2xl border-[0.3px] border-white/[0.06] bg-[#181818] shadow-[0_-1px_0_rgba(255,255,255,0.04),0_-8px_32px_rgba(0,0,0,0.4)] px-2 h-16">
-          {NAV.map(({ href, labelKey, icon: Icon }) => {
-            const active = href === '/client' ? pathname === '/client' : pathname.startsWith(href)
+          {NAV.map(({ href, labelKey, icon: Icon }, idx) => {
+            const routeActive = href === '/client' ? pathname === '/client' : pathname.startsWith(href)
+            const active = routeActive || highlightedNavIndex === idx
             return (
               <Link
                 key={href}
