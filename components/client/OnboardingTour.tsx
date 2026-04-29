@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ArrowRight } from 'lucide-react'
 
 type TourStep = {
-  navIndex: number // index in BottomNav (0=Home, 1=Programme, 2=Progrès, 3=Nutrition, 4=Bilans, 5=Profil)
+  navIndex: number // index in BottomNav (0=Home, 1=Programme, 2=Nutrition, 3=Profil)
   title: string
   body: string
 }
@@ -13,34 +13,24 @@ const TOUR_STEPS: TourStep[] = [
   {
     navIndex: 0,
     title: 'Ton dashboard',
-    body: 'C\'est ton point de départ. Tes actions du jour, tes bilans à compléter et les messages de ton coach sont ici.',
+    body: 'C\'est ton point de départ. Tes actions du jour et les messages de ton coach sont ici.',
   },
   {
     navIndex: 1,
     title: 'Ton programme',
-    body: 'Retrouve tes séances de la semaine. Démarre une séance quand tu es prêt.',
+    body: 'Retrouve tes séances de la semaine et ta progression dans le temps.',
   },
   {
     navIndex: 2,
-    title: 'Ta progression',
-    body: 'Tes métriques, tes performances et ton évolution dans le temps.',
-  },
-  {
-    navIndex: 3,
     title: 'Ta nutrition',
     body: 'Ton protocole nutritionnel préparé par ton coach. Macros, hydratation, jours hauts et bas.',
   },
   {
-    navIndex: 4,
+    navIndex: 3,
     title: 'Ton profil',
-    body: 'Complète ton profil — tes restrictions physiques, tes préférences. C\'est important pour que ton coach puisse t\'accompagner au mieux.',
+    body: 'Complète ton profil — tes restrictions physiques, tes préférences. Important pour que ton coach puisse t\'accompagner au mieux.',
   },
 ]
-
-// We skip the Bilans tab (index 4) and merge it into Profil step — bilans are explained in onboarding
-// Actual nav order: Home(0) Programme(1) Progrès(2) Nutrition(3) Bilans(4) Profil(5)
-// Tour targets: 0, 1, 2, 3, 5 (skip Bilans since covered in onboarding)
-const NAV_TOUR_TARGETS = [0, 1, 2, 3, 5]
 
 export default function OnboardingTour() {
   const [active, setActive] = useState(false)
@@ -80,7 +70,7 @@ export default function OnboardingTour() {
   if (!active) return null
 
   const step = TOUR_STEPS[stepIndex]
-  const targetNavIndex = NAV_TOUR_TARGETS[step.navIndex] ?? step.navIndex
+  const targetNavIndex = step.navIndex
   const targetRect = navItemRects[targetNavIndex]
   const isLast = stepIndex === TOUR_STEPS.length - 1
 
