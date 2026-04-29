@@ -49,11 +49,11 @@ const WELCOME_SCREENS = [
   {
     icon: Utensils,
     title: () => 'Ta nutrition',
-    subtitle: 'Ton coach te prépare un protocole nutritionnel personnalisé — macros, hydratation, jours hauts et bas. Il est directement accessible depuis l\'app, dans l\'onglet Nutrition.',
+    subtitle: 'Ton coach te prépare un protocole nutritionnel personnalisé — macros, hydratation, jours hauts et bas. Tout est directement accessible depuis l\'onglet Nutrition.',
     rows: [
-      { icon: Utensils, text: 'Protocole nutritionnel préparé par ton coach' },
-      { icon: LineChart, text: 'Tes performances et métriques dans l\'onglet Programme' },
-      { icon: Camera, text: 'Ton suivi morphologique au fil des mois' },
+      { icon: Utensils, text: 'Macros journalières calculées pour toi' },
+      { icon: Target, text: 'Jours hauts et bas selon ton programme' },
+      { icon: Activity, text: 'Hydratation et recommandations incluses' },
     ],
   },
   {
