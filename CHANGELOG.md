@@ -5,6 +5,11 @@
 
 ## 2026-05-05
 
+FEATURE: Dashboard home — WelcomeHeader onboarding 3 étapes progressif, SummaryPanel collapsible, sub-nav Résumé/Kanban/Agenda
+REFACTOR: /coach/organisation redirige → /dashboard, nav Accueil unifiée sur toutes les surfaces
+FIX: nav Accueil pointait vers /coach/organisation au lieu de /dashboard (NavRowB + useNavConfig)
+CHORE: suppression log debug signup
+
 FIX(session-logs): sets now upsert correctly — route POST uses upsert+onConflict instead of silent insert, adds primary/secondary muscles columns, side defaults to 'bilateral'
 FIX(session-logs): patchSets logs 42P10 constraint errors to console instead of silencing them
 SCHEMA: apply UNIQUE constraint on client_set_logs(session_log_id, exercise_name, set_number, side) + side NOT NULL + primary/secondary_muscles columns via Supabase Dashboard
