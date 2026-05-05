@@ -140,7 +140,10 @@ export default function DashboardPage() {
         {data && <SummaryPanel data={data} />}
 
         {/* Organisation du jour — toujours visible */}
-        <OrgSummary />
+        <OrgSummary
+          onOpenAgenda={() => handleViewChange('agenda')}
+          onOpenKanban={() => handleViewChange('kanban')}
+        />
 
         {/* Boutons Kanban / Agenda */}
         <div className="mt-5">
