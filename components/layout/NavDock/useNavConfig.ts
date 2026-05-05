@@ -23,7 +23,7 @@ export function useNavConfig(): NavConfig {
   const pathname = usePathname();
 
   // ── Accueil ──────────────────────────────────────────────────────────────
-  if (pathname === "/coach/organisation" || pathname === "/dashboard") {
+  if (pathname === "/dashboard") {
     return {
       rowA: null,
       cta: { type: "hidden" },
@@ -55,6 +55,7 @@ export function useNavConfig(): NavConfig {
         label: "Data",
         dropdown: [
           { id: "metriques", label: "Métriques", href: `/coach/clients/${clientId}/data/metriques` },
+          { id: "checkins", label: "Check-ins", href: `/coach/clients/${clientId}/data/checkins` },
           { id: "bilans", label: "Bilans", href: `/coach/clients/${clientId}/data/bilans` },
           { id: "performances", label: "Performances", href: `/coach/clients/${clientId}/data/performances` },
           { id: "morphopro", label: "MorphoPro", href: `/coach/clients/${clientId}/data/morphopro` },

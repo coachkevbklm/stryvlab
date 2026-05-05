@@ -17,8 +17,8 @@ const NAV_ITEMS = [
     id: "accueil",
     label: "Accueil",
     icon: House,
-    href: "/coach/organisation",
-    match: (p: string) => p === "/coach/organisation" || p === "/dashboard",
+    href: "/dashboard",
+    match: (p: string) => p === "/dashboard",
   },
   {
     id: "lab",
