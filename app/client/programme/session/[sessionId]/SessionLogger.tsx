@@ -223,11 +223,19 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     if (!logId) return
     try {
       const payload = currentSets.map(parseSetForApi)
-      await fetch(`/api/session-logs/${logId}/sets`, {
+      const res = await fetch(`/api/session-logs/${logId}/sets`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ set_logs: payload }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('[patchSets] failed', res.status, body)
+        // Si 42P10 (contrainte UNIQUE absente), loguer clairement
+        if (body?.code === '42P10') {
+          console.error('[patchSets] UNIQUE constraint missing on client_set_logs — apply migration in Supabase Dashboard')
+        }
+      }
     } catch {
       // Erreur réseau silencieuse — les données sont en state React
     }
@@ -236,7 +244,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const triggerRecommendation = useCallback((completedSet: SetLog) => {
     const { exercise_id, exercise_name, set_number, side, actual_reps, actual_weight_kg, rir_actual } = completedSet
 
-    if (!actual_reps || !actual_weight_kg || !rir_actual) return
+    if (!actual_reps || !actual_weight_kg || rir_actual === '') return
     const reps = parseInt(actual_reps, 10)
     const weight = parseFloat(actual_weight_kg)
     const rir = parseInt(rir_actual, 10)
@@ -575,40 +583,80 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     setErrorMsg(null)
     const durationMin = Math.round(elapsed / 60)
     const logId = sessionLogIdRef.current
+    const allSetsPayload = sets.map(parseSetForApi)
 
-    // Flush final — on attend la réponse avant de marquer completed
-    // Le PATCH /sets requiert completed_at IS NULL, donc flush AVANT la completion
     if (logId) {
+      // Flush final — tous les sets d'un coup, vérifié obligatoirement
       try {
-        const flushPayload = sets.map(parseSetForApi)
         const flushRes = await fetch(`/api/session-logs/${logId}/sets`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ set_logs: flushPayload }),
+          body: JSON.stringify({ set_logs: allSetsPayload }),
         })
         if (!flushRes.ok) {
-          console.warn('[SessionLogger] flush final échoué', flushRes.status)
+          // Le live save a échoué — on retente via DELETE+POST atomique
+          const retryRes = await fetch('/api/session-logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              program_session_id: session.id,
+              session_name: session.name,
+              exercise_notes: exerciseNotes,
+              set_logs: allSetsPayload,
+            }),
+          })
+          if (!retryRes.ok) {
+            const body = await retryRes.json().catch(() => ({}))
+            setSaveState('error')
+            setErrorMsg(body?.error ?? `Erreur sauvegarde (${retryRes.status})`)
+            return
+          }
+          const retryData = await retryRes.json()
+          const retryLogId = retryData?.session_log?.id
+          if (retryLogId) {
+            await fetch(`/api/session-logs/${retryLogId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ completed: true, duration_min: durationMin }),
+            })
+            setSaveState('idle')
+            localStorage.removeItem(DRAFT_KEY)
+            router.refresh()
+            router.push(`/client/programme/recap/${retryLogId}`)
+            return
+          }
         }
-      } catch {
-        // On continue même si le flush échoue — les données ont été patchées live
-      }
-    }
-
-    // Marquer la séance comme terminée
-    if (logId) {
-      try {
-        await fetch(`/api/session-logs/${logId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: true, duration_min: durationMin, notes: JSON.stringify(exerciseNotes) }),
-        })
       } catch (err) {
         setSaveState('error')
         setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
         return
       }
+
+      // Marquer la séance comme terminée
+      try {
+        const completeRes = await fetch(`/api/session-logs/${logId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: true, duration_min: durationMin, notes: JSON.stringify(exerciseNotes) }),
+        })
+        if (!completeRes.ok) {
+          const body = await completeRes.json().catch(() => ({}))
+          setSaveState('error')
+          setErrorMsg(body?.error ?? `Erreur finalisation (${completeRes.status})`)
+          return
+        }
+      } catch (err) {
+        setSaveState('error')
+        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
+        return
+      }
+
+      setSaveState('idle')
+      localStorage.removeItem(DRAFT_KEY)
+      router.refresh()
+      router.push(`/client/programme/recap/${logId}`)
     } else {
-      // Fallback : pas de logId (réseau coupé au démarrage) — POST complet
+      // Pas de logId (réseau coupé au démarrage) — POST atomique complet
       try {
         const res = await fetch('/api/session-logs', {
           method: 'POST',
@@ -617,7 +665,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             program_session_id: session.id,
             session_name: session.name,
             exercise_notes: exerciseNotes,
-            set_logs: sets.map(s => parseSetForApi(s)),
+            set_logs: allSetsPayload,
           }),
         })
         if (!res.ok) {
@@ -626,27 +674,21 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         }
         const data = await res.json()
         const newLogId = data?.session_log?.id
-        if (newLogId) {
-          await fetch(`/api/session-logs/${newLogId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ completed: true, duration_min: durationMin }),
-          }).catch(() => {})
-          setSaveState('idle')
-          localStorage.removeItem(DRAFT_KEY)
-          router.push(`/client/programme/recap/${newLogId}`)
-          return
-        }
+        if (!newLogId) throw new Error('Identifiant de séance manquant')
+        await fetch(`/api/session-logs/${newLogId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: true, duration_min: durationMin }),
+        })
+        setSaveState('idle')
+        localStorage.removeItem(DRAFT_KEY)
+        router.refresh()
+        router.push(`/client/programme/recap/${newLogId}`)
       } catch (err) {
         setSaveState('error')
         setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau — vérifie ta connexion')
-        return
       }
     }
-
-    setSaveState('idle')
-    localStorage.removeItem(DRAFT_KEY)
-    router.push(`/client/programme/recap/${logId}`)
   }
 
   function handleSwap(exerciseId: string, newName: string) {
@@ -1075,46 +1117,62 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                         </div>
 
                         {/* Reps */}
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          value={s.actual_reps}
-                          onFocus={() => { activeInputRef.current = true }}
-                          onBlur={() => { activeInputRef.current = false }}
-                          onChange={e => {
-                            const key = recKey(ex.id, s.set_number, s.side)
-                            setManuallyEdited(prev => new Set(prev).add(key))
-                            setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
-                            updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value })
-                          }}
-                          placeholder={lastP?.reps ? String(lastP.reps) : '—'}
-                          className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
-                        />
+                        {(() => {
+                          const key = recKey(ex.id, s.set_number, s.side)
+                          const isRec = !!recommendations[key] && !s.completed
+                          return (
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              value={s.actual_reps}
+                              onFocus={() => { activeInputRef.current = true }}
+                              onBlur={() => { activeInputRef.current = false }}
+                              onChange={e => {
+                                setManuallyEdited(prev => new Set(prev).add(key))
+                                setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
+                                updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value })
+                              }}
+                              placeholder={lastP?.reps ? String(lastP.reps) : '—'}
+                              className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${
+                                isRec
+                                  ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70'
+                                  : 'bg-white/[0.04] border border-white/[0.06] text-white'
+                              }`}
+                            />
+                          )
+                        })()}
 
                         {/* Kg */}
                         <div className="flex flex-col gap-0.5">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min={0}
-                            step={0.5}
-                            value={s.actual_weight_kg}
-                            onFocus={() => { activeInputRef.current = true }}
-                            onBlur={() => { activeInputRef.current = false }}
-                            onChange={e => {
-                              const key = recKey(ex.id, s.set_number, s.side)
-                              setManuallyEdited(prev => new Set(prev).add(key))
-                              setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
-                              updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
-                            }}
-                            placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                            className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 w-full placeholder:text-white/20 transition-colors"
-                          />
                           {(() => {
                             const key = recKey(ex.id, s.set_number, s.side)
-                            const rec = recommendations[key]
-                            return rec ? <DeltaBadge rec={rec} /> : null
+                            const isRec = !!recommendations[key] && !s.completed
+                            return (
+                              <>
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  min={0}
+                                  step={0.5}
+                                  value={s.actual_weight_kg}
+                                  onFocus={() => { activeInputRef.current = true }}
+                                  onBlur={() => { activeInputRef.current = false }}
+                                  onChange={e => {
+                                    setManuallyEdited(prev => new Set(prev).add(key))
+                                    setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next })
+                                    updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value })
+                                  }}
+                                  placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                                  className={`h-10 rounded-xl px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#1f8a65]/40 focus:border-[#1f8a65]/30 ${
+                                    isRec
+                                      ? 'bg-[#1f8a65]/[0.06] border border-[#1f8a65]/30 text-[#1f8a65]/70'
+                                      : 'bg-white/[0.04] border border-white/[0.06] text-white'
+                                  }`}
+                                />
+                                {isRec ? <DeltaBadge rec={recommendations[key]} /> : null}
+                              </>
+                            )
                           })()}
                         </div>
 

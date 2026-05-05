@@ -116,11 +116,18 @@ export async function POST(req: NextRequest) {
       completed: s.completed ?? false,
       rpe: s.rpe ?? null,
       rir_actual: s.rir_actual ?? null,
-      side: s.side ?? null,
+      side: s.side ?? 'bilateral',
       notes: s.notes ?? null,
       rest_sec_actual: s.rest_sec_actual ?? null,
+      primary_muscles: s.primary_muscles ?? [],
+      secondary_muscles: s.secondary_muscles ?? [],
     }))
-    await db.from('client_set_logs').insert(rows)
+    const { error: setsError } = await db
+      .from('client_set_logs')
+      .upsert(rows, { onConflict: 'session_log_id,exercise_name,set_number,side' })
+    if (setsError) {
+      console.error('[session-logs POST] set insert error', { code: setsError.code, message: setsError.message })
+    }
   }
 
   return NextResponse.json({ session_log: sessionLog }, { status: 201 })

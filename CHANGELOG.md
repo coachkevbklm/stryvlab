@@ -5,6 +5,10 @@
 
 ## 2026-05-05
 
+FIX(session-logs): sets now upsert correctly — route POST uses upsert+onConflict instead of silent insert, adds primary/secondary muscles columns, side defaults to 'bilateral'
+FIX(session-logs): patchSets logs 42P10 constraint errors to console instead of silencing them
+SCHEMA: apply UNIQUE constraint on client_set_logs(session_log_id, exercise_name, set_number, side) + side NOT NULL + primary/secondary_muscles columns via Supabase Dashboard
+
 FEATURE(catalog): add Curl biceps assis avec câble — cable isolation, biceps_brachii primaryActivation 0.85, stim_coeff 0.62, constant_tension, 459 total exercises
 
 ## 2026-05-04
