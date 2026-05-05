@@ -3438,6 +3438,49 @@
     "constraintProfile": "unique_grip"
   },
   {
+    "id": "biceps__curl-biceps-assis-avec-cable",
+    "name": "Curl biceps assis avec câble",
+    "slug": "curl-biceps-assis-avec-cable",
+    "gifUrl": "/bibliotheque_exercices/biceps/curl-poulie-vis-a-vis.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "elbow_flexion",
+    "equipment": [
+      "cable"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "stimulus_coefficient": 0.62,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.85,
+    "secondaryMuscles": [
+      "brachialis",
+      "brachioradialis"
+    ],
+    "secondaryActivations": [
+      0.12,
+      0.08
+    ],
+    "stabilizers": [
+      "anterior_deltoid",
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 1,
+    "coordinationDemand": 2,
+    "constraintProfile": "constant_tension"
+  },
+  {
     "id": "dos__bent-over-row-avec-halteres",
     "name": "Bent over row avec haltères",
     "slug": "bent-over-row-avec-halteres",
