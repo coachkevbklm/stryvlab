@@ -3,8 +3,99 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-05
+
+FEATURE(catalog): add Curl biceps assis avec câble — cable isolation, biceps_brachii primaryActivation 0.85, stim_coeff 0.62, constant_tension, 459 total exercises
+
+## 2026-05-04
+
+CHORE: Migrate all email transports to Resend SDK — mailer.ts + stripe/webhook (nodemailer fully removed)
+FIX: DELETE /api/clients/[clientId] — guard anti-suicide: skip auth.admin.deleteUser if client user_id or email matches the coach's own account
+
+## 2026-04-30
+
+FEATURE: Daily Check-ins Phase 2 — blocs 1-8 complets (DB, service layer, API routes, Inngest jobs, tests, UI coach + client)
+SCHEMA: 6 nouvelles tables (daily_checkin_configs, daily_checkin_schedules, daily_checkin_responses, meal_logs, client_points, client_streaks) + push_token sur coach_clients
+FEATURE: Service layer lib/checkins/ — streak evaluation (days_of_week, grace period, reset), points attribution, level calculation
+FEATURE: API routes coach — checkin-config (GET/POST), checkin-summary (moyennes 30j + heatmap), checkin-history (paginé), meal-logs
+FEATURE: API routes client — checkin/schedule (GET/POST), checkin/today, checkin/respond (+ Inngest trigger), meals (GET/POST/DELETE), points
+FEATURE: Inngest jobs — checkin/streak.evaluate, points/level.update, checkin/streak.expire (cron 02h UTC), checkin/reminder.send (cron minutaire + Web Push)
+FEATURE: UI Coach — page /coach/clients/[clientId]/check-ins (config panel + stat cards + heatmap + drill-down)
+FEATURE: UI Client — page /client/checkin/[moment] (sliders DS v2.0, animation points), agenda repas /client/checkin/meals, section progression dans /client/profil
+CHORE: Install web-push + @types/web-push
+
 ## 2026-04-29
 
+FIX(healthMath): visceral_fat_level, body_water_pct, bone_mass_kg, waist_hip_ratio absents de DerivedMetrics — jamais propagés vers evaluateAll → normes manquantes dans BioNormsPanel ; calcul waist_hip_ratio ajouté (waist÷hips)
+FIX(MetricsSection): annotation icons now render on chart even when dates are after last data point — annotation/phase dates injected into data array for xScale positioning, XAxis domain clamped to lastDataDate to prevent phantom ticks
+FEATURE(client/home): TopBar refonte — logo STRYVR à gauche, chip coach (photo si logo_url sinon initiales + nom) à droite ; ClientTopBar accepte prop left custom
+FIX(template-builder): boutons TopBar absents en mode édition — EditTemplateClient passait topBarLeft=null, condition topBarLeft? bloquait le rendu des actions
+FIX(useSetTopBar): cleanup race condition — le unmount d'un composant effaçait la TopBar déjà écrite par le composant suivant (React 18 mount-before-unmount) ; cleanup vérifie maintenant l'ownership avant d'effacer
+SCHEMA: migration 20260429_template_exercise_movement_pattern_expand — constraint movement_pattern_check étendue avec hip_abduction, hip_adduction, shoulder_rotation, scapular_elevation, scapular_retraction, scapular_protraction
+FIX(save-as-template): erreur "violates check constraint" corrigée par la migration ci-dessus — les programmes avec ces patterns peuvent maintenant être copiés en template
+
+FIX(program-templates/route POST+PATCH): frequency calculé depuis sessions.length réel au lieu de meta.frequency — carte template affiche le bon nombre de jours/semaine
+FIX(save-as-template): frequency dérivé de program_sessions.length — corrige la valeur stale en DB lors de la conversion programme → template
+FIX(assign): frequency dérivé de coach_program_template_sessions.length — programme assigné hérite du vrai nombre de séances
+FIX(ClientProgramsList): interface Program manquait program_sessions + champs meta — séances/exercices strippés avant passage au builder → programme toujours vide à l'ouverture
+FEATURE(template-builder): j/sem auto-sync avec sessions.length — champ read-only, useEffect met à jour meta.frequency à chaque ajout/suppression de séance
+REFACTOR(metriques): barre contrôles — fond #181818 + bordure supprimés, boutons flottent directement sur #121212
+FIX(metriques): empty state affiché si bilan ne contient aucune métrique corporelle affichable (ex: bilan administratif sans poids/MG) — hasData et filteredRows ignorent les champs hors FIELDS (height_cm, etc.)
+FIX(profil-client/ProfileForm): tokens CSS obsolètes (bg-surface-light, text-primary, bg-accent) remplacés par DS v2.0 — date naissance et genre maintenant visibles et non tronqués
+FIX(branding): STRYV → STRYVR partout (layout, home TopBar, login, onboarding, access pages, manifest.json, acces-suspendu)
+FIX(programme/tabs): tab Exercices supprimé — 3 tabs uniquement (Séance, Performances, Historique)
+
+FIX(home/bilans): lien bilan en attente pointe vers /bilan/[token] (formulaire) au lieu de /client/bilans/[id] (vue lecture) — client arrive directement sur le formulaire à remplir
+FIX(profil-client): ProfileForm manquait champs date_of_birth + gender — ajoutés au formulaire + PATCH /api/client/profile + GET select + initialisation depuis page profil
+FIX(api/client/profile): schéma Zod PATCH étendu — date_of_birth + gender acceptés et persistés en DB
+FIX(onboarding-tour): rectangle vert sur icônes nav supprimé — bg-black/70 overlay retiré (doublait avec box-shadow), background transparent sur highlight cutout
+FIX(nutrition/page): ClientTopBar ajoutée — section NUTRITION / titre protocole, pseudo-header texte brut supprimé, layout aligné sur standard client
+FIX(profil-coach): CRM data lisait data.date_of_birth au lieu de data.client.date_of_birth — API retourne { client: {...} }, destructuring corrigé → date naissance/genre/adresse/contact urgence s'affichent maintenant
+FIX(api/clients/PATCH): allowlist manquait address, city, emergency_contact_name, emergency_contact_phone, acquisition_source, internal_notes — ces champs étaient filtrés silencieusement, jamais écrits en DB
+
+FEATURE(programme): page Programme refonte — 4 tabs (Séance / Performances / Historique / Exercices) avec navigation client-side, données performance fetchées en parallèle côté serveur
+FEATURE(programme): tab Performances — streak, heatmap 12 semaines, KPIs 30j, volume chart, PRs all-time
+FEATURE(programme): tab Historique — 30 dernières séances avec volume/sets/durée/badge PR, lien recap
+FEATURE(programme): tab Exercices — catalogue du programme avec sets/reps/pattern/séances associées
+REFACTOR(progressTypes): types SessionLog/PREntry/HeatmapDay/SessionSummary + helpers extraits vers lib/client/progressTypes.ts — partagés entre /progress et /programme
+FIX(BottomNav): suppression dot vert redondant sous icône active
+
+FIX(intelligence): intelligenceSessions basé sur orderedSessions — corrige alertes affichées sur le mauvais exercice en mode Jours (index triés != index raw)
+FIX(intelligence): cable normalisé en 'poulie' + expandProfileEquipment() couvre les alias cables/poulie — élimine fausses alertes "Équipement manquant" quand tout l'équipement est coché
+FIX(TopBarContext): useTopBarContent force re-render immédiat après souscription — évite la race condition où notify() de la page s'exécutait avant que la TopBar ait souscrit, causant le bouton "Nouveau template" (et autres boutons TopBar) à ne pas s'afficher au premier render
+FIX(muscleDetection): fuzzyFindInCatalog remplacé par similarité Jaccard (seuil 40%) — élimine les faux positifs ("Développé couché" → chest, plus "Développé nuque" → épaules)
+FIX(muscleDetection): fallback fuzzy/regex appliqué par exercice (plus global) — chaque exercice sans DB slugs résout indépendamment
+FIX(muscleDetection): regex fallback renforcées — word boundaries \b sur curl/tirage/rowing/calf, patterns plus précis évitent les matches parasites
+REFACTOR: BottomNav — icônes Phosphor fill/regular (House/Barbell/ForkKnife/UserCircle), pill flottante #181818 rounded-2xl, labels + dot actif
+FIX: OnboardingTour — highlight nav item avec glow vert lumineux + fond semi-transparent (ring invisible remplacé)
+
+## 2026-04-29
+
+FIX(client-context): ClientProvider value wrapped in useMemo — inline object was causing all useClient() consumers to re-render on every parent state change
+FIX(useClientTopBar): suppression useMemo inutile sur rightContent — JSX toujours nouvelle ref, useSetTopBar stocke en ref directement
+FIX(useSetTopBar): notify() guard sur prev refs — TopBar ne re-render plus sur chaque keystroke, seulement si left/right changent vraiment
+REFACTOR(ProgramTemplateBuilder): prop topBarLeft — Builder gère sa propre TopBar directement, supprime le pattern setState<ReactNode> dans les pages parentes
+REFACTOR(entrainement/page): suppression builderTopBarActions state — Builder reçoit topBarLeft stable, zéro re-render cascade
+REFACTOR(templates/new, templates/edit): idem — onTopBarActions pattern remplacé par topBarLeft prop
+FIX(TopBarContext): refonte complète pub/sub — refs + notify() au lieu de setState, zéro re-render cascade sur les pages qui écrivent la TopBar
+FIX(useSetTopBar): écriture directe dans les refs store + notify() sans deps ReactNode — rompt définitivement la boucle infinie setState
+FIX(CoachShell): TopBar isolée via useTopBarContent (forceUpdate local) — les pages ne re-rendent plus quand la TopBar change
+FIX(ProgramTemplateBuilder): topBarActionsNode extrait en useMemo — stabilise les renders inutiles
+
+FIX(bodymap): detectMuscleGroups — fuzzy catalog lookup (score ≥2 mots) remplace lookup exact; secondaryMuscles maintenant peuplés → muscles secondaires en vert pâle, muscles non sollicités restent gris
+FIX(bodymap): fuzzyFindInCatalog utilisé aussi quand primary_muscles DB existent mais slugs ne résolvent pas
+
+FIX(onboarding): tour déclenché si localStorage null ou 'false' — corrige le cas client arrivé sans passer par la fin de l'onboarding
+FIX(onboarding): ajout step Bilans (navIndex 0, tooltip dédié) — 5 steps au total
+FIX(onboarding): wording step Dashboard et step Nutrition clarifiés
+
+FIX(metrics): normsSubmissionId gate — cherche weight_kg et height_cm dans toutes les rows indépendamment (plus la même submission requise); débloque l'onglet Normes si taille vient d'un bilan et poids d'une saisie manuelle
+FIX(metrics): MetricsSection accepte clientDateOfBirth + le passe à BioNormsPanel — sexe et âge maintenant disponibles pour les calculs de normes
+FIX(metrics): page metriques passe client.gender et client.date_of_birth depuis ClientContext à MetricsSection
+FIX(assessments): sync automatique des champs bilan (date_naissance/date_of_birth → coach_clients.date_of_birth, sexe/gender/genre → coach_clients.gender) à la soumission — routes public et coach
+
+FIX(ProgramTemplateBuilder): wrap handleSave in useCallback to break infinite re-render loop (React error #185) on /protocoles/entrainement
+FIX(onboarding): screens 4-5 mis à jour — "Ta nutrition" remplace "Ta progression et ta nutrition", bilans pointent vers dashboard et non vers page liste
 FEATURE(client-nav): BottomNav refonte — 4 items (Home, Programme, Nutrition, Profil), bg-[#181818], dot actif vert, icônes 20px strokeWidth 1.5/2, shadow élévation — aligné design DockLeft coach
 FIX(client-nav): suppression items Bilans et Progrès de la nav — Bilans accessible via lien direct home, Progrès dans Programme
 FIX(onboarding-tour): 4 steps alignés sur la nouvelle nav — index corrigés, step Bilans supprimé, step Progrès fusionné dans Programme
