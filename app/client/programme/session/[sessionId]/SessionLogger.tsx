@@ -1291,14 +1291,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             /* Séance complète → simple clic, vert proéminent */
             <button
               onClick={submitSession}
-              disabled={saveState === 'saving'}
+              disabled={saveState === 'saving' || !draftReady}
               className="group w-full flex items-center justify-between bg-[#1f8a65] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50 transition-all"
             >
               <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-                {saveState === 'saving' ? 'Enregistrement…' : t('logger.finish')}
+                {!draftReady ? 'Initialisation…' : saveState === 'saving' ? 'Enregistrement…' : t('logger.finish')}
               </span>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.15]">
-                {saveState === 'saving'
+                {(!draftReady || saveState === 'saving')
                   ? <Loader2 size={15} className="text-white animate-spin" />
                   : <Flag size={15} className="text-white" />
                 }
@@ -1320,11 +1320,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                 onMouseLeave={onFinishPressEnd}
                 onTouchStart={onFinishPressStart}
                 onTouchEnd={onFinishPressEnd}
-                disabled={saveState === 'saving'}
+                disabled={saveState === 'saving' || !draftReady}
                 className="relative w-full flex items-center justify-between bg-white/[0.06] pl-5 pr-1.5 py-1.5 rounded-xl disabled:opacity-50 select-none"
               >
                 <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/40">
-                  {saveState === 'saving' ? 'Enregistrement…' : 'Terminer · Maintenir 3s'}
+                  {!draftReady ? 'Initialisation…' : saveState === 'saving' ? 'Enregistrement…' : 'Terminer · Maintenir 3s'}
                 </span>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04]">
                   {saveState === 'saving'
