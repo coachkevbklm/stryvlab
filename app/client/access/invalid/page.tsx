@@ -7,10 +7,10 @@ export default function InvalidTokenPage() {
     <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
       <div className="mb-8 flex flex-col items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border-[0.3px] border-white/[0.06] flex items-center justify-center">
-          <Image src="/images/logo.png" alt="STRYV" width={28} height={28} className="w-7 h-7 object-contain" />
+          <Image src="/images/logo.png" alt="STRYVR" width={28} height={28} className="w-7 h-7 object-contain" />
         </div>
         <p className="font-unbounded font-semibold text-[14px] text-white tracking-tight">
-          STRYV<span className="font-light text-white/30"> lab</span>
+          STRYVR<span className="font-light text-white/30"> lab</span>
         </p>
       </div>
 

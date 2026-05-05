@@ -115,6 +115,7 @@ export interface BuilderExercise {
 export interface BuilderSession {
   name: string
   day_of_week: number | null
+  days_of_week?: number[]
   exercises: BuilderExercise[]
 }
 

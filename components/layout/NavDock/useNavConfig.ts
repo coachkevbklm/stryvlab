@@ -97,7 +97,7 @@ export function useNavConfig(): NavConfig {
       rowA: [
         { id: "comptabilite", label: "Comptabilité", href: "/coach/comptabilite" },
         { id: "formules", label: "Formules", href: "/coach/formules" },
-        { id: "organisation", label: "Organisation", href: "/coach/organisation" },
+        { id: "organisation", label: "Organisation", href: "/dashboard" },
       ],
       cta: { type: "hidden" },
     };

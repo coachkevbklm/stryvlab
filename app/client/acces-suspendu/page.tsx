@@ -5,9 +5,9 @@ export default function AccesSuspenduPage() {
   return (
     <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
       <div className="mb-8 flex flex-col items-center gap-3">
-        <Image src="/images/logo.png" alt="STRYV" width={48} height={48} className="w-12 h-12 object-contain" />
+        <Image src="/images/logo.png" alt="STRYVR" width={48} height={48} className="w-12 h-12 object-contain" />
         <span className="font-unbounded font-semibold text-base text-white tracking-tight leading-none">
-          STRYV<span className="font-light text-white/40"> lab</span>
+          STRYVR<span className="font-light text-white/40"> lab</span>
         </span>
       </div>
 
@@ -17,7 +17,7 @@ export default function AccesSuspenduPage() {
         </div>
         <h2 className="text-[15px] font-bold text-white mb-2">Accès suspendu</h2>
         <p className="text-[13px] text-white/60 leading-relaxed">
-          Ton accès à l'espace STRYV a été suspendu. Contacte ton coach pour le renouveler.
+          Ton accès à l'espace STRYVR a été suspendu. Contacte ton coach pour le renouveler.
         </p>
       </div>
     </div>

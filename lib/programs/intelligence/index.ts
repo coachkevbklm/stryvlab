@@ -61,12 +61,16 @@ export function useProgramIntelligence(
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      const effectiveAdjustments = (morphoStimulusAdjustments || labOverrides)
-        ? { ...(morphoStimulusAdjustments ?? {}), ...(labOverrides ?? {}) }
-        : undefined
+      try {
+        const effectiveAdjustments = (morphoStimulusAdjustments || labOverrides)
+          ? { ...(morphoStimulusAdjustments ?? {}), ...(labOverrides ?? {}) }
+          : undefined
 
-      const next = buildIntelligenceResult(sessions, meta, profile, effectiveAdjustments)
-      setResult(next)
+        const next = buildIntelligenceResult(sessions, meta, profile, effectiveAdjustments)
+        setResult(next)
+      } catch (err) {
+        console.error('[intelligence] buildIntelligenceResult crashed:', err)
+      }
     }, 300)
 
     return () => {

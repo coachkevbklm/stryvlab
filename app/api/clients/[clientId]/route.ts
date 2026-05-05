@@ -50,6 +50,9 @@ export async function PATCH(
     'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender', 'notes', 'status',
     'training_goal', 'fitness_level', 'sport_practice', 'weekly_frequency', 'equipment_category',
     'equipment',
+    // CRM fields
+    'address', 'city', 'emergency_contact_name', 'emergency_contact_phone',
+    'acquisition_source', 'internal_notes',
   ]
   const update: Record<string, unknown> = {}
   for (const key of allowed) {
@@ -197,21 +200,27 @@ export async function DELETE(
   const clientEmail = (clientRow as Record<string, unknown>).email as string | null | undefined
 
   if (authUserId) {
-    // Direct delete by auth user ID
-    const { error: authDeleteError } = await service.auth.admin.deleteUser(authUserId)
-    if (authDeleteError) {
-      console.error('DELETE auth user (by id):', authDeleteError)
+    // Never delete the coach's own auth account
+    if (authUserId === user.id) {
+      console.warn('DELETE client — skipping auth deletion: client user_id matches coach user_id', authUserId)
+    } else {
+      const { error: authDeleteError } = await service.auth.admin.deleteUser(authUserId)
+      if (authDeleteError) {
+        console.error('DELETE auth user (by id):', authDeleteError)
+      }
     }
   } else if (clientEmail) {
-    // Fallback: find auth user by email (client invited but never linked user_id)
+    // Fallback: find auth user by email — only delete if not the coach's own account
     const { data: listData, error: listError } = await service.auth.admin.listUsers()
     if (!listError && listData) {
       const authUser = listData.users.find((u) => u.email === clientEmail)
-      if (authUser) {
+      if (authUser && authUser.id !== user.id) {
         const { error: authDeleteError } = await service.auth.admin.deleteUser(authUser.id)
         if (authDeleteError) {
           console.error('DELETE auth user (by email):', authDeleteError)
         }
+      } else if (authUser?.id === user.id) {
+        console.warn('DELETE client — skipping auth deletion: email matches coach account', clientEmail)
       }
     }
   }

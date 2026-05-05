@@ -12,7 +12,7 @@ function service() {
 const SELECT = `
   id, name, description, goal, level, frequency, weeks, muscle_tags, notes, is_public, is_system, coach_id, equipment_archetype, created_at,
   coach_program_template_sessions (
-    id, name, day_of_week, position, notes,
+    id, name, day_of_week, days_of_week, position, notes,
     coach_program_template_exercises (
       id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id
     )
@@ -62,9 +62,11 @@ export async function POST(req: NextRequest) {
   const db = service()
 
   // Créer le template
+  const effectiveFrequency = sessions?.length ?? frequency
+
   const { data: template, error: tErr } = await db
     .from('coach_program_templates')
-    .insert({ coach_id: user.id, name, description, goal, level, frequency, weeks, muscle_tags: muscle_tags ?? [], notes, equipment_archetype: body.equipment_archetype || null, session_mode: session_mode ?? 'day' })
+    .insert({ coach_id: user.id, name, description, goal, level, frequency: effectiveFrequency, weeks, muscle_tags: muscle_tags ?? [], notes, equipment_archetype: body.equipment_archetype || null, session_mode: session_mode ?? 'day' })
     .select('id')
     .single()
 
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
     const s = sessions[si]
     const { data: session } = await db
       .from('coach_program_template_sessions')
-      .insert({ template_id: template.id, name: s.name, day_of_week: s.day_of_week ?? null, position: si, notes: s.notes ?? null })
+      .insert({ template_id: template.id, name: s.name, days_of_week: s.days_of_week ?? [], day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null, position: si, notes: s.notes ?? null })
       .select('id')
       .single()
 

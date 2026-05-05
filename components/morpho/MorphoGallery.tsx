@@ -28,47 +28,87 @@ const POSITIONS: Array<{ value: MorphoPhotoPosition | 'all'; label: string }> = 
 
 void POSITION_LABELS
 
+// Module-level cache: survives filter changes and re-renders within the same session
+// key = photo.id, value = { signed_url, expires_at ms }
+const urlCache = new Map<string, { signed_url: string; expires_at: number }>()
+const CACHE_FRESH_MS = 50 * 60 * 1000 // 50 min — conservative vs 24h server TTL
+
+function applyUrlCache(photos: MorphoPhoto[]): MorphoPhoto[] {
+  return photos.map(p => {
+    if (p.signed_url) {
+      // Fresh from API — store in cache
+      urlCache.set(p.id, { signed_url: p.signed_url, expires_at: Date.now() + CACHE_FRESH_MS })
+      return p
+    }
+    // Try to serve from cache
+    const cached = urlCache.get(p.id)
+    if (cached && cached.expires_at > Date.now()) {
+      return { ...p, signed_url: cached.signed_url }
+    }
+    return p
+  })
+}
+
+const PAGE_SIZE = 24
+
 export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpload, onAnalysisComplete, onSelectionChange, refreshToken }: Props) {
   const [photos, setPhotos] = useState<MorphoPhoto[]>([])
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [offset, setOffset] = useState(0)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [positionFilter, setPositionFilter] = useState<MorphoPhotoPosition | 'all'>('all')
   const [sourceFilter, setSourceFilter] = useState<'all' | 'assessment' | 'coach_upload'>('all')
   const [analyzing, setAnalyzing] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  const buildParams = useCallback((pageOffset: number) => {
+    const params = new URLSearchParams({ clientId, limit: String(PAGE_SIZE), offset: String(pageOffset) })
+    if (positionFilter !== 'all') params.set('position', positionFilter)
+    if (sourceFilter !== 'all') params.set('source', sourceFilter)
+    return params
+  }, [clientId, positionFilter, sourceFilter])
+
   const fetchPhotos = useCallback(async () => {
     setLoading(true)
+    setOffset(0)
     try {
-      const params = new URLSearchParams({ clientId })
-      if (positionFilter !== 'all') params.set('position', positionFilter)
-      if (sourceFilter !== 'all') params.set('source', sourceFilter)
-      const res = await fetch(`/api/morpho/photos?${params}`)
+      const res = await fetch(`/api/morpho/photos?${buildParams(0)}`)
       const data = await res.json()
-      setPhotos(data.photos ?? [])
+      setPhotos(applyUrlCache(data.photos ?? []))
+      setHasMore(data.hasMore ?? false)
     } catch {
       setErrorMsg('Erreur chargement photos')
     } finally {
       setLoading(false)
     }
-  }, [clientId, positionFilter, sourceFilter])
+  }, [buildParams])
+
+  const fetchMore = useCallback(async () => {
+    const nextOffset = offset + PAGE_SIZE
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/morpho/photos?${buildParams(nextOffset)}`)
+      const data = await res.json()
+      setPhotos(prev => [...prev, ...applyUrlCache(data.photos ?? [])])
+      setHasMore(data.hasMore ?? false)
+      setOffset(nextOffset)
+    } catch {
+      setErrorMsg('Erreur chargement photos')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [offset, buildParams])
 
   useEffect(() => {
-    async function syncAndFetch() {
-      setSyncing(true)
-      try {
-        await fetch('/api/morpho/photos/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientId }),
-        })
-      } finally {
-        setSyncing(false)
-        fetchPhotos()
-      }
-    }
-    syncAndFetch()
+    // Fire-and-forget: sync bilan photos in background, don't block gallery load
+    fetch('/api/morpho/photos/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId }),
+    })
+    fetchPhotos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId])
 
@@ -114,14 +154,14 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
     })
   }
 
-  if (loading || syncing) {
+  if (loading) {
     return (
       <div className="space-y-4">
         <div className="flex gap-2">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-7 w-16 rounded-lg" />)}
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="aspect-[2/3] rounded-xl" />)}
+        <div className="grid grid-cols-6 gap-2">
+          {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => <Skeleton key={i} className="aspect-[2/3] rounded-xl" />)}
         </div>
       </div>
     )
@@ -183,17 +223,30 @@ export function MorphoGallery({ clientId, onOpenCanvas, onOpenCompare, onOpenUpl
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-2">
-          {photos.map(photo => (
-            <MorphoPhotoCard
-              key={photo.id}
-              photo={photo}
-              selected={selected.has(photo.id)}
-              onToggle={toggleSelect}
-              onAnnotate={onOpenCanvas}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-6 gap-2">
+            {photos.map(photo => (
+              <MorphoPhotoCard
+                key={photo.id}
+                photo={photo}
+                selected={selected.has(photo.id)}
+                onToggle={toggleSelect}
+                onAnnotate={onOpenCanvas}
+              />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={fetchMore}
+                disabled={loadingMore}
+                className="px-6 h-8 rounded-lg bg-white/[0.04] text-[11px] font-semibold text-white/50 hover:bg-white/[0.07] hover:text-white/70 transition-all disabled:opacity-40"
+              >
+                {loadingMore ? 'Chargement…' : 'Charger plus'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

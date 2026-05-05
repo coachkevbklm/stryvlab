@@ -10,6 +10,32 @@ function toSlug(name: string) {
 }
 const catalogBySlug = new Map<string, CatalogEntry>(catalog.map(e => [toSlug(e.name), e]))
 
+// Jaccard similarity fuzzy match: intersection(words) / union(words)
+// Évite les faux positifs du "nombre de mots" pur — "Développé couché" ne matche plus "Développé nuque"
+function fuzzyFindInCatalog(name: string): CatalogEntry | null {
+  const slug = toSlug(name)
+  const words = new Set(slug.split('-').filter(w => w.length > 2))
+  if (words.size === 0) return null
+  let bestScore = 0
+  let bestEntry: CatalogEntry | null = null
+  for (const entry of catalog) {
+    const catSlug = toSlug(entry.name)
+    const catWords = new Set(catSlug.split('-').filter(w => w.length > 2))
+    const wordsArr = Array.from(words)
+    const catWordsArr = Array.from(catWords)
+    const intersection = wordsArr.filter(w => catWords.has(w)).length
+    const unionSet = new Set(wordsArr.concat(catWordsArr))
+    const union = unionSet.size
+    const score = intersection / union
+    if (score > bestScore) {
+      bestScore = score
+      bestEntry = entry
+    }
+  }
+  // Seuil 40% Jaccard — assez strict pour éviter "Développé nuque" quand on cherche "Développé couché"
+  return bestScore >= 0.4 ? bestEntry : null
+}
+
 export type MuscleGroup =
   | 'chest'
   | 'shoulders'
@@ -32,18 +58,40 @@ export interface MuscleActivation {
 // Mapping depuis les slugs du catalogue (muscles[] = FR court, primaryMuscle/secondaryMuscles = EN anatomique)
 // vers les MuscleGroup du BodyMap.
 const CATALOG_SLUG_MAP: Record<string, MuscleGroup> = {
-  // Slugs FR courts (champ muscles[])
-  'dos':               'back_upper',
-  'pectoraux':         'chest',
-  'epaules':           'shoulders',
-  'biceps':            'biceps',
-  'triceps':           'triceps',
-  'abdos':             'abs',
-  'quadriceps':        'quads',         // FR court
-  'ischio-jambiers':   'hamstrings',
-  'fessiers':          'glutes',
-  'mollets':           'calves',
-  // Slugs EN anatomiques (champ primaryMuscle / secondaryMuscles[])
+  // ─── Slugs FR courts (champ muscles[]) ───────────────────────────────────
+  'dos':                     'back_upper',
+  'pectoraux':               'chest',
+  'epaules':                 'shoulders',
+  'biceps':                  'biceps',
+  'triceps':                 'triceps',
+  'abdos':                   'abs',
+  'quadriceps':              'quads',
+  'ischio-jambiers':         'hamstrings',
+  'fessiers':                'glutes',
+  'mollets':                 'calves',
+  // ─── Slugs FR anatomiques (intelligence engine) ──────────────────────────
+  'grand_dorsal':            'back_upper',
+  'dos_large':               'back_upper',
+  'trapeze_superieur':       'traps',
+  'trapezes':                'traps',
+  'trapeze_moyen':           'traps',
+  'lombaires':               'back_lower',
+  'erecteurs_spinaux':       'back_lower',
+  'pectoraux_haut':          'chest',
+  'pectoraux_bas':           'chest',
+  'epaules_ant':             'shoulders',
+  'epaules_lat':             'shoulders',
+  'epaules_post':            'shoulders',
+  'deltoide_anterieur':      'shoulders',
+  'deltoide_lateral':        'shoulders',
+  'deltoide_posterieur':     'shoulders',
+  'rhomboides':              'back_upper',
+  'ischio':                  'hamstrings',
+  'ischio_jambiers':         'hamstrings',
+  'fessiers_grand':          'glutes',
+  'fessiers_moyen':          'glutes',
+  'abdominaux':              'abs',
+  // ─── Slugs EN anatomiques (primaryMuscle / secondaryMuscles[]) ───────────
   'lats':                    'back_upper',
   'upper_back':              'back_upper',
   'rhomboids':               'back_upper',
@@ -90,41 +138,46 @@ const CATALOG_SLUG_MAP: Record<string, MuscleGroup> = {
   'middle_traps':            'traps',
   'trapezius':               'traps',
   'levator_scapulae':        'traps',
-  // Épaules — variantes supplémentaires catalogue
+  // ─── Épaules — variantes ─────────────────────────────────────────────────
   'rear_delts':              'shoulders',
   'deltoids':                'shoulders',
   'shoulders':               'shoulders',
   'supraspinatus':           'shoulders',
   'external_rotators':       'shoulders',
-  // Pectoraux — variantes
+  // ─── Pectoraux — variantes ───────────────────────────────────────────────
   'pec_major':               'chest',
   'upper_chest':             'chest',
-  // Dos — variantes
+  // ─── Dos — variantes ─────────────────────────────────────────────────────
   'scapula':                 'back_upper',
   'quadratus_lumborum':      'back_lower',
-  // Jambes — variantes
+  // ─── Jambes — variantes ──────────────────────────────────────────────────
   'quads':                   'quads',
   'adductors':               'quads',
   'hip_flexors':             'quads',
   'calves':                  'calves',
-  // Abs — variantes
+  // ─── Divers ──────────────────────────────────────────────────────────────
   'anconeus':                'triceps',
+  'forearms':                'biceps',
+  'hip_abductors':           'glutes',
+  'hip_adductors':           'quads',
+  'serratus_anterior':       'chest',
+  'coracobrachialis':        'biceps',
 }
 
 // Fallback regex sur le nom — utilisé uniquement si primary_muscles est vide ET le slug ne mappe pas
 const MUSCLE_KEYWORDS: Record<MuscleGroup, RegExp> = {
-  chest:      /pectoral|pec deck|développé couché|développé incliné|développé haltères|dips pecto|écarté|chest|fly|flye/i,
-  shoulders:  /militaire|épaule|élévation|shoulder|delt|développé nuque|oiseau|reverse fly|face pull/i,
-  biceps:     /curl|bicep|marteau|hammer/i,
-  triceps:    /tricep|extension (aux |à la |poulie haute|câble)|skull|close.grip/i,
-  abs:        /crunch|planche|dead bug|abdomi|core|lombaire|relevé de jambes|dragon flag/i,
-  quads:      /squat|leg press|leg extension|presse à cuisses|hack squat|fente|split squat/i,
-  hamstrings: /leg curl|ischio|soulevé de terre|roumain|jambes tendues/i,
-  glutes:     /hip thrust|fessier|glute|soulevé roumain|kickback/i,
-  calves:     /mollet|calf|calf raise/i,
-  back_upper: /tirage|rowing|traction|pulldown|dos|poulie haute|seated row|chest supported/i,
-  back_lower: /extension lombaire|hyperextension|soulevé de terre/i,
-  traps:      /trapèze|shrug|haussement/i,
+  chest:      /pectoral|pec deck|développé couché|développé incliné|développé haltères|dips pecto|écarté|chest fly|flye|chest press/i,
+  shoulders:  /militaire|élévation latérale|élévation frontale|développé épaule|shoulder press|delt|développé nuque|oiseau|reverse fly|face pull/i,
+  biceps:     /\bcurl\b|bicep|marteau|hammer curl/i,
+  triceps:    /tricep|\bextension\b.*(tricep|poulie haute|câble|barre)|skull|close.grip/i,
+  abs:        /crunch|planche|dead bug|abdomi|\bcore\b|relevé de jambes|dragon flag/i,
+  quads:      /squat|leg press|leg extension|presse à cuisses|hack squat|fente avant|split squat/i,
+  hamstrings: /leg curl|ischio|roumain|jambes tendues|nordic/i,
+  glutes:     /hip thrust|fessier|glute bridge|kickback/i,
+  calves:     /mollet|\bcalf\b|calf raise/i,
+  back_upper: /\btirage\b|\browings?\b|\btractions?\b|lat pulldown|seated row|chest supported row/i,
+  back_lower: /extension lombaire|hyperextension|good morning/i,
+  traps:      /trapèze|\bshrug\b|haussement d'épaule/i,
 }
 
 // Exercice avec métadonnées DB (optionnelles)
@@ -158,38 +211,58 @@ export function detectMuscleGroups(exercises: ExerciseInput[]): MuscleActivation
 
     if (hasPrimary || hasSecondary) {
       // Source DB — résoudre via mapping catalogue puis fallback isValidMuscleGroup
+      const resolvedPrimary = new Set<MuscleGroup>()
+      const resolvedSecondary = new Set<MuscleGroup>()
+
       for (const m of (ex.primary_muscles ?? [])) {
         const group = resolveSlug(m) ?? (isValidMuscleGroup(m) ? m as MuscleGroup : null)
-        if (group) primary.add(group)
+        if (group) resolvedPrimary.add(group)
       }
       for (const m of (ex.secondary_muscles ?? [])) {
         const group = resolveSlug(m) ?? (isValidMuscleGroup(m) ? m as MuscleGroup : null)
-        if (group && !primary.has(group)) secondary.add(group)
+        if (group && !resolvedPrimary.has(group)) resolvedSecondary.add(group)
       }
 
-      // Si aucun slug n'a résolu, tomber en fallback regex sur le nom
-      if (primary.size === 0 && secondary.size === 0) {
-        for (const [group, regex] of Object.entries(MUSCLE_KEYWORDS) as [MuscleGroup, RegExp][]) {
-          if (regex.test(ex.name)) primary.add(group)
+      // Si aucun slug DB n'a résolu pour cet exercice, fallback fuzzy/regex par exercice
+      if (resolvedPrimary.size === 0 && resolvedSecondary.size === 0) {
+        const entry = fuzzyFindInCatalog(ex.name)
+        if (entry) {
+          const pm = entry.primaryMuscle ? resolveSlug(entry.primaryMuscle) : null
+          if (pm) resolvedPrimary.add(pm)
+          for (const m of (entry.secondaryMuscles ?? [])) {
+            const g = resolveSlug(m)
+            if (g && !resolvedPrimary.has(g)) resolvedSecondary.add(g)
+          }
+        } else {
+          for (const [group, regex] of Object.entries(MUSCLE_KEYWORDS) as [MuscleGroup, RegExp][]) {
+            if (regex.test(ex.name)) resolvedPrimary.add(group)
+          }
         }
       }
+
+      resolvedPrimary.forEach(m => primary.add(m))
+      resolvedSecondary.forEach(m => { if (!primary.has(m)) secondary.add(m) })
     } else {
-      // Pas de données DB — chercher dans le catalogue par nom, puis fallback regex
+      // Pas de données DB — lookup exact puis fuzzy puis regex
       const slug = toSlug(ex.name)
-      const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)
+      const entry = catalogBySlug.get(slug) ?? fuzzyFindInCatalog(ex.name)
       if (entry) {
         const pm = entry.primaryMuscle ? resolveSlug(entry.primaryMuscle) : null
         if (pm) primary.add(pm)
-        for (const m of (entry.muscles ?? [])) {
-          const g = resolveSlug(m)
-          if (g && g !== pm) secondary.add(g)
-        }
-        for (const m of (entry.secondaryMuscles ?? [])) {
-          const g = resolveSlug(m)
-          if (g && !primary.has(g)) secondary.add(g)
+        // secondaryMuscles prioritaire sur muscles[] (plus précis)
+        if ((entry.secondaryMuscles ?? []).length > 0) {
+          for (const m of (entry.secondaryMuscles ?? [])) {
+            const g = resolveSlug(m)
+            if (g && !primary.has(g)) secondary.add(g)
+          }
+        } else {
+          for (const m of (entry.muscles ?? [])) {
+            const g = resolveSlug(m)
+            if (g && g !== pm) secondary.add(g)
+          }
         }
       } else {
-        // Fallback ultime — regex sur le nom
+        // Fallback ultime — regex sur le nom (primaire uniquement, pas de secondaire deviné)
         for (const [group, regex] of Object.entries(MUSCLE_KEYWORDS) as [MuscleGroup, RegExp][]) {
           if (regex.test(ex.name)) primary.add(group)
         }

@@ -157,11 +157,12 @@ export default function ProfilPage() {
 
   const [showDelete, setShowDelete] = useState(false);
 
-  // Load CRM data
+  // Load CRM data — API retourne { client: {...} }, pas flat
   useEffect(() => {
     fetch(`/api/clients/${clientId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then(res => {
+        const data = res?.client ?? res;
         if (!data) return;
         const fields: CrmFields = {
           date_of_birth: data.date_of_birth ?? null,

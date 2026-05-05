@@ -65,7 +65,7 @@ export default async function ClientHomePage() {
     user!.id,
     user!.email,
     service,
-    'id, first_name, last_name'
+    'id, first_name, last_name, coach_id'
   )
 
   if (!client) return (
@@ -87,6 +87,8 @@ export default async function ClientHomePage() {
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
 
+  const coachId: string | null = (client as any)?.coach_id ?? null
+
   const [
     programResult,
     pendingResult,
@@ -94,6 +96,11 @@ export default async function ClientHomePage() {
     coachNoteResult,
     prefsLangResult,
     todayLogsResult,
+    coachProfileResult,
+    checkinConfigResult,
+    todayCheckinsResult,
+    streakResult,
+    pointsHistoryResult,
   ] = await Promise.all([
     // Programme actif + sessions
     clientId
@@ -112,11 +119,11 @@ export default async function ClientHomePage() {
           .limit(1)
       : Promise.resolve({ data: null }),
 
-    // Bilans en attente — fetch IDs pour lien direct
+    // Bilans en attente — fetch token pour lien direct vers formulaire
     clientId
       ? service
           .from('assessment_submissions')
-          .select('id')
+          .select('id, token, token_expires_at')
           .eq('client_id', clientId)
           .in('status', ['pending', 'in_progress'])
           .order('created_at', { ascending: true })
@@ -162,7 +169,57 @@ export default async function ClientHomePage() {
           .gte('completed_at', todayStart.toISOString())
           .lte('completed_at', todayEnd.toISOString())
       : Promise.resolve({ data: [] }),
+
+    // Profil coach — pour afficher nom + logo dans la TopBar
+    coachId
+      ? service
+          .from('coach_profiles')
+          .select('full_name, brand_name, logo_url')
+          .eq('coach_id', coachId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    clientId
+      ? service
+          .from('daily_checkin_configs')
+          .select('id, is_active, days_of_week, moments')
+          .eq('client_id', clientId)
+          .eq('is_active', true)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    clientId
+      ? service
+          .from('daily_checkin_responses')
+          .select('moment, responded_at')
+          .eq('client_id', clientId)
+          .gte('responded_at', todayStart.toISOString())
+          .lte('responded_at', todayEnd.toISOString())
+      : Promise.resolve({ data: [] }),
+    clientId
+      ? service
+          .from('client_streaks')
+          .select('current_streak, longest_streak, level, total_points')
+          .eq('client_id', clientId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    clientId
+      ? service
+          .from('client_points')
+          .select('action_type, points, earned_at')
+          .eq('client_id', clientId)
+          .order('earned_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
   ])
+
+  const coachProfile = (coachProfileResult as any)?.data ?? null
+  const coachDisplayName: string = coachProfile?.brand_name ?? coachProfile?.full_name ?? ''
+  const coachLogoUrl: string | null = coachProfile?.logo_url ?? null
+  const coachInitials = coachDisplayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0].toUpperCase())
+    .join('')
 
   const rawLang = (prefsLangResult as any)?.data?.language
   const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? rawLang as ClientLang : 'fr'
@@ -174,12 +231,31 @@ export default async function ClientHomePage() {
     ? ((program.program_sessions ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
     : []
 
-  const pendingSubmissions: { id: string }[] = (pendingResult as any)?.data ?? []
-  const pendingCount = pendingSubmissions.length
-  const firstPendingId = pendingSubmissions[0]?.id ?? null
+  const pendingSubmissions: { id: string; token: string; token_expires_at: string }[] = (pendingResult as any)?.data ?? []
+  // Filtrer les tokens expirés côté client aussi
+  const validPending = pendingSubmissions.filter(s =>
+    !s.token_expires_at || new Date(s.token_expires_at) > new Date()
+  )
+  const pendingCount = validPending.length
+  // Lien direct vers le formulaire bilan (pas la vue lecture)
+  const firstPendingToken = validPending[0]?.token ?? null
   const doneThisWeek = (logsThisWeekResult as any)?.count ?? 0
   const coachNote = (coachNoteResult as any)?.data ?? null
   const todayCompletedLogs: any[] = (todayLogsResult as any)?.data ?? []
+  const checkinConfig: any = (checkinConfigResult as any)?.data ?? null
+  const todayCheckins: any[] = (todayCheckinsResult as any)?.data ?? []
+  const streak = (streakResult as any)?.data ?? { current_streak: 0, longest_streak: 0, level: 'bronze', total_points: 0 }
+  const pointsHistory: any[] = (pointsHistoryResult as any)?.data ?? []
+
+  const jsDay = new Date().getDay()
+  const todayCheckinDay = jsDay === 0 ? 6 : jsDay - 1
+  const isCheckinConfiguredToday =
+    !!checkinConfig?.is_active &&
+    (checkinConfig?.days_of_week ?? []).includes(todayCheckinDay)
+
+  const todayMoments: string[] = ((checkinConfig?.moments ?? []) as any[]).map((m: any) => m.moment)
+  const respondedMoments = new Set(todayCheckins.map((r: any) => r.moment))
+  const pendingMoment = todayMoments.find((m) => !respondedMoments.has(m)) ?? null
 
   // Séance du jour — masquée si déjà complétée aujourd'hui (session du même nom)
   const rawTodaySession = sessions.find((s: any) =>
@@ -210,9 +286,32 @@ export default async function ClientHomePage() {
   return (
     <div className="min-h-screen bg-[#121212] font-sans">
       <ClientTopBar
-        title="STRYV"
+        left={
+          <div className="flex items-center gap-2">
+            <Image src="/images/logo.png" alt="STRYVR" width={28} height={28} className="w-7 h-7 object-contain" />
+            <span className="font-unbounded text-[13px] font-bold text-white tracking-wide">STRYVR</span>
+          </div>
+        }
         right={
-          <Image src="/images/logo.png" alt="STRYV" width={24} height={24} className="w-6 h-6 object-contain opacity-40" />
+          coachDisplayName ? (
+            <div className="flex items-center gap-2">
+              {coachLogoUrl ? (
+                <Image
+                  src={coachLogoUrl}
+                  alt={coachDisplayName}
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 rounded-full object-cover border-[0.3px] border-white/[0.12]"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-[#1f8a65] flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-white leading-none">{coachInitials || '?'}</span>
+                </div>
+              )}
+              <span className="text-[12px] font-medium text-white/70 leading-none">{coachDisplayName}</span>
+            </div>
+          ) : null
         }
       />
 
@@ -224,6 +323,63 @@ export default async function ClientHomePage() {
             {ct(lang, 'home.section')}
           </p>
           <ContextualGreeting firstName={firstName} hasSessionToday={!!todaySession} />
+        </div>
+
+        {/* ── Widget check-in ── */}
+        {isCheckinConfiguredToday && pendingMoment && (
+          <Link
+            href={`/client/checkin/${pendingMoment}`}
+            className="bg-white/[0.02] rounded-xl border-[0.3px] border-[#1f8a65]/25 p-4 flex items-center justify-between"
+          >
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#1f8a65]/90">
+                Check-in
+              </p>
+              <p className="text-[13px] font-semibold text-white mt-1">
+                {pendingMoment === 'morning' ? 'Check-in du matin — à compléter' : 'Check-in du soir — à compléter'}
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-[#1f8a65]" />
+          </Link>
+        )}
+
+        {/* ── Accès agenda repas ── */}
+        <Link
+          href="/client/checkin/meals"
+          className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4 flex items-center justify-between"
+        >
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+              Nutrition
+            </p>
+            <p className="text-[13px] font-semibold text-white mt-1">Journal repas</p>
+          </div>
+          <ChevronRight size={16} className="text-white/30" />
+        </Link>
+
+        {/* ── Progression gamification ── */}
+        <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35 mb-3">
+            Ma progression
+          </p>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <MiniStat label="Points" value={streak.total_points ?? 0} />
+            <MiniStat label="Streak" value={streak.current_streak ?? 0} />
+            <MiniStat label="Record" value={streak.longest_streak ?? 0} />
+          </div>
+          <div className="bg-white/[0.03] rounded-xl px-3 py-2 mb-2">
+            <p className="text-[9px] uppercase tracking-[0.12em] text-white/35">Niveau</p>
+            <p className="text-[12px] font-semibold text-white capitalize">{streak.level ?? 'bronze'}</p>
+          </div>
+          {pointsHistory.length > 0 && (
+            <div className="space-y-1">
+              {pointsHistory.map((h, i) => (
+                <div key={`${h.earned_at}-${i}`} className="text-[10px] text-white/45">
+                  +{h.points} {h.action_type}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── État vide : pas de programme ── */}
@@ -388,7 +544,7 @@ export default async function ClientHomePage() {
         {/* ── Bilans en attente ── */}
         {pendingCount > 0 && (
           <Link
-            href={firstPendingId ? `/client/bilans/${firstPendingId}` : '/client/bilans'}
+            href={firstPendingToken ? `/bilan/${firstPendingToken}` : '/client/bilans'}
             className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4 flex items-center gap-4 active:scale-[0.99] transition-transform"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
@@ -412,6 +568,15 @@ export default async function ClientHomePage() {
         )}
 
       </main>
+    </div>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-white/[0.03] rounded-xl px-2 py-2 text-center">
+      <p className="text-[9px] uppercase tracking-[0.12em] text-white/35">{label}</p>
+      <p className="text-[13px] font-bold text-white mt-0.5">{value}</p>
     </div>
   )
 }

@@ -15,7 +15,7 @@ const STEPS = [
     id: 'client',
     label: 'Ajouter ton premier client',
     key: 'hasClient' as keyof OnboardingState,
-    href: '/coach/clients',
+    href: '/coach/clients/new',
     cta: 'Créer un client',
   },
   {

@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import ProgramTemplateBuilder from '@/components/programs/ProgramTemplateBuilder'
+import EditTemplateClient from './EditTemplateClient'
 
 export default async function EditProgramTemplatePage({ params }: { params: { templateId: string } }) {
   const supabase = createClient()
@@ -38,9 +38,5 @@ export default async function EditProgramTemplatePage({ params }: { params: { te
     redirect(`/coach/programs/templates/${params.templateId}/view`)
   }
 
-  return (
-    <div className="bg-[#121212] font-sans">
-      <ProgramTemplateBuilder initial={template} templateId={params.templateId} />
-    </div>
-  )
+  return <EditTemplateClient template={template} templateId={params.templateId} />
 }

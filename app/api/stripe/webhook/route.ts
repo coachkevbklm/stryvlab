@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -12,17 +12,8 @@ const supabase = createClient(
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-// SMTP Namecheap — même config que lib/email/mailer.ts
-const smtpTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'mail.privateemail.com',
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-const FROM_EMAIL = `STRYV lab <${process.env.SMTP_USER || 'coach@stryvlab.com'}>`;
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -82,8 +73,8 @@ export async function POST(req: NextRequest) {
         throw error;
       }
 
-      // Envoyer email via SMTP Namecheap
-      await smtpTransporter.sendMail({
+      // Envoyer email via Resend
+      await resend.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Créez votre compte STRYV lab',

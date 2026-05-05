@@ -80,23 +80,23 @@ export function MorphoCompare({ initialPhotos, onClose }: Props) {
           const photo = slots[i] ?? null
           return (
             <div key={i} className="relative bg-[#181818] flex items-center justify-center">
-              {photo?.signed_url ? (
+              {(photo?.full_url ?? photo?.signed_url) ? (
                 <>
                   <Image
-                    src={photo.signed_url}
+                    src={(photo.full_url ?? photo.signed_url)!}
                     alt={POSITION_LABELS[photo.position]}
                     fill
                     className="object-contain"
                     unoptimized
                   />
                   {/* Overlay superposition (slot 1 seulement en mode 1x2) */}
-                  {layout === '1x2' && i === 1 && slots[0]?.signed_url && (
+                  {layout === '1x2' && i === 1 && (slots[0]?.full_url ?? slots[0]?.signed_url) && (
                     <div
                       className="absolute inset-0"
                       style={{ opacity: opacity / 100 }}
                     >
                       <Image
-                        src={slots[0].signed_url}
+                        src={(slots[0].full_url ?? slots[0].signed_url)!}
                         alt="overlay"
                         fill
                         className="object-contain"

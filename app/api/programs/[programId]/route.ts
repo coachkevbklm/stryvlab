@@ -13,7 +13,7 @@ const SELECT = `
   id, name, description, goal, level, frequency, weeks, muscle_tags,
   equipment_archetype, session_mode, status, is_client_visible, created_at,
   program_sessions (
-    id, name, day_of_week, position, notes,
+    id, name, day_of_week, days_of_week, position, notes,
     program_exercises (
       id, name, sets, reps, rest_sec, rir, notes, position, image_url,
       movement_pattern, equipment_required, primary_muscles, secondary_muscles,
@@ -70,14 +70,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         .insert({
           program_id: params.programId,
           name: s.name,
-          day_of_week: s.day_of_week ?? null,
+          days_of_week: s.days_of_week ?? [],
+          day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null,
           position: si,
           notes: s.notes ?? null,
         })
         .select('id')
         .single()
 
-      if (session && s.exercises?.length) {
+      if (!session) {
+        console.error(`[program PATCH] failed to insert session ${si}:`, s.name)
+        continue
+      }
+      if (s.exercises?.length) {
         for (let ei = 0; ei < s.exercises.length; ei++) {
           const e = s.exercises[ei]
           await db.from('program_exercises').insert({

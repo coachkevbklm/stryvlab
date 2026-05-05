@@ -81,6 +81,7 @@ function OnboardingFlow() {
   const [loading, setLoading] = useState(false)
   const [welcomeIndex, setWelcomeIndex] = useState(0)
   const [firstName, setFirstName] = useState('')
+  const [checkinsEnabled, setCheckinsEnabled] = useState(false)
 
   // Prevent double-resolution from onAuthStateChange firing multiple events
   const resolved = useRef(false)
@@ -173,6 +174,11 @@ function OnboardingFlow() {
     }
 
     fetch('/api/client/welcome', { method: 'POST' }).catch(() => {})
+    const checkinsRes = await fetch('/api/client/checkin/config').catch(() => null)
+    if (checkinsRes?.ok) {
+      const checkinsData = await checkinsRes.json().catch(() => null)
+      setCheckinsEnabled(!!checkinsData?.active)
+    }
     setStep('welcome')
   }
 
@@ -213,9 +219,9 @@ function OnboardingFlow() {
     return (
       <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <Image src="/images/logo.png" alt="STRYV" width={48} height={48} className="w-12 h-12 object-contain" />
+          <Image src="/images/logo.png" alt="STRYVR" width={48} height={48} className="w-12 h-12 object-contain" />
           <span className="font-unbounded font-semibold text-base text-white tracking-tight leading-none">
-            STRYV<span className="font-light text-white/60"> lab</span>
+            STRYVR<span className="font-light text-white/60"> lab</span>
           </span>
         </div>
 
@@ -293,7 +299,11 @@ function OnboardingFlow() {
     const goNext = () => {
       if (isLast) {
         localStorage.setItem('onboarding_tour_done', 'false') // tour will run on dashboard
-        router.push('/client')
+        if (checkinsEnabled) {
+          router.push('/client/checkin/onboarding')
+        } else {
+          router.push('/client')
+        }
       } else {
         setWelcomeIndex((i) => i + 1)
       }
@@ -303,7 +313,7 @@ function OnboardingFlow() {
       <div className="min-h-screen bg-[#121212] flex flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center pt-12 pb-6">
-          <Image src="/images/logo.png" alt="STRYV" width={32} height={32} className="w-8 h-8 object-contain" />
+          <Image src="/images/logo.png" alt="STRYVR" width={32} height={32} className="w-8 h-8 object-contain" />
         </div>
 
         {/* Content */}

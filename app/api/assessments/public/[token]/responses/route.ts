@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { BulkResponsePayload } from "@/types/assessment";
 import { sendBilanCompletedEmail } from "@/lib/email/mailer";
+import { inngest } from "@/lib/inngest/client";
 
 function serviceClient() {
   return createServiceClient(
@@ -83,6 +84,28 @@ export async function POST(
       .update({ status: "completed", submitted_at: new Date().toISOString() })
       .eq("id", submission.id);
 
+    // Sync profile fields from assessment responses to coach_clients
+    const profileUpdate: Record<string, string> = {};
+    for (const r of body.responses) {
+      if (['date_naissance', 'date_of_birth'].includes(r.field_key) && r.value_text) {
+        profileUpdate['date_of_birth'] = r.value_text;
+      }
+      if (['sexe', 'gender', 'genre'].includes(r.field_key) && r.value_text) {
+        const v = r.value_text.toLowerCase();
+        const mapped = v === 'homme' || v === 'male' || v === 'm' ? 'male'
+          : v === 'femme' || v === 'female' || v === 'f' ? 'female'
+          : v === 'other' || v === 'autre' ? 'other'
+          : null;
+        if (mapped) profileUpdate['gender'] = mapped;
+      }
+    }
+    if (Object.keys(profileUpdate).length > 0) {
+      await db
+        .from('coach_clients')
+        .update(profileUpdate)
+        .eq('id', submission.client_id);
+    }
+
     // Notification coach explicite avec nom client + nom bilan
     const client = submission.client as {
       first_name?: string;
@@ -142,6 +165,29 @@ export async function POST(
       }
     } catch (emailError) {
       console.error("Email send failed (non-blocking):", emailError);
+    }
+
+    // Award bilan points once per submission
+    const { data: existingBilanPoints } = await db
+      .from("client_points")
+      .select("id")
+      .eq("client_id", submission.client_id)
+      .eq("action_type", "bilan")
+      .eq("reference_id", submission.id)
+      .maybeSingle();
+
+    if (!existingBilanPoints) {
+      await db.from("client_points").insert({
+        client_id: submission.client_id,
+        action_type: "bilan",
+        points: 20,
+        reference_id: submission.id,
+      });
+
+      await inngest.send({
+        name: "points/level.update",
+        data: { client_id: submission.client_id },
+      });
     }
   }
 

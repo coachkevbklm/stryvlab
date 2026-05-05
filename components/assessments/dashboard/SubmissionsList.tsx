@@ -29,6 +29,8 @@ interface Props {
   onDelete?: (submissionId: string) => void;
   onRenew?: (submission: SubmissionWithClient) => void;
   clientEmail?: string;
+  sendModalOpen?: boolean;
+  onSendModalClose?: () => void;
 }
 
 const STATUS_CONFIG = {
@@ -62,9 +64,18 @@ export default function SubmissionsList({
   onDelete,
   onRenew,
   clientEmail,
+  sendModalOpen,
+  onSendModalClose,
 }: Props) {
   const router = useRouter();
-  const [sendModal, setSendModal] = useState(false);
+  const [localSendModal, setLocalSendModal] = useState(false);
+
+  // Use controlled state from parent if provided, otherwise internal state
+  const sendModal = sendModalOpen ?? localSendModal;
+  function closeSendModal() {
+    setLocalSendModal(false);
+    onSendModalClose?.();
+  }
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [bilanDate, setBilanDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
@@ -87,7 +98,7 @@ export default function SubmissionsList({
     setSending(true);
     await onSend(selectedTemplate, bilanDate, sendEmail);
     setSending(false);
-    setSendModal(false);
+    closeSendModal();
     setSelectedTemplate("");
     setBilanDate(new Date().toISOString().slice(0, 10));
     setSendEmail(false);
@@ -164,17 +175,20 @@ export default function SubmissionsList({
     <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-white">Bilans envoyés</h3>
-        <button
-          onClick={() => {
-            setSendModal(true);
-            setBilanDate(new Date().toISOString().slice(0, 10));
-            setSendEmail(false);
-          }}
-          className="flex items-center gap-2 bg-[#1f8a65] text-white text-[11px] font-bold uppercase tracking-[0.12em] px-3 py-2 rounded-lg hover:bg-[#217356] transition-colors active:scale-[0.99]"
-        >
-          <Send size={13} />
-          Envoyer
-        </button>
+        {/* Button shown inline only when parent doesn't control via TopBar */}
+        {!onSendModalClose && (
+          <button
+            onClick={() => {
+              setLocalSendModal(true);
+              setBilanDate(new Date().toISOString().slice(0, 10));
+              setSendEmail(false);
+            }}
+            className="flex items-center gap-2 bg-[#1f8a65] text-white text-[11px] font-bold uppercase tracking-[0.12em] px-3 py-2 rounded-lg hover:bg-[#217356] transition-colors active:scale-[0.99]"
+          >
+            <Send size={13} />
+            Envoyer
+          </button>
+        )}
       </div>
 
       {submissions.length === 0 ? (
@@ -382,7 +396,7 @@ export default function SubmissionsList({
             )}
             <div className="flex gap-3 mt-2">
               <button
-                onClick={() => setSendModal(false)}
+                onClick={closeSendModal}
                 className="flex-1 py-2.5 rounded-lg bg-white/[0.04] text-sm text-white/45 hover:text-white transition-colors font-medium"
               >
                 Annuler

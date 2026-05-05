@@ -1,6 +1,6 @@
 {
-  "name": "STRYV",
-  "short_name": "STRYV",
+  "name": "STRYVR",
+  "short_name": "STRYVR",
   "description": "Ton programme d'entraînement personnalisé",
   "start_url": "/client",
   "scope": "/client",

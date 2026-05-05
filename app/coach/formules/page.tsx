@@ -395,10 +395,10 @@ export default function FormulasPage() {
         )}
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 h-8 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold hover:bg-[#217356] transition-colors active:scale-[0.98]"
+          className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-[#217356] transition-all active:scale-[0.98]"
         >
-          <Plus size={13} />
-          Nouvelle
+          <Plus size={12} />
+          Nouvelle formule
         </button>
       </div>
     ),

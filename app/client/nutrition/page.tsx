@@ -3,6 +3,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
 import { Utensils, Droplets } from 'lucide-react'
+import ClientTopBar from '@/components/client/ClientTopBar'
+import Link from 'next/link'
 
 function MacroDonut({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
   const total = protein * 4 + carbs * 4 + fat * 9
@@ -82,40 +84,41 @@ export default async function ClientNutritionPage() {
 
   if (!protocol) {
     return (
-      <main className="min-h-screen bg-[#121212]">
-        <div className="px-6 pb-24">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-5">
-            {ct(lang, 'nutrition.section')}
-          </p>
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4">
-              <Utensils size={20} className="text-white/20" />
-            </div>
-            <p className="text-[13px] font-semibold text-white/30">
-              {ct(lang, 'nutrition.noProtocol')}
-            </p>
-            <p className="text-[11px] text-white/20 mt-1">
-              {ct(lang, 'nutrition.noProtocol.desc')}
-            </p>
+      <div className="min-h-screen bg-[#121212]">
+        <ClientTopBar section={ct(lang, 'nutrition.section')} title={ct(lang, 'nutrition.noProtocol')} />
+        <main className="max-w-lg mx-auto px-4 pt-[88px] pb-24 flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-4">
+            <Utensils size={20} className="text-white/20" />
           </div>
-        </div>
-      </main>
+          <p className="text-[13px] font-semibold text-white/30">
+            {ct(lang, 'nutrition.noProtocol')}
+          </p>
+          <p className="text-[11px] text-white/20 mt-1">
+            {ct(lang, 'nutrition.noProtocol.desc')}
+          </p>
+        </main>
+      </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#121212]">
-      <div className="px-6 pb-24 space-y-5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
-          {ct(lang, 'nutrition.section')}
-        </p>
+    <div className="min-h-screen bg-[#121212]">
+      <ClientTopBar section={ct(lang, 'nutrition.section')} title={protocol.name} />
+      <main className="max-w-lg mx-auto px-4 pt-[88px] pb-24 space-y-5">
+        <Link
+          href="/client/checkin/meals"
+          className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-xl p-3 flex items-center justify-between"
+        >
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/35">Journal alimentaire</p>
+            <p className="text-[12px] font-semibold text-white">Ouvrir la vue agenda</p>
+          </div>
+          <span className="text-white/40 text-[12px]">→</span>
+        </Link>
 
-        <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-4">
-          <p className="text-[13px] font-bold text-white mb-0.5">{protocol.name}</p>
-          {protocol.notes && (
-            <p className="text-[12px] text-white/40 mb-3">{protocol.notes}</p>
-          )}
-        </div>
+        {protocol.notes && (
+          <p className="text-[12px] text-white/40 px-1">{protocol.notes}</p>
+        )}
 
         {days.map((day: any, i: number) => {
           const cal    = day.calories   ? Number(day.calories)   : null
@@ -203,7 +206,7 @@ export default async function ClientNutritionPage() {
             </div>
           )
         })}
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

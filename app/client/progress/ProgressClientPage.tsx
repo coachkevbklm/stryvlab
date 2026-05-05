@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Flame, Clock, Layers, ChevronRight, Trophy, TrendingUp, Zap, MessageSquare } from 'lucide-react'
-import type { HeatmapDay, PREntry, SessionSummary, SessionLog } from './page'
+import type { HeatmapDay, PREntry, SessionSummary, SessionLog } from '@/lib/client/progressTypes'
 import ProgressHeatmap from './ProgressHeatmap'
 import PRsPodium from './PRsPodium'
 import ProgressVolumeChart from './ProgressVolumeChart'

@@ -2,11 +2,11 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { CheckCircle2, Clock, Layers, BarChart2, ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import BodyMap from '@/components/client/BodyMap'
 import { detectMuscleGroups } from '@/lib/client/muscleDetection'
 import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+import RecapNavButtons from './RecapNavButtons'
 
 export default async function SessionRecapPage({ params }: { params: { sessionLogId: string } }) {
   const supabase = createClient()
@@ -129,12 +129,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
       <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
         <div className="relative z-10 max-w-lg mx-auto flex items-center gap-3 h-full px-4">
-          <Link
-            href="/client/programme"
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:bg-white/[0.10] hover:text-white/70 transition-colors shrink-0"
-          >
-            <ChevronLeft size={16} />
-          </Link>
+          <RecapNavButtons icon href="/client/programme" />
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'recap.section')}</p>
             <p className="text-[13px] font-bold text-white">{sessionLog.session_name}</p>
@@ -247,14 +242,9 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
           )}
         </div>
 
-        {/* ── CTA ── */}
-        <Link
-          href="/client/programme"
-          className="flex items-center justify-center gap-2 bg-white/[0.04] border border-white/[0.06] text-white/60 font-semibold py-3.5 rounded-xl hover:bg-white/[0.06] hover:text-white/80 transition-colors text-[12px]"
-        >
-          <ChevronLeft size={13} />
-          {ct(lang, 'recap.backHome')}
-        </Link>
+        {/* ── CTA ── router.refresh() invalide le cache du Server Component /client
+              pour que "Séance réalisée ✓" soit visible immédiatement sans reload */}
+        <RecapNavButtons label={ct(lang, 'recap.backHome')} href="/client" />
       </main>
     </div>
   )

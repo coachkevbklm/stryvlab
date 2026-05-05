@@ -3,7 +3,6 @@
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { useSetTopBar } from '@/components/layout/useSetTopBar'
 import ProgramTemplateBuilder from '@/components/programs/ProgramTemplateBuilder'
 
 export default function NewProgramTemplatePage() {
@@ -24,11 +23,9 @@ export default function NewProgramTemplatePage() {
     </div>
   ), [router])
 
-  useSetTopBar(topBarLeft)
-
   return (
     <div className="bg-[#121212] font-sans">
-      <ProgramTemplateBuilder />
+      <ProgramTemplateBuilder topBarLeft={topBarLeft} />
     </div>
   )
 }

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       id, name, description, goal, level, frequency, weeks, muscle_tags,
       equipment_archetype, session_mode, status, is_client_visible, created_at,
       program_sessions (
-        id, name, day_of_week, position, notes,
+        id, name, day_of_week, days_of_week, position, notes,
         program_exercises (
           id, name, sets, reps, rest_sec, rir, notes, position, image_url,
           movement_pattern, equipment_required, primary_muscles, secondary_muscles,

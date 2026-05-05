@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Plus,
   Dumbbell,
   ChevronRight,
   Eye,
   EyeOff,
   Loader2,
   Trash2,
-  Library,
+  BookmarkPlus,
   AlertTriangle,
 } from "lucide-react";
+import SaveAsTemplateModal from "@/components/programs/SaveAsTemplateModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Program {
@@ -23,22 +22,29 @@ interface Program {
   status: "active" | "archived";
   is_client_visible: boolean;
   created_at: string;
+  goal?: string;
+  level?: string;
+  frequency?: number;
+  muscle_tags?: string[];
+  equipment_archetype?: string;
+  session_mode?: string;
+  program_sessions?: any[];
 }
 
 interface Props {
   clientId: string;
   onSelectProgram: (program: Program) => void;
+  onCreateProgram?: () => void;
 }
 
 export default function ClientProgramsList({ clientId, onSelectProgram }: Props) {
-  const router = useRouter();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [creatingEmpty, setCreatingEmpty] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Program | null>(null);
+  const [saveAsTemplateTarget, setSaveAsTemplateTarget] = useState<Program | null>(null);
 
   const fetchPrograms = useCallback(async () => {
     setError("");
@@ -95,28 +101,6 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
     }
   }
 
-  async function createEmptyProgram() {
-    setCreatingEmpty(true);
-    try {
-      const res = await fetch("/api/programs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: clientId, name: "Nouveau programme", weeks: 4 }),
-      });
-      const d = await res.json();
-      if (res.ok && d.program) {
-        const newProgram: Program = {
-          ...d.program,
-          is_client_visible: d.program.is_client_visible ?? false,
-        };
-        setPrograms((prev) => [newProgram, ...prev]);
-        onSelectProgram(newProgram);
-      }
-    } finally {
-      setCreatingEmpty(false);
-    }
-  }
-
   const activePrograms = programs.filter((p) => p.status === "active");
   const archivedPrograms = programs.filter((p) => p.status === "archived");
 
@@ -153,6 +137,13 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
 
   return (
     <>
+    {saveAsTemplateTarget && (
+      <SaveAsTemplateModal
+        programId={saveAsTemplateTarget.id}
+        programName={saveAsTemplateTarget.name}
+        onClose={() => setSaveAsTemplateTarget(null)}
+      />
+    )}
     {/* Modal confirmation suppression */}
     {confirmDelete && (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -184,29 +175,6 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
       </div>
     )}
     <div className="space-y-4">
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={createEmptyProgram}
-          disabled={creatingEmpty}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold hover:bg-[#217356] transition-colors disabled:opacity-50"
-        >
-          {creatingEmpty ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            <Plus size={12} />
-          )}
-          Nouveau programme
-        </button>
-        <button
-          onClick={() => router.push("/coach/programs/templates")}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/[0.04] text-white/60 text-[12px] font-bold hover:bg-white/[0.08] hover:text-white/80 transition-colors"
-        >
-          <Library size={12} />
-          Assigner un template
-        </button>
-      </div>
-
       {/* Liste programmes actifs */}
       {activePrograms.length === 0 ? (
         <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-xl p-8 text-center">
@@ -227,6 +195,7 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
               onSelect={() => onSelectProgram(program)}
               onToggle={() => toggleVisibility(program)}
               onDelete={() => setConfirmDelete(program)}
+              onSaveAsTemplate={() => setSaveAsTemplateTarget(program)}
             />
           ))}
         </div>
@@ -248,6 +217,7 @@ export default function ClientProgramsList({ clientId, onSelectProgram }: Props)
                 onSelect={() => onSelectProgram(program)}
                 onToggle={() => toggleVisibility(program)}
                 onDelete={() => setConfirmDelete(program)}
+                onSaveAsTemplate={() => setSaveAsTemplateTarget(program)}
               />
             ))}
           </div>
@@ -265,6 +235,7 @@ function ProgramRow({
   onSelect,
   onToggle,
   onDelete,
+  onSaveAsTemplate,
 }: {
   program: Program;
   togglingId: string | null;
@@ -272,6 +243,7 @@ function ProgramRow({
   onSelect: () => void;
   onToggle: () => void;
   onDelete: () => void;
+  onSaveAsTemplate: () => void;
 }) {
   const isToggling = togglingId === program.id;
   const isDeleting = deletingId === program.id;
@@ -316,6 +288,15 @@ function ProgramRow({
         <span>{program.is_client_visible ? "Actif" : "Inactif"}</span>
       </button>
 
+      {/* Bouton enregistrer comme template */}
+      <button
+        onClick={onSaveAsTemplate}
+        className="h-7 w-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/20 hover:bg-white/[0.08] hover:text-white/60 transition-colors shrink-0"
+        title="Enregistrer comme template"
+      >
+        <BookmarkPlus size={11} />
+      </button>
+
       {/* Bouton éditer */}
       <button
         onClick={onSelect}
@@ -329,7 +310,7 @@ function ProgramRow({
       <button
         onClick={onDelete}
         disabled={isDeleting}
-        className="h-7 w-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/20 hover:bg-red-500/10 hover:text-red-400 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+        className="h-7 w-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/20 hover:bg-red-500/10 hover:text-red-400 transition-colors shrink-0"
         title="Supprimer le programme"
       >
         {isDeleting ? (

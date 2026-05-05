@@ -27,7 +27,7 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights | 2026-04-27 |
+| **Client App** | ✅ Session logging, PWA, weights, superset UX, bug fixes | 2026-04-28 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
@@ -38,6 +38,23 @@
 ---
 
 ## 🚀 Dernières Avancées (2026-04-28)
+
+### SessionLogger — 5 Bugs Critiques Corrigés (COMPLET)
+
+**Bugs résolus :**
+
+1. **`parseSetForApi()`** (`SessionLogger.tsx`) — Fix bug `|| null` : `parseFloat("0") → 0 → falsy → null`. Les valeurs 0 sont maintenant correctement persistées.
+2. **Home page** (`app/client/page.tsx`) — Fetch `client_session_logs` complétés du jour pour masquer le CTA séance si déjà faite. Affichage "Séance réalisée ✓" avec option "Refaire".
+3. **muscleDetection.ts** — `CATALOG_SLUG_MAP` étendu aux slugs FR anatomiques : `trapeze_superieur`, `grand_dorsal`, `trapezes`, `lombaires`, `deltoide_*`, `ischio_jambiers`, etc. Les muscles stockés par l'intelligence engine (FR anatomique) sont maintenant détectés.
+4. **Rest timer** (`scheduleModalOpen`) — Délai 3s → 8s, modal bloqué pendant saisie active (`activeInputRef`). Si input focusé, replanifie dans 5s.
+5. **Superset UX** — Navigation par groupe (superset ou solo). Exercices d'un même `group_id` affichés en cartes empilées verticalement. Repos déclenché uniquement après le dernier exercice du groupe. Label "Superset · N exercices" + séparateur coloré.
+
+**Points de vigilance :**
+- `activeInputRef` est un `useRef` (pas state) pour éviter les re-renders lors de la saisie
+- Le repos de superset passe `restSecForToggle = null` pour les exercices non-finaux → pas de timer intermédiaire
+- `exerciseGroups` est recalculé à chaque render (stable, exercices ne changent pas)
+- Les dots de navigation représentent maintenant des groupes, pas des exercices individuels
+- `currentExIndex` est dérivé de `exerciseGroups[currentGroupIndex][0]` — rétrocompatibilité avec les getters lastPerf
 
 ### MorphoPro — Refonte Complète Phase 1 (COMPLET)
 - ✅ `morpho_photos` + `morpho_annotations` tables + RLS (migrations `20260428_morpho_photos_annotations.sql` + `20260428_morpho_analyses_extend.sql`)

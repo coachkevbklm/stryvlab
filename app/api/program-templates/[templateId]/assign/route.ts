@@ -36,11 +36,12 @@ export async function POST(
     .from("coach_program_templates")
     .select(
       `
-      id, name, weeks, goal, level,
+      id, name, weeks, goal, level, frequency, session_mode, equipment_archetype, muscle_tags,
       coach_program_template_sessions (
-        id, name, day_of_week, position, notes,
+        id, name, day_of_week, days_of_week, position, notes,
         coach_program_template_exercises (
-          name, sets, reps, rest_sec, rir, notes, position, image_url, primary_muscles, secondary_muscles
+          name, sets, reps, rest_sec, rir, notes, position, image_url,
+          primary_muscles, secondary_muscles, movement_pattern, equipment_required, group_id
         )
       )
     `,
@@ -78,6 +79,12 @@ export async function POST(
       client_id,
       name: programName,
       weeks: template.weeks,
+      goal: template.goal ?? null,
+      level: template.level ?? null,
+      frequency: (template.coach_program_template_sessions as any[])?.length ?? template.frequency ?? null,
+      session_mode: template.session_mode ?? "day",
+      equipment_archetype: template.equipment_archetype ?? null,
+      muscle_tags: template.muscle_tags ?? [],
       description: `Basé sur le template "${template.name}"`,
     })
     .select("id")
@@ -102,7 +109,8 @@ export async function POST(
       .insert({
         program_id: program.id,
         name: s.name,
-        day_of_week: s.day_of_week,
+        days_of_week: (s as any).days_of_week ?? [],
+        day_of_week: ((s as any).days_of_week ?? [])[0] ?? s.day_of_week ?? null,
         position: s.position,
         notes: s.notes,
       })
@@ -115,9 +123,8 @@ export async function POST(
     if (session && s.coach_program_template_exercises?.length) {
       const { error: exError } = await db.from("program_exercises").insert(
         (s.coach_program_template_exercises as any[])
-          .sort((a, b) => a.position - b.position)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
           .map((e, ei) => {
-            // Parser rep_min/rep_max depuis le champ reps texte
             const parsed = parseRepsRange(e.reps ?? "");
             return {
               session_id: session.id,
@@ -131,11 +138,13 @@ export async function POST(
               image_url: e.image_url ?? null,
               primary_muscles: e.primary_muscles ?? [],
               secondary_muscles: e.secondary_muscles ?? [],
-              // Double progression — parsé automatiquement depuis le template
+              movement_pattern: e.movement_pattern ?? null,
+              equipment_required: e.equipment_required ?? [],
+              group_id: e.group_id ?? null,
               rep_min: parsed?.rep_min ?? null,
               rep_max: parsed?.rep_max ?? null,
               target_rir: e.rir ?? null,
-              weight_increment_kg: 2.5, // défaut — coach peut ajuster ensuite
+              weight_increment_kg: 2.5,
             };
           }),
       );

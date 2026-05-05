@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Loader2, Save, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import ExerciseCard, { type ExerciseData } from './ExerciseCard'
@@ -53,6 +53,7 @@ export interface TemplateMeta {
 export interface EditorSession {
   name: string
   day_of_week: number | null
+  days_of_week: number[]
   notes: string
   exercises: ExerciseData[]
   open: boolean
@@ -61,7 +62,6 @@ export interface EditorSession {
 interface Props {
   meta: TemplateMeta
   sessions: EditorSession[]
-  saving: boolean
   error: string
   uploadingKey: string | null
   highlightKey: string | null
@@ -87,7 +87,7 @@ interface Props {
   onMoveSession: (fromSi: number, toSi: number) => void
   onMoveExercise: (fromSi: number, fromEi: number, toSi: number, toEi: number) => void
   supersetGroupColors: Record<string, string>
-  onSave: () => void
+  programId?: string
   exerciseRefSetter: (key: string) => (el: HTMLDivElement | null) => void
   makeExDragId: (si: number, ei: number) => string
   sessionDropId: (si: number) => string
@@ -97,7 +97,7 @@ interface Props {
 export default function EditorPane({
   meta,
   sessions,
-  saving,
+
   error,
   uploadingKey,
   highlightKey,
@@ -123,7 +123,7 @@ export default function EditorPane({
   onMoveSession,
   onMoveExercise,
   supersetGroupColors,
-  onSave,
+  programId,
   exerciseRefSetter,
   makeExDragId,
   sessionDropId,
@@ -163,23 +163,13 @@ export default function EditorPane({
     <div className="h-full flex flex-col overflow-hidden bg-[#121212]">
       {/* Sticky sub-header: template meta + save button */}
       <div className="shrink-0 border-b-[0.3px] border-white/[0.06] px-6 py-3 space-y-3">
-        {/* Name + Save */}
-        <div className="flex items-center gap-3">
-          <input
-            value={meta.name}
-            onChange={e => onMetaChange({ name: e.target.value })}
-            placeholder="Nom du template..."
-            className="flex-1 bg-transparent text-[15px] font-semibold text-white placeholder:text-white/20 outline-none"
-          />
-          <button
-            onClick={onSave}
-            disabled={saving}
-            className="flex items-center gap-2 h-8 px-4 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold hover:bg-[#217356] disabled:opacity-50 transition-colors active:scale-[0.97]"
-          >
-            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-        </div>
+        {/* Name */}
+        <input
+          value={meta.name}
+          onChange={e => onMetaChange({ name: e.target.value })}
+          placeholder="Nom du template..."
+          className="w-full bg-transparent text-[15px] font-semibold text-white placeholder:text-white/20 outline-none"
+        />
 
         {/* Meta row */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -197,14 +187,10 @@ export default function EditorPane({
           >
             {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
-          <div className="flex items-center gap-1 shrink-0">
-            <input
-              type="number"
-              value={meta.frequency}
-              onChange={e => onMetaChange({ frequency: Number(e.target.value) || 1 })}
-              min={1} max={7}
-              className="w-9 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/70 px-1 outline-none font-mono text-center"
-            />
+          <div className="flex items-center gap-1 shrink-0" title="Calculé automatiquement selon le nombre de séances">
+            <span className="w-9 h-7 bg-[#0a0a0a] rounded-lg border-[0.3px] border-white/[0.06] text-[11px] text-white/50 flex items-center justify-center font-mono">
+              {meta.frequency}
+            </span>
             <span className="text-[10px] text-white/30 whitespace-nowrap">j/sem</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -288,23 +274,33 @@ export default function EditorPane({
                 placeholder={`Séance ${si + 1}`}
                 className="flex-1 bg-transparent text-[13px] font-semibold text-white placeholder:text-white/30 outline-none"
               />
-              {/* Day of week pills (day mode only) */}
+              {/* Day of week pills — multi-select (day mode only) */}
               {sessionMode === 'day' && (
                 <div className="flex items-center gap-1">
-                  {DAYS.map((d, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onUpdateSession(si, { day_of_week: session.day_of_week === idx + 1 ? null : idx + 1 })}
-                      className={[
-                        'w-7 h-7 rounded-md text-[9px] font-medium transition-colors',
-                        session.day_of_week === idx + 1
-                          ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
-                          : 'text-white/25 hover:text-white/50 hover:bg-white/[0.04]',
-                      ].join(' ')}
-                    >
-                      {d}
-                    </button>
-                  ))}
+                  {DAYS.map((d, idx) => {
+                    const dow = idx + 1
+                    const active = (session.days_of_week ?? []).includes(dow)
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          const current = session.days_of_week ?? []
+                          const next = active
+                            ? current.filter(x => x !== dow)
+                            : [...current, dow].sort((a, b) => a - b)
+                          onUpdateSession(si, { days_of_week: next, day_of_week: next[0] ?? null })
+                        }}
+                        className={[
+                          'w-7 h-7 rounded-md text-[9px] font-medium transition-colors',
+                          active
+                            ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                            : 'text-white/25 hover:text-white/50 hover:bg-white/[0.04]',
+                        ].join(' ')}
+                      >
+                        {d}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
               {/* Cycle badge */}

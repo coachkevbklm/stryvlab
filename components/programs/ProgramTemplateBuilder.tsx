@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { useSetTopBar } from "@/components/layout/useSetTopBar";
 import {
   Plus,
   Trash2,
@@ -15,6 +16,7 @@ import {
   Dumbbell,
   ArrowLeftRight,
   Upload,
+  BookmarkPlus,
 } from "lucide-react";
 import {
   DndContext,
@@ -36,6 +38,7 @@ import ExerciseClientAlternatives from "./ExerciseClientAlternatives";
 import NavigatorPane from "./studio/NavigatorPane";
 import EditorPane from "./studio/EditorPane";
 import IntelligencePanelShell from "./studio/IntelligencePanelShell";
+import SaveAsTemplateModal from "./SaveAsTemplateModal";
 
 const GOALS = [
   { value: "hypertrophy", label: "Hypertrophie" },
@@ -184,6 +187,7 @@ interface Exercise {
 interface Session {
   name: string;
   day_of_week: number | null;
+  days_of_week: number[];
   notes: string;
   exercises: Exercise[];
   open: boolean;
@@ -229,6 +233,7 @@ function emptySession(): Session {
   return {
     name: "",
     day_of_week: null,
+    days_of_week: [],
     notes: "",
     exercises: [emptyExercise()],
     open: true,
@@ -242,9 +247,12 @@ interface Props {
   clientId?: string;
   onSaved?: (program: any) => void;
   onCancel?: () => void;
+  onTopBarActions?: (node: ReactNode) => void;
+  /** If provided, Builder manages the TopBar itself (left=this node, right=save actions) */
+  topBarLeft?: ReactNode;
 }
 
-export default function ProgramTemplateBuilder({ initial, templateId, programId, clientId, onSaved, onCancel }: Props) {
+export default function ProgramTemplateBuilder({ initial, templateId, programId, clientId, onSaved, onCancel, onTopBarActions, topBarLeft }: Props) {
   const router = useRouter();
   const isProgram = !!programId;
   const isEdit = !!templateId || isProgram;
@@ -288,6 +296,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
       .map((s: any) => ({
         name: s.name,
         day_of_week: s.day_of_week,
+        days_of_week: (s as any).days_of_week ?? (s.day_of_week ? [s.day_of_week] : []),
         notes: s.notes ?? "",
         open: false,
         exercises: (s.coach_program_template_exercises ?? s.program_exercises ?? [])
@@ -327,7 +336,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
 
   const orderedSessions = useMemo(() =>
     meta.session_mode === 'day'
-      ? [...sessions].sort((a, b) => (a.day_of_week ?? 99) - (b.day_of_week ?? 99))
+      ? [...sessions].sort((a, b) => (a.days_of_week[0] ?? a.day_of_week ?? 99) - (b.days_of_week[0] ?? b.day_of_week ?? 99))
       : sessions,
     [sessions, meta.session_mode]
   )
@@ -415,16 +424,18 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
   const [altPickerCallback, setAltPickerCallback] = useState<((name: string) => Promise<void>) | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const intelligenceMeta = {
+  const intelligenceMeta = useMemo(() => ({
     goal: meta.goal,
     level: meta.level,
     weeks: meta.weeks,
     frequency: meta.frequency,
     equipment_archetype: meta.equipment_archetype,
-  };
-  const intelligenceSessions = sessions.map(s => ({
+  }), [meta.goal, meta.level, meta.weeks, meta.frequency, meta.equipment_archetype]);
+
+  const intelligenceSessions = useMemo(() => orderedSessions.map(s => ({
     name: s.name,
-    day_of_week: s.day_of_week,
+    day_of_week: s.days_of_week[0] ?? s.day_of_week,
+    days_of_week: s.days_of_week,
     exercises: s.exercises.map(e => ({
       name: e.name,
       sets: e.sets,
@@ -452,7 +463,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
       coordinationDemand: e.coordinationDemand ?? null,
       constraintProfile: e.constraintProfile ?? null,
     })),
-  }));
+  })), [orderedSessions]);
   const { result: intelligenceResult, alertsFor } = useProgramIntelligence(intelligenceSessions, intelligenceMeta, intelligenceProfile, morphoAdjustments ?? undefined, labOverrides);
 
   function handleAlertClick(sessionIndex: number, exerciseIndex: number) {
@@ -528,6 +539,10 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
     }));
   }
 
+  useEffect(() => {
+    setMeta((m) => ({ ...m, frequency: sessions.length }));
+  }, [sessions.length]);
+
   function updateSession(i: number, patch: Partial<Session>) {
     setSessions((prev) =>
       prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
@@ -577,7 +592,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
     );
   }
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     setError("");
     if (!meta.name.trim()) {
       setError("Le nom du template est requis.");
@@ -598,7 +613,8 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
         ...meta,
         sessions: sessions.map((s) => ({
           name: s.name,
-          day_of_week: s.day_of_week,
+          day_of_week: s.days_of_week[0] ?? s.day_of_week ?? null,
+          days_of_week: s.days_of_week,
           notes: s.notes,
           exercises: s.exercises.map((e) => ({
             name: e.name,
@@ -667,9 +683,41 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
     } finally {
       setSaving(false);
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta, sessions, isProgram, programId, templateId, isEdit, onSaved, router])
 
   const morphoConnected = !!morphoAdjustments && Object.keys(morphoAdjustments).length > 0
+
+  const topBarActionsNode = useMemo(() => (
+    <div className="flex items-center gap-2">
+      {isProgram && (
+        <button
+          onClick={() => setShowSaveAsTemplate(true)}
+          className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/[0.04] text-white/60 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-white/[0.08] hover:text-white/80 transition-all active:scale-[0.98]"
+        >
+          <BookmarkPlus size={12} />
+          Template
+        </button>
+      )}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-[#217356] disabled:opacity-50 transition-all active:scale-[0.98]"
+      >
+        {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+        {saving ? 'Enregistrement…' : 'Enregistrer'}
+      </button>
+    </div>
+  ), [isProgram, saving, handleSave])
+
+  // When topBarLeft is provided, Builder owns the TopBar directly.
+  // When onTopBarActions is provided, push actions up to the parent instead.
+  useSetTopBar(topBarLeft ?? null, topBarLeft ? topBarActionsNode : undefined)
+
+  useEffect(() => {
+    if (!onTopBarActions || topBarLeft) return
+    onTopBarActions(topBarActionsNode)
+  }, [onTopBarActions, topBarActionsNode, topBarLeft])
 
   // Compute stable color mapping: group_id → color
   const supersetGroupColors = useMemo(() => {
@@ -737,6 +785,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
   )
 
   // ─── Resizable split layout ────────────────────────────────────────────────
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [navWidth, setNavWidth] = useState(16)       // % of total width
   const [intelWidth, setIntelWidth] = useState(30)   // % of total width
   const containerRef = useRef<HTMLDivElement>(null)
@@ -815,7 +864,6 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
           <EditorPane
             meta={meta}
             sessions={orderedSessions}
-            saving={saving}
             error={error}
             uploadingKey={uploadingKey}
             highlightKey={highlightKey}
@@ -847,7 +895,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             makeExDragId={makeExId}
             sessionDropId={(si) => `session-${si}`}
             supersetGroupColors={supersetGroupColors}
-            onSave={handleSave}
+            programId={programId}
             exerciseRefSetter={exerciseRefSetter}
             clientId={clientId}
           />
@@ -935,6 +983,14 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             setAlternativesTarget(null);
           }}
           onClose={() => setAlternativesTarget(null)}
+        />
+      )}
+
+      {showSaveAsTemplate && programId && (
+        <SaveAsTemplateModal
+          programId={programId}
+          programName={meta.name}
+          onClose={() => setShowSaveAsTemplate(false)}
         />
       )}
     </div>

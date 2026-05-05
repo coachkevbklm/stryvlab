@@ -62,7 +62,7 @@ export default function ClientLoginPage() {
         <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border-[0.3px] border-white/[0.06] flex items-center justify-center">
           <Image
             src="/images/logo.png"
-            alt="STRYV"
+            alt="STRYVR"
             width={32}
             height={32}
             className="w-8 h-8 object-contain"
@@ -70,7 +70,7 @@ export default function ClientLoginPage() {
         </div>
         <div className="text-center">
           <p className="font-unbounded font-semibold text-[15px] text-white tracking-tight leading-none">
-            STRYV<span className="font-light text-white/30"> lab</span>
+            STRYVR<span className="font-light text-white/30"> lab</span>
           </p>
           <p className="text-[11px] text-white/30 mt-1.5">Ton espace client</p>
         </div>

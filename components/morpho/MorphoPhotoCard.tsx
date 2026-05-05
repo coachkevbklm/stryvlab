@@ -30,7 +30,7 @@ export function MorphoPhotoCard({ photo, selected, onToggle, onAnnotate }: Props
             className="object-cover"
             unoptimized
             loading="lazy"
-            sizes="(max-width: 768px) 25vw, 20vw"
+            sizes="(max-width: 768px) 17vw, 15vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

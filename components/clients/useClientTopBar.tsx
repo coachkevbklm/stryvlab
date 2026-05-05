@@ -14,7 +14,7 @@ export function useClientTopBar(pageLabel: string, rightContent?: ReactNode) {
     [pageLabel, client]
   );
 
-  const right = useMemo(() => rightContent, [rightContent]);
-
-  useSetTopBar(left, right);
+  // rightContent is passed directly — useSetTopBar stores it in a ref,
+  // so no ReactNode-as-dep instability here.
+  useSetTopBar(left, rightContent);
 }

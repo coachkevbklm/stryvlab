@@ -36,15 +36,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   // Vérifier que la session appartient à un programme actif du client
   const { data: program } = await service
     .from('programs')
-    .select(`
-      id,
-      progressive_overload_enabled,
-      template_id,
-      coach_program_templates (
-        goal,
-        level
-      )
-    `)
+    .select('id, progressive_overload_enabled, goal, level')
     .eq('id', (session as any).program_id)
     .eq('client_id', client.id)
     .eq('status', 'active')
@@ -53,8 +45,8 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
   if (!program) notFound()
 
   const progressionEnabled = (program as any).progressive_overload_enabled ?? false
-  const goal: string = (program as any).coach_program_templates?.goal ?? 'hypertrophy'
-  const level: string = (program as any).coach_program_templates?.level ?? 'intermediate'
+  const goal: string = (program as any).goal ?? 'hypertrophy'
+  const level: string = (program as any).level ?? 'intermediate'
 
   const exercises = (session.program_exercises ?? [])
     .sort((a: any, b: any) => a.position - b.position)

@@ -8,6 +8,8 @@ const patchSchema = z.object({
   last_name: z.string().min(1).optional(),
   phone: z.string().nullable().optional(),
   goal: z.string().nullable().optional(),
+  date_of_birth: z.string().nullable().optional(),
+  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).nullable().optional(),
   training_goal: z
     .enum([
       "hypertrophy",
@@ -60,7 +62,7 @@ export async function GET(req: NextRequest) {
   const { data: client } = await service
     .from("coach_clients")
     .select(
-      "id, first_name, last_name, email, phone, goal, training_goal, fitness_level, sport_practice, weekly_frequency, status, profile_photo_url, created_at",
+      "id, first_name, last_name, email, phone, goal, date_of_birth, gender, training_goal, fitness_level, sport_practice, weekly_frequency, status, profile_photo_url, created_at",
     )
     .eq("user_id", user.id)
     .single();

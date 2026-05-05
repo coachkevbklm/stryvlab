@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { insertClientNotification } from '@/lib/notifications/insert-client-notification'
+import { inngest } from '@/lib/inngest/client'
 import { z } from 'zod'
 
 function service() {
@@ -101,6 +102,29 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         clientId: (client as { id: string }).id,
         type:     'session_reminder',
         message:  `${clientName} a complété la séance "${log?.session_name ?? 'Séance'}".`,
+      })
+    }
+
+    // Award session points once per session log completion
+    const { data: existingSessionPoints } = await db
+      .from('client_points')
+      .select('id')
+      .eq('client_id', (client as { id: string }).id)
+      .eq('action_type', 'session')
+      .eq('reference_id', params.logId)
+      .maybeSingle()
+
+    if (!existingSessionPoints) {
+      await db.from('client_points').insert({
+        client_id: (client as { id: string }).id,
+        action_type: 'session',
+        points: 25,
+        reference_id: params.logId,
+      })
+
+      await inngest.send({
+        name: 'points/level.update',
+        data: { client_id: (client as { id: string }).id },
       })
     }
   }

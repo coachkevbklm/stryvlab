@@ -274,7 +274,7 @@ export function scoreSRA(
     }
     muscles.forEach(muscle => {
       if (!muscleSessionMap[muscle]) muscleSessionMap[muscle] = []
-      muscleSessionMap[muscle].push({ sessionIndex: si, day: session.day_of_week })
+      muscleSessionMap[muscle].push({ sessionIndex: si, day: session.days_of_week?.[0] ?? session.day_of_week })
     })
   })
 
@@ -650,6 +650,49 @@ export function scoreSpecificity(
 
 // ─── 6. Patterns manquants ────────────────────────────────────────────────────
 
+// Catalog stores equipment in EN slugs; client profile stores FR slugs. Normalize before comparison.
+// 'cable' normalizes to 'poulie' because RestrictionsWidget stores 'poulie' (not 'cables') in DB.
+const CATALOG_TO_PROFILE_EQUIPMENT: Record<string, string> = {
+  barbell:      'barre',
+  dumbbell:     'halteres',
+  cable:        'poulie',
+  machine:      'machine',
+  kettlebell:   'kettlebell',
+  smith:        'smith',
+  trx:          'trx',
+  band:         'elastiques',
+  ez_bar:       'barre',
+  landmine:     'barre',
+  trap_bar:     'barre',
+  bodyweight:   'bodyweight',
+  medicine_ball:'halteres',
+  rings:        'trx',
+  sandbag:      'halteres',
+  sled:         'machine',
+  swiss_ball:   'halteres',
+}
+
+// Profile equipment aliases — both 'poulie' and 'cables' refer to the same equipment type.
+// Expand profile equipment to cover both forms before comparison.
+const PROFILE_EQUIPMENT_ALIASES: Record<string, string[]> = {
+  poulie:   ['cables'],
+  cables:   ['poulie'],
+}
+
+function expandProfileEquipment(profileEquipment: string[]): Set<string> {
+  const expanded = new Set(profileEquipment)
+  for (const eq of profileEquipment) {
+    for (const alias of PROFILE_EQUIPMENT_ALIASES[eq] ?? []) {
+      expanded.add(alias)
+    }
+  }
+  return expanded
+}
+
+function normalizeEquipment(slug: string): string {
+  return CATALOG_TO_PROFILE_EQUIPMENT[slug] ?? slug
+}
+
 // Equipment slugs that support each movement pattern (for equipment-aware completeness)
 const PATTERN_EQUIPMENT_REQUIREMENTS: Record<string, string[]> = {
   horizontal_push:  ['barre', 'halteres', 'machine', 'cables', 'smith'],
@@ -682,12 +725,15 @@ export function scoreCompleteness(
     sessions.flatMap(s => s.exercises.map(ex => ex.movement_pattern).filter(Boolean))
   )
 
+  // Expand profile equipment to cover both 'poulie' and 'cables' aliases
+  const profileEquipmentSet = profile ? expandProfileEquipment(profile.equipment) : new Set<string>()
+
   // Filter out patterns that can't be done with available equipment
   const effectiveRequired = profile && profile.equipment.length > 0
     ? required.filter(pattern => {
         const needed = PATTERN_EQUIPMENT_REQUIREMENTS[pattern]
         if (!needed) return true
-        return needed.some(eq => profile.equipment.includes(eq))
+        return needed.some(eq => profileEquipmentSet.has(eq))
       })
     : required
 
@@ -698,13 +744,14 @@ export function scoreCompleteness(
     sessions.forEach((session, si) => {
       session.exercises.forEach((ex, ei) => {
         if (ex.equipment_required.length === 0) return
-        const hasEquipment = ex.equipment_required.some(eq => profile.equipment.includes(eq))
+        const normalizedRequired = ex.equipment_required.map(normalizeEquipment)
+        const hasEquipment = normalizedRequired.some(eq => profileEquipmentSet.has(eq))
         if (!hasEquipment) {
           alerts.push({
             severity: 'warning',
             code: 'EQUIPMENT_MISMATCH',
             title: `Équipement manquant — ${ex.name}`,
-            explanation: `Cet exercice nécessite : ${ex.equipment_required.join(', ')}. Équipement disponible : ${profile.equipment.join(', ')}.`,
+            explanation: `Cet exercice nécessite : ${normalizedRequired.join(', ')}. Équipement disponible : ${profile.equipment.join(', ')}.`,
             suggestion: "Voir les alternatives compatibles avec l'équipement disponible.",
             sessionIndex: si,
             exerciseIndex: ei,
@@ -1079,6 +1126,27 @@ function buildNarrative(subscores: IntelligenceResult['subscores'], alerts: Inte
   return `Programme équilibré. Meilleur score : ${labels[bestKey]} (${bestVal}/100).`
 }
 
+// Expand sessions by days_of_week: a session scheduled on 2 days = 2 occurrences for volume/balance/SRA
+// Each copy gets the specific day assigned so SRA can compute inter-session gap correctly
+function expandSessionsByDays(sessions: BuilderSession[]): BuilderSession[] {
+  try {
+    const expanded: BuilderSession[] = []
+    for (const session of sessions) {
+      const days: (number | null)[] = (session.days_of_week?.length)
+        ? session.days_of_week
+        : session.day_of_week
+          ? [session.day_of_week]
+          : [null]
+      for (const day of days) {
+        expanded.push({ ...session, day_of_week: day, days_of_week: day ? [day] : [] })
+      }
+    }
+    return expanded
+  } catch {
+    return sessions
+  }
+}
+
 export function buildIntelligenceResult(
   sessions: BuilderSession[],
   meta: TemplateMeta,
@@ -1090,6 +1158,8 @@ export function buildIntelligenceResult(
     ...s,
     exercises: s.exercises.filter(e => e.name.trim() !== ''),
   }))
+  // Expand multi-day sessions so volume/balance/SRA counts each scheduled day
+  const expandedSessions = expandSessionsByDays(filteredSessions)
 
   const emptyProgramStats: ProgramStats = {
     totalSets: 0,
@@ -1117,15 +1187,15 @@ export function buildIntelligenceResult(
     }
   }
 
-  const balanceResult = scoreBalance(filteredSessions, meta)
-  const sraResult = scoreSRA(filteredSessions, meta, profile)
-  const redundancyResult = scoreRedundancy(filteredSessions, morphoStimulusAdjustments)
+  const balanceResult = scoreBalance(expandedSessions, meta)
+  const sraResult = scoreSRA(expandedSessions, meta, profile)
+  const redundancyResult = scoreRedundancy(expandedSessions, morphoStimulusAdjustments)
   const progressionResult = scoreProgression(filteredSessions, meta)
-  const specificityResult = scoreSpecificity(filteredSessions, meta, profile, morphoStimulusAdjustments)
-  const completenessResult = scoreCompleteness(filteredSessions, meta, profile)
-  const jointLoadResult = scoreJointLoad(filteredSessions, profile)
-  const coordinationResult = scoreCoordination(filteredSessions, meta)
-  const volumeResult = scoreVolumeCoverage(filteredSessions, meta)
+  const specificityResult = scoreSpecificity(expandedSessions, meta, profile, morphoStimulusAdjustments)
+  const completenessResult = scoreCompleteness(expandedSessions, meta, profile)
+  const jointLoadResult = scoreJointLoad(expandedSessions, profile)
+  const coordinationResult = scoreCoordination(expandedSessions, meta)
+  const volumeResult = scoreVolumeCoverage(expandedSessions, meta)
 
   const subscores = {
     balance: balanceResult.score,
@@ -1160,10 +1230,9 @@ export function buildIntelligenceResult(
     return order[a.severity] - order[b.severity]
   })
 
-  // Distribution musculaire (volume pondéré par groupe)
-  // Priorité : primary_muscles[] (slugs FR du builder) → fallback primaryMuscle (slug EN biomech → groupe)
+  // Distribution musculaire (volume pondéré par groupe) — sur sessions expandées (multi-day × occurrences)
   const distribution: MuscleDistribution = {}
-  for (const session of filteredSessions) {
+  for (const session of expandedSessions) {
     for (const ex of session.exercises) {
       const vol = weightedVolume(ex)
       if (ex.primary_muscles.length > 0) {
@@ -1178,9 +1247,9 @@ export function buildIntelligenceResult(
     }
   }
 
-  // Distribution patterns (volume brut)
+  // Distribution patterns (volume brut) — sur sessions expandées
   const patternDistribution: PatternDistribution = { push: 0, pull: 0, legs: 0, core: 0 }
-  for (const session of filteredSessions) {
+  for (const session of expandedSessions) {
     for (const ex of session.exercises) {
       const p = getPattern(ex)
       const vol = ex.sets

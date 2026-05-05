@@ -1717,13 +1717,14 @@ function MultiSeriesChart({
     return Array.from(dateSet).sort();
   }, [selectedMetrics, series]);
 
+  const lastDataDate = dates.length > 0 ? dates[dates.length - 1] : undefined;
+
   const merged = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    // Include annotation/phase dates + today so chart always extends to current date
+    // Inject all annotation/phase dates so xScale can position them,
+    // but XAxis domain will be clamped to lastDataDate to prevent extra ticks
     const annotationDates = [
       ...annotations.map((a) => a.event_date),
       ...phases.map((p) => p.date_start),
-      today,
     ].filter((d) => !dates.includes(d));
     const allDates = [...dates, ...annotationDates].sort();
 
@@ -1801,12 +1802,10 @@ function MultiSeriesChart({
       value: d.value,
     }));
     const existingDates = new Set(dataPoints.map((d) => d.date));
-    const today = new Date().toISOString().split("T")[0];
-    // Inject annotation/phase dates + today so chart always extends to current date
+    // Inject all annotation/phase dates so xScale can position them
     const extraDates = [
       ...annotations.map((a) => a.event_date),
       ...phases.map((p) => p.date_start),
-      today,
     ].filter((d) => !existingDates.has(d));
     const combined = [
       ...dataPoints,
@@ -2432,6 +2431,7 @@ function MultiSeriesChart({
                   axisLine={false}
                   tickLine={false}
                   tickCount={6}
+                  domain={lastDataDate ? [absoluteData[0]?.date, lastDataDate] : undefined}
                   tickFormatter={(d) =>
                     new Date(d).toLocaleDateString("fr-FR", {
                       day: "2-digit",
@@ -2554,6 +2554,7 @@ function MultiSeriesChart({
                   axisLine={false}
                   tickLine={false}
                   tickCount={6}
+                  domain={lastDataDate ? [dates[0], lastDataDate] : undefined}
                   tickFormatter={(d) =>
                     new Date(d).toLocaleDateString("fr-FR", {
                       day: "2-digit",
@@ -3063,8 +3064,12 @@ function MultiSeriesChart({
       {/* ── Annotation hover tooltip ── */}
       {hoveredAnnotation &&
         (() => {
-          // Flip below the icon if near top of viewport
           const nearTop = hoveredAnnotation.screenY < 120;
+          const nearRight = hoveredAnnotation.screenX > window.innerWidth - 280;
+          const nearLeft = hoveredAnnotation.screenX < 140;
+          const xShift = nearRight ? "-100%" : nearLeft ? "0%" : "-50%";
+          const yShift = nearTop ? "0%" : "-100%";
+          const caretLeft = nearRight ? "calc(100% - 20px)" : nearLeft ? "16px" : "50%";
           return (
             <div
               className="fixed z-[60] pointer-events-none"
@@ -3073,17 +3078,14 @@ function MultiSeriesChart({
                   ? hoveredAnnotation.screenY + 28
                   : hoveredAnnotation.screenY - 12,
                 left: hoveredAnnotation.screenX,
-                transform: nearTop
-                  ? "translateX(-50%)"
-                  : "translate(-50%, -100%)",
+                transform: `translate(${xShift}, ${yShift})`,
               }}
             >
-              <div className="relative bg-[#0f0f0f] border border-white/[0.10] rounded-xl px-3 py-2.5 max-w-[240px] shadow-2xl">
-                {/* Caret — top if tooltip is below icon, bottom if above */}
+              <div className="relative bg-[#0f0f0f] border border-white/[0.10] rounded-xl px-3 py-2.5 w-[220px] shadow-2xl">
                 {nearTop ? (
-                  <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#0f0f0f] border-l border-t border-white/[0.10] rotate-45" />
+                  <div className="absolute -top-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-l border-t border-white/[0.10] rotate-45" style={{ left: caretLeft, transform: "translateX(-50%) rotate(45deg)" }} />
                 ) : (
-                  <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#0f0f0f] border-r border-b border-white/[0.10] rotate-45" />
+                  <div className="absolute -bottom-[5px] w-2.5 h-2.5 bg-[#0f0f0f] border-r border-b border-white/[0.10] rotate-45" style={{ left: caretLeft, transform: "translateX(-50%) rotate(45deg)" }} />
                 )}
                 <p className="text-[11px] font-semibold text-white leading-snug">
                   {ANNOTATION_ICONS[hoveredAnnotation.ann.event_type]}{" "}
@@ -3687,6 +3689,7 @@ function ManualEntryForm({
 interface Props {
   clientId: string;
   clientGender?: string | null;
+  clientDateOfBirth?: string | null;
 }
 
 const TABLE_COLS = FIELDS.filter((f) =>
@@ -4240,7 +4243,7 @@ function PhaseEditModal({ phase, onClose, onSave, saving }: PhaseEditModalProps)
   );
 }
 
-export default function MetricsSection({ clientId, clientGender }: Props) {
+export default function MetricsSection({ clientId, clientGender, clientDateOfBirth }: Props) {
   const [rows, setRows] = useState<MetricRow[]>([]);
   const [series, setSeries] = useState<MetricSeries>({});
   const [loading, setLoading] = useState(true);
@@ -4383,7 +4386,10 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
     .sort()[0] as string;
 
   const filteredRows = useMemo(
-    () => filterRows(rows, finalDateFrom, finalDateTo),
+    () =>
+      filterRows(rows, finalDateFrom, finalDateTo).filter((row) =>
+        FIELDS.some((f) => row.values[f.key] !== undefined),
+      ),
     [rows, finalDateFrom, finalDateTo],
   );
 
@@ -4413,16 +4419,20 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
     [phases, finalDateFrom, finalDateTo],
   );
 
-  const hasData = rows.length > 0;
+  const hasData = rows.some((row) =>
+    FIELDS.some((f) => row.values[f.key] !== undefined),
+  );
 
-  // For norms: find the most recent submission that has both weight_kg and height_cm
+  // For norms: needs weight_kg AND height_cm across all submissions (not necessarily same row)
   const normsSubmissionId = useMemo(() => {
+    let hasWeight = false;
+    let hasHeight = false;
+    let latestWithWeight: string | null = null;
     for (const row of rows) {
-      if (row.values['weight_kg'] != null && row.values['height_cm'] != null) {
-        return row.submissionId;
-      }
+      if (row.values['weight_kg'] != null) { hasWeight = true; latestWithWeight = row.submissionId; }
+      if (row.values['height_cm'] != null) hasHeight = true;
     }
-    return null;
+    return (hasWeight && hasHeight) ? latestWithWeight : null;
   }, [rows]);
 
   const fieldsWithData = FIELDS.filter((f) => (series[f.key]?.length ?? 0) > 0);
@@ -4515,7 +4525,7 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
     <div className="flex flex-col gap-4">
       {/* ── Bloc 1 : Contrôles (vue + actions) ── */}
       <div
-        className={`flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 bg-[#181818] border-subtle rounded-2xl px-5 py-4 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+        className={`flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
       >
         {/* Left: View mode toggle */}
         <div className="flex w-full sm:w-auto flex-wrap items-center gap-0.5 bg-white/[0.05] rounded-full p-1 min-w-0">
@@ -5188,7 +5198,7 @@ export default function MetricsSection({ clientId, clientGender }: Props) {
       {viewMode === "norms" && normsSubmissionId && (
         <BioNormsPanel
           clientId={clientId}
-          clientProfile={{ sex: clientGender }}
+          clientProfile={{ sex: clientGender, date_of_birth: clientDateOfBirth }}
         />
       )}
 

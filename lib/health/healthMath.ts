@@ -60,6 +60,10 @@ export interface DerivedMetrics {
   muscle_mass_pct: number | null
   skeletal_muscle_pct: number | null
   waist_height_ratio: number | null
+  waist_hip_ratio: number | null
+  visceral_fat_level: number | null
+  body_water_pct: number | null
+  bone_mass_kg: number | null
   metabolic_age_estimated: number | null
   metabolic_age_source: 'measured' | 'estimated_katch' | 'estimated_mifflin' | 'unavailable'
 
@@ -89,6 +93,7 @@ export const DERIVED_FORMULAS: Partial<Record<string, string>> = {
   muscle_mass_kg:      'poids × (muscle% ÷ 100)',
   muscle_mass_pct:     'masse musculaire ÷ poids × 100',
   waist_height_ratio:  'tour de taille ÷ taille',
+  waist_hip_ratio:     'tour de taille ÷ tour de hanche',
   metabolic_age_delta: 'BMR estimé → âge métabolique (Katch-McArdle / Mifflin)',
 }
 
@@ -409,6 +414,12 @@ export function deriveMetrics(inputs: BiometricInputs): DerivedMetrics {
     }
   }
 
+  // waist_hip_ratio — derived from waist_cm + hips_cm
+  const waist_hip_ratio =
+    inputs.waist_cm !== undefined && inputs.hips_cm !== undefined && inputs.hips_cm > 0
+      ? Math.round((inputs.waist_cm / inputs.hips_cm) * 1000) / 1000
+      : null
+
   return {
     bmi,
     fat_mass_kg,
@@ -418,6 +429,10 @@ export function deriveMetrics(inputs: BiometricInputs): DerivedMetrics {
     muscle_mass_pct,
     skeletal_muscle_pct: inputs.skeletal_muscle_pct !== undefined ? round1(inputs.skeletal_muscle_pct) : null,
     waist_height_ratio,
+    waist_hip_ratio,
+    visceral_fat_level: inputs.visceral_fat_level !== undefined ? inputs.visceral_fat_level : null,
+    body_water_pct: inputs.body_water_pct !== undefined ? inputs.body_water_pct : null,
+    bone_mass_kg: inputs.bone_mass_kg !== undefined ? inputs.bone_mass_kg : null,
     metabolic_age_estimated,
     metabolic_age_source,
     body_fat_source,

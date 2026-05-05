@@ -31,8 +31,9 @@ export interface SetRecommendation {
   delta_vs_last: number | null
 }
 
-function roundToQuarter(value: number): number {
-  return Math.round(value * 4) / 4
+// Arrondi au demi-kilo (palier le plus courant en salle) — évite 56.25, 39.25, etc.
+function roundToHalf(value: number): number {
+  return Math.round(value * 2) / 2
 }
 
 function estimateOneRM(weight_kg: number, reps: number, rir_actual: number): number {
@@ -46,31 +47,34 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
   const { actual_weight_kg, actual_reps, rir_actual, goal, planned_reps, lastWeek } = input
 
   if (actual_weight_kg <= 0 || actual_reps <= 0) return null
+  // rir_actual peut être 0 (à l'échec) — on garde uniquement le guard sur repsToFailure total
   if (actual_reps + rir_actual < 1) return null
 
   const zone = getTrainingZone(goal)
 
   const liveOneRM = estimateOneRM(actual_weight_kg, actual_reps, rir_actual)
 
+  // Live pondère plus que l'historique : le set en cours reflète l'état de fatigue réel de la session
   let blendedOneRM: number
   if (lastWeek && lastWeek.weight_kg > 0 && lastWeek.reps > 0) {
     const historyOneRM = estimateOneRM(lastWeek.weight_kg, lastWeek.reps, lastWeek.rir_actual)
-    blendedOneRM = historyOneRM * 0.7 + liveOneRM * 0.3
+    blendedOneRM = liveOneRM * 0.7 + historyOneRM * 0.3
   } else {
     blendedOneRM = liveOneRM
   }
 
   const rawWeight = blendedOneRM * zone.targetPct
-  const targetWeight = roundToQuarter(rawWeight)
+  const targetWeight = roundToHalf(rawWeight)
 
   const targetReps = planned_reps > 0
     ? planned_reps
     : Math.round((zone.repRangeMin + zone.repRangeMax) / 2)
 
-  const confidence: 'high' | 'low' = actual_reps > 10 ? 'low' : 'high'
+  // Précision 1RM fiable jusqu'à ~8 reps (±2.5%), se dégrade au-delà
+  const confidence: 'high' | 'low' = actual_reps > 8 ? 'low' : 'high'
 
   const delta_vs_last = lastWeek && lastWeek.weight_kg > 0
-    ? roundToQuarter(targetWeight - lastWeek.weight_kg)
+    ? roundToHalf(targetWeight - lastWeek.weight_kg)
     : null
 
   return {

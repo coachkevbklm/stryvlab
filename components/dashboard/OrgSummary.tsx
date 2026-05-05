@@ -15,7 +15,8 @@ const NOTIFY_LABELS: Record<number, string> = {
   1440: '1 jour',
 }
 
-export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
+export default function OrgSummary() {
+  const [boards, setBoards] = useState<KanbanBoardType[]>([])
   const [events, setEvents] = useState<AgendaEvent[]>([])
   const [tasks, setTasks] = useState<KanbanTask[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,14 +27,21 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
     const fetchAll = async () => {
       setLoading(true)
       try {
+        // Fetch boards first, then tasks per board + events in parallel
+        const boardsRes = await fetch('/api/organisation/boards')
+        const fetchedBoards: KanbanBoardType[] = boardsRes.ok ? await boardsRes.json() : []
+        setBoards(fetchedBoards)
+
         const [evRes, ...taskResults] = await Promise.all([
           fetch('/api/organisation/events'),
-          ...boards.map(b => fetch(`/api/organisation/tasks?boardId=${b.id}`)),
+          ...fetchedBoards.map(b => fetch(`/api/organisation/tasks?boardId=${b.id}`)),
         ])
+
         if (evRes.ok) {
           const data = await evRes.json()
           setEvents(Array.isArray(data) ? data : [])
         }
+
         const allTasks: KanbanTask[] = []
         for (const res of taskResults) {
           if (res.ok) {
@@ -46,7 +54,7 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
       finally { setLoading(false) }
     }
     fetchAll()
-  }, [boards])
+  }, [])
 
   const todayEvents = events
     .filter(e => e.event_date === todayKey)
@@ -71,7 +79,7 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.06] p-5 space-y-3">
+          <div key={i} className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5 space-y-3">
             <div className="h-3 w-24 rounded-full bg-white/[0.06] animate-pulse" />
             <div className="h-16 rounded-xl bg-white/[0.04] animate-pulse" />
             <div className="h-10 rounded-xl bg-white/[0.04] animate-pulse" />
@@ -84,7 +92,7 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Card 1 — Today's events */}
-      <div className="rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.06] p-5">
+      <div className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1f8a65]/15">
             <Calendar size={13} className="text-[#1f8a65]" />
@@ -125,7 +133,7 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
       </div>
 
       {/* Card 2 — Task completion rate */}
-      <div className="rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.06] p-5">
+      <div className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06]">
             <BarChart2 size={13} className="text-white/60" />
@@ -163,7 +171,7 @@ export default function OrgSummary({ boards }: { boards: KanbanBoardType[] }) {
       </div>
 
       {/* Card 3 — Upcoming notifications */}
-      <div className="rounded-2xl bg-[#181818] border-[0.3px] border-white/[0.06] p-5">
+      <div className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.06]">
             <Bell size={13} className="text-white/60" />

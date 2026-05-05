@@ -14,7 +14,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     navIndex: 0,
     title: 'Ton dashboard',
-    body: 'C\'est ton point de départ. Tes actions du jour et les messages de ton coach sont ici.',
+    body: 'C\'est ton point de départ. La séance du jour et tes actions prioritaires sont toujours visibles ici.',
   },
   {
     navIndex: 1,
@@ -24,7 +24,12 @@ const TOUR_STEPS: TourStep[] = [
   {
     navIndex: 2,
     title: 'Ta nutrition',
-    body: 'Ton protocole nutritionnel préparé par ton coach. Macros, hydratation, jours hauts et bas.',
+    body: 'Ton protocole nutritionnel préparé par ton coach. Macros, hydratation, et un plan adapté selon tes jours d\'entraînement et de repos.',
+  },
+  {
+    navIndex: 0,
+    title: 'Tes bilans',
+    body: 'Ton coach t\'envoie des bilans régulièrement. Ils apparaissent directement sur ton dashboard — un clic suffit pour y répondre.',
   },
   {
     navIndex: 3,
@@ -41,7 +46,8 @@ export default function OnboardingTour() {
 
   useEffect(() => {
     const done = localStorage.getItem('onboarding_tour_done')
-    if (done === 'false') {
+    // Trigger if never set (null) or explicitly queued ('false')
+    if (done === null || done === 'false') {
       const timer = setTimeout(() => {
         measureNavItems()
         setActive(true)
@@ -92,20 +98,20 @@ export default function OnboardingTour() {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay — le box-shadow du highlight fait le masque sombre, pas besoin de bg ici */}
       <div className="fixed inset-0 z-[60] pointer-events-none">
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/70" />
 
-        {/* Highlight cutout around nav item */}
+        {/* Highlight cutout — box-shadow crée l'overlay sombre autour, border vert encadre l'icône */}
         {targetRect && (
           <div
-            className="absolute rounded-xl ring-2 ring-[#1f8a65] ring-offset-2 ring-offset-transparent bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.70)]"
+            className="absolute rounded-xl"
             style={{
-              left: targetRect.left - 4,
-              top: targetRect.top - 4,
-              width: targetRect.width + 8,
-              height: targetRect.height + 8,
+              left: targetRect.left - 6,
+              top: targetRect.top - 6,
+              width: targetRect.width + 12,
+              height: targetRect.height + 12,
+              background: 'transparent',
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.75), 0 0 0 2px #1f8a65, 0 0 16px 3px rgba(31,138,101,0.5)',
             }}
           />
         )}

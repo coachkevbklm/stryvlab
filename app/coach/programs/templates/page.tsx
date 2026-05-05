@@ -163,10 +163,10 @@ export default function ProgramTemplatesPage() {
     () => (
       <button
         onClick={() => router.push("/coach/programs/templates/new")}
-        className="flex items-center gap-2 rounded-xl bg-[#1f8a65] px-4 py-2.5 text-[12px] font-bold uppercase text-white hover:bg-[#217356] transition-colors active:scale-[0.98]"
+        className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-[#217356] transition-all active:scale-[0.98]"
       >
-        <Plus size={13} />
-        Nouveau
+        <Plus size={12} />
+        Nouveau template
       </button>
     ),
     [router],
@@ -368,11 +368,8 @@ export default function ProgramTemplatesPage() {
               return (
                 <div
                   key={t.id}
-                  className="bg-[#181818] border-subtle rounded-2xl flex flex-col overflow-hidden transition-transform duration-150 hover:scale-[1.01]"
+                  className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl flex flex-col overflow-hidden transition-all duration-150 hover:bg-white/[0.03]"
                 >
-                  {/* Top color bar */}
-                  <div className="h-1 w-full bg-[#1f8a65]/60" />
-
                   <div className="p-5 flex flex-col gap-3 flex-1">
                     {/* Badges */}
                     <div className="flex flex-wrap gap-1.5">
@@ -452,7 +449,7 @@ export default function ProgramTemplatesPage() {
                   {/* Actions footer */}
                   {isSystem ? (
                     /* ── Template STRYVR — modèle à dupliquer ── */
-                    <div className="border-t border-white/20 px-5 py-3 flex flex-col gap-2">
+                    <div className="border-t-[0.3px] border-white/[0.06] px-5 py-3 flex flex-col gap-2">
                       <p className="text-[9px] text-white/60 text-center italic">
                         Modèle STRYVR — dupliquer pour personnaliser
                       </p>
@@ -471,7 +468,7 @@ export default function ProgramTemplatesPage() {
                         </button>
                         <Link
                           href={`/coach/programs/templates/${t.id}/view`}
-                          className="p-2 text-white/70 hover:text-white bg-[#0a0a0a] border-button rounded-xl transition-colors"
+                          className="p-2 text-white/50 hover:text-white/80 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg transition-all"
                           title="Visualiser"
                         >
                           <Eye size={14} />
@@ -480,7 +477,7 @@ export default function ProgramTemplatesPage() {
                     </div>
                   ) : (
                     /* ── Template coach ── */
-                    <div className="border-t border-white/20 px-5 py-3 flex items-center gap-2">
+                    <div className="border-t-[0.3px] border-white/[0.06] px-5 py-3 flex items-center gap-2">
                       <Link
                         href={`/coach/programs/templates/${t.id}/assign`}
                         className="flex-1 flex items-center justify-center gap-1.5 bg-[#1f8a65] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#217356] transition-colors"
@@ -490,14 +487,14 @@ export default function ProgramTemplatesPage() {
                       </Link>
                       <Link
                         href={`/coach/programs/templates/${t.id}/view`}
-                        className="p-2 text-white/70 hover:text-white bg-[#0a0a0a] border-button rounded-xl transition-colors"
+                        className="p-2 text-white/50 hover:text-white/80 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg transition-all"
                         title="Visualiser"
                       >
                         <Eye size={14} />
                       </Link>
                       <Link
                         href={`/coach/programs/templates/${t.id}/edit`}
-                        className="p-2 text-white/70 hover:text-white bg-[#0a0a0a] border-button rounded-xl transition-colors"
+                        className="p-2 text-white/50 hover:text-white/80 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg transition-all"
                         title="Modifier"
                       >
                         <Edit2 size={14} />
@@ -505,7 +502,7 @@ export default function ProgramTemplatesPage() {
                       <button
                         onClick={() => handleDuplicate(t.id)}
                         disabled={duplicating === t.id}
-                        className="p-2 text-white/70 hover:text-white bg-[#0a0a0a] border-button rounded-xl transition-colors"
+                        className="p-2 text-white/50 hover:text-white/80 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg transition-all"
                         title="Dupliquer"
                       >
                         {duplicating === t.id ? (

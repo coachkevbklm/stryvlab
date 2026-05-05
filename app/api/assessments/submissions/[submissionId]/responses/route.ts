@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { BulkResponsePayload } from '@/types/assessment'
+import { inngest } from '@/lib/inngest/client'
 
 function serviceClient() {
   return createServiceClient(
@@ -67,6 +68,28 @@ export async function POST(
       .update({ status: 'completed', submitted_at: new Date().toISOString() })
       .eq('id', params.submissionId)
 
+    // Sync profile fields from assessment responses to coach_clients
+    const profileUpdate: Record<string, string> = {};
+    for (const r of body.responses) {
+      if (['date_naissance', 'date_of_birth'].includes(r.field_key) && r.value_text) {
+        profileUpdate['date_of_birth'] = r.value_text;
+      }
+      if (['sexe', 'gender', 'genre'].includes(r.field_key) && r.value_text) {
+        const v = r.value_text.toLowerCase();
+        const mapped = v === 'homme' || v === 'male' || v === 'm' ? 'male'
+          : v === 'femme' || v === 'female' || v === 'f' ? 'female'
+          : v === 'other' || v === 'autre' ? 'other'
+          : null;
+        if (mapped) profileUpdate['gender'] = mapped;
+      }
+    }
+    if (Object.keys(profileUpdate).length > 0) {
+      await db
+        .from('coach_clients')
+        .update(profileUpdate)
+        .eq('id', submission.client_id);
+    }
+
     await db.from('client_notifications').insert({
       coach_id:      user.id,
       client_id:     submission.client_id,
@@ -74,6 +97,29 @@ export async function POST(
       type:          'assessment_completed',
       message:       `Bilan rempli par le coach.`,
     })
+
+    // Award bilan points once per submission
+    const { data: existingBilanPoints } = await db
+      .from('client_points')
+      .select('id')
+      .eq('client_id', submission.client_id)
+      .eq('action_type', 'bilan')
+      .eq('reference_id', params.submissionId)
+      .maybeSingle()
+
+    if (!existingBilanPoints) {
+      await db.from('client_points').insert({
+        client_id: submission.client_id,
+        action_type: 'bilan',
+        points: 20,
+        reference_id: params.submissionId,
+      })
+
+      await inngest.send({
+        name: 'points/level.update',
+        data: { client_id: submission.client_id },
+      })
+    }
   }
 
   return NextResponse.json({ success: true })

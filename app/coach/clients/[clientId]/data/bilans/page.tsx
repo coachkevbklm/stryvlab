@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Send } from "lucide-react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import SubmissionsList from "@/components/assessments/dashboard/SubmissionsList";
@@ -9,7 +10,19 @@ import { SubmissionWithClient } from "@/types/assessment";
 
 export default function BilansPage() {
   const { client, clientId } = useClient();
-  useClientTopBar("Bilans");
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+
+  const topBarRight = useMemo(() => (
+    <button
+      onClick={() => setSendModalOpen(true)}
+      className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#1f8a65] text-white text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-[#217356] transition-all active:scale-[0.98]"
+    >
+      <Send size={12} />
+      Envoyer un bilan
+    </button>
+  ), []);
+
+  useClientTopBar("Bilans", topBarRight);
   const [submissions, setSubmissions] = useState<SubmissionWithClient[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +94,8 @@ export default function BilansPage() {
             templates={templates}
             clientId={clientId}
             onSend={handleSend}
+            sendModalOpen={sendModalOpen}
+            onSendModalClose={() => setSendModalOpen(false)}
           />
         )}
       </div>

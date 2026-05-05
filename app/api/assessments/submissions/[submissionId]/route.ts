@@ -3,6 +3,7 @@ import { createClient as createServerClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { sendBilanEmail } from '@/lib/email/mailer'
+import { inngest } from '@/lib/inngest/client'
 
 function serviceClient() {
   return createServiceClient(
@@ -128,6 +129,29 @@ export async function PATCH(
       type:          'assessment_completed',
       message:       `Bilan complété par le coach.`,
     })
+
+    // Award bilan points once per submission
+    const { data: existingBilanPoints } = await db
+      .from('client_points')
+      .select('id')
+      .eq('client_id', data.client_id)
+      .eq('action_type', 'bilan')
+      .eq('reference_id', data.id)
+      .maybeSingle()
+
+    if (!existingBilanPoints) {
+      await db.from('client_points').insert({
+        client_id: data.client_id,
+        action_type: 'bilan',
+        points: 20,
+        reference_id: data.id,
+      })
+
+      await inngest.send({
+        name: 'points/level.update',
+        data: { client_id: data.client_id },
+      })
+    }
   }
 
   const bilanUrl = data.token

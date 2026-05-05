@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Trophy, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
-import type { PREntry } from './page'
+import type { PREntry } from '@/lib/client/progressTypes'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface Props {

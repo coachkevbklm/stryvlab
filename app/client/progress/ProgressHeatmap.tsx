@@ -1,6 +1,6 @@
 'use client'
 
-import type { HeatmapDay } from './page'
+import type { HeatmapDay } from '@/lib/client/progressTypes'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface Props {

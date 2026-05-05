@@ -12,7 +12,7 @@ function service() {
 const SELECT = `
   id, name, description, goal, level, frequency, weeks, muscle_tags, notes, is_public, equipment_archetype, created_at,
   coach_program_template_sessions (
-    id, name, day_of_week, position, notes,
+    id, name, day_of_week, days_of_week, position, notes,
     coach_program_template_exercises (
       id, name, sets, reps, rest_sec, rir, notes, position, image_url, movement_pattern, equipment_required, primary_muscles, secondary_muscles, group_id,
       plane, mechanic, unilateral, primary_muscle, primary_activation,
@@ -90,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       const s = body.sessions[si]
       const { data: session } = await db
         .from('coach_program_template_sessions')
-        .insert({ template_id: params.templateId, name: s.name, day_of_week: s.day_of_week ?? null, position: si, notes: s.notes ?? null })
+        .insert({ template_id: params.templateId, name: s.name, days_of_week: s.days_of_week ?? [], day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null, position: si, notes: s.notes ?? null })
         .select('id')
         .single()
 
@@ -148,9 +148,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   }
 
+  const effectiveFrequency = body.sessions?.length ?? frequency
+
   const { data, error } = await db
     .from('coach_program_templates')
-    .update({ name, description, goal, level, frequency, weeks, muscle_tags, notes, equipment_archetype: equipment_archetype || null, session_mode: session_mode ?? 'day' })
+    .update({ name, description, goal, level, frequency: effectiveFrequency, weeks, muscle_tags, notes, equipment_archetype: equipment_archetype || null, session_mode: session_mode ?? 'day' })
     .eq('id', params.templateId)
     .eq('coach_id', user.id)
     .select(SELECT)
@@ -197,7 +199,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   for (const s of (source.coach_program_template_sessions ?? [])) {
     const { data: ns } = await db
       .from('coach_program_template_sessions')
-      .insert({ template_id: copy.id, name: s.name, day_of_week: s.day_of_week, position: s.position, notes: s.notes })
+      .insert({ template_id: copy.id, name: s.name, days_of_week: (s as any).days_of_week ?? [], day_of_week: s.day_of_week, position: s.position, notes: s.notes })
       .select('id')
       .single()
     if (ns && s.coach_program_template_exercises?.length) {

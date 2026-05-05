@@ -8,6 +8,8 @@ interface ProfileData {
   last_name:        string
   phone:            string
   goal:             string
+  date_of_birth:    string
+  gender:           string
   training_goal:    string
   fitness_level:    string
   sport_practice:   string
@@ -44,6 +46,13 @@ const SPORT_PRACTICES = [
   { value: 'athlete',   label: 'Athlète' },
 ]
 
+const GENDERS = [
+  { value: 'male',              label: 'Homme' },
+  { value: 'female',            label: 'Femme' },
+  { value: 'other',             label: 'Autre' },
+  { value: 'prefer_not_to_say', label: 'Préfère ne pas préciser' },
+]
+
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function ProfileForm({ clientId, initial }: Props) {
@@ -68,6 +77,8 @@ export default function ProfileForm({ clientId, initial }: Props) {
         last_name:        form.last_name || undefined,
         phone:            form.phone || null,
         goal:             form.goal || null,
+        date_of_birth:    form.date_of_birth || null,
+        gender:           form.gender || null,
         training_goal:    form.training_goal || null,
         fitness_level:    form.fitness_level || null,
         sport_practice:   form.sport_practice || null,
@@ -118,6 +129,30 @@ export default function ProfileForm({ clientId, initial }: Props) {
           className={inputCls}
           placeholder="+32 XXX XX XX XX"
         />
+      </Field>
+
+      {/* Date de naissance */}
+      <Field label="Date de naissance">
+        <input
+          type="date"
+          value={form.date_of_birth}
+          onChange={(e) => update('date_of_birth', e.target.value)}
+          className={inputCls}
+        />
+      </Field>
+
+      {/* Genre */}
+      <Field label="Genre">
+        <select
+          value={form.gender}
+          onChange={(e) => update('gender', e.target.value)}
+          className={inputCls}
+        >
+          <option value="">Sélectionner…</option>
+          {GENDERS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </Field>
 
       {/* Objectif texte libre */}
@@ -179,10 +214,10 @@ export default function ProfileForm({ clientId, initial }: Props) {
             <button
               key={n}
               onClick={() => update('weekly_frequency', form.weekly_frequency === n ? null : n)}
-              className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
+              className={`w-9 h-9 rounded-lg text-[13px] font-bold transition-all ${
                 form.weekly_frequency === n
-                  ? 'bg-accent text-white shadow-md'
-                  : 'bg-surface-light text-secondary hover:text-primary'
+                  ? 'bg-[#1f8a65] text-white'
+                  : 'bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-white/40 hover:text-white/70'
               }`}
             >
               {n}
@@ -200,10 +235,10 @@ export default function ProfileForm({ clientId, initial }: Props) {
       <button
         onClick={handleSave}
         disabled={saveState === 'saving'}
-        className={`w-full py-2.5 rounded-btn text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+        className={`w-full h-11 rounded-xl text-[12px] font-bold uppercase tracking-[0.10em] transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-green-500 text-white'
-            : 'bg-accent text-white hover:opacity-90 disabled:opacity-50'
+            ? 'bg-[#1f8a65] text-white'
+            : 'bg-[#1f8a65] text-white hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
@@ -217,7 +252,7 @@ export default function ProfileForm({ clientId, initial }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-[10px] font-bold text-secondary uppercase tracking-wide block mb-1.5">
+      <label className="text-[10px] font-bold text-white/40 uppercase tracking-[0.14em] block mb-1.5">
         {label}
       </label>
       {children}
@@ -226,4 +261,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'w-full bg-surface-light rounded-lg px-3 py-2.5 text-sm text-primary outline-none focus:ring-2 focus:ring-accent/30 transition-all'
+  'w-full bg-[#0a0a0a] border-[0.3px] border-white/[0.06] rounded-xl px-3 h-11 text-[13px] text-white outline-none placeholder:text-white/20 transition-all'

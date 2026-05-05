@@ -1,20 +1,31 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 // ─── Transport ────────────────────────────────────────────────────────────────
 
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'mail.privateemail.com',
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+async function sendMail(options: {
+  from: string
+  to: string
+  subject: string
+  html: string
+  attachments?: { filename: string; content: Buffer; contentType: string }[]
+}) {
+  await resend.emails.send({
+    from: options.from,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    attachments: options.attachments?.map(a => ({
+      filename: a.filename,
+      content: a.content,
+    })),
+  })
+}
 
 // ─── Brand tokens (DS v2.0) ───────────────────────────────────────────────────
 
-const FROM = `STRYV <${process.env.SMTP_USER || 'noreply@stryvlab.com'}>`
+const FROM = `STRYV <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://stryvlab.com'
 
 const DS = {
@@ -225,7 +236,7 @@ export async function sendBilanEmail(params: SendBilanEmailParams) {
     ? `${coachName} vous a envoyé un bilan — ${templateName}`
     : `Votre bilan "${templateName}" est prêt`
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject,
@@ -260,7 +271,7 @@ export async function sendAccessLinkEmail(params: SendAccessLinkEmailParams) {
     ? `${coachName} vous invite sur STRYV`
     : 'Votre accès à STRYV est prêt'
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject,
@@ -284,7 +295,7 @@ export async function sendAccessLinkEmail(params: SendAccessLinkEmailParams) {
 export async function sendBilanCompletedEmail(params: SendBilanCompletedEmailParams) {
   const { to, coachFirstName, clientFullName, templateName, dashboardUrl } = params
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: `${clientFullName} a complété son bilan`,
@@ -320,7 +331,7 @@ export async function sendPaymentReceiptEmail(params: SendPaymentReceiptEmailPar
   if (description) rows.push({ label: 'Description', value: description })
   if (reference) rows.push({ label: 'Référence', value: reference })
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: `Reçu de paiement — ${amount.toFixed(2)} €`,
@@ -352,8 +363,8 @@ export async function sendPaymentReminderEmail(params: SendPaymentReminderEmailP
   ]
   if (paymentMethod) rows.push({ label: 'Méthode habituelle', value: METHOD_LABELS[paymentMethod] ?? paymentMethod })
 
-  await transporter.sendMail({
-    from: fromName ? `${fromName} <${process.env.SMTP_USER}>` : FROM,
+  await sendMail({
+    from: fromName ? `${fromName} <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>` : FROM,
     to,
     subject: `Rappel paiement — ${formulaName} — ${amount.toFixed(2)} €`,
     html: emailTemplate({
@@ -373,8 +384,8 @@ export async function sendPaymentReminderEmail(params: SendPaymentReminderEmailP
 export async function sendInvoiceEmail(params: SendInvoiceEmailParams) {
   const { to, clientFirstName, coachName, invoiceNumber, amount, pdfBuffer, fromName } = params
 
-  await transporter.sendMail({
-    from: fromName ? `${fromName} <${process.env.SMTP_USER}>` : FROM,
+  await sendMail({
+    from: fromName ? `${fromName} <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>` : FROM,
     to,
     subject: `Reçu de paiement — ${amount.toFixed(2)} € — ${invoiceNumber}`,
     html: emailTemplate({
@@ -406,7 +417,7 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
     ? `${coachName} vous invite sur STRYV — Créez votre accès`
     : 'Créez votre accès STRYV'
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject,
@@ -444,7 +455,7 @@ export async function sendReactivationEmail(params: SendReactivationEmailParams)
     ? `${coachName} a restauré votre accès STRYV`
     : 'Votre accès STRYV est restauré'
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject,
@@ -476,7 +487,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
     ? `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel configuré par <strong style="color:${DS.white};">${coachName}</strong> est maintenant accessible.`
     : `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel est maintenant accessible.`
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: 'Bienvenue sur STRYV — ton accès est actif',

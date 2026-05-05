@@ -18,9 +18,10 @@ export interface MorphoPhoto {
   notes?: string | null
   created_at: string
   // enrichis par l'API
-  signed_url?: string
+  signed_url?: string | null        // thumbnail 400px — pour l'affichage grille
+  full_url?: string | null          // original full-res — pour canvas/comparaison
   has_annotation?: boolean
-  thumbnail_url?: string | null
+  thumbnail_url?: string | null     // thumbnail annotation canvas
 }
 
 export interface MorphoAnnotation {

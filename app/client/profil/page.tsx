@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { resolveClientFromUser } from "@/lib/client/resolve-client";
 import ProfilePhotoUpload from "@/components/client/profile/ProfilePhotoUpload";
 import ProfileForm from "@/components/client/profile/ProfileForm";
@@ -30,10 +31,10 @@ export default async function ClientProfilPage() {
     user.id,
     user.email,
     service,
-    "id, first_name, last_name, email, phone, goal, training_goal, fitness_level, sport_practice, weekly_frequency, status, profile_photo_url, created_at",
+    "id, first_name, last_name, email, phone, goal, date_of_birth, gender, training_goal, fitness_level, sport_practice, weekly_frequency, status, profile_photo_url, created_at",
   )) as any;
 
-  const [{ data: prefs }, { data: notifData }] = await Promise.all([
+  const [{ data: prefs }, { data: notifData }, { data: streakData }, { data: recentPoints }] = await Promise.all([
     client
       ? service
           .from("client_preferences")
@@ -47,6 +48,21 @@ export default async function ClientProfilPage() {
       .eq("target_user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
+    client
+      ? service
+          .from("client_streaks")
+          .select("current_streak, longest_streak, total_points, level")
+          .eq("client_id", (client as any).id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    client
+      ? service
+          .from("client_points")
+          .select("action_type, points, earned_at")
+          .eq("client_id", (client as any).id)
+          .order("earned_at", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const firstName = client?.first_name ?? "";
@@ -122,6 +138,8 @@ export default async function ClientProfilPage() {
                 last_name: client?.last_name ?? "",
                 phone: client?.phone ?? "",
                 goal: client?.goal ?? "",
+                date_of_birth: client?.date_of_birth ?? "",
+                gender: client?.gender ?? "",
                 training_goal: client?.training_goal ?? "",
                 fitness_level: client?.fitness_level ?? "",
                 sport_practice: client?.sport_practice ?? "",
@@ -135,6 +153,13 @@ export default async function ClientProfilPage() {
         <Section title="Restrictions physiques" icon="🚫">
           <ClientRestrictionsSection />
         </Section>
+
+        {/* ── Ma progression ── */}
+        {streakData && (
+          <Section title="Ma progression" icon="🏆">
+            <ProgressionSection streak={streakData} recentPoints={recentPoints ?? []} />
+          </Section>
+        )}
 
         {/* ── Notifications ── */}
         <Section
@@ -151,6 +176,13 @@ export default async function ClientProfilPage() {
             }}
           />
         </Section>
+
+        <Link
+          href="/client/checkin/schedule"
+          className="inline-flex h-9 items-center rounded-lg bg-white/[0.08] px-3 text-[11px] font-semibold text-white/80 hover:bg-white/[0.12]"
+        >
+          Configurer mes rappels
+        </Link>
 
         {/* ── Préférences ── */}
         <Section title={ct(lang, 'profil.section.prefs')} icon="⚙️">
@@ -209,5 +241,78 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+const LEVEL_META: Record<string, { label: string; color: string }> = {
+  bronze: { label: "Bronze", color: "text-amber-400" },
+  silver: { label: "Argent", color: "text-white/60" },
+  gold: { label: "Or", color: "text-yellow-400" },
+  platinum: { label: "Platine", color: "text-cyan-400" },
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  checkin: "Check-in complété",
+  checkin_late: "Check-in tardif",
+  session: "Séance complétée",
+  bilan: "Bilan complété",
+  meal: "Repas loggué",
+};
+
+function ProgressionSection({
+  streak,
+  recentPoints,
+}: {
+  streak: { current_streak: number; longest_streak: number; total_points: number; level: string };
+  recentPoints: { action_type: string; points: number; earned_at: string }[];
+}) {
+  const levelMeta = LEVEL_META[streak.level] ?? LEVEL_META.bronze;
+
+  return (
+    <div className="space-y-4">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+          <p className="text-[20px] font-black text-[#1f8a65] leading-none mb-1">{streak.current_streak}</p>
+          <p className="text-[9.5px] font-medium text-white/40">Streak actuel</p>
+        </div>
+        <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+          <p className="text-[20px] font-black text-white leading-none mb-1">{streak.total_points}</p>
+          <p className="text-[9.5px] font-medium text-white/40">Points total</p>
+        </div>
+        <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+          <p className={`text-[13px] font-black leading-none mb-1 ${levelMeta.color}`}>{levelMeta.label}</p>
+          <p className="text-[9.5px] font-medium text-white/40">Niveau</p>
+        </div>
+      </div>
+
+      {/* Record streak */}
+      <div className="flex items-center justify-between">
+        <p className="text-[12px] text-white/40">Record streak</p>
+        <p className="text-[12px] font-bold text-white">{streak.longest_streak} jours</p>
+      </div>
+
+      {/* Recent history */}
+      {recentPoints.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">Historique récent</p>
+          {recentPoints.map((p, i) => (
+            <div key={i} className="flex items-center justify-between py-1.5">
+              <p className="text-[12px] text-white/55">{ACTION_LABELS[p.action_type] ?? p.action_type}</p>
+              <p className="text-[12px] font-bold text-[#1f8a65]">+{p.points}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Configure reminders link */}
+      <Link
+        href="/client/checkin/schedule"
+        className="flex items-center justify-between bg-white/[0.03] rounded-xl px-3 py-2.5 hover:bg-white/[0.05] transition-colors"
+      >
+        <p className="text-[12px] text-white/60">Configurer mes rappels</p>
+        <p className="text-[10px] text-white/30">→</p>
+      </Link>
+    </div>
   );
 }

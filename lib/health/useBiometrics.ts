@@ -138,6 +138,13 @@ function buildMetricSources(
     formula: DERIVED_FORMULAS['waist_height_ratio'],
   }
 
+  // waist_hip_ratio — always derived
+  sources['waist_hip_ratio'] = {
+    type: 'derived',
+    date: latestDateAmong(['waist_cm', 'hips_cm'], latestMeasured),
+    formula: DERIVED_FORMULAS['waist_hip_ratio'],
+  }
+
   // metabolic_age_delta — the evaluation key used in bioNorms
   sources['metabolic_age_delta'] =
     latestMeasured['metabolic_age']

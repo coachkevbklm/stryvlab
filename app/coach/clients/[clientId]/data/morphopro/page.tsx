@@ -1,15 +1,21 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { Upload, GitCompare, Pencil, Dna, X } from 'lucide-react'
 import { useClient } from '@/lib/client-context'
 import { useClientTopBar } from '@/components/clients/useClientTopBar'
 import { MorphoGallery } from '@/components/morpho/MorphoGallery'
 import { MorphoUploadModal } from '@/components/morpho/MorphoUploadModal'
-import { MorphoCanvas } from '@/components/morpho/MorphoCanvas'
 import { MorphoCompare } from '@/components/morpho/MorphoCompare'
 import { MorphoAnalysisPanel } from '@/components/morpho/MorphoAnalysisPanel'
 import type { MorphoPhoto, MorphoAnalysisResult } from '@/lib/morpho/types'
+
+// Fabric.js is heavy (~500kb) — load only when coach clicks "Annoter"
+const MorphoCanvas = dynamic(
+  () => import('@/components/morpho/MorphoCanvas').then(m => ({ default: m.MorphoCanvas })),
+  { ssr: false }
+)
 
 export default function MorphoProPage() {
   const { clientId } = useClient()

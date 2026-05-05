@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, useMemo, ReactNode } from "react";
 
 export type ClientData = {
   id: string;
@@ -41,8 +41,13 @@ export function ClientProvider({
   clientId: string;
   refetch: () => Promise<void>;
 }) {
+  const value = useMemo(
+    () => ({ client, clientId, refetch }),
+    [client, clientId, refetch]
+  );
+
   return (
-    <ClientContext.Provider value={{ client, clientId, refetch }}>
+    <ClientContext.Provider value={value}>
       {children}
     </ClientContext.Provider>
   );

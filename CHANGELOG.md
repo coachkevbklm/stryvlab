@@ -5,6 +5,15 @@
 
 ## 2026-05-05
 
+FIX(dashboard): OrgSummary câblé dans vue Résumé — affiche événements/Kanban/rappels réels au lieu du placeholder statique
+FIX(dashboard): état vide conditionnel — "Tout est sous contrôle" seulement si 0 alertes critiques
+FIX(dashboard): error state + bouton Réessayer si fetch API échoue
+FIX(dashboard): WelcomeHeader step 1 CTA → /coach/clients/new (pas /coach/clients)
+FIX(dashboard): Business nav Organisation → /dashboard (plus de lien vers /coach/organisation)
+FIX(dashboard): DockLeft match() supprime /coach/organisation (dead code)
+FIX(dashboard): DashboardAgenda bg-[#181818] → bg-white/[0.02] (DS v2.0 — #181818 réservé modals)
+REFACTOR(OrgSummary): self-contained — fetch boards en interne, plus de prop boards requise
+
 FIX(session-logs): exercise_id forced null in set inserts — FK constraint client_set_logs_exercise_id_fkey was blocking all upserts silently; exercise_name is the business key
 FIX(session-logger): block Terminer button until draftReady — prevents race condition submitting before draft log ID is established
 
