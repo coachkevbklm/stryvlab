@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const rows = parsed.data.set_logs.map(s => ({
     session_log_id: params.logId,
-    exercise_id: s.exercise_id ?? null,
+    exercise_id: null, // FK nullable — exercise_name est la clé métier, pas l'UUID
     exercise_name: s.exercise_name,
     set_number: s.set_number,
     side: s.side,
@@ -91,10 +91,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     })
 
   if (error) {
+    console.error('[session-logs/sets] upsert error', { logId: params.logId, code: error.code, message: error.message })
     if (error.code === '23503') {
       return NextResponse.json({ error: 'Séance introuvable, opération annulée' }, { status: 409 })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    // 42P10 = no unique constraint matching ON CONFLICT specification
+    // 23505 = unique constraint violation (doublon réel)
+    return NextResponse.json({ error: error.message, code: error.code }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

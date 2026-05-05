@@ -5,6 +5,9 @@
 
 ## 2026-05-05
 
+FIX(session-logs): exercise_id forced null in set inserts — FK constraint client_set_logs_exercise_id_fkey was blocking all upserts silently; exercise_name is the business key
+FIX(session-logger): block Terminer button until draftReady — prevents race condition submitting before draft log ID is established
+
 FEATURE: Dashboard home — WelcomeHeader onboarding 3 étapes progressif, SummaryPanel collapsible, sub-nav Résumé/Kanban/Agenda
 REFACTOR: /coach/organisation redirige → /dashboard, nav Accueil unifiée sur toutes les surfaces
 FIX: nav Accueil pointait vers /coach/organisation au lieu de /dashboard (NavRowB + useNavConfig)

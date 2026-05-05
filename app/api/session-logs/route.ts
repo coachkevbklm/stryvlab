@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   if (Array.isArray(set_logs) && set_logs.length > 0) {
     const rows = set_logs.map((s: any) => ({
       session_log_id: sessionLog.id,
-      exercise_id: s.exercise_id ?? null,
+      exercise_id: null, // FK nullable — exercise_name est la clé métier
       exercise_name: s.exercise_name,
       set_number: s.set_number,
       planned_reps: s.planned_reps ?? null,
