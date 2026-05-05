@@ -3481,6 +3481,216 @@
     "constraintProfile": "constant_tension"
   },
   {
+    "id": "biceps__curl-biceps-assis-avec-cable-supination",
+    "name": "Curl biceps assis avec câble supination",
+    "slug": "curl-biceps-assis-avec-cable-supination",
+    "gifUrl": "/bibliotheque_exercices/biceps/curl-biceps-assis-avec-cable-supination.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "elbow_flexion",
+    "equipment": [
+      "cable"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "description": "Assis sur un banc incliné dos à la poulie basse, saisir la poignée en prise neutre. Initier le curl en supinant progressivement le poignet jusqu'à prise supination complète en haut. Le banc incliné place le bras en légère extension derrière le corps — le biceps long est ainsi maximalement étiré en début de mouvement, maximisant le recrutement et l'amplitude fonctionnelle. Contrôler la descente avec restitution de la supination.",
+    "stimulus_coefficient": 0.7,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "biceps_brachii",
+    "primaryActivation": 0.9,
+    "secondaryMuscles": [
+      "brachialis",
+      "brachioradialis"
+    ],
+    "secondaryActivations": [
+      0.08,
+      0.06
+    ],
+    "stabilizers": [
+      "anterior_deltoid",
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 2,
+    "globalInstability": 1,
+    "coordinationDemand": 2,
+    "constraintProfile": "constant_tension"
+  },
+  {
+    "id": "biceps__extensions-poignets-pronation-assis-avec-barre",
+    "name": "Extensions poignets pronation assis avec barre",
+    "slug": "extensions-poignets-pronation-assis-avec-barre",
+    "gifUrl": "/bibliotheque_exercices/biceps/extensions-poignets-pronation-assis-avec-barre.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "wrist_extension",
+    "equipment": [
+      "barbell"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "description": "Assis sur un banc, avant-bras posés sur les cuisses, poignets en dehors du genou, prise pronation (paumes vers le bas). Laisser la barre descendre en fléchissant le poignet, puis étendre le poignet vers le haut en contractant les extenseurs de l'avant-bras. Mouvement strict et lent, amplitude complète. Renforce les extenseurs carpi radialis et ulnaris — zone souvent négligée, rôle clé dans la santé du coude (épicondylite latérale) et la stabilité de prise.",
+    "stimulus_coefficient": 0.3,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "extensor_carpi_radialis",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "extensor_carpi_ulnaris",
+      "extensor_digitorum"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.1
+    ],
+    "stabilizers": [],
+    "jointStressSpine": 1,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 1,
+    "globalInstability": 1,
+    "coordinationDemand": 1,
+    "constraintProfile": "strict_isolation"
+  },
+  {
+    "id": "biceps__flexions-poignets-supination-assis-avec-barre",
+    "name": "Flexions poignets supination assis avec barre",
+    "slug": "flexions-poignets-supination-assis-avec-barre",
+    "gifUrl": "/bibliotheque_exercices/biceps/flexions-poignets-supination-assis-avec-barre.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "wrist_flexion",
+    "equipment": [
+      "barbell"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "description": "Assis sur un banc, avant-bras posés sur les cuisses, poignets en dehors des genoux, prise supination (paumes vers le haut). Laisser la barre descendre en étendant le poignet jusqu'à amplitude maximale, puis fléchir le poignet en remontant la barre vers l'avant-bras. Mouvement strict, sans rotation du coude. Cible les fléchisseurs carpi (radialis et ulnaris) ainsi que le muscle palmaire — essentiel pour la force de saisie et la prévention des tendinopathies médianes du coude.",
+    "stimulus_coefficient": 0.3,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "flexor_carpi_radialis",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "flexor_carpi_ulnaris",
+      "palmaris_longus"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.08
+    ],
+    "stabilizers": [],
+    "jointStressSpine": 1,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 1,
+    "globalInstability": 1,
+    "coordinationDemand": 1,
+    "constraintProfile": "strict_isolation"
+  },
+  {
+    "id": "biceps__flexions-poignets-supination-poulie-assis",
+    "name": "Flexions poignets supination poulie assis",
+    "slug": "flexions-poignets-supination-poulie-assis",
+    "gifUrl": "/bibliotheque_exercices/biceps/flexions-poignets-supination-poulie-assis.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "wrist_flexion",
+    "equipment": [
+      "cable"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "description": "Assis sur un banc face à la poulie basse, avant-bras posés sur les cuisses, poignets en dehors des genoux, prise supination. Fléchir le poignet vers le haut en contractant les fléchisseurs de l'avant-bras. La résistance constante du câble maintient une tension tout au long de l'amplitude — avantage clé sur la barre en position d'extension maximale du poignet. Idéal pour renforcer la force de saisie et travailler les fléchisseurs carpi en isolation.",
+    "stimulus_coefficient": 0.32,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "flexor_carpi_radialis",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "flexor_carpi_ulnaris",
+      "palmaris_longus"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.08
+    ],
+    "stabilizers": [],
+    "jointStressSpine": 1,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 1,
+    "globalInstability": 1,
+    "coordinationDemand": 1,
+    "constraintProfile": "constant_tension"
+  },
+  {
+    "id": "biceps__flexions-poignets-supination-poulie-debout",
+    "name": "Flexions poignets supination poulie debout",
+    "slug": "flexions-poignets-supination-poulie-debout",
+    "gifUrl": "/bibliotheque_exercices/biceps/flexions-poignets-supination-poulie-debout.gif",
+    "muscleGroup": "biceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "pull"
+    ],
+    "movementPattern": "wrist_flexion",
+    "equipment": [
+      "cable"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "biceps"
+    ],
+    "description": "Debout dos à la poulie basse, bras tendu le long du corps, prise supination. Fléchir le poignet vers l'avant en contractant les fléchisseurs de l'avant-bras, sans bouger le coude ni le bras. La position debout avec câble bas derrière le corps place les fléchisseurs en légère pré-tension. Tension constante du câble sur toute l'amplitude. Variante fonctionnelle idéale en fin de séance biceps/avant-bras ou en travail correctif.",
+    "stimulus_coefficient": 0.32,
+    "plane": "sagittal",
+    "mechanic": "isolation",
+    "unilateral": false,
+    "primaryMuscle": "flexor_carpi_radialis",
+    "primaryActivation": 0.8,
+    "secondaryMuscles": [
+      "flexor_carpi_ulnaris",
+      "palmaris_longus"
+    ],
+    "secondaryActivations": [
+      0.15,
+      0.08
+    ],
+    "stabilizers": [
+      "core"
+    ],
+    "jointStressSpine": 1,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 1,
+    "globalInstability": 2,
+    "coordinationDemand": 2,
+    "constraintProfile": "constant_tension"
+  },
+  {
     "id": "dos__bent-over-row-avec-halteres",
     "name": "Bent over row avec haltères",
     "slug": "bent-over-row-avec-halteres",
@@ -19570,5 +19780,49 @@
     "globalInstability": 5,
     "coordinationDemand": 5,
     "constraintProfile": "lying_rotation"
+  },
+  {
+    "id": "triceps__extensions-triceps-poulie-horizontale-unilateral",
+    "name": "Extension triceps poulie horizontale unilatérale",
+    "slug": "extensions-triceps-poulie-horizontale-unilateral",
+    "gifUrl": "/bibliotheque_exercices/triceps/extensions-triceps-poulie-horizontale-unilateral.gif",
+    "muscleGroup": "triceps",
+    "exerciseType": "exercise",
+    "pattern": [
+      "push"
+    ],
+    "movementPattern": "elbow_extension",
+    "equipment": [
+      "cable"
+    ],
+    "isCompound": false,
+    "muscles": [
+      "triceps"
+    ],
+    "description": "Debout de côté face à la poulie haute, saisir la corde ou poignée d'une main. Coude fléchi à 90° maintenu contre le corps, bras dans le plan horizontal. Étendre le coude en gardant le bras statique. Contrôler le retour. Travail d'isolation en tension constante — excellent pour le chef latéral du triceps.",
+    "stimulus_coefficient": 0.48,
+    "plane": "transverse",
+    "mechanic": "isolation",
+    "unilateral": true,
+    "primaryMuscle": "triceps_brachii_lateral",
+    "primaryActivation": 0.82,
+    "secondaryMuscles": [
+      "triceps_brachii_long",
+      "anconeus"
+    ],
+    "secondaryActivations": [
+      0.12,
+      0.06
+    ],
+    "stabilizers": [
+      "anterior_deltoid",
+      "core"
+    ],
+    "jointStressSpine": 2,
+    "jointStressKnee": 1,
+    "jointStressShoulder": 3,
+    "globalInstability": 2,
+    "coordinationDemand": 3,
+    "constraintProfile": "constant_tension"
   }
 ]
