@@ -20,11 +20,40 @@ const VIEW_STORAGE_KEY = 'dashboard_active_view'
 function DashboardSkeleton() {
   return (
     <div className="p-6 max-w-[1200px] mx-auto space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+      {/* SummaryPanel — KPIs Business */}
+      <div className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5 space-y-4">
+        <Skeleton className="h-3 w-16 rounded-full" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[72px] rounded-xl" />)}
+        </div>
+        <Skeleton className="h-3 w-24 rounded-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-[72px] rounded-xl" />)}
+        </div>
       </div>
-      <Skeleton className="h-40 rounded-2xl" />
-      <Skeleton className="h-64 rounded-2xl" />
+
+      {/* OrgSummary — 3 cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="rounded-2xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-7 rounded-lg shrink-0" />
+              <div className="space-y-1">
+                <Skeleton className="h-2 w-16 rounded-full" />
+                <Skeleton className="h-3 w-28 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="h-16 rounded-xl" />
+            <Skeleton className="h-10 rounded-xl" />
+          </div>
+        ))}
+      </div>
+
+      {/* Boutons Kanban / Agenda */}
+      <div className="flex gap-1 pt-1">
+        <Skeleton className="h-7 w-20 rounded-lg" />
+        <Skeleton className="h-7 w-20 rounded-lg" />
+      </div>
     </div>
   )
 }
@@ -113,8 +142,10 @@ export default function DashboardPage() {
         {/* Organisation du jour — toujours visible */}
         <OrgSummary />
 
-        {/* Boutons Kanban / Agenda sous le résumé */}
-        <DashboardSubNav active={view} onChange={handleViewChange} />
+        {/* Boutons Kanban / Agenda */}
+        <div className="mt-5">
+          <DashboardSubNav active={view} onChange={handleViewChange} />
+        </div>
 
         {/* Vue étendue — s'ajoute sous le résumé si active */}
         {view === 'kanban' && (
