@@ -25,8 +25,8 @@ export default function DashboardSubNav({
           className={cn(
             'px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-150',
             active === v.id
-              ? 'bg-[#1f8a65]/15 text-[#1f8a65]'
-              : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70',
+              ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30'
+              : 'bg-white/[0.03] border-[0.3px] border-white/[0.06] text-white/50 hover:bg-white/[0.06] hover:text-white/80',
           )}
         >
           {v.label}

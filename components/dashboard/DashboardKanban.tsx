@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Plus,
   Kanban,
@@ -259,22 +259,7 @@ export default function DashboardKanban() {
     finally { setSavingCol(false) }
   }
 
-  const topBarRight = useMemo(() => (
-    <div className="flex items-center gap-2">
-      {boards.length < 10 && (
-        <button
-          type="button"
-          onClick={() => setCreatingBoard(true)}
-          className="flex items-center gap-2 px-3 h-8 rounded-lg bg-white/[0.04] text-[12px] font-medium text-white/55 hover:bg-white/[0.08] hover:text-white/80 transition-all"
-        >
-          <Plus size={13} />
-          Nouveau tableau
-        </button>
-      )}
-    </div>
-  ), [boards.length])
-
-  useSetTopBar(null, topBarRight)
+  useSetTopBar(null, undefined)
 
   const activeDragBoard = boards.find(b => b.id === activeDragBoardId)
 

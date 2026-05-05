@@ -110,8 +110,6 @@ export default function DashboardPage() {
         {/* KPIs Business — toujours visible, collapsible */}
         {data && <SummaryPanel data={data} />}
 
-        <div className="h-px bg-white/[0.04] mb-4" />
-
         {/* Organisation du jour — toujours visible */}
         <OrgSummary />
 
