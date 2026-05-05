@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronUp, ChevronDown, AlertTriangle, ArrowRight } from 'lucide-react'
 import type { DashboardCoachData } from '@/components/dashboard/types'
 
 const STORAGE_KEY = 'dashboard_summary_collapsed'
@@ -15,13 +16,27 @@ function KpiCard({ label, value, accent = false }: { label: string; value: strin
   )
 }
 
-function OrgCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+function ActionCard({ label, value, sub, href, warn = false }: {
+  label: string
+  value: string | number
+  sub?: string
+  href: string
+  warn?: boolean
+}) {
+  const router = useRouter()
+  const hasAlert = warn && Number(value) > 0
   return (
-    <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4">
+    <button
+      onClick={() => router.push(href)}
+      className="group rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4 text-left transition-all hover:bg-white/[0.04] hover:border-white/[0.10] active:scale-[0.98]"
+    >
       <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-1.5">{label}</p>
-      <p className="text-2xl font-black text-white leading-none">{value}</p>
-      {sub && <p className="text-[11px] text-white/35 mt-1">{sub}</p>}
-    </div>
+      <p className={`text-2xl font-black leading-none ${hasAlert ? 'text-amber-400' : 'text-white'}`}>{value}</p>
+      <div className="flex items-center justify-between mt-1">
+        {sub && <p className="text-[11px] text-white/35">{sub}</p>}
+        <ArrowRight size={11} className="text-white/20 group-hover:text-white/50 transition-colors ml-auto" />
+      </div>
+    </button>
   )
 }
 
@@ -89,9 +104,9 @@ export default function SummaryPanel({ data }: { data: DashboardCoachData }) {
       <div>
         <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-3">Activité coaching</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <OrgCard label="Bilans sans réponse" value={data.hero.pendingSubmissions} sub="> 5 jours" />
-          <OrgCard label="Clients inactifs" value={inactiveClients} sub="> 14 jours" />
-          <OrgCard label="Alertes actives" value={data.hero.alertCount} />
+          <ActionCard label="Bilans sans réponse" value={data.hero.pendingSubmissions} sub="> 5 jours" href="/coach/assessments" warn />
+          <ActionCard label="Clients inactifs" value={inactiveClients} sub="> 14 jours" href="/coach/clients" warn />
+          <ActionCard label="Alertes actives" value={data.hero.alertCount} href="/coach/clients" warn />
         </div>
       </div>
 
