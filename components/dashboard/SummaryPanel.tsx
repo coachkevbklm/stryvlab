@@ -85,26 +85,7 @@ export default function SummaryPanel({ data }: { data: DashboardCoachData }) {
         </div>
       </div>
 
-      {/* Row 2 — Organisation du jour */}
-      <div>
-        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-3">Organisation du jour</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2">Aujourd&apos;hui</p>
-            <p className="text-[13px] text-white/50">Voir l&apos;agenda →</p>
-          </div>
-          <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2">Kanban</p>
-            <p className="text-[13px] text-white/50">Voir les tâches →</p>
-          </div>
-          <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-4">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-2">À venir (24h)</p>
-            <p className="text-[13px] text-white/50">Voir l&apos;agenda →</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Row 3 — Activité coaching */}
+      {/* Row 2 — Activité coaching */}
       <div>
         <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 mb-3">Activité coaching</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

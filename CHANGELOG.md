@@ -5,6 +5,7 @@
 
 ## 2026-05-05
 
+REFACTOR(dashboard): layout simplifié — OrgSummary toujours visible, boutons Kanban/Agenda en toggle sous le résumé, Row 2 "Organisation du jour" placeholder supprimée du SummaryPanel
 FIX(dashboard): OrgSummary câblé dans vue Résumé — affiche événements/Kanban/rappels réels au lieu du placeholder statique
 FIX(dashboard): état vide conditionnel — "Tout est sous contrôle" seulement si 0 alertes critiques
 FIX(dashboard): error state + bouton Réessayer si fetch API échoue

@@ -35,18 +35,19 @@ export default function DashboardPage() {
   const [onboarding, setOnboarding] = useState<{ hasClient: boolean; hasTemplate: boolean; hasFormula: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [view, setView] = useState<DashboardView>('resume')
+  const [view, setView] = useState<DashboardView>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_STORAGE_KEY) as DashboardView | null
-    if (stored && ['resume', 'kanban', 'agenda'].includes(stored)) {
+    if (stored && ['kanban', 'agenda'].includes(stored ?? '')) {
       setView(stored)
     }
   }, [])
 
   const handleViewChange = (v: DashboardView) => {
     setView(v)
-    localStorage.setItem(VIEW_STORAGE_KEY, v)
+    if (v) localStorage.setItem(VIEW_STORAGE_KEY, v)
+    else localStorage.removeItem(VIEW_STORAGE_KEY)
   }
 
   const loadData = () => {
@@ -100,39 +101,34 @@ export default function DashboardPage() {
     )
   }
 
-  const hasCriticalAlerts = (data?.alerts ?? []).filter(a => a.severity === 'critical').length > 0
-
   return (
     <main className="bg-[#121212] min-h-screen">
       <div className="p-6 max-w-[1200px] mx-auto">
-        {/* Welcome header onboarding — disparaît à 3/3 */}
+        {/* Welcome header — disparaît à 3/3 */}
         {onboarding && <WelcomeHeader state={onboarding} />}
 
-        {/* Résumé collapsible — toujours visible */}
+        {/* KPIs Business — toujours visible, collapsible */}
         {data && <SummaryPanel data={data} />}
 
-        {/* Séparateur visuel */}
         <div className="h-px bg-white/[0.04] mb-4" />
 
-        {/* Sub-nav vues */}
+        {/* Organisation du jour — toujours visible */}
+        <OrgSummary />
+
+        {/* Boutons Kanban / Agenda sous le résumé */}
         <DashboardSubNav active={view} onChange={handleViewChange} />
 
-        {/* Vue active */}
-        {view === 'resume' && (
-          hasCriticalAlerts
-            ? <OrgSummary />
-            : (
-              <div className="space-y-4">
-                <OrgSummary />
-                <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] px-5 py-3 flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#1f8a65]" />
-                  <p className="text-[12px] text-white/35">Tout est sous contrôle.</p>
-                </div>
-              </div>
-            )
+        {/* Vue étendue — s'ajoute sous le résumé si active */}
+        {view === 'kanban' && (
+          <div className="mt-2">
+            <DashboardKanban />
+          </div>
         )}
-        {view === 'kanban' && <DashboardKanban />}
-        {view === 'agenda' && <DashboardAgenda />}
+        {view === 'agenda' && (
+          <div className="mt-2">
+            <DashboardAgenda />
+          </div>
+        )}
       </div>
     </main>
   )

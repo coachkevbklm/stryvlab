@@ -2,10 +2,9 @@
 
 import { cn } from '@/lib/utils'
 
-export type DashboardView = 'resume' | 'kanban' | 'agenda'
+export type DashboardView = 'kanban' | 'agenda' | null
 
-const VIEWS: { id: DashboardView; label: string }[] = [
-  { id: 'resume', label: 'Résumé' },
+const VIEWS: { id: 'kanban' | 'agenda'; label: string }[] = [
   { id: 'kanban', label: 'Kanban' },
   { id: 'agenda', label: 'Agenda' },
 ]
@@ -22,7 +21,7 @@ export default function DashboardSubNav({
       {VIEWS.map(v => (
         <button
           key={v.id}
-          onClick={() => onChange(v.id)}
+          onClick={() => onChange(active === v.id ? null : v.id)}
           className={cn(
             'px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-150',
             active === v.id
