@@ -11,11 +11,7 @@ function service() {
 }
 
 export const checkinStreakExpireFunction = inngest.createFunction(
-  {
-    id: 'checkin-streak-expire',
-    retries: 2,
-    triggers: [{ cron: '0 2 * * *' }],
-  },
+  { id: 'checkin-streak-expire', retries: 2, triggers: [{ cron: '0 2 * * *' }] },
   async ({ step }) => {
     await step.run('expire-missed-streaks', async () => {
       const { data: configs } = await service()

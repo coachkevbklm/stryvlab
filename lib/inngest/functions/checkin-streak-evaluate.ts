@@ -11,11 +11,7 @@ function service() {
 }
 
 export const checkinStreakEvaluateFunction = inngest.createFunction(
-  {
-    id: 'checkin-streak-evaluate',
-    retries: 3,
-    triggers: [{ event: 'checkin/streak.evaluate' }],
-  },
+  { id: 'checkin-streak-evaluate', retries: 3, triggers: [{ event: 'checkin/streak.evaluate' }] },
   async ({ event, step }) => {
     const { client_id, response_id, is_late, days_of_week } = event.data as {
       client_id: string
