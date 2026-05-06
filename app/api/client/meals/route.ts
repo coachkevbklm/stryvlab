@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { inngest } from '@/lib/inngest/client'
 
 function service() {
   return createServiceClient(
@@ -56,6 +57,8 @@ const bodySchema = z.object({
   name: z.string().min(1).max(200),
   logged_at: z.string().datetime().optional(),
   photo_url: z.string().url().nullable().optional(),
+  photo_urls: z.array(z.string().url()).max(3).optional(),
+  transcript: z.string().max(2000).nullable().optional(),
   quality_rating: z.number().int().min(1).max(5).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
   estimated_macros: z.object({
@@ -79,13 +82,19 @@ export async function POST(req: NextRequest) {
   const body = bodySchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { data, error } = await service()
+  const loggedAt = body.data.logged_at ?? new Date().toISOString()
+  const hasAiContent = !!(body.data.transcript || (body.data.photo_urls ?? []).length > 0)
+
+  const { data: meal, error } = await service()
     .from('meal_logs')
     .insert({
       client_id: clientId,
       name: body.data.name,
-      logged_at: body.data.logged_at ?? new Date().toISOString(),
+      logged_at: loggedAt,
       photo_url: body.data.photo_url ?? null,
+      photo_urls: body.data.photo_urls ?? [],
+      transcript: body.data.transcript ?? null,
+      ai_status: hasAiContent ? 'pending' : 'done',
       quality_rating: body.data.quality_rating ?? null,
       notes: body.data.notes ?? null,
       estimated_macros: body.data.estimated_macros ?? null,
@@ -95,13 +104,33 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Award points for logging a meal (fire and forget)
-  await service().from('client_points').insert({
+  const eventDate = loggedAt.split('T')[0]
+  const eventTime = loggedAt.split('T')[1]?.slice(0, 5) ?? null
+
+  // Insert smart_agenda_events (fire and forget)
+  void service().from('smart_agenda_events').insert({
+    client_id: clientId,
+    event_type: 'meal',
+    event_date: eventDate,
+    event_time: eventTime,
+    source_id: meal.id,
+    title: meal.name,
+    summary: hasAiContent ? 'Analyse en cours...' : null,
+    data: meal.estimated_macros ?? null,
+  })
+
+  // Award points (fire and forget)
+  void service().from('client_points').insert({
     client_id: clientId,
     action_type: 'meal',
     points: 3,
-    reference_id: data.id,
+    reference_id: meal.id,
   })
 
-  return NextResponse.json(data, { status: 201 })
+  // Trigger AI analysis if there's content to analyze
+  if (hasAiContent) {
+    await inngest.send({ name: 'meal/analyze.requested', data: { mealLogId: meal.id } })
+  }
+
+  return NextResponse.json(meal, { status: 201 })
 }
