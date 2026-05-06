@@ -127,6 +127,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         data: { client_id: (client as { id: string }).id },
       })
     }
+
+    // Insert smart_agenda_events (fire and forget)
+    const { data: sessionLog } = await db
+      .from('client_session_logs')
+      .select('session_name')
+      .eq('id', params.logId)
+      .single()
+
+    void db.from('smart_agenda_events').insert({
+      client_id: (client as { id: string }).id,
+      event_type: 'session',
+      event_date: new Date().toISOString().split('T')[0],
+      event_time: new Date().toTimeString().slice(0, 5),
+      source_id: params.logId,
+      title: sessionLog?.session_name ?? 'Séance réalisée',
+      summary: null,
+      data: null,
+    })
   }
 
   // Bulk update set logs — une seule requête par upsert au lieu de N requêtes

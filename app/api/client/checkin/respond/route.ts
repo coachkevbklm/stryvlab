@@ -76,6 +76,18 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Insert smart_agenda_events (fire and forget)
+  void service().from('smart_agenda_events').insert({
+    client_id: client.id,
+    event_type: 'checkin',
+    event_date: new Date().toISOString().split('T')[0],
+    event_time: new Date().toTimeString().slice(0, 5),
+    source_id: response.id,
+    title: body.data.moment === 'morning' ? 'Check-in du matin' : 'Check-in du soir',
+    summary: null,
+    data: null,
+  })
+
   // Trigger streak evaluation + points attribution asynchronously
   await inngest.send({
     name: 'checkin/streak.evaluate',
