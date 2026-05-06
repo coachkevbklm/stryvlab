@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 5. Crée Stripe Checkout Session
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const isOneTime = formula.billing_cycle === "one_time";
 
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {

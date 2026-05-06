@@ -22,8 +22,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
-import GenesisAssistant from '@/components/GenesisAssistant';
-
 // --- TYPES ---
 type Phase = 'menstrual' | 'follicular' | 'ovulatory' | 'luteal';
 type InputMode = 'day' | 'date';
@@ -677,7 +675,6 @@ ${url}`;
         </p>
       </footer>
 
-      <GenesisAssistant />
     </div>
   );
 }

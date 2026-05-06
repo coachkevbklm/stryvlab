@@ -18,8 +18,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
-import GenesisAssistant from '@/components/GenesisAssistant';
-
 // Formulas & Store
 import { calculateOneRM, TRAINING_ZONES, type OneRMFormula, type OneRMResult } from '@/lib/formulas';
 import { useClientStore } from '@/lib/stores/useClientStore';
@@ -272,7 +270,6 @@ export default function OneRMCalculator() {
         </p>
       </footer>
 
-      <GenesisAssistant />
     </div>
   );
 }

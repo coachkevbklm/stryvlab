@@ -22,8 +22,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
-import GenesisAssistant from '@/components/GenesisAssistant';
-
 // Formulas & Store
 import {
   calculateCarbCycling,
@@ -501,7 +499,6 @@ export default function CarbCyclingCalculator() {
         </p>
       </footer>
 
-      <GenesisAssistant />
     </div>
   );
 }

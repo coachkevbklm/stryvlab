@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   // Double progression — évaluation automatique quand la séance est complétée
   if (completed) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
     fetch(`${baseUrl}/api/progression/evaluate`, {
       method: 'POST',
       headers: {

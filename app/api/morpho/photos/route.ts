@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
     const annotationThumbPath = annotationMap.get(photo.id) ?? null
     return {
       id: photo.id,
-      client_id: photo.id,
+      client_id: photo.client_id,
       storage_path: photo.storage_path,
       position: photo.position,
       taken_at: photo.taken_at,

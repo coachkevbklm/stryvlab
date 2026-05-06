@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Appel OpenAI GPT-4o
-  const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPEN_AI_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'OPENAI_API_KEY manquant' }, { status: 500 })
   }

@@ -211,7 +211,6 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {/* GenesisAssistant désactivé temporairement */}
       </body>
     </html>
   );

@@ -16,8 +16,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
-import GenesisAssistant from '@/components/GenesisAssistant';
-
 // Formulas & Store
 import { calculateHRZones, type HRGender, type HRZonesResult } from '@/lib/formulas';
 import { useClientStore } from '@/lib/stores/useClientStore';
@@ -264,7 +262,6 @@ export default function HRZonesCalculator() {
         </p>
       </footer>
 
-      <GenesisAssistant />
     </div>
   );
 }

@@ -17,8 +17,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Accordion } from '@/components/ui/Accordion';
-import GenesisAssistant from '@/components/GenesisAssistant';
-
 // Formulas & Store
 import {
   calculateHydration, type HydrationGender, type HydrationActivity,
@@ -279,7 +277,6 @@ export default function HydrationCalculator() {
         </p>
       </footer>
 
-      <GenesisAssistant />
     </div>
   );
 }

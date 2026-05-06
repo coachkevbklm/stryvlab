@@ -3,7 +3,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { sendPaymentReminderEmail } from '@/lib/email/mailer'
 
 // ─── POST /api/cron/payment-reminders ─────────────────────────────────────────
-// Called by n8n (or Vercel Cron) daily.
+// Called by Vercel Cron daily.
 // Sends reminder emails for pending payments due in 3 days.
 // Protected by CRON_SECRET header.
 
