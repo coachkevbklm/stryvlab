@@ -3,6 +3,18 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-07
+
+FIX(recap): stat "Durée" affichait le repos moyen (avgRestSec) au lieu de duration_min — durée séance réelle maintenant affichée, repos moyen en sous-titre
+
+FIX(bilan): move measurement_method before body_fat_pct in biometrics block — fields now appear after method selection
+FIX(bilan): convert measurement_method from single_choice to multiple_choice — allows selecting both balance + plis cutanés simultaneously
+FIX(bilan): update visceral_fat/body_water/metabolic_age/bmr conditions from eq to includes — compatible with multiple_choice array
+FIX(bilan): update skinfold fields conditions from eq to includes — plis cutanés fields visible when method includes 'Plis cutanés'
+
+FIX: Add react-is as explicit dependency — recharts peer dep missing on Vercel build
+FIX: Migrate all 5 Inngest createFunction signatures to v4 format (triggers in second arg)
+
 ## 2026-05-06
 
 FEATURE: Smart Agenda Phase 1 — vue jour/semaine chronologique client (/client/agenda)

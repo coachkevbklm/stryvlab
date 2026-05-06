@@ -10,7 +10,8 @@ function service() {
 }
 
 export const pointsLevelUpdateFunction = inngest.createFunction(
-  { id: 'points-level-update', retries: 3, triggers: [{ event: 'points/level.update' }] },
+  { id: 'points-level-update', retries: 3 },
+  { event: 'points/level.update' },
   async ({ event, step }) => {
     const { client_id } = event.data as { client_id: string }
 

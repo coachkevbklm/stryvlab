@@ -22,7 +22,8 @@ const MOMENT_LABELS: Record<string, { title: string; body: string; url: string }
 }
 
 export const checkinReminderSendFunction = inngest.createFunction(
-  { id: 'checkin-reminder-send', retries: 1, triggers: [{ cron: '* * * * *' }] },
+  { id: 'checkin-reminder-send', retries: 1 },
+  { cron: '* * * * *' },
   async ({ step }) => {
     await step.run('send-push-reminders', async () => {
       const vapidPublic = process.env.VAPID_PUBLIC_KEY
