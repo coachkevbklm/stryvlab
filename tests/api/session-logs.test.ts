@@ -5,6 +5,7 @@ const mocks = createSupabaseMocks()
 
 vi.mock('@/utils/supabase/server', () => ({ createClient: () => mocks.serverMock }))
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => mocks.serviceMock }))
+vi.mock('@/lib/inngest/client', () => ({ inngest: { send: vi.fn().mockResolvedValue(undefined) } }))
 
 import { GET, POST } from '@/app/api/session-logs/route'
 import { PATCH } from '@/app/api/session-logs/[logId]/route'
