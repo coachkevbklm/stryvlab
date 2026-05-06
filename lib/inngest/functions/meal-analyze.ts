@@ -9,7 +9,9 @@ function service() {
   )
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+}
 
 const MEAL_ANALYSIS_PROMPT = `You are a sports nutrition expert. Analyze the meal description and/or photos provided and estimate the nutritional macros as accurately as possible.
 
@@ -62,7 +64,7 @@ export const mealAnalyzeFunction = inngest.createFunction(
 
       let macros: Record<string, number> = {}
       try {
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
           model: 'gpt-4o',
           response_format: { type: 'json_object' },
           messages: [
