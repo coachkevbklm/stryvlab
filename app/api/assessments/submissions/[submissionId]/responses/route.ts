@@ -103,6 +103,19 @@ export async function POST(
         data: { client_id: submission.client_id },
       })
     }
+
+    // Insert smart_agenda_events (fire and forget)
+    const eventDate = submission.bilan_date ?? new Date().toISOString().split('T')[0]
+    void db.from('smart_agenda_events').insert({
+      client_id: submission.client_id,
+      event_type: 'assessment',
+      event_date: eventDate,
+      event_time: new Date().toTimeString().slice(0, 5),
+      source_id: params.submissionId,
+      title: 'Bilan complété',
+      summary: null,
+      data: null,
+    })
   }
 
   return NextResponse.json({ success: true })

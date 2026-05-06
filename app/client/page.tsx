@@ -129,12 +129,13 @@ export default async function ClientHomePage() {
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
 
-    // Séances faites cette semaine
+    // Séances faites cette semaine (complétées seulement)
     clientId
       ? service
           .from('client_session_logs')
           .select('id', { count: 'exact', head: true })
           .eq('client_id', clientId)
+          .not('completed_at', 'is', null)
           .gte('started_at', monday.toISOString())
           .lte('started_at', sunday.toISOString())
       : Promise.resolve({ count: 0 }),
@@ -244,8 +245,15 @@ export default async function ClientHomePage() {
   const todayCompletedLogs: any[] = (todayLogsResult as any)?.data ?? []
   const checkinConfig: any = (checkinConfigResult as any)?.data ?? null
   const todayCheckins: any[] = (todayCheckinsResult as any)?.data ?? []
-  const streak = (streakResult as any)?.data ?? { current_streak: 0, longest_streak: 0, level: 'bronze', total_points: 0 }
+  const streakData = (streakResult as any)?.data
   const pointsHistory: any[] = (pointsHistoryResult as any)?.data ?? []
+  const totalPointsFromHistory = pointsHistory.reduce((acc: number, h: any) => acc + (h.points ?? 0), 0)
+  const streak = streakData ?? {
+    current_streak: 0,
+    longest_streak: 0,
+    level: 'bronze',
+    total_points: totalPointsFromHistory,
+  }
 
   const jsDay = new Date().getDay()
   const todayCheckinDay = jsDay === 0 ? 6 : jsDay - 1
