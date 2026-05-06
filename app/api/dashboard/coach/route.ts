@@ -44,7 +44,7 @@ export async function GET(_req: NextRequest) {
     profileRes,
   ] = await Promise.all([
     db.from('coach_clients')
-      .select('id, first_name, last_name, status, created_at, last_activity_at')
+      .select('id, first_name, last_name, status, created_at')
       .eq('coach_id', coachId),
 
     db.from('assessment_submissions')
@@ -152,7 +152,7 @@ export async function GET(_req: NextRequest) {
   // Clients inactifs >14j → urgent
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   for (const c of clients.filter(c => c.status === 'active')) {
-    const lastActivity = c.last_activity_at ?? c.created_at;
+    const lastActivity = c.created_at;
     if (lastActivity < fourteenDaysAgo) {
       alerts.push({
         id: `inactive-${c.id}`,
@@ -220,7 +220,7 @@ export async function GET(_req: NextRequest) {
         ? Math.round((weightValues[weightValues.length - 1] - weightValues[0]) * 10) / 10
         : undefined;
 
-      const lastActivity = c.last_activity_at ?? c.created_at;
+      const lastActivity = c.created_at;
       let status: DashboardClient['status'] = 'progressing';
       if (lastActivity < fortyFiveDaysAgo) {
         status = 'inactive';
