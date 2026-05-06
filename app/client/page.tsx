@@ -293,25 +293,33 @@ export default async function ClientHomePage() {
           </div>
         }
         right={
-          coachDisplayName ? (
-            <div className="flex items-center gap-2">
-              {coachLogoUrl ? (
-                <Image
-                  src={coachLogoUrl}
-                  alt={coachDisplayName}
-                  width={28}
-                  height={28}
-                  className="w-7 h-7 rounded-full object-cover border-[0.3px] border-white/[0.12]"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-[#1f8a65] flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-white leading-none">{coachInitials || '?'}</span>
-                </div>
-              )}
-              <span className="text-[12px] font-medium text-white/70 leading-none">{coachDisplayName}</span>
-            </div>
-          ) : null
+          <div className="flex items-center gap-2">
+            <Link
+              href="/client/agenda"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80 transition-colors active:scale-[0.97]"
+            >
+              <CalendarDays size={14} />
+              <span className="text-[11px] font-semibold">Agenda</span>
+            </Link>
+            {coachDisplayName && (
+              <div className="flex items-center gap-2">
+                {coachLogoUrl ? (
+                  <Image
+                    src={coachLogoUrl}
+                    alt={coachDisplayName}
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 rounded-full object-cover border-[0.3px] border-white/[0.12]"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-[#1f8a65] flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-white leading-none">{coachInitials || '?'}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         }
       />
 
@@ -323,6 +331,29 @@ export default async function ClientHomePage() {
             {ct(lang, 'home.section')}
           </p>
           <ContextualGreeting firstName={firstName} hasSessionToday={!!todaySession} />
+        </div>
+
+        {/* ── Progression gamification ── */}
+        <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35 mb-3">
+            Ma progression
+          </p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <MiniStat label="Points" value={streak.total_points ?? 0} />
+            <MiniStat label="Série" value={streak.current_streak ?? 0} />
+            <MiniStat label="Record" value={streak.longest_streak ?? 0} />
+          </div>
+          <div className="bg-white/[0.03] rounded-xl px-3 py-2">
+            <p className="text-[9px] uppercase tracking-[0.12em] text-white/35 mb-0.5">Niveau</p>
+            <p className="text-[12px] font-semibold text-white capitalize">
+              {streak.level === 'bronze' ? '🥉 Bronze'
+                : streak.level === 'silver' ? '🥈 Argent'
+                : streak.level === 'gold' ? '🥇 Or'
+                : streak.level === 'platinum' ? '💎 Platine'
+                : streak.level === 'diamond' ? '💎 Diamant'
+                : `🥉 ${streak.level ?? 'Bronze'}`}
+            </p>
+          </div>
         </div>
 
         {/* ── Widget check-in ── */}
@@ -342,45 +373,6 @@ export default async function ClientHomePage() {
             <ChevronRight size={16} className="text-[#1f8a65]" />
           </Link>
         )}
-
-        {/* ── Accès agenda repas ── */}
-        <Link
-          href="/client/checkin/meals"
-          className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4 flex items-center justify-between"
-        >
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
-              Nutrition
-            </p>
-            <p className="text-[13px] font-semibold text-white mt-1">Journal repas</p>
-          </div>
-          <ChevronRight size={16} className="text-white/30" />
-        </Link>
-
-        {/* ── Progression gamification ── */}
-        <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35 mb-3">
-            Ma progression
-          </p>
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <MiniStat label="Points" value={streak.total_points ?? 0} />
-            <MiniStat label="Streak" value={streak.current_streak ?? 0} />
-            <MiniStat label="Record" value={streak.longest_streak ?? 0} />
-          </div>
-          <div className="bg-white/[0.03] rounded-xl px-3 py-2 mb-2">
-            <p className="text-[9px] uppercase tracking-[0.12em] text-white/35">Niveau</p>
-            <p className="text-[12px] font-semibold text-white capitalize">{streak.level ?? 'bronze'}</p>
-          </div>
-          {pointsHistory.length > 0 && (
-            <div className="space-y-1">
-              {pointsHistory.map((h, i) => (
-                <div key={`${h.earned_at}-${i}`} className="text-[10px] text-white/45">
-                  +{h.points} {h.action_type}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* ── État vide : pas de programme ── */}
         {!program && <NoProgramPage lang={lang} />}
@@ -497,7 +489,7 @@ export default async function ClientHomePage() {
         {/* ── Stats hebdo ── */}
         {plannedThisWeek > 0 && (
           <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] px-4 py-3 flex items-center justify-between">
-            <p className="text-[11px] font-medium text-white/40">{ct(lang, 'home.week.label')}</p>
+            <p className="text-[11px] font-medium text-white/40">Séances cette semaine</p>
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 {Array.from({ length: plannedThisWeek }).map((_, i) => (
@@ -566,23 +558,6 @@ export default async function ClientHomePage() {
             </div>
           </Link>
         )}
-
-        {/* Smart Agenda shortcut */}
-        <Link
-          href="/client/agenda"
-          className="flex items-center justify-between bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-xl px-4 py-3 hover:bg-white/[0.04] transition-colors active:scale-[0.99]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-              <CalendarDays size={15} className="text-white/40" />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-white">Smart Agenda</p>
-              <p className="text-[11px] text-white/35">Voir mon suivi du jour</p>
-            </div>
-          </div>
-          <ChevronRight size={15} className="text-white/25" />
-        </Link>
 
       </main>
     </div>
