@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-04-28**
+**Dernière mise à jour : 2026-05-06**
 
 ---
 
@@ -27,7 +27,7 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights, superset UX, bug fixes | 2026-04-28 |
+| **Client App** | ✅ Smart Agenda, repas IA, BottomNav+, macro progress | 2026-05-06 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
@@ -37,7 +37,47 @@
 
 ---
 
-## 🚀 Dernières Avancées (2026-04-28)
+## 🚀 Dernières Avancées (2026-05-06)
+
+### Smart Agenda Phase 1 — COMPLET
+
+**Fichiers créés :**
+
+1. **`supabase/migrations/20260506_smart_agenda.sql`** — `smart_agenda_events` + `coach_agenda_annotations` + extension `meal_logs` (transcript, photo_urls, ai_status)
+2. **`lib/inngest/functions/meal-analyze.ts`** — job Inngest GPT-4o Vision, retry x3, timeout 2min
+3. **`app/api/client/meals/route.ts`** — POST étendu : transcript + photo_urls + ai_status + inngest.send + smart_agenda_events insertion
+4. **`app/api/client/meals/[id]/route.ts`** — GET poll status IA par repas
+5. **`app/api/client/agenda/route.ts`** — GET events du jour
+6. **`app/api/client/agenda/week/route.ts`** — GET densité 7 jours
+7. **`app/api/client/nutrition/today-progress/route.ts`** — GET macros consommées vs protocole
+8. **`components/client/AgendaEventCard.tsx`** — card universelle par type d'événement
+9. **`components/client/AgendaDayView.tsx`** — vue jour + poll pending meals + macro progress
+10. **`components/client/AgendaWeekView.tsx`** — pills 7 jours + densité dots
+11. **`components/client/BottomNavPlusMenu.tsx`** — slide-up menu Framer Motion
+12. **`components/client/BottomNav.tsx`** — bouton + central, menu Repas/Check-in
+13. **`app/client/agenda/page.tsx`** — page Smart Agenda (toggle Jour/Semaine)
+14. **`app/client/agenda/meals/new/page.tsx`** — ajout repas (texte, vocal, photos)
+
+**Fichiers modifiés :**
+- `app/client/page.tsx` — raccourci Smart Agenda
+- `app/client/nutrition/page.tsx` — barre macros du jour
+- `app/api/client/checkin/respond/route.ts` — insert smart_agenda_events au check-in
+- `app/api/session-logs/[logId]/route.ts` — insert smart_agenda_events à la complétion séance
+- `app/api/inngest/route.ts` — enregistrement mealAnalyzeFunction
+
+**Points de vigilance :**
+- Migration `20260506_smart_agenda.sql` à appliquer manuellement dans Supabase Dashboard
+- Bucket `meal-photos` à créer manuellement dans Supabase Storage
+- `smart_agenda_events` peuplé applicativement (pas triggers) — si INSERT source échoue après INSERT principal, event manquant acceptable Phase 1
+- Poll pending meals : AgendaDayView re-fetch toutes 3s tant qu'il y a des events `ai_status=pending`
+- Web Speech API : bouton vocal masqué si non disponible (pas d'erreur)
+- `BottomNav` restructuré : 2 items gauche | bouton + central | 2 items droite (highlightedNavIndex ajusté pour idx 0,1 gauche et 2,3 droite)
+
+**Actions manuelles requises :**
+- Appliquer `supabase/migrations/20260506_smart_agenda.sql` via Supabase Dashboard → SQL Editor
+- Créer bucket `meal-photos` dans Supabase Storage (public: false, 10MB max, image/*)
+
+## 🚀 Avancées (2026-04-28)
 
 ### SessionLogger — 5 Bugs Critiques Corrigés (COMPLET)
 

@@ -3,6 +3,19 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-06
+
+FEATURE: Smart Agenda Phase 1 — vue jour/semaine chronologique client (/client/agenda)
+FEATURE: Page ajout repas — saisie texte, vocal (Web Speech API), upload photos (bucket meal-photos)
+FEATURE: Inngest job meal/analyze.requested — GPT-4o Vision → macros estimées async
+FEATURE: smart_agenda_events — table centrale agrégeant repas/check-ins/séances/bilans
+FEATURE: coach_agenda_annotations — table Phase 2 (créée, usage Phase 2)
+FEATURE: BottomNav bouton + avec slide-up menu (Ajouter un repas / Check-in)
+FEATURE: Nutrition page — barre progression macros du jour (consommé vs protocole)
+FEATURE: Home page — raccourci Smart Agenda
+SCHEMA: smart_agenda_events + coach_agenda_annotations tables + RLS (20260506_smart_agenda.sql)
+SCHEMA: meal_logs — colonnes transcript, photo_urls TEXT[], ai_status ajoutées
+
 ## 2026-05-05
 
 CHORE: Suppression complète du système Genesis/IPT — composants, pages, routes API, types, lib (74 600 lignes supprimées)
