@@ -73,11 +73,66 @@ export default async function ClientNutritionPage() {
     ? [...(protocol.nutrition_protocol_days ?? [])].sort((a: any, b: any) => a.position - b.position)
     : []
 
+  // Today's meal progress
+  const today = new Date().toISOString().split('T')[0]
+  const { data: todayMeals } = client
+    ? await service
+        .from('meal_logs')
+        .select('estimated_macros, ai_status')
+        .eq('client_id', client.id)
+        .gte('logged_at', `${today}T00:00:00.000Z`)
+        .lte('logged_at', `${today}T23:59:59.999Z`)
+        .eq('ai_status', 'done')
+    : { data: null }
+
+  const consumed = (todayMeals ?? []).reduce(
+    (acc: { calories: number; protein_g: number; carbs_g: number; fat_g: number }, m: any) => {
+      const em = m.estimated_macros
+      if (!em) return acc
+      return {
+        calories: acc.calories + (em.calories_kcal ?? 0),
+        protein_g: acc.protein_g + (em.protein_g ?? 0),
+        carbs_g: acc.carbs_g + (em.carbs_g ?? 0),
+        fat_g: acc.fat_g + (em.fats_g ?? 0),
+      }
+    },
+    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+  )
+
+  const targetDay = days[0] ?? null
+
   return (
     <div className="min-h-screen bg-[#121212]">
       <ClientTopBar section="Nutrition" title={protocol?.name ?? ct(lang, 'nutrition.section')} />
 
       <main className="max-w-lg mx-auto px-4 pt-[88px] pb-28 space-y-4">
+
+        {/* Today macro progress */}
+        {protocol && targetDay && consumed.calories > 0 && (
+          <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl px-4 py-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-white/35 font-semibold">Aujourd'hui</p>
+              <Link href="/client/agenda" className="text-[11px] text-[#1f8a65] font-semibold hover:underline">
+                Voir l'agenda →
+              </Link>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <p className="text-[24px] font-black text-white leading-none">{Math.round(consumed.calories)}</p>
+              <p className="text-[11px] text-white/35 font-medium">/ {Number(targetDay.calories ?? 0)} kcal</p>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#1f8a65] transition-all"
+                style={{ width: `${Math.min((consumed.calories / (Number(targetDay.calories) || 1)) * 100, 100)}%` }}
+              />
+            </div>
+            <div className="flex gap-4">
+              <span className="text-[10px] text-white/40">P <span className="text-white/65 font-semibold">{Math.round(consumed.protein_g)}g</span><span className="text-white/25"> / {Number(targetDay.protein_g ?? 0)}g</span></span>
+              <span className="text-[10px] text-white/40">G <span className="text-white/65 font-semibold">{Math.round(consumed.carbs_g)}g</span><span className="text-white/25"> / {Number(targetDay.carbs_g ?? 0)}g</span></span>
+              <span className="text-[10px] text-white/40">L <span className="text-white/65 font-semibold">{Math.round(consumed.fat_g)}g</span><span className="text-white/25"> / {Number(targetDay.fat_g ?? 0)}g</span></span>
+            </div>
+          </div>
+        )}
 
         {/* Journal alimentaire — CTA toujours visible */}
         <Link

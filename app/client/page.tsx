@@ -567,6 +567,23 @@ export default async function ClientHomePage() {
           </Link>
         )}
 
+        {/* Smart Agenda shortcut */}
+        <Link
+          href="/client/agenda"
+          className="flex items-center justify-between bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-xl px-4 py-3 hover:bg-white/[0.04] transition-colors active:scale-[0.99]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+              <CalendarDays size={15} className="text-white/40" />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-white">Smart Agenda</p>
+              <p className="text-[11px] text-white/35">Voir mon suivi du jour</p>
+            </div>
+          </div>
+          <ChevronRight size={15} className="text-white/25" />
+        </Link>
+
       </main>
     </div>
   )
