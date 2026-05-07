@@ -306,7 +306,6 @@ REFACTOR: SessionLogger — navigation par groupe (superset ou solo) au lieu d'i
 FIX: MorphoPro — actions sélection (Comparer/Annoter/Analyser IA) déplacées dans la TopBar, floating bar supprimée
 FIX: MorphoPro — grille 4 colonnes, aspect-[2/3], lazy loading images pour réduire la latence
 
-
 FEATURE: MorphoPro coach — galerie photos, canvas annotation Fabric.js, analyse IA GPT-4o structurée (JSON), score postural, flags zones, recommandations, comparaison multi-photos
 SCHEMA: Add morpho_photos table (index centralisé photos bilans + uploads coach)
 SCHEMA: Add morpho_annotations table (canvas Fabric.js persisté par photo/coach)
@@ -345,8 +344,6 @@ REFACTOR: Page Profil client — refonte structure : Informations complémentair
 REFACTOR: RestrictionsWidget — prop section ('all'|'restrictions'|'equipment') pour rendu sélectif
 
 FIX: MetricsSection — chart always extends to today's date (today injected as phantom point in merged + absoluteData useMemos)
-
-
 
 FIX: NutritionStudio edit page — suppression du double skeleton (page-level skeleton retiré, NutritionStudio monte immédiatement avec skeletons colonnes intégrés)
 
