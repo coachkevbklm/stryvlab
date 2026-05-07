@@ -1,5 +1,5 @@
 import { resolveExerciseCoeff, normalizeMuscleSlug, muscleConflictsWithRestriction, getPrimaryMuscleFromCatalog } from './catalog-utils'
-import { MUSCLE_TO_VOLUME_GROUP, getVolumeTargets } from './volume-targets'
+import { MUSCLE_TO_VOLUME_GROUP, getMuscleVolumeGroup, getVolumeTargets } from './volume-targets'
 import type {
   BuilderSession, BuilderExercise, TemplateMeta,
   IntelligenceAlert, IntelligenceResult, MuscleDistribution,
@@ -1005,7 +1005,7 @@ export function scoreVolumeCoverage(
     for (const ex of session.exercises) {
       if (!ex.primaryMuscle || ex.primaryActivation == null) continue
 
-      const primaryGroup = MUSCLE_TO_VOLUME_GROUP[ex.primaryMuscle]
+      const primaryGroup = getMuscleVolumeGroup(ex.primaryMuscle)
       if (primaryGroup) {
         volumeByMuscle[primaryGroup] = (volumeByMuscle[primaryGroup] ?? 0) + ex.sets * ex.primaryActivation
         trackRir(primaryGroup, ex.sets, ex.rir)
@@ -1015,7 +1015,7 @@ export function scoreVolumeCoverage(
         ex.secondaryMusclesDetail.forEach((muscle, i) => {
           const activation = ex.secondaryActivations?.[i]
           if (activation == null) return
-          const group = MUSCLE_TO_VOLUME_GROUP[muscle]
+          const group = getMuscleVolumeGroup(muscle)
           if (group) {
             volumeByMuscle[group] = (volumeByMuscle[group] ?? 0) + ex.sets * activation
             trackRir(group, ex.sets, ex.rir)
