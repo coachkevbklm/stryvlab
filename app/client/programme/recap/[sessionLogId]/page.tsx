@@ -175,13 +175,20 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
             sub={`sur ${allSets.length}`}
             icon={<CheckCircle2 size={11} />}
           />
-          {avgRestSec !== null && (
+          {sessionLog.duration_min ? (
             <StatCard
               label={ct(lang, 'recap.duration')}
+              value={`${sessionLog.duration_min}min`}
+              sub={avgRestSec !== null ? `repos moy. ${avgRestSec >= 60 ? `${Math.floor(avgRestSec / 60)}m${avgRestSec % 60 > 0 ? `${avgRestSec % 60}s` : ''}` : `${avgRestSec}s`}` : undefined}
+              icon={<Clock size={11} />}
+            />
+          ) : avgRestSec !== null ? (
+            <StatCard
+              label="Repos moyen"
               value={avgRestSec >= 60 ? `${Math.floor(avgRestSec / 60)}m${avgRestSec % 60 > 0 ? `${avgRestSec % 60}s` : ''}` : `${avgRestSec}s`}
               icon={<Clock size={11} />}
             />
-          )}
+          ) : null}
         </div>
 
         {/* ── Schéma corporel ── */}

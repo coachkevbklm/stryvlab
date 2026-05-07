@@ -12,22 +12,32 @@ function service() {
 // Heuristique : détecte le groupe musculaire depuis le nom de l'exercice
 function inferMuscleGroup(name: string): string {
   const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  // Jambes (avant pectoraux car "leg press" contient "press")
-  if (/squat|leg press|leg curl|leg ext|lunge|hack|rdl|deadlift|hip thrust|glute|presse a cuisses|fente|soulevé de terre/.test(n)) return 'Jambes'
-  // Pectoraux — développé couché/incliné, écarté, chest fly
-  if (/bench|chest|pec|fly|push[\s-]up|developpe couche|developpe incline|developpe halteres|ecarte|dips pecto/.test(n)) return 'Pectoraux'
-  // Dos — tirage, rowing, tractions
-  if (/pull[\s-]up|chin[\s-]up|\blat\b|\brow\b|cable[\s-]row|seated[\s-]row|t[\s-]bar|tirage|rowing|traction|grand dorsal/.test(n)) return 'Dos'
-  // Épaules — élévation, oiseau, développé militaire, face pull
-  if (/shoulder|military|elevation laterale|elevation frontale|oiseau|developpe militaire|face pull|upright|rear delt|lateral raise/.test(n)) return 'Épaules'
-  // Biceps — curl, marteau (avant triceps car "curl" > "extension")
-  if (/\bcurl\b|bicep|hammer|marteau|drag curl|waiter curl/.test(n)) return 'Biceps'
-  // Triceps — extension, skullcrusher, kickback, dips triceps, développé couché prise serrée
-  if (/tricep|skullcrusher|extension|kickback|dips tricep|prise serree|close.grip/.test(n)) return 'Triceps'
-  // Pectoraux — développé couché prise serrée smith → Triceps déjà capturé, mais "développé" sans contexte → Pectoraux
+  // Jambes
+  if (/squat|barre front|leg press|leg curl|leg ext|lunge|hack|rdl|deadlift|hip thrust|glute|presse a cuisse|presse a cuisses|fente|souleve de terre|soulevé|good morning|kettlebell swing|donkey kick|fire hydrant|fire hydratant|montee sur banc|montees sur banc|sled push|sled pull|pull through|rack pull|step up|nordic|nordic curl|nordic hamstring|leg day|split squat|bulgarian/.test(n)) return 'Jambes'
+  // Pectoraux
+  if (/bench|chest|pec|fly|push[\s-]up|developpe couche|developpe incline|developpe halteres|ecarte|dips pecto|crossover|svend/.test(n)) return 'Pectoraux'
+  // Dos — tirage, rowing, tractions, pullover, shrug, rack pull
+  if (/pull[\s-]up|chin[\s-]up|\blat\b|\brow\b|cable[\s-]row|seated[\s-]row|t[\s-]bar|tirage|rowing|traction|grand dorsal|pullover|pull over|superman|hyperextension|bird dog|good morning/.test(n)) return 'Dos'
+  // Épaules — élévation, oiseau, développé militaire, face pull, shrug, rotation épaule, thruster
+  if (/shoulder|military|elevation lateral|elevation frontal|elevation en y|oiseau|developpe militaire|face pull|upright|rear delt|lateral raise|shrug|haussement|rotation externe|rotation interne|passage d.paule|presse epaule|croix de fer|thruster|arnold/.test(n)) return 'Épaules'
+  // Biceps — curl, marteau (avant triceps)
+  if (/\bcurl\b|bicep|hammer|marteau|drag curl|waiter curl|reverse curl|zottman/.test(n)) return 'Biceps'
+  // Triceps — extension, skullcrusher, kickback, dips triceps, prise serrée
+  if (/tricep|skullcrusher|extension|kickback|dips tricep|prise serree|close.grip|jm press|tate press/.test(n)) return 'Triceps'
+  // Pectoraux — "développé" sans autre contexte
   if (/developpe/.test(n)) return 'Pectoraux'
-  if (/crunch|plank|ab|core|oblique|gainage/.test(n)) return 'Abdos'
-  if (/calf|mollet|raise/.test(n)) return 'Mollets'
+  // Épaules — élévations frontales/latérales (accent strip déjà fait)
+  if (/elevation|elevations|eleve/.test(n)) return 'Épaules'
+  // Abdos — tout le gainage, core, rotations, relevés, bicyclette, cercles jambes
+  if (/crunch|plank|planche|ab\b|abdo|core|oblique|gainage|dead bug|hollow|dragon flag|mountain climber|sit.up|sit up|sits up|releve de jambe|releve jambe|releve de genou|russian twist|windmill|pallof|rotation buste|zercher carry|cocon|ciseaux|jackknife|touche talon|roulette|bird dog|bicyclette|cercles jambes|flexion laterale|flexions laterales/.test(n)) return 'Abdos'
+  // Jambes — hips thrust (accent strip), marche avec elastique, farmer walk
+  if (/hips thrust|hip thrust|marche avec elastique|marche du fermier|farmer/.test(n)) return 'Jambes'
+  // Pectoraux — dips, pompe, hex press
+  if (/\bdips\b|pompe|hex press/.test(n)) return 'Pectoraux'
+  // Mollets
+  if (/calf|mollet|\braise\b|standing calf|seated calf/.test(n)) return 'Mollets'
+  // Avant-bras
+  if (/poignet|wrist|forearm|avant.bras/.test(n)) return 'Avant-bras'
   return 'Autre'
 }
 
@@ -56,7 +66,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
     .select(`
       id, session_name, logged_at, completed_at, duration_min,
       client_set_logs (
-        id, exercise_name, set_number, actual_reps, actual_weight_kg, completed, rpe
+        id, exercise_name, set_number, actual_reps, actual_weight_kg, completed, rir_actual
       )
     `)
     .eq('client_id', params.clientId)
@@ -85,7 +95,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
   // ── TIMELINE (par jour) ──────────────────────────────────────
   const timelineMap: Record<string, { date: string; volume: number; reps: number; sets: number; sessions: number }> = {}
   for (const log of logs) {
-    const date = log.logged_at
+    const date = log.logged_at.split('T')[0]
     if (!timelineMap[date]) timelineMap[date] = { date, volume: 0, reps: 0, sets: 0, sessions: 0 }
     timelineMap[date].sessions += 1
     for (const s of (log.client_set_logs ?? [])) {
@@ -117,7 +127,8 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
     for (const s of (log.client_set_logs ?? [])) {
       if (!isEffective(s) || !s.exercise_name) continue
       if (!exerciseMap[s.exercise_name]) exerciseMap[s.exercise_name] = { name: s.exercise_name, sessions: [] }
-      const existing = exerciseMap[s.exercise_name].sessions.find(x => x.date === log.logged_at)
+      const logDate = log.logged_at.split('T')[0]
+      const existing = exerciseMap[s.exercise_name].sessions.find(x => x.date === logDate)
       if (existing) {
         existing.maxWeight = Math.max(existing.maxWeight, Number(s.actual_weight_kg) ?? 0)
         existing.totalVolume += (s.actual_reps ?? 0) * (Number(s.actual_weight_kg) ?? 0)
@@ -125,7 +136,7 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
         existing.sets += 1
       } else {
         exerciseMap[s.exercise_name].sessions.push({
-          date: log.logged_at,
+          date: logDate,
           maxWeight: Number(s.actual_weight_kg) ?? 0,
           totalVolume: (s.actual_reps ?? 0) * (Number(s.actual_weight_kg) ?? 0),
           totalReps: s.actual_reps ?? 0,
@@ -139,12 +150,15 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
     .slice(0, 6)
 
   // ── RPE TREND ────────────────────────────────────────────────
+  // Le client saisit rir_actual (0–10). RPE = 10 - RIR.
   const rpeTrend = logs
-    .filter(l => (l.client_set_logs ?? []).some((s: any) => s.rpe))
+    .filter(l => (l.client_set_logs ?? []).some((s: any) => s.rir_actual != null))
     .map(l => {
-      const rpeValues = (l.client_set_logs ?? []).filter((s: any) => s.rpe).map((s: any) => s.rpe)
-      const avg = rpeValues.reduce((a: number, b: number) => a + b, 0) / rpeValues.length
-      return { date: l.logged_at, avgRpe: Math.round(avg * 10) / 10 }
+      const rirValues = (l.client_set_logs ?? [])
+        .filter((s: any) => s.rir_actual != null)
+        .map((s: any) => 10 - (s.rir_actual as number))
+      const avg = rirValues.reduce((a: number, b: number) => a + b, 0) / rirValues.length
+      return { date: l.logged_at.split('T')[0], avgRpe: Math.round(avg * 10) / 10 }
     })
 
   return NextResponse.json({

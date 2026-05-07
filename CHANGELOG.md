@@ -5,6 +5,14 @@
 
 ## 2026-05-07
 
+FIX(nutrition): date_of_birth sync — syncProfileFromResponses cherchait field_key 'date_naissance'|'date_of_birth', mais modules.ts définit 'birth_date' — âge était toujours null en nutrition-data — ajout 'birth_date' au mapping
+FIX(performance-coach): inferMuscleGroup — 465/465 exercices catalogue couverts (était 109/465 en "Autre") — ajout Jambes/Abdos/Épaules/Dos/Pectoraux/Avant-bras patterns manquants
+FIX(performance-coach): RPE vide — API cherchait s.rpe inexistant, corrigé en rir_actual → RPE = 10 - RIR
+FIX(performance-coach): barres volume grises — METRIC_COLOR.volume était #141414 (invisible sur #181818), remplacé par couleurs DS (#1f8a65 / #6366f1 / #f59e0b)
+FIX(performance-coach): tooltip "Invalid Date" sur BarChart groupes musculaires — BarTooltipContent séparé sans formatDate
+FIX(performance-coach): timeline clé date — log.logged_at.split('T')[0] pour regrouper par jour (était le timestamp complet)
+FEATURE(performances): filtre période 7j/30j/90j/Tout — KPIs + heatmap + label section synchronisés sur la période sélectionnée
+FIX(inngest): migration signatures v4 complète — triggers dans 1er arg pour les 5 fonctions (checkin-streak-evaluate, checkin-streak-expire, checkin-reminder-send, meal-analyze, points-level-update) — build Vercel débloqué
 FIX(recap): stat "Durée" affichait le repos moyen (avgRestSec) au lieu de duration_min — durée séance réelle maintenant affichée, repos moyen en sous-titre
 
 FIX(bilan): move measurement_method before body_fat_pct in biometrics block — fields now appear after method selection

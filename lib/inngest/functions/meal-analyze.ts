@@ -27,8 +27,7 @@ Return ONLY a valid JSON object with these exact keys (all values are numbers, u
 Be realistic — base your estimates on typical portion sizes. If the user provides weights/volumes, use them precisely.`
 
 export const mealAnalyzeFunction = inngest.createFunction(
-  { id: 'meal-analyze', retries: 3, timeouts: { finish: '2m' } },
-  { event: 'meal/analyze.requested' },
+  { id: 'meal-analyze', retries: 3, timeouts: { finish: '2m' }, triggers: [{ event: 'meal/analyze.requested' }] },
   async ({ event, step }) => {
     const { mealLogId } = event.data as { mealLogId: string }
 

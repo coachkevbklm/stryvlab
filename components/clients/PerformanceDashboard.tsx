@@ -103,9 +103,9 @@ const METRIC_LABELS: Record<Metric, string> = {
 // Mapped to STRYVR design tokens where possible
 const CHART_TEXT_COLOR = "rgba(255,255,255,0.40)"; // muted text (from design system)
 const METRIC_COLOR: Record<Metric, string> = {
-  volume: "#141414", // primary (main metric)
-  reps: "rgba(255,255,255,0.45)", // secondary (supporting metric)
-  sets: "#2DB470", // Cursor accent (heatmap / métriques)
+  volume: "#1f8a65",
+  reps: "#6366f1",
+  sets: "#f59e0b",
 };
 
 const MUSCLE_COLORS: Record<string, string> = {
@@ -230,12 +230,27 @@ function RadarTooltipContent({ active, payload }: any) {
   );
 }
 
-// Custom line tooltip
+// Custom line tooltip (dates)
 function LineTooltipContent({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#181818] border-tooltip rounded-lg px-3 py-2 text-xs">
       <p className="font-bold text-white mb-1">{formatDate(label)}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} style={{ color: p.color }}>
+          {p.name} : <span className="font-mono font-bold">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// Custom bar tooltip (noms de groupes musculaires — pas de formatDate)
+function BarTooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-[#181818] border-tooltip rounded-lg px-3 py-2 text-xs">
+      <p className="font-bold text-white mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name} : <span className="font-mono font-bold">{p.value}</span>
@@ -891,7 +906,7 @@ export default function PerformanceDashboard({
                       metric === "volume" ? formatVolume : undefined
                     }
                   />
-                  <Tooltip content={<LineTooltipContent />} />
+                  <Tooltip content={<BarTooltipContent />} />
                   <Bar
                     dataKey={metric}
                     name={METRIC_LABELS[metric]}

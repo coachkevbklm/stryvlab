@@ -94,6 +94,7 @@ export default function ProgrammeClientPage({
 
   const [tab, setTab] = useState<Tab>(initialTab as Tab ?? 'seance')
   const [selectedDow, setSelectedDow] = useState(initialDow)
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
 
   const completedIdsSet = useMemo(() => new Set(completedTodayIds), [completedTodayIds])
   const completedNamesSet = useMemo(() => new Set(completedTodayNames), [completedTodayNames])
@@ -421,35 +422,57 @@ export default function ProgrammeClientPage({
               </div>
             )}
 
-            {/* KPIs 30 derniers jours */}
+            {/* Filtre période */}
+            <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
+              {(['7d', '30d', '90d', 'all'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 ${
+                    period === p ? 'bg-white/[0.08] text-white' : 'text-white/30 hover:text-white/50'
+                  }`}
+                >
+                  {p === '7d' ? '7j' : p === '30d' ? '30j' : p === '90d' ? '90j' : 'Tout'}
+                </button>
+              ))}
+            </div>
+
+            {/* KPIs filtrés par période */}
             {sessionList.length > 0 && (() => {
-              const since = new Date()
-              since.setDate(since.getDate() - 30)
-              const sinceStr = since.toISOString().split('T')[0]
-              const recent = sessionList.filter(s => s.date >= sinceStr)
+              const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null
+              const sinceStr = days ? (() => { const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString().split('T')[0] })() : ''
+              const recent = days ? sessionList.filter(s => s.date >= sinceStr) : sessionList
               const volume = recent.reduce((sum, s) => sum + s.volume, 0)
               const sets = recent.reduce((sum, s) => sum + s.setsCompleted, 0)
+              const periodLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : period === '90d' ? '90 derniers jours' : 'Total'
               return (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                    30 derniers jours
+                    {periodLabel}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     <KpiCard label="Séances" value={recent.length} />
-                    <KpiCard label="Volume" value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume}kg`} />
+                    <KpiCard label="Volume" value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}t` : `${Math.round(volume)}kg`} />
                     <KpiCard label="Sets" value={sets} />
                   </div>
                 </div>
               )
             })()}
 
-            {/* Heatmap */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                Activité — 12 semaines
-              </p>
-              <ProgressHeatmap data={heatmapData} />
-            </div>
+            {/* Heatmap filtrée par période */}
+            {(() => {
+              const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null
+              const filteredHeatmap = days ? heatmapData.slice(-days) : heatmapData
+              const heatLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '4 semaines' : period === '90d' ? '13 semaines' : 'Tout'
+              return (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
+                    Activité — {heatLabel}
+                  </p>
+                  <ProgressHeatmap data={filteredHeatmap} />
+                </div>
+              )
+            })()}
 
             {/* Volume chart */}
             {timeline.length >= 2 && (

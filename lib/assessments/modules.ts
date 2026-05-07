@@ -132,7 +132,7 @@ const GENERAL_FIELDS: FieldConfig[] = [
 // MODULE : Biométrie & Composition corporelle
 // ------------------------------------------------------------------
 const BIOMETRICS_FIELDS: FieldConfig[] = [
-  // — Poids & tours globaux —
+  // — Poids —
   {
     key: 'weight_kg',
     label: 'Poids',
@@ -145,7 +145,17 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     step: 0.1,
     helper: 'À jeun, le matin de préférence',
   },
-  // — Composition corporelle —
+  // — Méthode de mesure (en premier pour débloquer les champs conditionnels) —
+  {
+    key: 'measurement_method',
+    label: 'Méthode de mesure',
+    input_type: 'multiple_choice',
+    required: false,
+    visible: true,
+    options: ['Balance à impédance', 'DEXA', 'Plis cutanés', 'Méthode Navy', 'Autre'],
+    helper: 'Sélectionnez toutes les méthodes dont vous disposez. Les champs correspondants s\'afficheront ensuite.',
+  },
+  // — Composition corporelle (conditionnelle sur la méthode) —
   {
     key: 'body_fat_pct',
     label: '% Masse grasse',
@@ -156,7 +166,8 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     min: 3,
     max: 60,
     step: 0.1,
-    helper: 'Issu de balance à impédance, DEXA ou plis cutanés. Si présent, ce champ est prioritaire sur la Masse grasse (kg).',
+    helper: 'Pourcentage de masse grasse fourni par votre appareil. Prioritaire sur la Masse grasse (kg) si les deux sont renseignés.',
+    show_if: { field_key: 'measurement_method', operator: 'not_empty' },
   },
   {
     key: 'fat_mass_kg',
@@ -224,14 +235,6 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     show_if: { field_key: 'measurement_method', operator: 'not_empty' },
   },
   {
-    key: 'measurement_method',
-    label: 'Méthode de mesure',
-    input_type: 'single_choice',
-    required: false,
-    visible: false,
-    options: ['Balance à impédance', 'DEXA', 'Plis cutanés', 'Méthode Navy', 'Autre'],
-  },
-  {
     key: 'visceral_fat_level',
     label: 'Graisse viscérale',
     input_type: 'number',
@@ -242,7 +245,7 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     max: 30,
     step: 1,
     helper: 'Lu sur balance à impédance (1–30, idéal < 12)',
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Balance à impédance' },
   },
   {
     key: 'body_water_pct',
@@ -254,7 +257,7 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     min: 30,
     max: 75,
     step: 0.1,
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Balance à impédance' },
   },
   {
     key: 'bone_mass_kg',
@@ -279,7 +282,7 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     max: 90,
     step: 1,
     helper: 'Valeur fournie directement par votre balance impédancemétrique (Tanita, InBody, Withings…). Si non disponible, une estimation sera calculée automatiquement.',
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Balance à impédance' },
   },
   {
     key: 'bmr_kcal_measured',
@@ -292,7 +295,7 @@ const BIOMETRICS_FIELDS: FieldConfig[] = [
     max: 4000,
     step: 1,
     helper: 'Métabolisme de base lu directement sur la balance impédancemétrique (Tanita, InBody, Withings…). Utilisé à la place des formules estimatives dans le calculateur de macros.',
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Balance à impédance' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Balance à impédance' },
   },
 ]
 
@@ -637,7 +640,7 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     max: 50,
     step: 0.5,
     helper: 'Pince à plis — protocole Durnin & Womersley ou Jackson-Pollock',
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Plis cutanés' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Plis cutanés' },
   },
   {
     key: 'skinfold_triceps_mm',
@@ -649,7 +652,7 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 1,
     max: 50,
     step: 0.5,
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Plis cutanés' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Plis cutanés' },
   },
   {
     key: 'skinfold_subscapular_mm',
@@ -661,7 +664,7 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 1,
     max: 60,
     step: 0.5,
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Plis cutanés' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Plis cutanés' },
   },
   {
     key: 'skinfold_suprailiac_mm',
@@ -673,7 +676,7 @@ const MEASUREMENTS_FIELDS: FieldConfig[] = [
     min: 1,
     max: 60,
     step: 0.5,
-    show_if: { field_key: 'measurement_method', operator: 'eq', value: 'Plis cutanés' },
+    show_if: { field_key: 'measurement_method', operator: 'includes', value: 'Plis cutanés' },
   },
   // — Indicateurs calculés —
   {

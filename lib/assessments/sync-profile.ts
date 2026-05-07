@@ -75,7 +75,7 @@ export async function syncProfileFromResponses(
     }
 
     // date_of_birth
-    if (['date_naissance', 'date_of_birth'].includes(key) && text) {
+    if (['birth_date', 'date_naissance', 'date_of_birth'].includes(key) && text) {
       profileUpdate['date_of_birth'] = text
     }
 
