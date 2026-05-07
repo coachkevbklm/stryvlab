@@ -5,6 +5,16 @@
 
 ## 2026-05-07
 
+FEATURE(nutrition): Phase 2a — Bilan selector dropdown + missing data alerts + extended API query params
+FEATURE(nutrition-data): add ?submissionId optional query param — coach selects which assessment (default=latest) without page reload
+FEATURE(nutrition-data): return allSubmissions array (id/date/status chronological) + selectedSubmissionId in response
+SCHEMA(nutrition-data): API extended to support bilan filtering at data fetch layer
+FEATURE(MissingDataAlerts): new component — badge count + max 3 alerts (critical→warning), field/category/severity/label, [Saisir]/[Calculer] buttons
+FEATURE(useNutritionStudio): add selectedSubmissionId + allSubmissions state, memoized missingDataAlerts (checks weight/BF%/BMR/height/frequency/steps)
+FEATURE(CalculationEngine): bilan selector dropdown (latest button → click → chronological list with checkmark), alerts section below TDEE
+FIX(nutrition-data): type annotation on submissions array — resolves TS7034 implicit any[] error
+REFACTOR(NutritionStudio): prop wire-up (submissions/selectedSubmissionId/onSubmissionChange/missingDataAlerts)
+FIX(nutrition): include in_progress bilans in data fetch — reopened assessments (status: in_progress) now populate nutrition-data instead of appearing empty
 FIX(bilan): reopen completed assessment — load previous responses pre-filled in form (coach reopens → client sees data to correct, not blank form)
 FIX(nutrition): date_of_birth sync — syncProfileFromResponses cherchait field_key 'date_naissance'|'date_of_birth', mais modules.ts définit 'birth_date' — âge était toujours null en nutrition-data — ajout 'birth_date' au mapping
 FIX(performance-coach): inferMuscleGroup — 465/465 exercices catalogue couverts (était 109/465 en "Autre") — ajout Jambes/Abdos/Épaules/Dos/Pectoraux/Avant-bras patterns manquants
