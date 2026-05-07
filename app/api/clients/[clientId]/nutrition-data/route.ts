@@ -45,7 +45,7 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // Fetch assessment data
+  // Fetch assessment data (completed OR in_progress/reopened)
   const { data: submissions } = await db
     .from('assessment_submissions')
     .select(`
@@ -55,7 +55,7 @@ export async function GET(
     `)
     .eq('client_id', clientId)
     .eq('coach_id', user.id)
-    .eq('status', 'completed')
+    .in('status', ['completed', 'in_progress'])
     .order('submitted_at', { ascending: false })
     .limit(20)
 

@@ -5,6 +5,7 @@
 
 ## 2026-05-07
 
+FIX(bilan): reopen completed assessment — load previous responses pre-filled in form (coach reopens → client sees data to correct, not blank form)
 FIX(nutrition): date_of_birth sync — syncProfileFromResponses cherchait field_key 'date_naissance'|'date_of_birth', mais modules.ts définit 'birth_date' — âge était toujours null en nutrition-data — ajout 'birth_date' au mapping
 FIX(performance-coach): inferMuscleGroup — 465/465 exercices catalogue couverts (était 109/465 en "Autre") — ajout Jambes/Abdos/Épaules/Dos/Pectoraux/Avant-bras patterns manquants
 FIX(performance-coach): RPE vide — API cherchait s.rpe inexistant, corrigé en rir_actual → RPE = 10 - RIR
