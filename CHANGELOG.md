@@ -5,6 +5,7 @@
 
 ## 2026-05-07
 
+FIX(volume-targets): add petit_fessier mapping to fessiers_moyen — petit fessier now included in weekly volume aggregation
 FEATURE(nutrition): Phase 2a — Bilan selector dropdown + missing data alerts + extended API query params
 FEATURE(nutrition-data): add ?submissionId optional query param — coach selects which assessment (default=latest) without page reload
 FEATURE(nutrition-data): return allSubmissions array (id/date/status chronological) + selectedSubmissionId in response
