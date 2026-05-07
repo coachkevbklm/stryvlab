@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Library, Plus } from "lucide-react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
@@ -28,6 +29,7 @@ interface Program {
 }
 
 export default function EntrainementPage() {
+  const router = useRouter();
   const { client, clientId } = useClient();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -107,9 +109,8 @@ export default function EntrainementPage() {
             topBarLeft={builderTopBarLeft}
             noFullscreen
             onSaved={(saved) => {
-              setSelectedProgram((prev) =>
-                prev ? { ...prev, name: saved?.name ?? prev.name } : prev
-              );
+              setSelectedProgram(null);
+              setRefreshKey((k) => k + 1);
             }}
             onCancel={() => setSelectedProgram(null)}
           />
