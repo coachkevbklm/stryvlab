@@ -26,9 +26,10 @@ export const MUSCLE_TO_VOLUME_GROUP: Record<string, string> = {
   fessiers: "fessiers_grand",
   // Jambes — Moyen fessier
   gluteus_medius: "fessiers_moyen",
-  gluteus_minimus: "fessiers_moyen",
-  petit_fessier: "fessiers_moyen",
   moyen_fessier: "fessiers_moyen",
+  // Jambes — Petit fessier
+  gluteus_minimus: "fessiers_petit",
+  petit_fessier: "fessiers_petit",
   // Jambes — Mollets
   gastrocnemius: "mollets",
   soleus: "mollets",
@@ -120,6 +121,7 @@ export const VOLUME_GROUP_LABELS: Record<string, string> = {
   ischio: "Ischio-jambiers",
   fessiers_grand: "Grand fessier",
   fessiers_moyen: "Moyen fessier",
+  fessiers_petit: "Petit fessier",
   mollets: "Mollets",
   pectoraux_haut: "Pectoraux — Haut",
   pectoraux_bas: "Pectoraux — Bas",
@@ -148,6 +150,7 @@ export const VOLUME_SEGMENTS: {
       "ischio",
       "fessiers_grand",
       "fessiers_moyen",
+      "fessiers_petit",
       "mollets",
     ],
   },
@@ -182,6 +185,7 @@ const BASE_TARGETS: Record<string, [number, number, number]> = {
   ischio: [6, 12, 18],
   fessiers_grand: [6, 14, 20],
   fessiers_moyen: [4, 10, 16],
+  fessiers_petit: [3, 8, 13],
   mollets: [8, 16, 24],
   pectoraux_haut: [6, 12, 18],
   pectoraux_bas: [6, 14, 20],
