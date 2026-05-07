@@ -5,6 +5,12 @@
 
 ## 2026-05-07
 
+FEATURE(nutrition): Phase 2b — Extended ParameterAdjustmentPanel with biometrics fields (weight, height, BF%, LBM, muscle mass, visceral fat) + BMR calculator modal with source badges (measured/estimated/calculated)
+FEATURE(calculators): new lib/nutrition/calculators.ts — BMR formulas (Katch-McArdle + Mifflin-St Jeor) + LBM + muscle mass calculations + BMRSource type (measured|estimated|calculated) + describeBMRFormula utility
+FEATURE(useNutritionStudio): add biometricsConfig state + setBiometricsConfig setter + initialization from clientData.bmr_kcal_measured (infers source as measured if exists, else estimated)
+REFACTOR(ClientIntelligencePanel): wire biometricsConfig + onBiometricsChange props — receives updated biometrics from ParameterAdjustmentPanel, passes through callback to useNutritionStudio setter
+REFACTOR(NutritionStudio): pass biometricsConfig + setBiometricsConfig to ClientIntelligencePanel for complete component hierarchy wiring (NutritionStudio → ClientIntelligencePanel → ParameterAdjustmentPanel → recalc on biometrics change)
+FEATURE(ParameterAdjustmentPanel): BMR calculator modal (Framer Motion) with formula toggle, pre-fill logic (weights available data), result display, apply button → persists to state + recalcs
 FIX(volume-targets): add petit_fessier mapping to fessiers_moyen — petit fessier now included in weekly volume aggregation
 FEATURE(nutrition): Phase 2a — Bilan selector dropdown + missing data alerts + extended API query params
 FEATURE(nutrition-data): add ?submissionId optional query param — coach selects which assessment (default=latest) without page reload

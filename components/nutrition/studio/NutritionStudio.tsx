@@ -77,11 +77,15 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             loading={studio.clientLoading}
             trainingConfig={studio.trainingConfig}
             lifestyleConfig={studio.lifestyleConfig}
+            biometricsConfig={studio.biometricsConfig}
             onTrainingChange={(patch) =>
               studio.setTrainingConfig((prev) => ({ ...prev, ...patch }))
             }
             onLifestyleChange={(patch) =>
               studio.setLifestyleConfig((prev) => ({ ...prev, ...patch }))
+            }
+            onBiometricsChange={(patch) =>
+              studio.setBiometricsConfig((prev) => ({ ...prev, ...patch }))
             }
             macroResult={studio.macroResult}
           />

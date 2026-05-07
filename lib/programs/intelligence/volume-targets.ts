@@ -7,40 +7,59 @@ export const MUSCLE_TO_VOLUME_GROUP: Record<string, string> = {
   vastus_medialis: "quadriceps",
   vastus_intermedius: "quadriceps",
   quadriceps: "quadriceps",
+  droit_femoral: "quadriceps",
+  vaste_lateral: "quadriceps",
+  vaste_medial: "quadriceps",
   // Jambes — Ischio-jambiers
   biceps_femoris: "ischio",
   semimembranosus: "ischio",
   semitendinosus: "ischio",
   hamstrings: "ischio",
+  ischio_jambiers: "ischio",
+  biceps_femoral: "ischio",
+  semi_membraneux: "ischio",
+  semi_tendineux: "ischio",
   // Jambes — Grand fessier
   gluteus_maximus: "fessiers_grand",
   glutes: "fessiers_grand",
+  grand_fessier: "fessiers_grand",
+  fessiers: "fessiers_grand",
   // Jambes — Moyen fessier
   gluteus_medius: "fessiers_moyen",
   gluteus_minimus: "fessiers_moyen",
   petit_fessier: "fessiers_moyen",
+  moyen_fessier: "fessiers_moyen",
   // Jambes — Mollets
   gastrocnemius: "mollets",
   soleus: "mollets",
   calves: "mollets",
+  gastrocnemien: "mollets",
+  soleaire: "mollets",
   // Haut push — Pectoraux haut
   pectoralis_major_upper: "pectoraux_haut",
   pectoralis_major_clavicular: "pectoraux_haut",
+  grand_pectoral_sup: "pectoraux_haut",
   // Haut push — Pectoraux bas
   pectoralis_major: "pectoraux_bas",
   pectoralis_major_lower: "pectoraux_bas",
   pectoralis_major_sternal: "pectoraux_bas",
   pectoralis_minor: "pectoraux_bas",
+  grand_pectoral: "pectoraux_bas",
+  grand_pectoral_inf: "pectoraux_bas",
+  petit_pectoral: "pectoraux_bas",
   // Haut push — Épaules antérieur
   anterior_deltoid: "epaules_ant",
   deltoid_anterior: "epaules_ant",
+  deltoide_anterieur: "epaules_ant",
   // Haut push — Épaules latéral
   lateral_deltoid: "epaules_lat",
   medial_deltoid: "epaules_lat",
   deltoid_lateral: "epaules_lat",
+  deltoide_lateral: "epaules_lat",
   // Haut push — Épaules postérieur
   posterior_deltoid: "epaules_post",
   deltoid_posterior: "epaules_post",
+  deltoide_posterieur: "epaules_post",
   // Haut push — Triceps
   triceps_brachii: "triceps",
   triceps: "triceps",
@@ -48,6 +67,7 @@ export const MUSCLE_TO_VOLUME_GROUP: Record<string, string> = {
   latissimus_dorsi: "dos_grand_dorsal",
   lats: "dos_grand_dorsal",
   teres_major: "dos_grand_dorsal",
+  grand_dorsal: "dos_grand_dorsal",
   // Haut pull — Trapèzes / Rhomboïdes
   rhomboids: "dos_trapezes",
   trapezius: "dos_trapezes",
@@ -56,20 +76,43 @@ export const MUSCLE_TO_VOLUME_GROUP: Record<string, string> = {
   trapezius_lower: "dos_trapezes",
   traps: "dos_trapezes",
   upper_traps: "dos_trapezes",
+  rhomboides: "dos_trapezes",
+  trapeze: "dos_trapezes",
+  trapeze_superieur: "dos_trapezes",
+  trapeze_moyen: "dos_trapezes",
+  trapeze_inferieur: "dos_trapezes",
   // Haut pull — Lombaires
   spine_erectors: "dos_lombaires",
   erector_spinae: "dos_lombaires",
   lower_back: "dos_lombaires",
+  erecteurs_rachis: "dos_lombaires",
   // Haut pull — Biceps
   biceps_brachii: "biceps",
   brachialis: "biceps",
   brachioradialis: "biceps",
+  biceps: "biceps",
+  brachial_anterieur: "biceps",
+  brachio_radial: "biceps",
   // Core — Abdos
   rectus_abdominis: "abdos",
   obliques: "abdos",
   transverse_abdominis: "abdos",
   core: "abdos",
+  droit_abdominal: "abdos",
+  droit_abdominal_inf: "abdos",
+  transverse: "abdos",
+  sangle_abdominale: "abdos",
 };
+
+/**
+ * Lookup muscle volume group by slug (EN or FR).
+ * Handles both EN catalog slugs and FR normalized slugs from BIOMECH_TO_FR.
+ * Returns null if slug not found in MUSCLE_TO_VOLUME_GROUP.
+ */
+export function getMuscleVolumeGroup(slug: string | undefined): string | null {
+  if (!slug) return null
+  return MUSCLE_TO_VOLUME_GROUP[slug] ?? null
+}
 
 // Display labels for each sub-group (FR)
 export const VOLUME_GROUP_LABELS: Record<string, string> = {

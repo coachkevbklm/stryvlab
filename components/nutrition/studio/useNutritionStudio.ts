@@ -27,6 +27,7 @@ import {
   emptyDayDraft,
   dayDraftFromDb,
 } from "@/lib/nutrition/types";
+import type { BMRSource } from "@/lib/nutrition/calculators";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,17 @@ export interface LifestyleConfig {
   caffeineDailyMg: number | null;
   alcoholWeekly: number | null;
   workHoursPerWeek: number | null;
+}
+
+export interface BiometricsConfig {
+  weight_kg: number | null;
+  height_cm: number | null;
+  body_fat_pct: number | null;
+  lean_mass_kg: number | null;
+  muscle_mass_kg: number | null;
+  visceral_fat_level: number | null;
+  bmr_kcal_measured: number | null;
+  bmr_source: BMRSource;
 }
 
 export interface CarbCyclingConfig {
@@ -145,6 +157,16 @@ export function useNutritionStudio(
     alcoholWeekly: null,
     workHoursPerWeek: null,
   });
+  const [biometricsConfig, setBiometricsConfig] = useState<BiometricsConfig>({
+    weight_kg: null,
+    height_cm: null,
+    body_fat_pct: null,
+    lean_mass_kg: null,
+    muscle_mass_kg: null,
+    visceral_fat_level: null,
+    bmr_kcal_measured: null,
+    bmr_source: "estimated",
+  });
   const [carbCycling, setCarbCycling] = useState<CarbCyclingConfig>({
     enabled: false,
     protocol: "3/1",
@@ -226,6 +248,16 @@ export function useNutritionStudio(
           caffeineDailyMg: cd.caffeine_daily_mg,
           alcoholWeekly: cd.alcohol_weekly,
           workHoursPerWeek: cd.work_hours_per_week,
+        });
+        setBiometricsConfig({
+          weight_kg: cd.weight_kg,
+          height_cm: cd.height_cm,
+          body_fat_pct: cd.body_fat_pct,
+          lean_mass_kg: cd.lean_mass_kg,
+          muscle_mass_kg: cd.muscle_mass_kg,
+          visceral_fat_level: cd.visceral_fat_level,
+          bmr_kcal_measured: cd.bmr_kcal_measured,
+          bmr_source: cd.bmr_kcal_measured ? "measured" : "estimated",
         });
       })
       .catch(() => {})
@@ -644,6 +676,8 @@ export function useNutritionStudio(
     setTrainingConfig,
     lifestyleConfig,
     setLifestyleConfig,
+    biometricsConfig,
+    setBiometricsConfig,
     carbCycling,
     setCarbCycling,
     hydrationClimate,
