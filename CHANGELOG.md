@@ -10,6 +10,7 @@ FEATURE(nutrition): quick-add height widget in adjustment panel if missing — n
 FEATURE(nutrition): missing data alerts in Col 1 (BMR absent, poids manquant, MG% absent, pas quotidiens inconnus) — warnings only, never blocking calculation
 REFACTOR(ParameterAdjustmentPanel): save button closes panel on success + shows green checkmark state — Fermer button for manual close
 REFACTOR(nutrition): height input removed from biometrics section if already filled via quick-add (idempotent sync)
+REFACTOR(dock): remove Nutrition stub from Studio navigation — only Programmes + Bilans remain (Nutrition returns 404 in Studio context)
 
 ## 2026-05-08
 
