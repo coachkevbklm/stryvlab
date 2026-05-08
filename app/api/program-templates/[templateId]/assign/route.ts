@@ -52,7 +52,7 @@ export async function POST(
         coach_program_template_exercises (
           name, sets, reps, rest_sec, rir, notes, position, image_url,
           primary_muscles, secondary_muscles, movement_pattern, equipment_required, group_id,
-          weight_increment_kg
+          weight_increment_kg, is_compound
         )
       )
     `,
@@ -158,6 +158,7 @@ export async function POST(
               weight_increment_kg: e.weight_increment_kg != null
                 ? Number(e.weight_increment_kg)
                 : inferWeightIncrement(e.equipment_required ?? []),
+              is_compound: e.is_compound ?? undefined,
             };
           }),
       );

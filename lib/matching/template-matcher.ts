@@ -119,15 +119,16 @@ export const EQUIPMENT_BY_CATEGORY: Record<EquipmentCategory, string[]> = {
 export function phase1EquipmentFilter(
   template: Template,
   client: ClientProfile
-): { pass: boolean; reason?: string } {
+): { pass: boolean; reason?: string; warning?: string } {
   if (!client.equipment_category) {
-    return { pass: false, reason: 'Catégorie d\'équipement client non renseignée' }
+    // Soft warning: not a hard stop, but user should review
+    return { pass: true, warning: 'Catégorie d\'équipement client non renseignée — vérifiez la compatibilité' }
   }
   if (!template.equipment_archetype) {
     // Template sans archétype déclaré → accessible à tous (legacy)
     return { pass: true }
   }
-  const unlocked = EQUIPMENT_UNLOCK[client.equipment_category]
+  const unlocked = EQUIPMENT_UNLOCK[client.equipment_archetype]
   if (!unlocked.includes(template.equipment_archetype)) {
     return {
       pass: false,
@@ -347,10 +348,12 @@ export function matchTemplate(template: Template, client: ClientProfile): MatchR
 
   const { breakdown } = p2
 
-  // Warning fréquence ±1
-  const freqWarning = client.weekly_frequency != null && breakdown.frequency === 8
-    ? `Fréquence proche : client=${client.weekly_frequency}j, template=${template.frequency}j — programme adaptable`
-    : undefined
+  // Collect warnings from phases
+  const warnings: string[] = []
+  if (p1.warning) warnings.push(p1.warning)
+  if (client.weekly_frequency != null && breakdown.frequency === 8) {
+    warnings.push(`Fréquence proche : client=${client.weekly_frequency}j, template=${template.frequency}j — programme adaptable`)
+  }
 
   const score = breakdown.goal + breakdown.level + breakdown.frequency +
                 breakdown.muscleTags + breakdown.bonus
@@ -359,7 +362,7 @@ export function matchTemplate(template: Template, client: ClientProfile): MatchR
     templateId: template.id,
     score,
     hardStop: false,
-    warning: freqWarning,
+    warning: warnings.length > 0 ? warnings.join(' · ') : undefined,
     breakdown,
     substitutions: p3.substitutions,
     substituable: true,
@@ -410,4 +413,50 @@ export const EQUIPMENT_CATEGORY_LABELS: Record<EquipmentCategory, string> = {
   home_rack:      'Rack à domicile',
   functional_box: 'Box / Fonctionnel',
   commercial_gym: 'Salle de sport',
+}
+
+/**
+ * Infer equipment_category from individual equipment items.
+ * Maps sets of equipment to the best-fitting category.
+ *
+ * Rules (by priority):
+ * 1. Commercial gym equipment (machines, smith, trap bar) → 'commercial_gym'
+ * 2. Full home setup (barbell + dumbbells + kettlebell + cable/machine) → 'home_rack' or 'home_full'
+ * 3. Dumbbell + barbell only → 'home_full'
+ * 4. Dumbbells only → 'home_dumbbells'
+ * 5. Functional/box equipment (rings, TRX, landmine) → 'functional_box'
+ * 6. Bodyweight only → 'bodyweight'
+ * 7. Default if ambiguous → null (user should configure explicitly)
+ */
+export function inferEquipmentCategory(equipment: string[]): EquipmentCategory | null {
+  if (!equipment || equipment.length === 0) return null
+
+  const has = (keys: string[]) => keys.some(k => equipment.includes(k))
+  const all = (keys: string[]) => keys.every(k => equipment.includes(k))
+
+  // Commercial gym setup
+  if (has(['machine', 'smith', 'trap_bar'])) return 'commercial_gym'
+
+  // Full home rack setup
+  if (has(['barbell', 'cable']) || (has(['barbell', 'dumbbell', 'kettlebell']) && equipment.length >= 3)) {
+    return 'home_rack'
+  }
+
+  // Home full (barbell + dumbbells)
+  if (all(['barbell', 'dumbbell'])) return 'home_full'
+
+  // Dumbbells with kettlebell or bands
+  if (has(['dumbbell']) && (has(['kettlebell']) || has(['band']))) return 'home_full'
+
+  // Dumbbells only
+  if (all(['dumbbell'])) return 'home_dumbbells'
+
+  // Functional/box equipment
+  if (has(['rings', 'trx', 'landmine', 'sled'])) return 'functional_box'
+
+  // Bodyweight + bands OK as bodyweight
+  if (all(['bodyweight', 'band']) || all(['bodyweight'])) return 'bodyweight'
+
+  // Ambiguous
+  return null
 }

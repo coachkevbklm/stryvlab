@@ -19,6 +19,7 @@ import {
   scoreLabel,
   scoreBadgeClass,
   EQUIPMENT_CATEGORY_LABELS,
+  inferEquipmentCategory,
   type Template,
   type ClientProfile,
   type MatchResult,
@@ -88,8 +89,10 @@ export default function AssignTemplatePage() {
               .includes(search.toLowerCase()),
         )
         .map((c) => {
+          // Infer equipment_category from individual equipment array if not explicitly set
+          const equipmentCategory = c.equipment_category ?? inferEquipmentCategory(c.equipment ?? []);
           const profile: ClientProfile = {
-            equipment_category: c.equipment_category ?? null,
+            equipment_category: equipmentCategory,
             fitness_level: c.fitness_level ?? null,
             training_goal: c.training_goal ?? null,
             weekly_frequency: c.weekly_frequency ?? null,

@@ -117,6 +117,7 @@ export async function POST(
           primary_muscles: e.primary_muscles ?? [],
           secondary_muscles: e.secondary_muscles ?? [],
           group_id: e.group_id ?? null,
+          is_compound: e.is_compound ?? undefined,
         }))
       )
       if (exErr) {
