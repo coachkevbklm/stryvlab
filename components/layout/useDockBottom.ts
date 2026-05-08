@@ -14,7 +14,6 @@ import {
   Euro,
   Activity,
   ClipboardCheck,
-  Salad,
   UserCircle,
   Bell,
   Settings,
@@ -102,7 +101,6 @@ export function useDockBottom(): DockBottomItem[] {
     return [
       { id: "programmes", label: "Programmes", href: "/coach/programs/templates", icon: Dumbbell },
       { id: "bilans", label: "Bilans", href: "/coach/assessments", icon: ClipboardCheck },
-      { id: "nutrition", label: "Nutrition", href: "#", icon: Salad },
     ];
   }
 
