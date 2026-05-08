@@ -10,6 +10,7 @@ import type {
   BiometricsConfig,
 } from "./useNutritionStudio";
 import ParameterAdjustmentPanel from "./ParameterAdjustmentPanel";
+import MissingDataAlerts from "./MissingDataAlerts";
 
 interface Props {
   clientData: NutritionClientData | null;
@@ -175,6 +176,9 @@ export default function ClientIntelligencePanel({
             {cd.gender === "female" ? "Femme" : "Homme"} · {cd.age} ans
           </p>
         </div>
+
+        {/* Missing data alerts */}
+        <MissingDataAlerts clientData={clientData} macroResult={macroResult} />
 
         {/* Composition */}
         <div>

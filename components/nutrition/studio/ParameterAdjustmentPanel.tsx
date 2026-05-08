@@ -1,8 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, X, Calculator } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, X, Calculator, Check, AlertTriangle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import type { NutritionClientData } from "@/lib/nutrition/types";
 import type { TrainingConfig, LifestyleConfig } from "./useNutritionStudio";
 import type { BMRSource } from "@/lib/nutrition/calculators";
@@ -41,11 +41,13 @@ function NumberInput({
   value,
   onChange,
   unit,
+  onBlur,
 }: {
   label: string;
   value: string | number | null;
   onChange: (v: string) => void;
   unit?: string;
+  onBlur?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-white/[0.03]">
@@ -55,6 +57,7 @@ function NumberInput({
           type="number"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder="—"
           className="w-20 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-1 text-[11px] text-white text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
         />
@@ -108,6 +111,33 @@ export default function ParameterAdjustmentPanel({
     "katch-mcardle" | "mifflin-st-jeor"
   >("katch-mcardle");
   const [bmrResult, setBMRResult] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [heightInput, setHeightInput] = useState<string>(
+    biometricsConfig.height_cm?.toString() ?? ""
+  );
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save debounce 500ms
+  const triggerAutoSave = () => {
+    setSaved(false);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }, 500);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
+  // Update height input when biometricsConfig changes
+  useEffect(() => {
+    setHeightInput(biometricsConfig.height_cm?.toString() ?? "");
+  }, [biometricsConfig.height_cm]);
 
   const handleCalculateBMR = () => {
     let result: number | null = null;
@@ -189,44 +219,101 @@ export default function ParameterAdjustmentPanel({
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-0">
+              {/* Height quick-add if missing */}
+              {!biometricsConfig.height_cm && (
+                <div className="bg-amber-500/15 border-[0.3px] border-amber-500/30 rounded-lg p-3 mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-amber-300 mb-2">
+                        Taille manquante
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={heightInput}
+                          onChange={(e) => setHeightInput(e.target.value)}
+                          placeholder="170"
+                          className="flex-1 rounded-lg bg-white/[0.04] border-[0.3px] border-amber-500/40 px-2 py-1 text-[10px] text-white outline-none placeholder:text-white/20 focus:border-amber-500/60"
+                        />
+                        <span className="text-[9px] text-white/35">cm</span>
+                        <button
+                          onClick={() => {
+                            if (heightInput) {
+                              onUpdateBiometrics("height_cm", heightInput);
+                              triggerAutoSave();
+                            }
+                          }}
+                          className="rounded-lg bg-amber-500/30 border-[0.3px] border-amber-500/50 px-2 py-1 text-[9px] font-medium text-amber-300 hover:bg-amber-500/40 transition-all"
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Training Section */}
               <SectionLabel>Entraînement</SectionLabel>
               <NumberInput
                 label="Fréquence hebdomadaire"
                 value={trainingConfig.weeklyFrequency ?? ""}
-                onChange={(v) => onUpdateTraining("weekly_frequency", v)}
+                onChange={(v) => {
+                  onUpdateTraining("weekly_frequency", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="jours"
               />
               <NumberInput
                 label="Durée séance"
                 value={trainingConfig.sessionDurationMin ?? ""}
-                onChange={(v) => onUpdateTraining("session_duration_min", v)}
+                onChange={(v) => {
+                  onUpdateTraining("session_duration_min", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="min"
               />
               <NumberInput
                 label="Calories entraînement"
                 value={trainingConfig.trainingCaloriesWeekly ?? ""}
-                onChange={(v) =>
-                  onUpdateTraining("training_calories_weekly", v)
-                }
+                onChange={(v) => {
+                  onUpdateTraining("training_calories_weekly", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="kcal"
               />
               <NumberInput
                 label="Fréquence cardio"
                 value={trainingConfig.cardioFrequency ?? ""}
-                onChange={(v) => onUpdateTraining("cardio_frequency", v)}
+                onChange={(v) => {
+                  onUpdateTraining("cardio_frequency", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="séances"
               />
               <NumberInput
                 label="Durée cardio"
                 value={trainingConfig.cardioDurationMin ?? ""}
-                onChange={(v) => onUpdateTraining("cardio_duration_min", v)}
+                onChange={(v) => {
+                  onUpdateTraining("cardio_duration_min", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="min"
               />
               <NumberInput
                 label="Étapes quotidiennes"
                 value={trainingConfig.dailySteps ?? ""}
-                onChange={(v) => onUpdateTraining("daily_steps", v)}
+                onChange={(v) => {
+                  onUpdateTraining("daily_steps", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="pas"
               />
 
@@ -235,37 +322,61 @@ export default function ParameterAdjustmentPanel({
               <NumberInput
                 label="Heures sommeil"
                 value={lifestyleConfig.sleepDurationH ?? ""}
-                onChange={(v) => onUpdateLifestyle("sleep_duration_h", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("sleep_duration_h", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="h"
               />
               <NumberInput
                 label="Qualité sommeil"
                 value={lifestyleConfig.sleepQuality ?? ""}
-                onChange={(v) => onUpdateLifestyle("sleep_quality", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("sleep_quality", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="/ 10"
               />
               <NumberInput
                 label="Niveau de stress"
                 value={lifestyleConfig.stressLevel ?? ""}
-                onChange={(v) => onUpdateLifestyle("stress_level", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("stress_level", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="/ 10"
               />
               <NumberInput
                 label="Heures travail"
                 value={lifestyleConfig.workHoursPerWeek ?? ""}
-                onChange={(v) => onUpdateLifestyle("work_hours_per_week", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("work_hours_per_week", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="h"
               />
               <NumberInput
                 label="Caféine quotidienne"
                 value={lifestyleConfig.caffeineDailyMg ?? ""}
-                onChange={(v) => onUpdateLifestyle("caffeine_daily_mg", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("caffeine_daily_mg", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="mg"
               />
               <NumberInput
                 label="Alcool hebdomadaire"
                 value={lifestyleConfig.alcoholWeekly ?? ""}
-                onChange={(v) => onUpdateLifestyle("alcohol_weekly", v)}
+                onChange={(v) => {
+                  onUpdateLifestyle("alcohol_weekly", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="verre"
               />
 
@@ -274,37 +385,61 @@ export default function ParameterAdjustmentPanel({
               <NumberInput
                 label="Poids"
                 value={biometricsConfig.weight_kg ?? ""}
-                onChange={(v) => onUpdateBiometrics("weight_kg", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("weight_kg", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="kg"
               />
               <NumberInput
                 label="Taille"
                 value={biometricsConfig.height_cm ?? ""}
-                onChange={(v) => onUpdateBiometrics("height_cm", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("height_cm", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="cm"
               />
               <NumberInput
                 label="Graisse corporelle"
                 value={biometricsConfig.body_fat_pct ?? ""}
-                onChange={(v) => onUpdateBiometrics("body_fat_pct", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("body_fat_pct", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="%"
               />
               <NumberInput
                 label="Masse maigre"
                 value={biometricsConfig.lean_mass_kg ?? ""}
-                onChange={(v) => onUpdateBiometrics("lean_mass_kg", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("lean_mass_kg", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="kg"
               />
               <NumberInput
                 label="Masse musculaire"
                 value={biometricsConfig.muscle_mass_kg ?? ""}
-                onChange={(v) => onUpdateBiometrics("muscle_mass_kg", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("muscle_mass_kg", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="kg"
               />
               <NumberInput
                 label="Graisse viscérale"
                 value={biometricsConfig.visceral_fat_level ?? ""}
-                onChange={(v) => onUpdateBiometrics("visceral_fat_level", v)}
+                onChange={(v) => {
+                  onUpdateBiometrics("visceral_fat_level", v);
+                  triggerAutoSave();
+                }}
+                onBlur={triggerAutoSave}
                 unit="level"
               />
 
@@ -321,9 +456,11 @@ export default function ParameterAdjustmentPanel({
                   <input
                     type="number"
                     value={biometricsConfig.bmr_kcal_measured ?? ""}
-                    onChange={(e) =>
-                      onUpdateBiometrics("bmr_kcal_measured", e.target.value)
-                    }
+                    onChange={(e) => {
+                      onUpdateBiometrics("bmr_kcal_measured", e.target.value);
+                      triggerAutoSave();
+                    }}
+                    onBlur={triggerAutoSave}
                     placeholder="—"
                     className="w-20 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-1 text-[11px] text-white text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
                   />
@@ -342,13 +479,33 @@ export default function ParameterAdjustmentPanel({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-white/[0.06] p-4">
+            <div className="border-t border-white/[0.06] p-4 flex gap-2">
               <button
                 onClick={onClose}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] font-medium text-white/60 hover:text-white/80 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[11px] font-medium text-white/60 hover:text-white/80 transition-all"
               >
-                <ChevronLeft size={12} />
-                Retour
+                <X size={12} />
+                Fermer
+              </button>
+              <button
+                onClick={onClose}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-medium transition-all ${
+                  saved
+                    ? "bg-green-500/20 border-[0.3px] border-green-500/40 text-green-300"
+                    : "bg-[#1f8a65] border-[0.3px] border-[#1f8a65] text-white hover:bg-[#217356]"
+                }`}
+              >
+                {saved ? (
+                  <>
+                    <Check size={12} />
+                    Enregistré
+                  </>
+                ) : (
+                  <>
+                    <ChevronLeft size={12} />
+                    Fait, retour
+                  </>
+                )}
               </button>
             </div>
           </motion.div>
