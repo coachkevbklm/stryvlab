@@ -13,6 +13,7 @@ REFACTOR(nutrition): height input removed from biometrics section if already fil
 
 ## 2026-05-08
 
+SCHEMA: add is_compound + biomech columns to coach_program_template_exercises — migration 20260508_template_exercises_is_compound.sql aligns template schema with program_exercises enrichment
 FIX(template-clone): add is_compound field to exercise inserts in save-as-template + assign — survives template cloning intact
 FIX(equipment-validation): change phase1EquipmentFilter from hard stop to soft warning when equipment_category is null — coaches can assign templates despite unconfigured category
 FEATURE(equipment-inference): add inferEquipmentCategory() function — maps individual equipment items (barbell+dumbbell→home_full, dumbbells→home_dumbbells, machines→commercial_gym, etc.) + assign page infers category from equipment array if explicit category missing
