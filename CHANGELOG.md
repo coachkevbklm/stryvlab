@@ -15,6 +15,13 @@ REFACTOR(dock): remove Nutrition stub from Studio navigation — only Programmes
 
 ## 2026-05-08
 
+SCHEMA: add primary_muscles_normalized + secondary_muscles_normalized columns to all exercise tables — consolidates 5 muscle data sources into single DB authoritative source (migration 20260508_exercise_normalized_muscles.sql, manual application required in Supabase Dashboard)
+FEAT(muscle-normalization): add canonical muscle layer with legacy EN→FR mapping + strict resolver (no regex fallback) — 65 canonical muscles, full backward compat, validation at API boundary
+FEAT(scoring): complete MUSCLE_TO_VOLUME_GROUP mapping for all canonical muscles — volume heatmap now covers all muscles consistently
+FEAT(api): add Zod validation schemas for normalized muscle arrays — rejects invalid slugs at API routes (POST/PATCH exercise endpoints)
+REFACTOR(muscleDetection): eliminate regex fallback, read strictly from DB normalized columns — same exercise shows identical muscles across BodyMap, volume charts, scoring alerts
+TEST(integration): add muscle consistency tests — verify all components read from same authoritative source
+DOCS: add MUSCLE_DATA_CONSOLIDATION.md architecture doc — explains single-source-of-truth design, migration path, next steps
 SCHEMA: add is_compound + biomech columns to coach_program_template_exercises — migration 20260508_template_exercises_is_compound.sql aligns template schema with program_exercises enrichment
 FIX(template-clone): add is_compound field to exercise inserts in save-as-template + assign — survives template cloning intact
 FIX(matching): remove hard stops on frequency ecart + level mismatch — soft warnings only, coaches can assign any template to any client (Phase 3 substitution remains only hard stop)
