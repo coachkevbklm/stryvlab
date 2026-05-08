@@ -76,6 +76,35 @@
 
 ---
 
+## TopBar & Navigation
+
+**TopBar = Unique Navigation/Header**
+- Use `useSetTopBar(topBarLeft, topBarRight)` hook
+- TopBarLeft: section label (`text-[9px] text-white/30`) + title (`text-[13px] text-white`)
+- TopBarRight: action buttons (usually "+ Nouveau" style)
+- NEVER duplicate header in main content
+- `<main>` MUST use `bg-[#121212]`
+
+**BottomNav** (client app)
+- 5–6 fixed items bottom screen
+- Icons + labels, active highlight `#1f8a65`
+- Buttons in TopBar style: `h-8 rounded-lg text-[12px] font-bold`
+
+---
+
+## Loading States
+
+**Always use `<Skeleton>`** — never spinner-only for page/section load.
+
+```tsx
+import { Skeleton } from "@/components/ui/skeleton";
+
+<Skeleton className="h-4 w-32" />  // generic shimmer
+<Skeleton className="w-9 h-9 rounded-lg" />  // icon placeholder
+```
+
+---
+
 ## Règles Non-Négociables
 
 1. ✅ `#121212` bg app, jamais `#181818` en principal
