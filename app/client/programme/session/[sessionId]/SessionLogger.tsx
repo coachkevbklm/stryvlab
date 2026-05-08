@@ -356,6 +356,13 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             setDraftReady(true)
             return
           }
+          // Si ping échoue avec 404 (log terminée ou supprimée), clear localStorage silencieusement
+          if (res.status === 404 && !cancelled) {
+            localStorage.removeItem(DRAFT_KEY)
+            // Ne pas créer un nouveau draft — probablement déjà complétée
+            setDraftReady(true)
+            return
+          }
         } catch {
           // Log invalide ou réseau coupé — on en crée un nouveau
         }
@@ -604,7 +611,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const allSetsPayload = sets.map(parseSetForApi)
 
     if (logId) {
-      // Flush final — tous les sets d'un coup, vérifié obligatoirement
+      // Flush final atomique — sets + completed ensemble
       try {
         const flushRes = await fetch(`/api/session-logs/${logId}/sets`, {
           method: 'PATCH',
@@ -612,37 +619,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           body: JSON.stringify({ set_logs: allSetsPayload }),
         })
         if (!flushRes.ok) {
-          // Le live save a échoué — on retente via DELETE+POST atomique
-          const retryRes = await fetch('/api/session-logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              program_session_id: session.id,
-              session_name: session.name,
-              exercise_notes: exerciseNotes,
-              set_logs: allSetsPayload,
-            }),
-          })
-          if (!retryRes.ok) {
-            const body = await retryRes.json().catch(() => ({}))
-            setSaveState('error')
-            setErrorMsg(body?.error ?? `Erreur sauvegarde (${retryRes.status})`)
-            return
-          }
-          const retryData = await retryRes.json()
-          const retryLogId = retryData?.session_log?.id
-          if (retryLogId) {
-            await fetch(`/api/session-logs/${retryLogId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ completed: true, duration_min: durationMin }),
-            })
-            setSaveState('idle')
-            localStorage.removeItem(DRAFT_KEY)
-            router.refresh()
-            router.push(`/client/programme/recap/${retryLogId}`)
-            return
-          }
+          const body = await flushRes.json().catch(() => ({}))
+          setSaveState('error')
+          setErrorMsg(body?.error ?? `Erreur sauvegarde sets (${flushRes.status})`)
+          return
         }
       } catch (err) {
         setSaveState('error')

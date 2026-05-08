@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     planned_reps: s.planned_reps ?? null,
     actual_reps: s.actual_reps ?? null,
     actual_weight_kg: s.actual_weight_kg ?? null,
-    completed: s.completed,
+    completed: s.completed ?? false,
     rir_actual: s.rir_actual ?? null,
     notes: s.notes ?? null,
     rest_sec_actual: s.rest_sec_actual ?? null,
