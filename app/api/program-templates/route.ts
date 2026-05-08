@@ -82,6 +82,16 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (session && s.exercises?.length) {
+      // Validate primary_muscles
+      for (const e of s.exercises) {
+        if (!e.primary_muscles || e.primary_muscles.length === 0) {
+          return NextResponse.json(
+            { error: `Exercise "${e.name}" missing primary_muscles. All exercises must have at least one primary muscle.` },
+            { status: 400 }
+          );
+        }
+      }
+
       await db.from('coach_program_template_exercises').insert(
         s.exercises.map((e: any, ei: number) => ({
           session_id: session.id,
