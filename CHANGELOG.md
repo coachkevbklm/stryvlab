@@ -3,6 +3,14 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-09
+
+FEATURE(nutrition): auto-save parameters with debounce 500ms + visual feedback "Enregistré" — changes persist instantly, no manual Save button needed
+FEATURE(nutrition): quick-add height widget in adjustment panel if missing — non-blocking, can add anytime (height non-critical, immutable after first bilan)
+FEATURE(nutrition): missing data alerts in Col 1 (BMR absent, poids manquant, MG% absent, pas quotidiens inconnus) — warnings only, never blocking calculation
+REFACTOR(ParameterAdjustmentPanel): save button closes panel on success + shows green checkmark state — Fermer button for manual close
+REFACTOR(nutrition): height input removed from biometrics section if already filled via quick-add (idempotent sync)
+
 ## 2026-05-08
 
 FIX(template-clone): add is_compound field to exercise inserts in save-as-template + assign — survives template cloning intact
