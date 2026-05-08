@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Settings } from "lucide-react";
+import { AlertTriangle, Settings, Calculator } from "lucide-react";
 import type { NutritionClientData } from "@/lib/nutrition/types";
 import type { BMRSource } from "@/lib/nutrition/calculators";
+import { calculateBMRMifflin } from "@/lib/nutrition/calculators";
 import type {
   TrainingConfig,
   LifestyleConfig,
@@ -26,6 +27,9 @@ interface Props {
     estimatedBF: number;
     breakdown: { bmr: number; tdee: number };
   } | null;
+  submissions?: Array<{ id: string; date: string; status: string }>;
+  selectedSubmissionId?: string | null;
+  onSubmissionChange?: (submissionId: string) => void;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -110,8 +114,12 @@ export default function ClientIntelligencePanel({
   onLifestyleChange,
   onBiometricsChange,
   macroResult,
+  submissions,
+  selectedSubmissionId,
+  onSubmissionChange,
 }: Props) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [showBilanDropdown, setShowBilanDropdown] = useState(false);
 
   if (loading) {
     return (
@@ -176,6 +184,49 @@ export default function ClientIntelligencePanel({
             {cd.gender === "female" ? "Femme" : "Homme"} · {cd.age} ans
           </p>
         </div>
+
+        {/* Bilan sélectionné */}
+        {submissions && submissions.length > 0 && (
+          <div className="relative">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                Bilan sélectionné
+              </span>
+              <button
+                onClick={() => setShowBilanDropdown(!showBilanDropdown)}
+                className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] text-[10px] text-white/60 hover:text-white/80 hover:bg-white/[0.06] transition-all"
+              >
+                {submissions[0]?.date}
+              </button>
+            </div>
+
+            {showBilanDropdown && (
+              <div className="absolute top-full right-0 mt-1.5 bg-[#181818] border-[0.3px] border-white/[0.06] rounded-lg shadow-lg z-10 min-w-[180px]">
+                {submissions.map((sub, idx) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => {
+                      onSubmissionChange?.(sub.id);
+                      setShowBilanDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[10px] transition-colors ${
+                      idx > 0 ? "border-t-[0.3px] border-white/[0.06]" : ""
+                    } ${
+                      selectedSubmissionId === sub.id
+                        ? "bg-[#1f8a65]/10 text-[#1f8a65]"
+                        : "text-white/60 hover:bg-white/[0.04] hover:text-white/80"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{sub.date}</span>
+                      {selectedSubmissionId === sub.id && <span>✓</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Missing data alerts */}
         <MissingDataAlerts clientData={clientData} macroResult={macroResult} />

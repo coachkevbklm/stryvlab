@@ -88,6 +88,9 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
               studio.setBiometricsConfig((prev) => ({ ...prev, ...patch }))
             }
             macroResult={studio.macroResult}
+            submissions={studio.allSubmissions}
+            selectedSubmissionId={studio.selectedSubmissionId}
+            onSubmissionChange={studio.setSelectedSubmissionId}
           />
         </div>
 
@@ -113,10 +116,6 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             onHydrationPhaseChange={studio.setHydrationPhase}
             hydrationLiters={studio.hydrationLiters}
             leanMass={leanMass}
-            submissions={studio.allSubmissions}
-            selectedSubmissionId={studio.selectedSubmissionId}
-            onSubmissionChange={studio.setSelectedSubmissionId}
-            missingDataAlerts={studio.missingDataAlerts}
           />
         </div>
 
