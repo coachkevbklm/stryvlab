@@ -21,6 +21,14 @@ function service() {
   );
 }
 
+const VALID_MOVEMENT_PATTERNS = new Set([
+  'horizontal_push', 'vertical_push', 'horizontal_pull', 'vertical_pull',
+  'squat_pattern', 'hip_hinge', 'knee_flexion', 'knee_extension', 'calf_raise',
+  'elbow_flexion', 'elbow_extension', 'lateral_raise', 'hip_abduction', 'hip_adduction',
+  'shoulder_rotation', 'carry', 'scapular_elevation', 'scapular_retraction', 'scapular_protraction',
+  'core_anti_flex', 'core_flex', 'core_rotation',
+]);
+
 // POST /api/program-templates/[templateId]/assign
 // Crée un coach_program pour un client depuis un template
 export async function POST(
@@ -149,7 +157,9 @@ export async function POST(
               image_url: e.image_url ?? null,
               primary_muscles: e.primary_muscles ?? [],
               secondary_muscles: e.secondary_muscles ?? [],
-              movement_pattern: e.movement_pattern ?? null,
+              movement_pattern: e.movement_pattern && VALID_MOVEMENT_PATTERNS.has(e.movement_pattern)
+                ? e.movement_pattern
+                : null,
               equipment_required: e.equipment_required ?? [],
               group_id: e.group_id ?? null,
               rep_min: parsed?.rep_min ?? null,
