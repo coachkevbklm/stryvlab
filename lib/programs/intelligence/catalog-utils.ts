@@ -1,5 +1,90 @@
 import catalogData from '@/data/exercise-catalog.json'
 import type { InjuryRestriction, BiomechData } from './types'
+import type { CanonicalMuscle } from './muscle-normalization'
+
+// ─── Muscle Volume Grouping ──────────────────────────────────────────────────
+// Authoritative mapping from canonical muscles to volume tracking groups
+// Used by scoring engine + volume distribution charts
+
+export const MUSCLE_TO_VOLUME_GROUP: Record<CanonicalMuscle, string> = {
+  // Poitrine
+  grand_pectoral: 'Pectoraux - Grand',
+  grand_pectoral_superieur: 'Pectoraux - Haut',
+  grand_pectoral_inferieur: 'Pectoraux - Bas',
+  petit_pectoral: 'Pectoraux - Petit',
+
+  // Dos
+  grand_dorsal: 'Dos - Grand dorsal',
+  trapeze_superieur: 'Dos - Trapèzes',
+  trapeze_moyen: 'Dos - Trapèzes',
+  trapeze_inferieur: 'Dos - Trapèzes',
+  rhomboides: 'Dos - Rhomboïdes',
+  lombaires: 'Dos - Lombaires',
+  erecteurs_spinaux: 'Dos - Érecteurs',
+
+  // Épaules
+  deltoide_anterieur: 'Épaules - Antérieur',
+  deltoide_lateral: 'Épaules - Latéral',
+  deltoide_posterieur: 'Épaules - Postérieur',
+
+  // Bras
+  biceps: 'Bras - Biceps',
+  biceps_brachial: 'Bras - Biceps',
+  brachial: 'Bras - Brachial',
+  triceps: 'Bras - Triceps',
+  triceps_lateral: 'Bras - Triceps',
+  triceps_medial: 'Bras - Triceps',
+  triceps_long: 'Bras - Triceps',
+
+  // Avant-bras
+  flechisseurs_avant_bras: 'Avant-bras',
+  extenseurs_avant_bras: 'Avant-bras',
+
+  // Jambes (haut)
+  quadriceps: 'Jambes - Quadriceps',
+  rectus_femoris: 'Jambes - Quadriceps',
+  vaste_lateral: 'Jambes - Quadriceps',
+  vaste_medial: 'Jambes - Quadriceps',
+  vaste_intermediaire: 'Jambes - Quadriceps',
+
+  // Jambes (arrière)
+  ischio_jambiers: 'Jambes - Ischio-jambiers',
+  biceps_femoral: 'Jambes - Ischio-jambiers',
+  semi_tendineux: 'Jambes - Ischio-jambiers',
+  semi_membraneux: 'Jambes - Ischio-jambiers',
+
+  // Fessiers
+  grand_fessier: 'Fessiers - Grand',
+  moyen_fessier: 'Fessiers - Moyen',
+  petit_fessier: 'Fessiers - Petit',
+
+  // Adducteurs/Abducteurs
+  adducteurs: 'Jambes - Adducteurs',
+  abducteurs: 'Jambes - Abducteurs',
+
+  // Mollets
+  mollet: 'Jambes - Mollet',
+  solea: 'Jambes - Mollet',
+  gastrocnemien: 'Jambes - Mollet',
+  tibial_anterieur: 'Jambes - Tibial antérieur',
+
+  // Core
+  abdos: 'Core - Abdominaux',
+  obliques_externes: 'Core - Obliques',
+  obliques_internes: 'Core - Obliques',
+  transverse_abdominal: 'Core - Transverse',
+
+  // Internal catch-all (should not appear in normalized data)
+  dos_large: 'Dos - Général',
+}
+
+/**
+ * Get volume group for a muscle.
+ * Used by scoring to aggregate volume by muscle group.
+ */
+export function getVolumeGroup(muscle: CanonicalMuscle): string {
+  return MUSCLE_TO_VOLUME_GROUP[muscle] ?? 'Inconnu'
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
