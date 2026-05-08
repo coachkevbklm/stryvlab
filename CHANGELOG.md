@@ -3,6 +3,12 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-08
+
+FIX(template-clone): add is_compound field to exercise inserts in save-as-template + assign — survives template cloning intact
+FIX(equipment-validation): change phase1EquipmentFilter from hard stop to soft warning when equipment_category is null — coaches can assign templates despite unconfigured category
+FEATURE(equipment-inference): add inferEquipmentCategory() function — maps individual equipment items (barbell+dumbbell→home_full, dumbbells→home_dumbbells, machines→commercial_gym, etc.) + assign page infers category from equipment array if explicit category missing
+
 ## 2026-05-07
 
 FEATURE(nutrition): Phase 2b — Extended ParameterAdjustmentPanel with biometrics fields (weight, height, BF%, LBM, muscle mass, visceral fat) + BMR calculator modal with source badges (measured/estimated/calculated)
