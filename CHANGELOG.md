@@ -5,6 +5,7 @@
 
 ## 2026-05-09
 
+FIX(nutrition): add missing CheckCircle2 import in CalculationEngine — resolves blank nutrition protocol page (ReferenceError: CheckCircle2 is not defined)
 FEAT(hydration): add seed script hydrate-normalized-muscles.ts — maps EN→FR from exercise-catalog.json, updates 379 exercises with primary_muscles_normalized + secondary_muscles_normalized (86 skipped due to missing EN→FR mappings)
 FIX(api): validate primary_muscles non-empty on template exercise POST — rejects exercises without muscles, prevents hydrated data corruption
 FIX(body-map): use normalized primary_muscles activation (1.0) instead of legacy primary_activation coefficient — BodyMap now displays all primary muscles at full intensity (fixes bug where multi-primary exercises like Dips showed only secondary muscles)
