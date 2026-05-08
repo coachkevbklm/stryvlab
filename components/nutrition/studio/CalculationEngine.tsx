@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Droplets } from "lucide-react";
+import { Info, Droplets, AlertTriangle, CheckCircle2 } from "lucide-react";
 import TdeeWaterfall from "./TdeeWaterfall";
 import CalorieAdjustmentDisplay from "./CalorieAdjustmentDisplay";
 import MacroPercentageDisplay from "./MacroPercentageDisplay";
