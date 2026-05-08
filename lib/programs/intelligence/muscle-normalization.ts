@@ -166,3 +166,66 @@ export function validateMuscleArray(slugs: unknown[]): CanonicalMuscle[] {
   // Dedupe while preserving order
   return [...new Set(normalized)]
 }
+
+// ─── Zod Schema ──────────────────────────────────────────────────────────────
+import { z } from 'zod'
+
+export const CanonicalMuscleSchema = z.enum([
+  'grand_pectoral',
+  'grand_pectoral_superieur',
+  'grand_pectoral_inferieur',
+  'petit_pectoral',
+  'grand_dorsal',
+  'trapeze_superieur',
+  'trapeze_moyen',
+  'trapeze_inferieur',
+  'rhomboides',
+  'lombaires',
+  'erecteurs_spinaux',
+  'deltoide_anterieur',
+  'deltoide_lateral',
+  'deltoide_posterieur',
+  'biceps',
+  'biceps_brachial',
+  'brachial',
+  'triceps',
+  'triceps_lateral',
+  'triceps_medial',
+  'triceps_long',
+  'flechisseurs_avant_bras',
+  'extenseurs_avant_bras',
+  'quadriceps',
+  'rectus_femoris',
+  'vaste_lateral',
+  'vaste_medial',
+  'vaste_intermediaire',
+  'ischio_jambiers',
+  'biceps_femoral',
+  'semi_tendineux',
+  'semi_membraneux',
+  'grand_fessier',
+  'moyen_fessier',
+  'petit_fessier',
+  'adducteurs',
+  'abducteurs',
+  'mollet',
+  'solea',
+  'gastrocnemien',
+  'tibial_anterieur',
+  'abdos',
+  'obliques_externes',
+  'obliques_internes',
+  'transverse_abdominal',
+  'dos_large',
+] as const)
+
+export const MuscleArraySchema = z
+  .string()
+  .array()
+  .transform(arr => validateMuscleArray(arr))
+  .pipe(z.array(CanonicalMuscleSchema))
+
+export const ExerciseMusclePatchSchema = z.object({
+  primary_muscles_normalized: MuscleArraySchema,
+  secondary_muscles_normalized: MuscleArraySchema.optional(),
+})
