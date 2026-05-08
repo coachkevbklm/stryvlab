@@ -218,13 +218,15 @@ export function computeMuscleIntensity(
     }
 
     // Secondary muscles with reduced activation
+    const primaryGroups = new Set(
+      ex.primary_muscles
+        .map(m => CANONICAL_TO_BODYMAP[m as CanonicalMuscle])
+        .filter(g => g !== null)
+    );
     for (let i = 0; i < ex.secondary_muscles.length; i++) {
       const secondaryMuscle = ex.secondary_muscles[i];
       const group = CANONICAL_TO_BODYMAP[secondaryMuscle as CanonicalMuscle];
-      if (
-        group &&
-        group !== CANONICAL_TO_BODYMAP[ex.primary_muscles[0] as CanonicalMuscle]
-      ) {
+      if (group && !primaryGroups.has(group)) {
         const activation = ex.secondary_activations?.[i] ?? 0.4;
         const volume = sets * activation;
         volumeByGroup.set(group, (volumeByGroup.get(group) ?? 0) + volume);
