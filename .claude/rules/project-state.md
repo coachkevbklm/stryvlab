@@ -6,7 +6,7 @@
 >
 > **FULL HISTORY** → `.claude/rules/project-state-archive.md` (sessions antérieures, features archivées)
 
-**Dernière mise à jour : 2026-05-08 (Muscle Data Consolidation)**
+**Dernière mise à jour : 2026-05-09 (Session Logger duplicate fix)**
 
 ---
 
@@ -36,6 +36,46 @@
 | **Client Onboarding** | ✅ 5-screen tour + tooltip guide |
 | **Muscle Data** | ✅ Single source of truth (normalization layer complete) |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-09)
+
+### Session Logger — Duplicate Session Fix (COMPLET)
+
+**Problème :**
+Client terminait une séance → recap affichait volume 0kg, reps 0, sets 0 (sauf durée + notes). Historique montrait 2 séances : une vide, une complète.
+
+**Cause :**
+1. SessionLogger.initDraft() créait un nouveau draft au mount
+2. Client complétait la séance, submitSession() faisait PATCH /sets + PATCH /[logId] pour marquer completed
+3. Client cliquait "Retour" ou revenait à la même séance
+4. initDraft() pinguait l'ancien logId, recevait 404 (completed_at IS NOT NULL)
+5. **Bug : créait un deuxième draft vide** au lieu de retourner (read-only mode)
+6. Récap affichait le deuxième log (vide) au lieu du premier (complète)
+
+**Fix appliqué :**
+
+1. **SessionLogger.tsx** (`initDraft()` ligne 357-361)
+   - Si ping retourne 404, clear localStorage et return early (ne pas créer de nouveau draft)
+   - Séance terminée = read-only mode, affiche historique seulement
+
+2. **SessionLogger.tsx** (`submitSession()` lignes 599-651)
+   - Supprimé fallback POST si PATCH /sets échoue
+   - Si erreur : show error banner "Réessayer" au lieu de créer un 2e log
+
+3. **sets/route.ts** (ligne 80)
+   - Ensure `completed: false` default si undefined (mineure, par sécurité)
+
+**Résultat :**
+- ✅ Client termine séance → recap affiche les vraies données (volume, reps, sets, muscles, notes)
+- ✅ Pas de création de log dupliqué
+- ✅ Historique affiche 1 séance complète
+- ✅ Retour à séance déjà complétée = mode lecture seule, affiche historique
+
+**Fichiers modifiés :**
+- `app/client/programme/session/[sessionId]/SessionLogger.tsx`
+- `app/api/session-logs/[logId]/sets/route.ts`
 
 ---
 
