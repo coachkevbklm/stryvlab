@@ -5,6 +5,7 @@
 
 ## 2026-05-09
 
+FIX(templates): update sessions/exercises in-place instead of delete/recreate — prevents data loss when editing template + preserves order
 FEATURE(nutrition): auto-save parameters with debounce 500ms + visual feedback "Enregistré" — changes persist instantly, no manual Save button needed
 FEATURE(nutrition): quick-add height widget in adjustment panel if missing — non-blocking, can add anytime (height non-critical, immutable after first bilan)
 FEATURE(nutrition): missing data alerts in Col 1 (BMR absent, poids manquant, MG% absent, pas quotidiens inconnus) — warnings only, never blocking calculation
