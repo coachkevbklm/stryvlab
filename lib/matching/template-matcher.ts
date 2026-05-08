@@ -128,7 +128,7 @@ export function phase1EquipmentFilter(
     // Template sans archétype déclaré → accessible à tous (legacy)
     return { pass: true }
   }
-  const unlocked = EQUIPMENT_UNLOCK[client.equipment_archetype]
+  const unlocked = EQUIPMENT_UNLOCK[client.equipment_category]
   if (!unlocked.includes(template.equipment_archetype)) {
     return {
       pass: false,
@@ -147,37 +147,34 @@ const LEVEL_ORDER: Record<FitnessLevel, number> = {
 export function phase2Score(
   template: Template,
   client: ClientProfile
-): { pass: boolean; reason?: string; breakdown: MatchResult['breakdown'] } {
+): { pass: boolean; warnings?: string[]; breakdown: MatchResult['breakdown'] } {
   const breakdown: MatchResult['breakdown'] = {
     goal: 0, level: 0, frequency: 0, muscleTags: 0, bonus: 0,
   }
+  const warnings: string[] = []
 
-  // ── Fréquence — ±1 tolérance, hard stop si écart > 1 ──
+  // ── Fréquence — soft warning si écart > 1 (pas de hard stop) ──
   if (client.weekly_frequency != null) {
     const freqDiff = Math.abs(template.frequency - client.weekly_frequency)
     if (freqDiff > 1) {
-      return {
-        pass: false,
-        reason: `Fréquence incompatible : client=${client.weekly_frequency}j, template=${template.frequency}j (écart ${freqDiff} > 1)`,
-        breakdown,
-      }
+      warnings.push(`Fréquence écart ${freqDiff}j : client=${client.weekly_frequency}j, template=${template.frequency}j`)
+      breakdown.frequency = 0  // Pas de points si incompatible
+    } else {
+      breakdown.frequency = freqDiff === 0 ? 20 : 8  // 20 si exact, 8 si ±1
     }
-    breakdown.frequency = freqDiff === 0 ? 20 : 8  // 20 si exact, 8 si ±1
   }
 
-  // ── Niveau — ±1 max, sinon hard stop ──
+  // ── Niveau — soft warning si écart > 1 (pas de hard stop) ──
   if (client.fitness_level && template.level) {
     const cr = LEVEL_ORDER[client.fitness_level]
     const tr = LEVEL_ORDER[template.level]
     const diff = Math.abs(cr - tr)
     if (diff > 1) {
-      return {
-        pass: false,
-        reason: `Niveau incompatible : client=${client.fitness_level}, template=${template.level} (écart ${diff} > 1)`,
-        breakdown,
-      }
+      warnings.push(`Niveau écart : client=${client.fitness_level}, template=${template.level}`)
+      breakdown.level = 0  // Pas de points si incompatible
+    } else {
+      breakdown.level = diff === 0 ? 30 : 15
     }
-    breakdown.level = diff === 0 ? 30 : 15
   }
 
   // ── Objectif — 45 pts si exact ──
@@ -198,7 +195,7 @@ export function phase2Score(
     else breakdown.bonus = 2
   }
 
-  return { pass: true, breakdown }
+  return { pass: true, warnings: warnings.length > 0 ? warnings : undefined, breakdown }
 }
 
 // ─── Phase 3 — Substitution zéro tolérance ────────────────────────────────────
@@ -318,19 +315,8 @@ export function matchTemplate(template: Template, client: ClientProfile): MatchR
     }
   }
 
-  // Phase 2 — Scoring strict
+  // Phase 2 — Scoring strict (toujours pass, peut avoir warnings)
   const p2 = phase2Score(template, client)
-  if (!p2.pass) {
-    return {
-      templateId: template.id,
-      score: 0,
-      hardStop: true,
-      hardStopReason: p2.reason,
-      breakdown: p2.breakdown,
-      substitutions: [],
-      substituable: false,
-    }
-  }
 
   // Phase 3 — Substitution
   const p3 = phase3Substitution(template, client)
@@ -348,12 +334,10 @@ export function matchTemplate(template: Template, client: ClientProfile): MatchR
 
   const { breakdown } = p2
 
-  // Collect warnings from phases
+  // Collect warnings from all phases
   const warnings: string[] = []
   if (p1.warning) warnings.push(p1.warning)
-  if (client.weekly_frequency != null && breakdown.frequency === 8) {
-    warnings.push(`Fréquence proche : client=${client.weekly_frequency}j, template=${template.frequency}j — programme adaptable`)
-  }
+  if (p2.warnings) warnings.push(...p2.warnings)
 
   const score = breakdown.goal + breakdown.level + breakdown.frequency +
                 breakdown.muscleTags + breakdown.bonus
