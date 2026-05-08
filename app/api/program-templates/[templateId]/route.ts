@@ -53,52 +53,81 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const db = service()
 
-  // Rebuild sessions preserving exercise UUIDs (dbId) so alternatives survive
-  if (body.sessions) {
-    // Collect all existing exercise IDs for this template so we can delete orphans
+  // Update sessions + exercises in-place (don't delete/recreate)
+  if (body.sessions && body.sessions.length > 0) {
+    // Fetch existing sessions for this template
     const { data: existingSessions } = await db
       .from('coach_program_template_sessions')
-      .select('id')
+      .select('id, position')
       .eq('template_id', params.templateId)
+      .order('position', { ascending: true })
 
-    const existingSessionIds = (existingSessions ?? []).map((s: any) => s.id)
+    const existingSessionsMap = new Map(
+      (existingSessions ?? []).map((s: any) => [s.position, s.id])
+    )
 
-    // Collect all existing exercise IDs to detect which ones to keep vs delete
-    let existingExerciseIds: string[] = []
-    if (existingSessionIds.length) {
-      const { data: existingExs } = await db
-        .from('coach_program_template_exercises')
-        .select('id')
-        .in('session_id', existingSessionIds)
-      existingExerciseIds = (existingExs ?? []).map((e: any) => e.id)
-    }
-
-    // Collect the dbIds that will be reused in the new save
-    const incomingDbIds = new Set<string>()
-    for (const s of body.sessions) {
-      for (const e of (s.exercises ?? [])) {
-        if (e.dbId) incomingDbIds.add(e.dbId)
-      }
-    }
-
-    // Delete sessions that are no longer present (cascade deletes their exercises + alternatives)
-    if (existingSessionIds.length) {
-      await db.from('coach_program_template_sessions').delete().eq('template_id', params.templateId)
-    }
-
+    // Process each incoming session
     for (let si = 0; si < body.sessions.length; si++) {
       const s = body.sessions[si]
-      const { data: session } = await db
-        .from('coach_program_template_sessions')
-        .insert({ template_id: params.templateId, name: s.name, days_of_week: s.days_of_week ?? [], day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null, position: si, notes: s.notes ?? null })
-        .select('id')
-        .single()
+      const existingSessionId = existingSessionsMap.get(si)
 
-      if (session && s.exercises?.length) {
+      let sessionId: string
+      if (existingSessionId) {
+        // Update existing session in-place
+        await db
+          .from('coach_program_template_sessions')
+          .update({
+            name: s.name,
+            days_of_week: s.days_of_week ?? [],
+            day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null,
+            position: si,
+            notes: s.notes ?? null,
+          })
+          .eq('id', existingSessionId)
+        sessionId = existingSessionId
+      } else {
+        // Create new session if needed
+        const { data: newSession, error: sessionErr } = await db
+          .from('coach_program_template_sessions')
+          .insert({
+            template_id: params.templateId,
+            name: s.name,
+            days_of_week: s.days_of_week ?? [],
+            day_of_week: (s.days_of_week ?? [])[0] ?? s.day_of_week ?? null,
+            position: si,
+            notes: s.notes ?? null,
+          })
+          .select('id')
+          .single()
+
+        if (!newSession) {
+          return NextResponse.json(
+            { error: `Erreur création séance "${s.name}"` },
+            { status: 500 }
+          )
+        }
+        sessionId = newSession.id
+      }
+
+      // Fetch existing exercises for this session
+      const { data: existingExs } = await db
+        .from('coach_program_template_exercises')
+        .select('id, position')
+        .eq('session_id', sessionId)
+        .order('position', { ascending: true })
+
+      const existingExsMap = new Map(
+        (existingExs ?? []).map((e: any) => [e.position, e.id])
+      )
+
+      // Process each incoming exercise
+      if (s.exercises && s.exercises.length > 0) {
         for (let ei = 0; ei < s.exercises.length; ei++) {
           const e = s.exercises[ei]
+          const existingExId = existingExsMap.get(ei)
+
           const exRow = {
-            session_id: session.id,
+            session_id: sessionId,
             name: e.name,
             sets: e.sets ?? 3,
             reps: e.reps ?? '8-12',
@@ -130,21 +159,45 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             constraint_profile: e.constraint_profile ?? null,
           }
 
-          if (e.dbId && existingExerciseIds.includes(e.dbId)) {
-            // Reuse existing UUID — alternatives stay linked
+          if (existingExId) {
+            // Update existing exercise (preserves dbId + alternatives)
             await db
               .from('coach_program_template_exercises')
               .update(exRow)
-              .eq('id', e.dbId)
-            // Re-link to new session
+              .eq('id', existingExId)
+          } else {
+            // Insert new exercise
             await db
               .from('coach_program_template_exercises')
-              .update({ session_id: session.id, position: ei })
-              .eq('id', e.dbId)
-          } else {
-            await db.from('coach_program_template_exercises').insert(exRow)
+              .insert(exRow)
           }
         }
+      }
+
+      // Delete exercises that are no longer present (orphans)
+      const incomingPositions = new Set(
+        (s.exercises ?? []).map((_, idx) => idx)
+      )
+      for (const [pos, exId] of existingExsMap.entries()) {
+        if (!incomingPositions.has(pos)) {
+          await db
+            .from('coach_program_template_exercises')
+            .delete()
+            .eq('id', exId)
+        }
+      }
+    }
+
+    // Delete sessions that are no longer present (orphans)
+    const incomingPositions = new Set(
+      body.sessions.map((_, idx) => idx)
+    )
+    for (const [pos, sessionId] of existingSessionsMap.entries()) {
+      if (!incomingPositions.has(pos)) {
+        await db
+          .from('coach_program_template_sessions')
+          .delete()
+          .eq('id', sessionId)
       }
     }
   }

@@ -296,6 +296,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
     const rawSessions = initial?.coach_program_template_sessions
       ?? initial?.program_sessions
       ?? null
+
     if (!rawSessions) return [emptySession()]
     return rawSessions
       .sort((a: any, b: any) => a.position - b.position)
