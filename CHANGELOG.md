@@ -5,6 +5,9 @@
 
 ## 2026-05-09
 
+FIX(body-map): use normalized primary_muscles activation (1.0) instead of legacy primary_activation coefficient — BodyMap now displays all primary muscles at full intensity (fixes bug where multi-primary exercises like Dips showed only secondary muscles)
+REFACTOR(nutrition-studio): consolidate Col 1 — migrate "Bilan sélectionné" + "Données manquantes" from Col 2 to Col 1, add inline "Calculer le BMR" button in Métabolisme section (uses Mifflin-St Jeor formula when BMR absent)
+FIX(client-app): export computeMuscleIntensity from muscleDetection — function was imported but missing from exports, caused crash on Programme page. Now computes intensity map (0-1 per muscle group) from exercise volume + activation coefficients
 FIX(templates): validate movement_pattern before inserting — replaces invalid patterns (2, E33, B38, etc.) with null to prevent check constraint violations in save-as-template and assign operations
 FIX(session-logger): prevent duplicate session logs on completion — initDraft now returns early on 404 (completed_at exists), removed fallback POST that created second incomplete log
 FIX(templates): update sessions/exercises in-place instead of delete/recreate — prevents data loss when editing template + preserves order
