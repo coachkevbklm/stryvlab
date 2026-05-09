@@ -3,20 +3,24 @@
 import { AlertCircle } from "lucide-react";
 import type { NutritionClientData } from "@/lib/nutrition/types";
 
+type MissingDataKey = "bmr" | "weight" | "height" | "bf" | "steps";
+
 interface Props {
   clientData: NutritionClientData | null;
   macroResult: {
     breakdown: { bmr: number };
   } | null;
+  onDataClick?: (key: MissingDataKey) => void;
 }
 
 export default function MissingDataAlerts({
   clientData,
   macroResult,
+  onDataClick,
 }: Props) {
   if (!clientData) return null;
 
-  const missing: { label: string; metric: string }[] = [];
+  const missing: { label: string; metric: MissingDataKey }[] = [];
 
   // BMR check
   if (!clientData.bmr_kcal_measured && !macroResult?.breakdown.bmr) {
@@ -46,13 +50,14 @@ export default function MissingDataAlerts({
         Données manquantes
       </p>
       {missing.map((item) => (
-        <div
+        <button
           key={item.metric}
-          className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border-[0.3px] border-amber-500/20"
+          onClick={() => onDataClick?.(item.metric)}
+          className="w-full flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border-[0.3px] border-amber-500/20 hover:bg-amber-500/15 hover:border-amber-500/30 transition-all text-left cursor-pointer active:scale-[0.98]"
         >
           <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0" />
           <span className="text-[10px] text-amber-300/80">{item.label}</span>
-        </div>
+        </button>
       ))}
     </div>
   );

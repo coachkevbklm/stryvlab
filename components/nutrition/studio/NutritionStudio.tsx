@@ -73,6 +73,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
         {/* Col 1 — Client Intelligence (300px fixed) */}
         <div className="w-[300px] shrink-0 border-r border-white/[0.04] overflow-hidden">
           <ClientIntelligencePanel
+            clientId={clientId}
             clientData={studio.clientData}
             loading={studio.clientLoading}
             trainingConfig={studio.trainingConfig}

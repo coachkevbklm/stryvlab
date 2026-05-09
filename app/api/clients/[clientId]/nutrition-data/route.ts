@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { NutritionClientData } from "@/lib/nutrition/types";
+import { z } from "zod";
 
 function serviceClient() {
   return createServiceClient(
@@ -23,6 +24,19 @@ const OCCUPATION_MULTIPLIER_MAP: Record<string, number> = {
   "Modérément actif": 1.1,
   "Très actif (travail physique)": 1.18,
 };
+
+// Schema for PATCH requests
+const nutritionDataPatchSchema = z.object({
+  weight_kg: z.number().positive().optional(),
+  height_cm: z.number().positive().optional(),
+  body_fat_pct: z.number().min(0).max(100).optional(),
+  lean_mass_kg: z.number().positive().optional(),
+  muscle_mass_kg: z.number().positive().optional(),
+  bmr_kcal_measured: z.number().positive().optional(),
+  bmr_source: z.enum(["measured", "estimated", "calculated"]).optional(),
+  visceral_fat_level: z.number().min(0).optional(),
+  daily_steps: z.number().min(0).optional(),
+});
 
 export async function GET(
   req: NextRequest,
@@ -247,6 +261,35 @@ export async function GET(
     }
   }
 
+  // Fetch manual nutrition data overrides
+  const { data: manualData } = await db
+    .from("coach_client_nutrition_manual_data")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("coach_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  // Override with manual data (takes priority)
+  if (manualData) {
+    for (const field of [
+      "weight_kg",
+      "height_cm",
+      "body_fat_pct",
+      "lean_mass_kg",
+      "muscle_mass_kg",
+      "bmr_kcal_measured",
+      "visceral_fat_level",
+      "daily_steps",
+    ]) {
+      const value = (manualData as Record<string, unknown>)[field];
+      if (value !== null && value !== undefined) {
+        (entry as Record<string, unknown>)[field] = value;
+      }
+    }
+  }
+
   let age: number | null = null;
   if (client.date_of_birth) {
     const dob = new Date(client.date_of_birth);
@@ -330,4 +373,73 @@ export async function GET(
     })),
     selectedSubmissionId: selectedSubmissionId || null,
   });
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { clientId: string } },
+) {
+  const supabase = createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const db = serviceClient();
+  const { clientId } = params;
+
+  // Ownership check
+  const { data: client, error: clientError } = await db
+    .from("coach_clients")
+    .select("id, coach_id")
+    .eq("id", clientId)
+    .eq("coach_id", user.id)
+    .single();
+
+  if (clientError || !client) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  try {
+    const body = await req.json();
+    const validated = nutritionDataPatchSchema.parse(body);
+
+    // Insert or upsert into manual data table
+    const { error: upsertError } = await db
+      .from("coach_client_nutrition_manual_data")
+      .upsert(
+        {
+          client_id: clientId,
+          coach_id: user.id,
+          ...validated,
+        },
+        { onConflict: "client_id" },
+      );
+
+    if (upsertError) {
+      console.error("Upsert error:", upsertError);
+      return NextResponse.json(
+        { error: "Failed to update nutrition data" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, message: "Données mises à jour" },
+      { status: 200 },
+    );
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation error", details: err.errors },
+        { status: 400 },
+      );
+    }
+    console.error("PATCH error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
 }
