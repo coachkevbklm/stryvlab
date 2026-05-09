@@ -314,14 +314,31 @@ export async function GET(
   }
 
   // Fetch manual nutrition data overrides
-  const { data: manualData } = await db
-    .from("coach_client_nutrition_manual_data")
-    .select("*")
-    .eq("client_id", clientId)
-    .eq("coach_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  // Priority: per-submission data (if submission selected), then global fallback
+  let manualData = null;
+
+  if (targetSubmissionId) {
+    const { data: perSubmission } = await db
+      .from("coach_client_nutrition_manual_data")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("coach_id", user.id)
+      .eq("assessment_submission_id", targetSubmissionId)
+      .single();
+    if (perSubmission) manualData = perSubmission;
+  }
+
+  // If no per-submission data, try global fallback (assessment_submission_id IS NULL)
+  if (!manualData) {
+    const { data: globalFallback } = await db
+      .from("coach_client_nutrition_manual_data")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("coach_id", user.id)
+      .is("assessment_submission_id", null)
+      .single();
+    if (globalFallback) manualData = globalFallback;
+  }
 
   // Override with manual data (takes priority)
   if (manualData) {
@@ -459,16 +476,23 @@ export async function PATCH(
     const body = await req.json();
     const validated = nutritionDataPatchSchema.parse(body);
 
+    // Get selected submission from query params (to tie data to specific bilan)
+    const { searchParams } = new URL(req.url);
+    const targetSubmissionId = searchParams.get("submissionId");
+
     // Insert or upsert into manual data table
+    // If submissionId provided, data is tied to that bilan only
+    // If no submissionId, data is global fallback
     const { error: upsertError } = await db
       .from("coach_client_nutrition_manual_data")
       .upsert(
         {
           client_id: clientId,
           coach_id: user.id,
+          assessment_submission_id: targetSubmissionId || null,
           ...validated,
         },
-        { onConflict: "client_id,coach_id" },
+        { onConflict: "client_id,coach_id,assessment_submission_id" },
       );
 
     if (upsertError) {

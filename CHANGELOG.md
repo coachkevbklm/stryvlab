@@ -5,6 +5,7 @@
 
 ## 2026-05-09
 
+FIX(nutrition-studio): manual data global instead of per-bilan — switching bilans now shows correct fallback data. Added assessment_submission_id to coach_client_nutrition_manual_data. PATCH saves data tied to selected bilan; GET fetches per-submission first, then global fallback. Prevents May 6 manual entries (BMR 1750, steps 9000) overwriting March 20 bilan (BMR 1705, steps 6000)
 FIX(nutrition-studio): UPSERT constraint error — added UNIQUE(client_id, coach_id) to coach_client_nutrition_manual_data table. PATCH route now uses onConflict: "client_id,coach_id" instead of "client_id". Fixes "Enregistrer" doing nothing (500 error with PostgreSQL 42P10 no matching constraint)
 FIX(nutrition-studio): BMR calculator — use clientData not biometricsConfig for Mifflin/Katch math. biometricsConfig is hook-local state; clientData has real bilan values. This fixes "Calculer" silently failing when biometricsConfig empty
 FIX(nutrition-studio): calculator function signatures — calculateBMRMifflin(weight_kg, height_cm, age_years, gender) and calculateBMRKatchMcArdle(weight_kg, body_fat_pct) are positional params, not objects. Katch requires body_fat_pct (not lean_mass lookup)

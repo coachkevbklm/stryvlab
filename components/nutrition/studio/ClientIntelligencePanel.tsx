@@ -135,22 +135,31 @@ export default function ClientIntelligencePanel({
       if (!clientId) return;
       setCompleting(true);
       try {
-        const res = await fetch(`/api/clients/${clientId}/nutrition-data`, {
+        // Build PATCH URL with submission ID (ties data to specific bilan)
+        const patchUrl = new URL(
+          `/api/clients/${clientId}/nutrition-data`,
+          typeof window !== "undefined" ? window.location.origin : "",
+        );
+        if (selectedSubmissionId) {
+          patchUrl.searchParams.set("submissionId", selectedSubmissionId);
+        }
+
+        const res = await fetch(patchUrl.toString(), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(fieldValue),
         });
         if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
 
-        // Refetch updated client data
-        const url = new URL(
+        // Refetch updated client data with same submission ID
+        const refetchUrl = new URL(
           `/api/clients/${clientId}/nutrition-data`,
           typeof window !== "undefined" ? window.location.origin : "",
         );
         if (selectedSubmissionId) {
-          url.searchParams.set("submissionId", selectedSubmissionId);
+          refetchUrl.searchParams.set("submissionId", selectedSubmissionId);
         }
-        const refetchRes = await fetch(url.toString());
+        const refetchRes = await fetch(refetchUrl.toString());
         const refetchData = await refetchRes.json();
 
         onBiometricsChange({
