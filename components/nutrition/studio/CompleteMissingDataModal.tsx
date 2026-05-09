@@ -86,6 +86,7 @@ export default function CompleteMissingDataModal({
   );
   const [manualValues, setManualValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !missingKey || !clientData) return null;
 
@@ -96,6 +97,7 @@ export default function CompleteMissingDataModal({
       return;
 
     setLoading(true);
+    setError(null);
     try {
       let bmr: number;
 
@@ -109,7 +111,7 @@ export default function CompleteMissingDataModal({
       } else {
         // Katch-McArdle requires lean mass
         if (!clientData.lean_mass_kg && !clientData.body_fat_pct) {
-          alert(
+          setError(
             "Composition corporelle requise pour Katch-McArdle. Entrez le % masse grasse ou LBM d'abord.",
           );
           return;
@@ -130,26 +132,34 @@ export default function CompleteMissingDataModal({
         bmr_source: "calculated",
       });
       onClose();
+    } catch (err) {
+      console.error("Calculate BMR error:", err);
+      setError("Erreur lors du calcul. Vérifiez les données et réessayez.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleManualApply = async () => {
-    const field =
-      missingKey === "weight"
-        ? "weight_kg"
-        : missingKey === "height"
-          ? "height_cm"
-          : missingKey === "bf"
-            ? "body_fat_pct"
-            : "daily_steps";
-
+    if (!config.fields[0]) return;
+    const field = config.fields[0].key;
     const value = manualValues[field];
-    if (!value) return;
+    if (!value) {
+      setError("Veuillez entrer une valeur");
+      return;
+    }
 
-    await onApply({ [field]: parseFloat(value) });
-    onClose();
+    setLoading(true);
+    setError(null);
+    try {
+      await onApply({ [field]: parseFloat(value) });
+      onClose();
+    } catch (err) {
+      console.error("Apply manual value error:", err);
+      setError("Erreur lors de la sauvegarde. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isBMRMode = missingKey === "bmr";
@@ -279,6 +289,13 @@ export default function CompleteMissingDataModal({
             </div>
           )}
         </div>
+
+        {/* Error display */}
+        {error && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border-[0.3px] border-red-500/20 text-[11px] text-red-300/80">
+            {error}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex gap-2">
