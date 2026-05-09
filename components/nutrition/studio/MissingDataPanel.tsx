@@ -74,36 +74,25 @@ export default function MissingDataPanel({
       let bmr: number | null = null;
 
       if (selectedFormula === "mifflin") {
-        if (!biometricsConfig.weight_kg || !biometricsConfig.height_cm) {
+        if (!clientData?.weight_kg || !clientData?.height_cm) {
           setError("Poids et taille requis pour Mifflin-St Jeor");
           return;
         }
-        bmr = calculateBMRMifflin({
-          weight_kg: biometricsConfig.weight_kg,
-          height_cm: biometricsConfig.height_cm,
-          age: clientData.age ?? 30,
-          gender: clientData.gender,
-        });
+        bmr = calculateBMRMifflin(
+          clientData.weight_kg,
+          clientData.height_cm,
+          clientData.age ?? 30,
+          clientData.gender === "female" ? "F" : "M",
+        );
       } else {
-        if (!biometricsConfig.lean_mass_kg && !biometricsConfig.body_fat_pct) {
-          setError("LBM ou % masse grasse requis pour Katch-McArdle");
+        if (!clientData?.weight_kg || !clientData?.body_fat_pct) {
+          setError("Poids et % masse grasse requis pour Katch-McArdle");
           return;
         }
-        let lbm = biometricsConfig.lean_mass_kg;
-        if (
-          !lbm &&
-          biometricsConfig.body_fat_pct &&
-          biometricsConfig.weight_kg
-        ) {
-          lbm =
-            biometricsConfig.weight_kg *
-            ((100 - biometricsConfig.body_fat_pct) / 100);
-        }
-        if (!lbm) {
-          setError("Impossible calculer BMR");
-          return;
-        }
-        bmr = calculateBMRKatchMcArdle({ lean_mass_kg: lbm });
+        bmr = calculateBMRKatchMcArdle(
+          clientData.weight_kg,
+          clientData.body_fat_pct,
+        );
       }
 
       if (bmr) {
