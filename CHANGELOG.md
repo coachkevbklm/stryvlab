@@ -5,6 +5,12 @@
 
 ## 2026-05-09
 
+FIX(nutrition-studio): integrate dataSource tracking for intelligent fallback — dataSource state now flows from API → hook → ClientIntelligencePanel. MissingDataAlerts distinguishes volatile fields (bmr, weight, bf, steps, lean_mass, muscle_mass) needing alerts when from fallback vs stable fields (height) that fallback silently. Alert labels now show reason: "absent bilan sélectionné", "du bilan antérieur (à vérifier)", "jamais ajoutée"
+REFACTOR(nutrition-studio): replace CompleteMissingDataModal with inline MissingDataPanel — bottom-aligned panel in Col 1 for cleaner UX. Click alert → inline panel opens → enter/calculate → Enregistrer saves + refetches data + macros recalc
+FIX(nutrition-studio): z-index collision CompleteMissingDataModal (z-50) vs ParameterAdjustmentPanel (z-50) — raised modal to z-[70]
+FIX(nutrition-studio): data not persisting after Apply in modal — added explicit refetch in handleMissingDataSave after PATCH completes, updates biometricsConfig with fresh values
+FIX(nutrition-studio): height missing alert absent from MissingDataAlerts — added height_cm check to component
+FIX(nutrition-studio): no historical fallback for volatile data — modified API route to fetch ALL submissions (target + older), enabled proper fallback population with dataSource tracking
 FEAT(nutrition): make missing data alerts clickable — opens modal to calculate or manually enter BMR, weight, height, body_fat_pct, daily_steps directly from Col 1. No need to navigate "Ajuster les paramètres". Applies + persists instantly, recalcs macros automatically
 FIX(nutrition): destructure completing prop in CompleteMissingDataModal — resolves ReferenceError at runtime
 SCHEMA: add coach_client_nutrition_manual_data table — stores manually entered/calculated nutrition metrics with priority over bilan data (weight, height, body_fat, BMR, etc.). PATCH /api/clients/[clientId]/nutrition-data now upserts into this table
