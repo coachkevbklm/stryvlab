@@ -79,6 +79,7 @@ export default function CompleteMissingDataModal({
   clientData,
   biometricsConfig,
   onApply,
+  completing = false,
 }: Props) {
   const [selectedFormula, setSelectedFormula] = useState<"mifflin" | "katch">(
     "mifflin",
