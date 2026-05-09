@@ -139,17 +139,27 @@ export default function ClientIntelligencePanel({
           body: JSON.stringify(fieldValue),
         });
         if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
-        // Update biometrics config to trigger recalculation
-        const key = {
-          bmr: "bmr_kcal_measured",
-          weight: "weight_kg",
-          height: "height_cm",
-          bf: "body_fat_pct",
-          steps: "daily_steps",
-        }[selectedMissingData] as keyof BiometricsConfig;
-        if (key && fieldValue[key] !== undefined) {
-          onBiometricsChange({ [key]: fieldValue[key] } as Partial<BiometricsConfig>);
+
+        // Refetch updated client data after PATCH
+        const url = new URL(
+          `/api/clients/${clientId}/nutrition-data`,
+          typeof window !== "undefined" ? window.location.origin : "",
+        );
+        if (selectedSubmissionId) {
+          url.searchParams.set("submissionId", selectedSubmissionId);
         }
+        const refetchRes = await fetch(url.toString());
+        const refetchData = await refetchRes.json();
+        onBiometricsChange({
+          weight_kg: refetchData.client.weight_kg,
+          height_cm: refetchData.client.height_cm,
+          body_fat_pct: refetchData.client.body_fat_pct,
+          lean_mass_kg: refetchData.client.lean_mass_kg,
+          muscle_mass_kg: refetchData.client.muscle_mass_kg,
+          visceral_fat_level: refetchData.client.visceral_fat_level,
+          bmr_kcal_measured: refetchData.client.bmr_kcal_measured,
+        } as Partial<BiometricsConfig>);
+
         setSelectedMissingData(null);
       } catch (err) {
         console.error("Failed to apply missing data:", err);
@@ -157,7 +167,7 @@ export default function ClientIntelligencePanel({
         setCompleting(false);
       }
     },
-    [clientId, selectedMissingData, onBiometricsChange]
+    [clientId, selectedMissingData, onBiometricsChange, selectedSubmissionId]
   );
 
   if (loading) {

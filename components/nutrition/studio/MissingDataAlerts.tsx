@@ -32,6 +32,11 @@ export default function MissingDataAlerts({
     missing.push({ label: "Poids manquant", metric: "weight" });
   }
 
+  // Taille check
+  if (!clientData.height_cm) {
+    missing.push({ label: "Taille manquante", metric: "height" });
+  }
+
   // Body fat check
   if (!clientData.body_fat_pct) {
     missing.push({ label: "MG% absent", metric: "bf" });

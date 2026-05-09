@@ -89,7 +89,7 @@ export async function GET(
     selectedSubmissionId = targetSubmissionId;
   }
 
-  // Fetch assessment data for the selected submission
+  // Fetch assessment data for the selected submission AND all previous submissions (for fallback)
   let submissions: Array<{
     id: string;
     client_id: string;
@@ -101,8 +101,10 @@ export async function GET(
       value_json: unknown;
     }>;
   }> = [];
+
   if (targetSubmissionId) {
-    const { data } = await db
+    // Fetch target submission
+    const { data: targetData } = await db
       .from("assessment_submissions")
       .select(
         `
@@ -116,8 +118,34 @@ export async function GET(
       .eq("client_id", clientId)
       .eq("coach_id", user.id)
       .single();
-    if (data) {
-      submissions = [data];
+    if (targetData) {
+      submissions = [targetData];
+    }
+
+    // Also fetch ALL older submissions (for fallback values if target has missing data)
+    if (allSubmissions && allSubmissions.length > 1) {
+      const olderIds = allSubmissions
+        .slice(1)
+        .map((s: any) => s.id);
+      if (olderIds.length > 0) {
+        const { data: olderData } = await db
+          .from("assessment_submissions")
+          .select(
+            `
+            id,
+            client_id,
+            submitted_at,
+            assessment_responses(field_key, value_number, value_text, value_json)
+          `,
+          )
+          .in("id", olderIds)
+          .eq("client_id", clientId)
+          .eq("coach_id", user.id)
+          .order("submitted_at", { ascending: false });
+        if (olderData) {
+          submissions = [...submissions, ...olderData];
+        }
+      }
     }
   }
 
