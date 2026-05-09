@@ -6,6 +6,7 @@
 ## 2026-05-09
 
 FEAT(nutrition): make missing data alerts clickable — opens modal to calculate or manually enter BMR, weight, height, body_fat_pct, daily_steps directly from Col 1. No need to navigate "Ajuster les paramètres". Applies + persists instantly, recalcs macros automatically
+FIX(nutrition): destructure completing prop in CompleteMissingDataModal — resolves ReferenceError at runtime
 SCHEMA: add coach_client_nutrition_manual_data table — stores manually entered/calculated nutrition metrics with priority over bilan data (weight, height, body_fat, BMR, etc.). PATCH /api/clients/[clientId]/nutrition-data now upserts into this table
 FIX(body-map): check all primary muscles when filtering secondaries — prevents double-counting secondary muscles that map to any primary muscle (fixes multi-primary exercises like Dips showing incomplete BodyMap)
 FIX(nutrition): add missing CheckCircle2 import in CalculationEngine — resolves blank nutrition protocol page (ReferenceError: CheckCircle2 is not defined)
