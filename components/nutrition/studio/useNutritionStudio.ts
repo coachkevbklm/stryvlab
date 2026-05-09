@@ -202,6 +202,9 @@ export function useNutritionStudio(
   const [allSubmissions, setAllSubmissions] = useState<
     Array<{ id: string; date: string; status: string; submitted_at: string }>
   >([]);
+  const [dataSource, setDataSource] = useState<
+    Record<string, "selected" | "fallback">
+  >({});
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -223,6 +226,9 @@ export function useNutritionStudio(
         }
         if (d.selectedSubmissionId) {
           setSelectedSubmissionId(d.selectedSubmissionId);
+        }
+        if (d.dataSource) {
+          setDataSource(d.dataSource);
         }
         if (cd.training_goal) {
           const mapped =
@@ -710,5 +716,6 @@ export function useNutritionStudio(
     setSelectedSubmissionId,
     allSubmissions,
     missingDataAlerts,
+    dataSource,
   };
 }

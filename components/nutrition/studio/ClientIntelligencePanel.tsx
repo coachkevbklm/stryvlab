@@ -12,9 +12,9 @@ import type {
 } from "./useNutritionStudio";
 import ParameterAdjustmentPanel from "./ParameterAdjustmentPanel";
 import MissingDataAlerts from "./MissingDataAlerts";
-import CompleteMissingDataModal from "./CompleteMissingDataModal";
+import MissingDataPanel from "./MissingDataPanel";
 
-type MissingDataKey = "bmr" | "weight" | "height" | "bf" | "steps";
+type MissingDataKey = "bmr" | "weight" | "height" | "bf" | "steps" | "lean_mass" | "muscle_mass";
 
 interface Props {
   clientData: NutritionClientData | null;
@@ -34,6 +34,7 @@ interface Props {
   submissions?: Array<{ id: string; date: string; status: string }>;
   selectedSubmissionId?: string | null;
   onSubmissionChange?: (submissionId: string) => void;
+  dataSource?: Record<string, 'selected' | 'fallback'>;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -122,15 +123,16 @@ export default function ClientIntelligencePanel({
   submissions,
   selectedSubmissionId,
   onSubmissionChange,
+  dataSource = {},
 }: Props) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [showBilanDropdown, setShowBilanDropdown] = useState(false);
   const [selectedMissingData, setSelectedMissingData] = useState<MissingDataKey | null>(null);
   const [completing, setCompleting] = useState(false);
 
-  const handleMissingDataApply = useCallback(
+  const handleMissingDataSave = useCallback(
     async (fieldValue: Record<string, unknown>) => {
-      if (!clientId || !selectedMissingData) return;
+      if (!clientId) return;
       setCompleting(true);
       try {
         const res = await fetch(`/api/clients/${clientId}/nutrition-data`, {
@@ -140,7 +142,7 @@ export default function ClientIntelligencePanel({
         });
         if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
 
-        // Refetch updated client data after PATCH
+        // Refetch updated client data
         const url = new URL(
           `/api/clients/${clientId}/nutrition-data`,
           typeof window !== "undefined" ? window.location.origin : "",
@@ -150,6 +152,7 @@ export default function ClientIntelligencePanel({
         }
         const refetchRes = await fetch(url.toString());
         const refetchData = await refetchRes.json();
+
         onBiometricsChange({
           weight_kg: refetchData.client.weight_kg,
           height_cm: refetchData.client.height_cm,
@@ -162,12 +165,12 @@ export default function ClientIntelligencePanel({
 
         setSelectedMissingData(null);
       } catch (err) {
-        console.error("Failed to apply missing data:", err);
+        console.error("Failed to save missing data:", err);
       } finally {
         setCompleting(false);
       }
     },
-    [clientId, selectedMissingData, onBiometricsChange, selectedSubmissionId]
+    [clientId, selectedSubmissionId, onBiometricsChange]
   );
 
   if (loading) {
@@ -278,7 +281,12 @@ export default function ClientIntelligencePanel({
         )}
 
         {/* Missing data alerts */}
-        <MissingDataAlerts clientData={clientData} macroResult={macroResult} onDataClick={setSelectedMissingData} />
+        <MissingDataAlerts
+          clientData={clientData}
+          macroResult={macroResult}
+          dataSource={dataSource}
+          onDataClick={setSelectedMissingData}
+        />
 
         {/* Composition */}
         <div>
@@ -403,16 +411,15 @@ export default function ClientIntelligencePanel({
         biometricsConfig={biometricsConfig}
       />
 
-      {/* Missing data modal */}
+      {/* Missing data panel (inline) */}
       {selectedMissingData && clientData && (
-        <CompleteMissingDataModal
-          isOpen={true}
-          onClose={() => setSelectedMissingData(null)}
+        <MissingDataPanel
           missingKey={selectedMissingData}
           clientData={clientData}
           biometricsConfig={biometricsConfig}
-          onApply={handleMissingDataApply}
-          completing={completing}
+          onSave={handleMissingDataSave}
+          onClose={() => setSelectedMissingData(null)}
+          saving={completing}
         />
       )}
     </>

@@ -174,6 +174,26 @@ export async function GET(
     energy_samples: [] as number[],
   };
 
+  // Track data source (selected submission vs fallback)
+  const dataSource: Record<string, 'selected' | 'fallback'> = {
+    weight_kg: 'fallback',
+    body_fat_pct: 'fallback',
+    height_cm: 'fallback',
+    muscle_mass_kg: 'fallback',
+    lean_mass_kg: 'fallback',
+    bmr_kcal_measured: 'fallback',
+    visceral_fat_level: 'fallback',
+    session_duration_min: 'fallback',
+    training_calories: 'fallback',
+    training_frequency: 'fallback',
+    daily_steps: 'fallback',
+    cardio_frequency: 'fallback',
+    cardio_duration_min: 'fallback',
+    caffeine_daily_mg: 'fallback',
+    alcohol_weekly: 'fallback',
+    work_hours_per_week: 'fallback',
+  };
+
   const BIOMETRIC = [
     "weight_kg",
     "body_fat_pct",
@@ -212,6 +232,7 @@ export async function GET(
         num !== null
       ) {
         (entry as Record<string, unknown>)[r.field_key] = num;
+        dataSource[r.field_key] = sub.id === targetSubmissionId ? 'selected' : 'fallback';
         continue;
       }
       if (
@@ -220,6 +241,7 @@ export async function GET(
         num !== null
       ) {
         (entry as Record<string, unknown>)[r.field_key] = num;
+        dataSource[r.field_key] = sub.id === targetSubmissionId ? 'selected' : 'fallback';
         continue;
       }
       if (
@@ -228,6 +250,7 @@ export async function GET(
         num !== null
       ) {
         (entry as Record<string, unknown>)[r.field_key] = num;
+        dataSource[r.field_key] = sub.id === targetSubmissionId ? 'selected' : 'fallback';
         continue;
       }
       if (
@@ -236,6 +259,7 @@ export async function GET(
         num !== null
       ) {
         (entry as Record<string, unknown>)[r.field_key] = num;
+        dataSource[r.field_key] = sub.id === targetSubmissionId ? 'selected' : 'fallback';
         continue;
       }
       if (
@@ -314,6 +338,7 @@ export async function GET(
       const value = (manualData as Record<string, unknown>)[field];
       if (value !== null && value !== undefined) {
         (entry as Record<string, unknown>)[field] = value;
+        dataSource[field] = 'selected';
       }
     }
   }
@@ -390,6 +415,7 @@ export async function GET(
 
   return NextResponse.json({
     client: result,
+    dataSource,
     allSubmissions: (allSubmissions || []).map((s: any) => ({
       id: s.id,
       date: new Date(s.submitted_at).toLocaleDateString("fr-FR", {

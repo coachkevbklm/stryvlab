@@ -92,6 +92,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             submissions={studio.allSubmissions}
             selectedSubmissionId={studio.selectedSubmissionId}
             onSubmissionChange={studio.setSelectedSubmissionId}
+            dataSource={studio.dataSource}
           />
         </div>
 
