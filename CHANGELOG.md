@@ -5,6 +5,9 @@
 
 ## 2026-05-09
 
+FIX(nutrition-studio): UPSERT constraint error — added UNIQUE(client_id, coach_id) to coach_client_nutrition_manual_data table. PATCH route now uses onConflict: "client_id,coach_id" instead of "client_id". Fixes "Enregistrer" doing nothing (500 error with PostgreSQL 42P10 no matching constraint)
+FIX(nutrition-studio): BMR calculator — use clientData not biometricsConfig for Mifflin/Katch math. biometricsConfig is hook-local state; clientData has real bilan values. This fixes "Calculer" silently failing when biometricsConfig empty
+FIX(nutrition-studio): calculator function signatures — calculateBMRMifflin(weight_kg, height_cm, age_years, gender) and calculateBMRKatchMcArdle(weight_kg, body_fat_pct) are positional params, not objects. Katch requires body_fat_pct (not lean_mass lookup)
 FIX(nutrition-studio): integrate dataSource tracking for intelligent fallback — dataSource state now flows from API → hook → ClientIntelligencePanel. MissingDataAlerts distinguishes volatile fields (bmr, weight, bf, steps, lean_mass, muscle_mass) needing alerts when from fallback vs stable fields (height) that fallback silently. Alert labels now show reason: "absent bilan sélectionné", "du bilan antérieur (à vérifier)", "jamais ajoutée"
 REFACTOR(nutrition-studio): replace CompleteMissingDataModal with inline MissingDataPanel — bottom-aligned panel in Col 1 for cleaner UX. Click alert → inline panel opens → enter/calculate → Enregistrer saves + refetches data + macros recalc
 FIX(nutrition-studio): z-index collision CompleteMissingDataModal (z-50) vs ParameterAdjustmentPanel (z-50) — raised modal to z-[70]

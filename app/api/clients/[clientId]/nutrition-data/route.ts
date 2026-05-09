@@ -468,7 +468,7 @@ export async function PATCH(
           coach_id: user.id,
           ...validated,
         },
-        { onConflict: "client_id" },
+        { onConflict: "client_id,coach_id" },
       );
 
     if (upsertError) {
