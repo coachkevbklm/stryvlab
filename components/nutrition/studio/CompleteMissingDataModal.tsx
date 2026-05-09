@@ -18,7 +18,8 @@ interface Props {
   missingKey: MissingDataKey | null;
   clientData: NutritionClientData | null;
   biometricsConfig: BiometricsConfig;
-  onApply: (field: string, value: number | string) => void;
+  onApply: (fieldValue: Record<string, unknown>) => Promise<void>;
+  completing?: boolean;
 }
 
 const MODAL_CONFIG: Record<
@@ -123,15 +124,17 @@ export default function CompleteMissingDataModal({
         bmr = calculateBMRKatchMcArdle({ lean_mass_kg: lbm });
       }
 
-      onApply("bmr_kcal_measured", Math.round(bmr));
-      onApply("bmr_source", "calculated");
+      await onApply({
+        bmr_kcal_measured: Math.round(bmr),
+        bmr_source: "calculated",
+      });
       onClose();
     } finally {
       setLoading(false);
     }
   };
 
-  const handleManualApply = () => {
+  const handleManualApply = async () => {
     const field =
       missingKey === "weight"
         ? "weight_kg"
@@ -144,7 +147,7 @@ export default function CompleteMissingDataModal({
     const value = manualValues[field];
     if (!value) return;
 
-    onApply(field, parseFloat(value));
+    await onApply({ [field]: parseFloat(value) });
     onClose();
   };
 
@@ -282,7 +285,7 @@ export default function CompleteMissingDataModal({
           </button>
           <button
             onClick={isBMRMode ? handleCalculate : handleManualApply}
-            disabled={loading}
+            disabled={loading || completing}
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#1f8a65] text-white text-[12px] font-semibold hover:bg-[#217356] active:scale-[0.98] disabled:opacity-50 transition-all"
           >
             {isBMRMode ? (
