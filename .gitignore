@@ -1,0 +1,93 @@
+# worktrees
+.worktrees/
+
+# dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Env files — NEVER commit ────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+.env.test
+*.env
+
+# ─── Secrets & credentials — NEVER commit ────────────────────────────────────
+*.key
+*.p12
+*.pfx
+*.pem
+*.cert
+*.crt
+service-account*.json
+credentials*.json
+*secret*.json
+*private*.json
+*.secrets
+.secrets/
+secrets/
+
+# ─── Supabase local ──────────────────────────────────────────────────────────
+supabase/.branches/
+supabase/.temp/
+supabase/config.toml
+
+# ─── Vercel ──────────────────────────────────────────────────────────────────
+.vercel
+
+# ─── TypeScript ──────────────────────────────────────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
+
+# ─── Capacitor (mobile) ──────────────────────────────────────────────────────
+android/
+ios/
+.capacitor/
+
+# ─── Backups & temp files ────────────────────────────────────────────────────
+app_backup_*/
+backup/
+*.backup
+*.bak
+*.tmp
+*.swp
+*.log
+
+# ─── IDE & AI tooling (local only) ───────────────────────────────────────────
+.claude/
+.agent/
+.agents/
+.continue/
+.mcp.json
+.cursor/
+.aider/
+*.aider*
+
+# ─── Screenshots & local docs (ne pas exposer dans le dépôt) ─────────────────
+docs/screenshots/
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.env*.local
