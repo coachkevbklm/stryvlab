@@ -1,5 +1,4 @@
 import { calculateOneRM } from '@/lib/formulas/oneRM'
-import { getTrainingZone } from './trainingZones'
 
 // Future hook for Approach C (ML regression) — unused in Phase 1
 export interface HistoricalSession {

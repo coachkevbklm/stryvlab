@@ -5,6 +5,11 @@
 
 ## 2026-05-15
 
+FEATURE: MorphBlob — composant R3F 3D (SphereGeometry distort + satellite orange orbite + ring fil de fer, lazy Suspense, hero droite)
+FEATURE: Landing hero — blob 3D remplace HeroPhoneStack, phones → section "L'app en action" dédiée (CARD bg, whileInView)
+FIX: inferWeightIncrement — câble/poulie 5kg→1kg, machine stack 2.5kg (valeurs réalistes par équipement)
+FIX: double-progression allSetsRirCompliant — RIR null ignoré (ne bloque plus la progression si client oublie de saisir)
+CHORE: setRecommendation — suppression import mort getTrainingZone (non utilisé après refactor Path B)
 REFACTOR: setRecommendation — refonte complète logique Path B (suppression 1RM live instable, règles directes zone/RIR), Path A inchangé
 FIX: setRecommendation — roundToIncrement floating point (32.199999… → 32.2) via toFixed(10) après multiplication
 FIX: SessionLogger — getLastPerfLabel/getExLastPerfLabel match par set_number exact (évite ref croisée entre sets 1/2/3)

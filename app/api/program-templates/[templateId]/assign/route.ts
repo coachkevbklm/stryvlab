@@ -5,9 +5,14 @@ import { insertClientNotification } from "@/lib/notifications/insert-client-noti
 import { parseRepsRange } from "@/lib/progression/double-progression";
 
 // Déduit le palier de charge depuis le type d'équipement si non configuré par le coach
+// Câbles/poulies : 1kg (stacks magnétiques fins) — 5kg serait absurde sur extension triceps
+// Machines à stack classiques : 2.5kg (plaque standard)
+// Haltères : 2kg (paires standard)
+// Barres : 2.5kg (microcharges)
 function inferWeightIncrement(equipment: string[]): number {
   const eq = (equipment ?? []).map(e => e.toLowerCase())
-  if (eq.some(e => e.includes('machine') || e.includes('poulie') || e.includes('cable') || e.includes('pec') || e.includes('leg'))) return 5
+  if (eq.some(e => e.includes('cable') || e.includes('poulie'))) return 1
+  if (eq.some(e => e.includes('machine') || e.includes('pec') || e.includes('leg'))) return 2.5
   if (eq.some(e => e.includes('haltere') || e.includes('dumbbell') || e.includes('kettlebell'))) return 2
   if (eq.some(e => e.includes('barre') || e.includes('barbell') || e.includes('smith'))) return 2.5
   if (eq.some(e => e.includes('bodyweight') || e.includes('poids de corps') || e.includes('elastique'))) return 0

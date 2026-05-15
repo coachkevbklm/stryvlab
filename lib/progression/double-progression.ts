@@ -76,14 +76,18 @@ function allSetsAtRepMax(sets: SetResult[], rep_max: number): boolean {
 
 /**
  * Vérifie si toutes les séries respectent le RIR cible.
- * Un RIR null (non renseigné) est traité comme non-conforme — sécurité.
- * Un rir_actual <= target_rir signifie que le client était bien à l'effort
- * (ex: target=2, rir_actual=1 → conforme car l'effort était suffisant).
+ * RIR null (non renseigné) = ignoré (ni conforme ni bloquant) — ne pénalise pas
+ * la progression si le client a oublié de saisir. Au moins 1 RIR saisi requis.
+ * rir_actual <= target_rir = conforme (effort suffisant).
  */
 function allSetsRirCompliant(sets: SetResult[], target_rir: number): boolean {
   const completed = sets.filter(s => s.completed)
   if (completed.length === 0) return false
-  return completed.every(s => s.rir_actual !== null && s.rir_actual <= target_rir)
+  const withRir = completed.filter(s => s.rir_actual !== null)
+  // Si aucun RIR saisi → non-conforme (on ne peut pas évaluer)
+  if (withRir.length === 0) return false
+  // Tous les RIR saisis doivent être conformes
+  return withRir.every(s => (s.rir_actual as number) <= target_rir)
 }
 
 /**
