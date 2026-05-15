@@ -5,7 +5,8 @@
 
 ## 2026-05-16
 
-FIX: tryNormalizeMuscle — tirets convertis en underscores (ischio-jambiers → ischio_jambiers) — BodyMap vide séances jambes/fessiers/mollets résolu
+FIX: LEGACY_TO_CANONICAL — 40+ slugs catalog ajoutés (fessiers, gluteus_maximus, gluteus_medius, spine_erectors, gastrocnemius, mollets, etc.) — BodyMap vide séances jambes/fessiers/mollets résolu définitivement
+FIX: tryNormalizeMuscle — tirets convertis en underscores (ischio-jambiers → ischio_jambiers)
 FIX: SessionLogger — suppression ↩ Xkg × N redondant dans colonne PRÉVU (info déjà dans placeholders inputs)
 FIX: computeMuscleIntensity — fallback sur primary_muscle singulier si primary_muscles[] vide (BodyMap pré-séance)
 

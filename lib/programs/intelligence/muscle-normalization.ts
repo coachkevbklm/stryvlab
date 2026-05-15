@@ -74,34 +74,96 @@ export type CanonicalMuscle = keyof typeof CANONICAL_MUSCLES
 
 // Map old slugs → canonical (backward compat for import/legacy data)
 export const LEGACY_TO_CANONICAL: Record<string, CanonicalMuscle> = {
-  // English → FR
+  // ── Poitrine ──
   chest: 'grand_pectoral',
   pectoraux: 'grand_pectoral',
+  pectoralis_major: 'grand_pectoral',
+  pec_major: 'grand_pectoral',
   pectoraux_haut: 'grand_pectoral_superieur',
+  pectoralis_major_upper: 'grand_pectoral_superieur',
   pectoraux_bas: 'grand_pectoral_inferieur',
+  pectoralis_major_lower: 'grand_pectoral_inferieur',
 
+  // ── Dos ──
   back: 'grand_dorsal',
   dos: 'grand_dorsal',
   lats: 'grand_dorsal',
+  upper_back: 'rhomboides',
+  rhomboids: 'rhomboides',
+  spine_erectors: 'erecteurs_spinaux',
+  erector_spinae: 'erecteurs_spinaux',
 
+  // ── Trapèzes ──
+  traps: 'trapeze_superieur',
+  upper_traps: 'trapeze_superieur',
+  trapezius: 'trapeze_superieur',
+
+  // ── Épaules ──
   shoulders: 'deltoide_anterieur',
+  deltoids: 'deltoide_anterieur',
+  anterior_deltoid: 'deltoide_anterieur',
+  epaules: 'deltoide_lateral',
   epaules_ant: 'deltoide_anterieur',
   epaules_lat: 'deltoide_lateral',
   epaules_post: 'deltoide_posterieur',
+  medial_deltoid: 'deltoide_lateral',
+  posterior_deltoid: 'deltoide_posterieur',
+  rotator_cuff: 'deltoide_posterieur',
+  subscapularis: 'deltoide_posterieur',
 
+  // ── Bras ──
   biceps_brachii: 'biceps',
+  brachialis: 'brachial',
+  brachioradialis: 'flechisseurs_avant_bras',
+  avant_bras: 'flechisseurs_avant_bras',
+  triceps_brachii: 'triceps',
+  triceps_brachii_lateral: 'triceps_lateral',
   triceps_longhead: 'triceps_long',
+  anconeus: 'triceps_lateral',
+  extensor_carpi_radialis: 'extenseurs_avant_bras',
+  extensor_carpi_ulnaris: 'extenseurs_avant_bras',
+  extensor_digitorum: 'extenseurs_avant_bras',
+  flexor_carpi_radialis: 'flechisseurs_avant_bras',
+  flexor_carpi_ulnaris: 'flechisseurs_avant_bras',
+  palmaris_longus: 'flechisseurs_avant_bras',
 
+  // ── Jambes ──
   quads: 'quadriceps',
   hamstrings: 'ischio_jambiers',
-  glutes: 'grand_fessier',
-  glutes_med: 'moyen_fessier',
+  // catalog FR avec tiret → géré par tryNormalizeMuscle ([\s-]+ → _)
+  // mais on ajoute aussi la version underscore ici pour sécurité
+  ischio_jambiers: 'ischio_jambiers',
+  adductors: 'adducteurs',
+  abductors: 'abducteurs',
+  hip_flexors: 'quadriceps', // approximation — pas de canonical hip_flexors
 
+  // ── Fessiers (catalog utilise 'fessiers' pluriel) ──
+  fessiers: 'grand_fessier',
+  glutes: 'grand_fessier',
+  gluteus_maximus: 'grand_fessier',
+  glutes_med: 'moyen_fessier',
+  gluteus_medius: 'moyen_fessier',
+  gluteus_minimus: 'petit_fessier',
+
+  // ── Mollets ──
   calves: 'mollet',
+  gastrocnemius: 'gastrocnemien',
+  soleus: 'solea',
+  mollets: 'mollet',
+
+  // ── Core ──
   abs: 'abdos',
   core: 'abdos',
+  core_global: 'abdos',
+  rectus_abdominis: 'abdos',
+  lower_abs: 'abdos',
+  obliques: 'obliques_externes',
+  transverse_abdominis: 'transverse_abdominal',
+  quadratus_lumborum: 'lombaires',
+  levator_scapulae: 'trapeze_superieur',
+  external_rotators: 'deltoide_posterieur',
 
-  // Déjà canonique (identity map)
+  // ── Déjà canonique (identity map) ──
   grand_dorsal: 'grand_dorsal',
   trapeze_superieur: 'trapeze_superieur',
   trapeze_moyen: 'trapeze_moyen',
