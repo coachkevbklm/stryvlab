@@ -18,7 +18,7 @@ const SELECT = `
       plane, mechanic, unilateral, primary_muscle, primary_activation,
       secondary_muscles_detail, secondary_activations, stabilizers,
       joint_stress_spine, joint_stress_knee, joint_stress_shoulder,
-      global_instability, coordination_demand, constraint_profile
+      global_instability, coordination_demand, constraint_profile, tempo
     )
   )
 `
@@ -157,6 +157,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             global_instability: e.global_instability != null ? Number(e.global_instability) : null,
             coordination_demand: e.coordination_demand != null ? Number(e.coordination_demand) : null,
             constraint_profile: e.constraint_profile ?? null,
+            tempo: e.tempo ?? null,
           }
 
           if (existingExId) {
@@ -289,6 +290,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
           global_instability: e.global_instability != null ? Number(e.global_instability) : null,
           coordination_demand: e.coordination_demand != null ? Number(e.coordination_demand) : null,
           constraint_profile: e.constraint_profile ?? null,
+          tempo: e.tempo ?? null,
         }))
       )
     }
