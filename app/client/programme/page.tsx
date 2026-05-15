@@ -10,6 +10,7 @@ import {
   type SessionLog,
 } from '@/lib/client/progressTypes'
 import ProgrammeClientPage from './ProgrammeClientPage'
+import { getPrimaryMuscleFromCatalog, getSecondaryMusclesFromCatalog } from '@/lib/programs/intelligence/catalog-utils'
 
 function getTodayDow() {
   const jsDay = new Date().getDay()
@@ -85,7 +86,30 @@ export default async function ClientProgrammePage({
   const program = programs?.[0]
   if (!program) return <NoProgramPage lang={lang} />
 
-  const sessions = ((program.program_sessions ?? []) as any[]).sort((a, b) => a.position - b.position)
+  const GENERIC_SLUGS = new Set(['dos','biceps','triceps','epaules','pectoraux','abdos','quadriceps','fessiers','ischio-jambiers','ischio_jambiers','mollets','avant_bras'])
+
+  const sessions = ((program.program_sessions ?? []) as any[])
+    .sort((a, b) => a.position - b.position)
+    .map((session: any) => ({
+      ...session,
+      program_exercises: ((session.program_exercises ?? []) as any[]).map((ex: any) => {
+        const primaryMuscles: string[] = ex.primary_muscles ?? []
+        const isAllGeneric = primaryMuscles.length > 0 && primaryMuscles.every((m: string) => GENERIC_SLUGS.has(m.toLowerCase()))
+        // Si primary_muscle singulier absent en DB, lookup catalog
+        const resolvedPrimaryMuscle = ex.primary_muscle ?? getPrimaryMuscleFromCatalog(ex.name)
+        // Si secondary_muscles vide, lookup catalog
+        const resolvedSecondary = (ex.secondary_muscles ?? []).length > 0
+          ? ex.secondary_muscles
+          : getSecondaryMusclesFromCatalog(ex.name)
+        return {
+          ...ex,
+          primary_muscle: resolvedPrimaryMuscle,
+          // Si primary_muscles[] générique → remplacer par primaryMuscle précis
+          primary_muscles: isAllGeneric && resolvedPrimaryMuscle ? [resolvedPrimaryMuscle] : primaryMuscles,
+          secondary_muscles: resolvedSecondary,
+        }
+      }),
+    }))
 
   const todayDow = getTodayDow()
   const selectedDow = searchParams?.dow ? parseInt(searchParams.dow, 10) : todayDow

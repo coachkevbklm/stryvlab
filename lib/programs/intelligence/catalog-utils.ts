@@ -176,6 +176,12 @@ export function getMusclesFromCatalog(exerciseName: string): string[] {
   return entry?.muscles ?? []
 }
 
+export function getSecondaryMusclesFromCatalog(exerciseName: string): string[] {
+  const slug = toSlug(exerciseName)
+  const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)
+  return (entry as any)?.secondaryMuscles ?? []
+}
+
 export function getBiomechData(exerciseName: string): BiomechData | null {
   const slug = toSlug(exerciseName)
   const entry = catalogBySlug.get(slug) ?? catalog.find(e => toSlug(e.name) === slug)

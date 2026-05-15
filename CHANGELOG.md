@@ -7,6 +7,8 @@
 
 FEATURE: Système tempo d'exécution — coach configure par exercice ("3-1-2-0"), badge auto-calculé par pattern/objectif dans SessionLogger, tempo_used persisté dans les set_logs
 SCHEMA: Add tempo (nullable) to coach_program_template_exercises + program_exercises; tempo_used to client_set_logs
+FIX: BodyMap — enrichissement catalog côté serveur dans programme/page.tsx (primary_muscle + secondary_muscles lookupés depuis catalog-utils si absents ou génériques en DB)
+FIX: catalog-utils — ajout getSecondaryMusclesFromCatalog()
 FIX: BodyMap trapèzes — primary_muscles génériques ['dos','biceps'] ignorés, fallback sur primary_muscle anatomique ('traps') pour Shrug et exercices similaires
 FIX: ExercisePicker — primaryMuscles peuplé depuis primaryMuscle anatomique précis au lieu de muscles[] générique
 FIX: ProgrammeClientPage — "exercicess" double pluriel (ct() retourne déjà "exercices", + 's' redondant supprimé)
