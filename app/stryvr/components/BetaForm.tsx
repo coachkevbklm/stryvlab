@@ -29,7 +29,7 @@ export function BetaForm({ dark = false }: { dark?: boolean }) {
 
   const inputClass = dark
     ? 'flex-1 h-[52px] rounded-xl bg-white/[0.08] border border-white/10 px-4 text-[14px] font-medium text-white placeholder:text-white/30 outline-none focus:border-[#FF6116] transition-colors'
-    : 'flex-1 h-[52px] rounded-xl bg-[#EBEBEB] border border-transparent px-4 text-[14px] font-medium text-[#000000] placeholder:text-[#ABABAB] outline-none focus:border-[#FF6116] transition-colors';
+    : 'flex-1 h-[52px] rounded-xl bg-white border border-black/[0.08] px-4 text-[14px] font-medium text-[#000000] placeholder:text-[#ABABAB] outline-none focus:border-[#FF6116] transition-colors';
 
   if (state.type === 'success') {
     return (

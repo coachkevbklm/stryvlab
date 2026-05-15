@@ -68,7 +68,7 @@ export function BetaLandingClient({ betaCount }: { betaCount: number }) {
       </nav>
 
       {/* ── HERO ── */}
-      <section id="waitlist" className="max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-20 grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+      <section id="waitlist" className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-24 grid lg:grid-cols-2 gap-16 lg:gap-12 items-center">
         <div>
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}
             className="inline-flex items-center gap-2 mb-7 px-3 py-1.5 rounded-full bg-[#FF6116]/[0.08] border border-[#FF6116]/20">
@@ -78,7 +78,7 @@ export function BetaLandingClient({ betaCount }: { betaCount: number }) {
           </motion.div>
 
           <motion.h1 initial="hidden" animate="visible" variants={fadeUp} custom={1}
-            className="text-[3.2rem] sm:text-[4rem] lg:text-[4.5rem] font-extrabold leading-[1.0] tracking-[-0.03em] text-[#000000] mb-5">
+            className="text-[3.5rem] sm:text-[4.5rem] lg:text-[5.5rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-[#000000] mb-6">
             Pas un tracker.
             <br />
             <span className="text-[#FF6116]">Ton moteur</span>
@@ -127,7 +127,7 @@ export function BetaLandingClient({ betaCount }: { betaCount: number }) {
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="bg-white py-20">
+      <section className="bg-[#F3F3F3] py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#ABABAB] text-center mb-3">
@@ -142,7 +142,7 @@ export function BetaLandingClient({ betaCount }: { betaCount: number }) {
               <motion.div key={f.title}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.55, delay: i * 0.1 }}
-                className="rounded-2xl bg-[#F3F3F3] p-6">
+                className="rounded-2xl bg-white p-6">
                 <div className="w-10 h-10 rounded-xl bg-[#FF6116]/10 flex items-center justify-center mb-4">
                   {f.icon}
                 </div>

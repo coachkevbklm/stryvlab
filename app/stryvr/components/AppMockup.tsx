@@ -14,7 +14,7 @@ function AgendaScreen() {
         </div>
         {/* Arc progression */}
         <svg width="36" height="36" viewBox="0 0 36 36">
-          <circle cx="18" cy="18" r="14" fill="none" stroke="#EBEBEB" strokeWidth="3" />
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#D8D8D8" strokeWidth="3" />
           <circle cx="18" cy="18" r="14" fill="none" stroke="#FF6116" strokeWidth="3"
             strokeDasharray="62" strokeDashoffset="20" strokeLinecap="round"
             transform="rotate(-90 18 18)" />
@@ -31,7 +31,7 @@ function AgendaScreen() {
         ].map((item) => (
           <div key={item.label} className="flex-1 flex flex-col items-center gap-0.5">
             <svg width="28" height="28" viewBox="0 0 28 28">
-              <circle cx="14" cy="14" r="11" fill="none" stroke="#EBEBEB" strokeWidth="2.5" />
+              <circle cx="14" cy="14" r="11" fill="none" stroke="#D8D8D8" strokeWidth="2.5" />
               <circle cx="14" cy="14" r="11" fill="none" stroke="#FF6116" strokeWidth="2.5"
                 strokeDasharray={`${item.pct * 69} 69`} strokeLinecap="round"
                 transform="rotate(-90 14 14)" />
@@ -44,14 +44,19 @@ function AgendaScreen() {
 
       {/* Event list */}
       {[
-        { icon: '☀️', label: 'Check-in matinal', meta: 'Énergie · Sommeil · Humeur', status: 'done', time: '07:30' },
-        { icon: '🥗', label: 'Déjeuner', meta: '620 kcal · 45g P', status: 'done', time: '12:15' },
-        { icon: '💪', label: 'Séance Push', meta: '6 exercices · ~55 min', status: 'active', time: '17:30' },
-        { icon: '💊', label: 'Compléments soir', meta: 'Magnésium · Oméga-3', status: 'pending', time: '21:00' },
+        { icon: 'sun', label: 'Check-in matinal', meta: 'Énergie · Sommeil · Humeur', status: 'done', time: '07:30' },
+        { icon: 'food', label: 'Déjeuner', meta: '620 kcal · 45g P', status: 'done', time: '12:15' },
+        { icon: 'bolt', label: 'Séance Push', meta: '6 exercices · ~55 min', status: 'active', time: '17:30' },
+        { icon: 'pill', label: 'Compléments soir', meta: 'Magnésium · Oméga-3', status: 'pending', time: '21:00' },
       ].map((ev) => (
         <div key={ev.label} className="bg-white rounded-xl px-2.5 py-2 flex items-center gap-2"
           style={{ borderLeft: ev.status === 'active' ? '3px solid #FF6116' : '3px solid transparent' }}>
-          <span style={{ fontSize: 12 }}>{ev.icon}</span>
+          <div style={{ width: 20, height: 20, borderRadius: 6, background: ev.status === 'active' ? 'rgba(255,97,22,0.12)' : '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {ev.icon === 'sun' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FF6116" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>}
+            {ev.icon === 'food' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#767676" strokeWidth="2" strokeLinecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>}
+            {ev.icon === 'bolt' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FF6116" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>}
+            {ev.icon === 'pill' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#767676" strokeWidth="2" strokeLinecap="round"><path d="M10.5 20.5L3.5 13.5a4.95 4.95 0 117-7l7 7a4.95 4.95 0 11-7 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>}
+          </div>
           <div className="flex-1 min-w-0">
             <p style={{ fontSize: 10, fontWeight: 600, color: '#000000', lineHeight: 1.2 }}>{ev.label}</p>
             <p style={{ fontSize: 8, color: '#767676' }}>{ev.meta}</p>
@@ -93,7 +98,7 @@ export function AppMockup() {
       <div aria-hidden className="absolute inset-0 rounded-[3rem] blur-3xl opacity-15"
         style={{ background: 'radial-gradient(ellipse at center, #FF6116 0%, transparent 70%)' }} />
       {/* iPhone frame */}
-      <div className="relative w-[220px] h-[460px] rounded-[3rem] bg-[#1A1A1A] p-[9px]"
+      <div className="relative w-[260px] h-[520px] rounded-[3rem] bg-[#1A1A1A] p-[10px]"
         style={{
           transform: 'perspective(1000px) rotateY(-6deg) rotateX(3deg)',
           boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.1)',

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function StryvrLandingPage() {
   const betaCount = await getBetaCount();
   return (
-    <div className={urbanist.variable}>
+    <div className={`${urbanist.variable} font-[family-name:var(--font-urbanist)]`}>
       <BetaLandingClient betaCount={betaCount} />
     </div>
   );
