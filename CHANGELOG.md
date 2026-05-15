@@ -3,6 +3,11 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-14
+
+FEATURE: Add STRYVR beta landing page at /stryvr — light mode, Urbanist font, iPhone mockup, Framer Motion animations
+FEATURE: Add beta_waitlist Supabase table with RLS + server actions (joinWaitlist, getBetaCount)
+
 ## 2026-05-09
 
 FIX(nutrition-studio): manual data global instead of per-bilan — switching bilans now shows correct fallback data. Added assessment_submission_id to coach_client_nutrition_manual_data. PATCH saves data tied to selected bilan; GET fetches per-submission first, then global fallback. Prevents May 6 manual entries (BMR 1750, steps 9000) overwriting March 20 bilan (BMR 1705, steps 6000)
