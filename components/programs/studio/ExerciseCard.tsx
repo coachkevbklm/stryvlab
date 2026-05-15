@@ -81,6 +81,7 @@ export interface ExerciseData {
   primary_muscles: string[]
   secondary_muscles: string[]
   is_compound: boolean | undefined
+  tempo: string | null
   group_id?: string
   dbId?: string
 }
@@ -376,6 +377,21 @@ export default function ExerciseCard({
                   />
                 </div>
               ))}
+            </div>
+
+            {/* Tempo d'exécution */}
+            <div>
+              <label className="block text-[9px] text-white/30 mb-0.5">Tempo (Exc-PB-Con-PH)</label>
+              <input
+                type="text"
+                value={exercise.tempo ?? ''}
+                onChange={e => {
+                  const v = e.target.value.trim()
+                  onUpdate({ tempo: v || null })
+                }}
+                placeholder="ex: 3-1-2-0  (laisser vide = défaut auto)"
+                className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 placeholder:text-white/20 px-1.5 py-1 outline-none font-mono"
+              />
             </div>
 
             {/* Palier de surcharge progressive */}

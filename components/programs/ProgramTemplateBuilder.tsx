@@ -168,6 +168,7 @@ interface Exercise {
   primary_muscles: string[];
   secondary_muscles: string[];
   is_compound: boolean | undefined;
+  tempo: string | null;
   group_id?: string;
   dbId?: string;
   // Biomech fields (auto-populated from catalog on picker selection)
@@ -222,6 +223,7 @@ function emptyExercise(): Exercise {
     primary_muscles: [],
     secondary_muscles: [],
     is_compound: undefined,
+    tempo: null,
     group_id: undefined,
     dbId: undefined,
     plane: null, mechanic: null, unilateral: false,
@@ -322,6 +324,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             primary_muscles: (e.primary_muscles ?? []).length > 0 ? e.primary_muscles : getMusclesFromCatalog(e.name),
             secondary_muscles: e.secondary_muscles ?? [],
             is_compound: e.is_compound ?? undefined,
+            tempo: e.tempo ?? null,
             group_id: e.group_id ?? undefined,
             dbId: e.id ?? undefined,
             plane: e.plane ?? null,
@@ -638,6 +641,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             primary_muscles: e.primary_muscles,
             secondary_muscles: e.secondary_muscles,
             is_compound: e.is_compound,
+            tempo: e.tempo ?? null,
             group_id: e.group_id,
             dbId: e.dbId,
             plane: e.plane ?? null,
