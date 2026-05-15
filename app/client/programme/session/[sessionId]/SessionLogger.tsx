@@ -12,6 +12,7 @@ import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
 import ClientAlternativesSheet from '@/components/client/ClientAlternativesSheet'
 import { recommendNextSet, type SetRecommendation } from '@/lib/training/setRecommendation'
+import { getDefaultTempo } from '@/lib/training/tempo'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ interface Exercise {
   secondary_muscles?: string[]
   group_id?: string | null
   clientAlternatives?: string[]
+  tempo?: string | null
+  movement_pattern?: string | null
 }
 
 interface SetLog {
@@ -51,6 +54,7 @@ interface SetLog {
   rest_sec_actual: number | null
   primary_muscles: string[]
   secondary_muscles: string[]
+  tempo_used: string | null
 }
 
 interface LastPerf {
@@ -75,9 +79,10 @@ type SaveState = 'idle' | 'saving' | 'error'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildInitialSets(exercises: Exercise[]): SetLog[] {
+function buildInitialSets(exercises: Exercise[], goal: string): SetLog[] {
   const sets: SetLog[] = []
   for (const ex of exercises) {
+    const resolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
     for (let i = 0; i < ex.sets; i++) {
       if (ex.is_unilateral) {
         for (const side of ['left', 'right'] as const) {
@@ -95,6 +100,7 @@ function buildInitialSets(exercises: Exercise[]): SetLog[] {
             rest_sec_actual: null,
             primary_muscles: ex.primary_muscles ?? [],
             secondary_muscles: ex.secondary_muscles ?? [],
+            tempo_used: resolvedTempo,
           })
         }
       } else {
@@ -112,6 +118,7 @@ function buildInitialSets(exercises: Exercise[]): SetLog[] {
           rest_sec_actual: null,
           primary_muscles: ex.primary_muscles ?? [],
           secondary_muscles: ex.secondary_muscles ?? [],
+          tempo_used: resolvedTempo,
         })
       }
     }
@@ -162,7 +169,7 @@ function DeltaBadge({ rec }: { rec: SetRecommendation }) {
 export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level }: Props) {
   const router = useRouter()
   const { t } = useClientT()
-  const [sets, setSets] = useState<SetLog[]>(() => buildInitialSets(exercises))
+  const [sets, setSets] = useState<SetLog[]>(() => buildInitialSets(exercises, goal))
   // Navigation par "groupe" (superset ou exercice solo)
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0)
   const [saveState, setSaveState] = useState<SaveState>('idle')
@@ -960,6 +967,19 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                         {ex.rest_sec ? <span className="flex items-center gap-1 text-[11px] text-white/40"><Clock size={10} />{ex.rest_sec}s repos</span> : null}
                         {exEffectiveRir !== null && exEffectiveRir !== undefined && <span className="text-[11px] text-white/40">{t('logger.rir.target')} : <span className="text-white/70 font-semibold">{exEffectiveRir}</span></span>}
                         {ex.current_weight_kg !== null && <span className="text-[11px] text-white/40">Suggéré : <span className="text-white/70 font-semibold">{ex.current_weight_kg}kg</span></span>}
+                        {(() => {
+                          const coachTempo = ex.tempo
+                          const resolvedTempo = coachTempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
+                          const isDefault = !coachTempo
+                          return (
+                            <span className="flex items-center gap-1">
+                              <span className="font-mono text-[11px] text-white/60">{resolvedTempo}</span>
+                              <span className={`text-[8px] px-1 py-0.5 rounded ${isDefault ? 'bg-white/[0.04] text-white/25' : 'bg-[#1f8a65]/10 text-[#1f8a65]'}`}>
+                                {isDefault ? 'auto' : 'coach'}
+                              </span>
+                            </span>
+                          )
+                        })()}
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-white/25 shrink-0 mt-1">{exercises.indexOf(ex) + 1}/{exercises.length}</span>

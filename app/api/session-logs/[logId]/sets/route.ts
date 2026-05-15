@@ -26,6 +26,7 @@ const setLogSchema = z.object({
   rest_sec_actual: z.number().int().nonnegative().nullable().optional(),
   primary_muscles: z.array(z.string()).optional().default([]),
   secondary_muscles: z.array(z.string()).optional().default([]),
+  tempo_used: z.string().nullable().optional(),
 })
 
 const bodySchema = z.object({
@@ -82,6 +83,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     rest_sec_actual: s.rest_sec_actual ?? null,
     primary_muscles: s.primary_muscles ?? [],
     secondary_muscles: s.secondary_muscles ?? [],
+    tempo_used: s.tempo_used ?? null,
   }))
 
   const { error } = await db

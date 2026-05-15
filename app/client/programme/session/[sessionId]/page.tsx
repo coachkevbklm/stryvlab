@@ -25,7 +25,8 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       program_exercises (
         id, name, sets, reps, rest_sec, rir, notes, position,
         target_rir, current_weight_kg, rep_min, rep_max, weight_increment_kg,
-        image_url, is_unilateral, primary_muscles, secondary_muscles, group_id
+        image_url, is_unilateral, primary_muscles, secondary_muscles, group_id,
+        tempo, movement_pattern
       )
     `)
     .eq('id', params.sessionId)
