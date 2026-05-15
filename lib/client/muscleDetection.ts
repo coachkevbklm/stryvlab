@@ -214,13 +214,17 @@ export function computeMuscleIntensity(
     const sets = ex.sets ?? 3;
 
     // Primary muscles — normalise les slugs (canonical ou legacy EN/FR) avant lookup
-    const usePrimaryActivations = ex.primary_muscles.length > 0;
-    for (const rawSlug of ex.primary_muscles) {
+    // Fallback sur primary_muscle singulier (legacy catalog) si tableau vide
+    const primarySlugs: string[] = ex.primary_muscles.length > 0
+      ? ex.primary_muscles
+      : ex.primary_muscle ? [ex.primary_muscle] : []
+
+    for (const rawSlug of primarySlugs) {
       const canonical = tryNormalizeMuscle(rawSlug);
       if (!canonical) continue;
       const group = CANONICAL_TO_BODYMAP[canonical];
       if (group) {
-        const activation = usePrimaryActivations ? 1.0 : (ex.primary_activation ?? 0.8);
+        const activation = ex.primary_activation ?? 0.8;
         const volume = sets * activation;
         volumeByGroup.set(group, (volumeByGroup.get(group) ?? 0) + volume);
         totalVolume += volume;
@@ -229,7 +233,7 @@ export function computeMuscleIntensity(
 
     // Secondary muscles with reduced activation
     const primaryGroups = new Set(
-      ex.primary_muscles
+      primarySlugs
         .map(m => { const c = tryNormalizeMuscle(m); return c ? CANONICAL_TO_BODYMAP[c] : null })
         .filter((g): g is MuscleGroup => g !== null)
     );

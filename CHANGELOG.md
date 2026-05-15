@@ -5,6 +5,8 @@
 
 ## 2026-05-15
 
+FIX: computeMuscleIntensity — fallback sur primary_muscle singulier si primary_muscles[] vide (BodyMap pré-séance non vide sur exercices legacy non enrichis)
+
 FEATURE: MorphBlob — composant R3F 3D (SphereGeometry distort + satellite orange orbite + ring fil de fer, lazy Suspense, hero droite)
 FEATURE: Landing hero — blob 3D remplace HeroPhoneStack, phones → section "L'app en action" dédiée (CARD bg, whileInView)
 FIX: inferWeightIncrement — câble/poulie 5kg→1kg, machine stack 2.5kg (valeurs réalistes par équipement)
