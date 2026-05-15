@@ -10,19 +10,17 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: 'STRYVR — Bêta · Coaching ultra-personnalisé',
-  description:
-    'STRYVR adapte ton programme en temps réel. Rejoins la liste bêta pour le lancement en Belgique et France. Places limitées.',
+  title: 'STRYVR — Accès Bêta · Ton moteur physiologique',
+  description: 'STRYVR comprend ta physiologie et adapte chaque recommandation à ta biologie réelle. Rejoins la liste bêta — Belgique & France.',
   openGraph: {
-    title: 'STRYVR — Bêta',
-    description: '95% abandonnent. Pas toi. Rejoins la liste bêta STRYVR.',
+    title: 'STRYVR — Accès Bêta',
+    description: 'Pas un tracker. Un moteur physiologique. Rejoins la bêta.',
     siteName: 'STRYVR',
   },
 };
 
 export default async function StryvrLandingPage() {
   const betaCount = await getBetaCount();
-
   return (
     <div className={urbanist.variable}>
       <BetaLandingClient betaCount={betaCount} />
