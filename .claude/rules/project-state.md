@@ -27,13 +27,35 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights, superset UX, bug fixes | 2026-04-28 |
+| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo display | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-16)
+
+### Tempo d'Exécution — Phase 1 (COMPLET)
+
+- ✅ Migration `20260516_tempo.sql` : `tempo text` (nullable) sur `coach_program_template_exercises` + `program_exercises`, `tempo_used text` sur `client_set_logs`
+- ✅ `lib/training/tempo.ts` : `parseTempo`, `formatTempo`, `getDefaultTempo` (table pattern × objectif), `calcTUT` — 33 tests Vitest
+- ✅ Assign route : `tempo` propagé de template → `program_exercises` à l'assignation
+- ✅ Coach builder : input `tempo` dans `ExerciseCard` (placeholder "3-1-2-0"), persisté via `ExerciseData` interface + template API
+- ✅ Template API PATCH + POST (duplicate) : `tempo` inclus dans `exRow` + bloc copie
+- ✅ Template API SELECT : `tempo` inclus dans la query de chargement
+- ✅ SessionLogger : badge tempo sous le nom exercice — `auto` (bg gris) si calculé, `coach` (bg vert) si configuré manuellement
+- ✅ Sets API `PATCH /api/session-logs/[logId]/sets` : `tempo_used` dans Zod schema + upsert rows
+
+**Invariants :**
+- `tempo null` en DB → `getDefaultTempo(movement_pattern, goal)` calculé au render-time, jamais persisté
+- `buildInitialSets(exercises, goal)` : `tempo_used` déterminé une fois à l'initialisation
+- Non-bloquant : tempo absent ne bloque jamais une séance
+
+**⚠️ Action manuelle requise :** appliquer `supabase/migrations/20260516_tempo.sql` via Supabase Dashboard SQL Editor (3 ALTER TABLE).
 
 ---
 
