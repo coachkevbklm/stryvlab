@@ -3,17 +3,15 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-16
+
+FIX: tryNormalizeMuscle — tirets convertis en underscores (ischio-jambiers → ischio_jambiers) — BodyMap vide séances jambes/fessiers/mollets résolu
+FIX: SessionLogger — suppression ↩ Xkg × N redondant dans colonne PRÉVU (info déjà dans placeholders inputs)
+FIX: computeMuscleIntensity — fallback sur primary_muscle singulier si primary_muscles[] vide (BodyMap pré-séance)
+
 ## 2026-05-15
 
-FIX: computeMuscleIntensity — fallback sur primary_muscle singulier si primary_muscles[] vide (BodyMap pré-séance non vide sur exercices legacy non enrichis)
-
-FEATURE: MorphBlob — composant R3F 3D (SphereGeometry distort + satellite orange orbite + ring fil de fer, lazy Suspense, hero droite)
-FEATURE: Landing hero — blob 3D remplace HeroPhoneStack, phones → section "L'app en action" dédiée (CARD bg, whileInView)
-FIX: inferWeightIncrement — câble/poulie 5kg→1kg, machine stack 2.5kg (valeurs réalistes par équipement)
-FIX: double-progression allSetsRirCompliant — RIR null ignoré (ne bloque plus la progression si client oublie de saisir)
-CHORE: setRecommendation — suppression import mort getTrainingZone (non utilisé après refactor Path B)
-REFACTOR: setRecommendation — refonte complète logique Path B (suppression 1RM live instable, règles directes zone/RIR), Path A inchangé
-FIX: setRecommendation — roundToIncrement floating point (32.199999… → 32.2) via toFixed(10) après multiplication
+FIX: SessionLogger — roundToIncrement floating point (32.199999… → 32.2) via toFixed(10) après multiplication
 FIX: SessionLogger — getLastPerfLabel/getExLastPerfLabel match par set_number exact (évite ref croisée entre sets 1/2/3)
 FIX: Recap — computeMuscleIntensity normalise les slugs muscles via LEGACY_TO_CANONICAL avant lookup BodyMap (BodyMap vide résolu)
 

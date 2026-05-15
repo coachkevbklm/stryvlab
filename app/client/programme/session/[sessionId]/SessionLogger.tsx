@@ -987,13 +987,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                             return (
                               <div>
                                 <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
-                                {lastP && (!ex.is_unilateral || s.side === 'left') && (
-                                  <div className="flex items-center gap-1 mt-0.5">
-                                    <span className="text-[9px] text-white/20 truncate">↩ {lastP.weight ? `${lastP.weight}kg` : '—'} × {lastP.reps ?? '—'}</span>
-                                    {isRec && <DeltaBadge rec={rec} />}
-                                  </div>
-                                )}
-                                {isRec && !lastP && <DeltaBadge rec={rec} />}
+                                {isRec && <DeltaBadge rec={rec} />}
                               </div>
                             )
                           })()}

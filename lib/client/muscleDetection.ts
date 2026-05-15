@@ -2,8 +2,9 @@ import { resolveExerciseMuscleCoverage } from "@/lib/programs/intelligence/exerc
 import { CanonicalMuscle, CANONICAL_MUSCLES, LEGACY_TO_CANONICAL } from "@/lib/programs/intelligence/muscle-normalization";
 
 // Normalise un slug sans throw — retourne null si inconnu
+// Gère tirets ET espaces → underscore (ex: "ischio-jambiers" → "ischio_jambiers")
 function tryNormalizeMuscle(slug: string): CanonicalMuscle | null {
-  const clean = slug.toLowerCase().trim().replace(/\s+/g, '_')
+  const clean = slug.toLowerCase().trim().replace(/[\s-]+/g, '_')
   if (CANONICAL_MUSCLES[clean as CanonicalMuscle]) return clean as CanonicalMuscle
   const canonical = LEGACY_TO_CANONICAL[clean]
   return canonical ?? null
