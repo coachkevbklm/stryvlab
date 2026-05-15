@@ -3,6 +3,68 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-15
+
+REFACTOR: setRecommendation — refonte complète logique Path B (suppression 1RM live instable, règles directes zone/RIR), Path A inchangé
+FIX: setRecommendation — roundToIncrement floating point (32.199999… → 32.2) via toFixed(10) après multiplication
+FIX: SessionLogger — getLastPerfLabel/getExLastPerfLabel match par set_number exact (évite ref croisée entre sets 1/2/3)
+FIX: Recap — computeMuscleIntensity normalise les slugs muscles via LEGACY_TO_CANONICAL avant lookup BodyMap (BodyMap vide résolu)
+
+FIX: HowItWorksSection — screens corrigés (01 Onboarding→nutrition, 02 Moteur→stats, 03 Exécuter→agenda), titres alignés au contenu affiché
+REFACTOR: "Pour qui" — SVG supprimés, emojis 36px (🔥💪🚀⚡) à la place, cards épurées
+REFACTOR: Landing "Comment ça marche" → HowItWorksSection interactive (étapes cliquables, mockup dynamique AnimatePresence, numéro orange actif, bullets expand)
+REFACTOR: Landing "Pour qui" — SVG illustratifs 64px par profil (silhouette perte de gras, haltère masse, triangle débutant, étoile athlète) sur fond MUTED 72×72
+FIX: Piliers hero — labels non tronqués (Masse / Performance / Nutrition / Santé / Perte de gras)
+FEATURE: DS v3.1 Landing Dark — design system complet stryvr/docs/DESIGN_SYSTEM_V3.1_LANDING_DARK.md (tokens, radius, surfaces, glass, orange rules, composants, animations, anti-patterns)
+REFACTOR: Landing — fond #111115 (plus noir pur), CARD #1c1c20, MUTED #2a2a2e, navbar rgba(17,17,21,0.90), BetaForm surfaceBg aligné
+REFACTOR: Landing hero — piliers visuels emojis 28px (🔥💪⚡🥗❤️) sur cards MUTED centrées (5 cards icône SVG + label, grille 5 colonnes, MUTED+border+R) remplacent chips texte
+FIX: BetaForm — borderRadius: 6 sur bloc terminal
+FIX: Landing — glass token borderRadius R, barres métriques et 24h borderRadius RS, FactRow droite borderRadius R (Perte de gras/Prise de masse/Recomposition/Performance/Santé chips), copy description moteur physiologique, suppression "double digital"
+REFACTOR: Landing stryvr — suppression blur résiduel sur cards, radius complet audit (ComposerDemo R, gap-px overflow:hidden, step numbers RS, safety codes RS, outcome pills RS)
+REFACTOR: Landing stryvr — radius R=6px RS=4px sur tous les éléments (grilles gap-px overflow:hidden, badges, boutons, composer, cards standalone, tableaux, step numbers)
+REFACTOR: Landing stryvr — shadcn dark zinc canonique (bg #09090b, card #18181b, muted #27272a, foreground #fafafa, muted-foreground #a1a1aa, border rgba(255,255,255,0.10)), orange FF6116 chirurgical (CTA + barre 24h + h1 + span H2 éditoriaux seulement), suppression tous radial glows, suppression fondus, suppression glassmorphisme multiple → navbar seule, surfaces solides CARD partout
+REFACTOR: Landing stryvr — token system strict (s0/s1/s2/s3 · t0/t1/t2 · b0/b1 · ac/acB/acH/acBr), élimination complète de tous les vestiges light (#767676 #ABABAB rgba(236...) rgba(0,0,0,...) rgba(255,255,255,0.7+)), SectionH2 simplifié, dark prop supprimée
+REFACTOR: Landing stryvr — passage complet en dark (#09090B, glass dark rgba(255,255,255,0.05), radial orange atmosphérique, navbar dark, bouton CTA orange, all borders rgba(255,255,255,...))
+FEATURE: Landing — ComposerDemo animé (4 couches auto-cycle, lexique portions paume/poing/pouce, 5 voies de saisie, confidence score)
+REFACTOR: Landing — section "Ton double" → "Disponibilité 24h" (visuel barre temporelle coach 1h vs STRYVR 24/7, marqueurs événements, suppression concept flou)
+REFACTOR: Landing — transitions atmosphériques (séparateurs dégradés, fondus haut/bas sections dark, replace dividers 1px solid)
+FEATURE: Landing footer — enrichi (logo+tagline, liens légaux CGU/confidentialité/contact, réseaux sociaux Instagram/LinkedIn/TikTok, note légale médicale)
+REFACTOR: Landing copy — callouts journée + nutrition + séance + CTA final réécrits (ton humain, émotionnel, moins technique)
+FIX: Landing navbar — CTA visible mobile (flèche → seule) + label complet sm+
+FEATURE: Landing — section "Safety Layer" (TCA / GLP-1 / cycle féminin / surmenage — grille 2×2 glass, code pill, flag orange, note légale)
+FEATURE: Landing — section "Comment ça marche" (3 étapes numérotées : onboarding 9 étapes / moteur 24/7 / Smart Agenda, grille label+détail, outcome pill orange)
+FEATURE: Landing — section "Pour qui" (4 profils 2×2 : perte de poids / prise de masse / débutant / athlète, grille glass industrielle, ligne exclue)
+REFACTOR: BetaForm — refonte terminal dark (bloc #0A0A0A, indicateur orange animé, labels contextuels, fontSize 20 light, bouton soudé, success minimaliste)
+FEATURE: Landing — section preuve sociale (4 stats réelles JMIR/PMC/Flurry/Glofox, plaques glass DS v3.0, ligne contexte)
+REFACTOR: BetaForm — refonte totale (bloc unifié, labels uppercase, séparateur interne, bouton soudé, erreur inline, success carré)
+FIX: Landing + AppMockup — alignement produit réel STRYVR (Smart Agenda, RPE pas RIR, weight_trend_kg moteur, velocity_status, wellbeing_score_7j, mésocycle, onboarding 9 étapes, COACH_FACTS fidèles aux flux fonctionnels)
+FEATURE: AppMockup — NutritionScreen (arc kcal semi-circulaire, macros barres P/G/L, liste repas du jour)
+FEATURE: Landing — section Nutrition dédiée entre Journée et Séance, AppMockup screen nutrition
+FIX: AppMockup — icône tab data → utensils (nutrition), tab vitals → bolt (séance)
+FIX: BetaForm — inputs h-56 + fontSize 15 + padding 18px (plus confortables), bouton aligné h-56
+FIX: AppMockup — TabBar active corrigée (Agenda→home, SessionLogger→vitals, Stats→charts)
+FIX: BetaForm — inputs empilés verticalement pleine largeur (suppression sm:flex-row trop étroit)
+FIX: Landing — hero grid mobile (inline style écrasait Tailwind breakpoints), navbar CTA toujours hidden, stats bar non-responsive
+FIX: Landing — SVG noise filter ID unique via useId() (évite doublons StrictMode)
+FIX: Landing — borderRadius '50%' sur dots (pas 2px hybride), progress bars radius 0, glow divs sans borderRadius
+FIX: Landing — viewport once:true manquant sur CTA final, SectionLabel/H2 props dark dead supprimées, glassDark dead code supprimé
+FIX: BetaForm — rounded-full supprimé sur icône success, font-bold → fontWeight:500
+CHORE: DS v3.2 — radius doctrine radicale (0px défaut), typo weight 300-400, Optical & Material System (section 14), card radius 0px
+REFACTOR: AppMockup — radius 0 sur tous les écrans, cards glass rgba, typo weight 300-500, densité améliorée, muscle strips, sparkline propre
+REFACTOR: Landing STRYVR — refonte atmosphérique glass system — fond gradient+noise, backdrop-blur 28px, radius 8px, typo weight 300-400, borders rgba perceptives
+FEATURE: Refonte landing STRYVR — 6 sections scrollytelling + hero 3 iPhones stack perspective DS v3.0
+FEATURE: AppMockup — SessionLoggerScreen + StatsScreen nouveaux écrans + HeroPhoneStack composant
+FEATURE: BetaLandingClient — sections "Ta journée pilotée", "Tu ne penses plus", "Ton double te connaît", stats countUp, progression bars, CTA dark
+FIX: Align stryvr landing with DS v3.0 — bg #F3F3F3, stats #EBEBEB, #767676 text-secondary, orange badge/focus, features border 0.5px, tabular-nums, metric-large 40px
+FIX: BetaForm — input bg #EBEBEB, border rgba(0,0,0,0.06), button height 56px, focus border #FF6116 (plus vert)
+FIX: AppMockup — glow gradient décoratif supprimé, tab bar DS v3.0 ajoutée (rectangle radius-sm noir), frame #0A0A0A
+CHORE: Add DS v3.0 native app design system (Urbanist, #FF6116, light+dark, arc SVG, tab pill)
+CHORE: Update design-system skill to reference DS v3.0 tokens and separate coach/client systems
+CHORE: Update client-app-ux skill with DS v3.0 visual tokens
+CHORE: Update ui-ux-reviewer agent with DS v3.0 compliance rules
+CHORE: Update stryvr/ui-system.md palette from placeholder blue to #FF6116 orange + light/dark tokens
+CHORE: Update ui-design-system.md rules header to clarify DS v2.0 scope (coach web only)
+
 ## 2026-05-14
 
 FEATURE: Add STRYVR beta landing page at /stryvr — light mode, Urbanist font, iPhone mockup, Framer Motion animations

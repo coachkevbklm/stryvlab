@@ -546,8 +546,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const lastPerf = currentEx ? (lastPerformance[currentEx.name] ?? []) : []
   function getLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
     if (lastPerf.length === 0) return null
-    const match = lastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
-    return match ?? lastPerf[0]
+    // Match exact par set_number + side — évite d'utiliser set 3 comme ref pour set 1
+    const exactMatch = lastPerf.find(p =>
+      (p as any).set_number === setNum &&
+      (side === 'bilateral' ? true : p.side === side)
+    )
+    if (exactMatch) return exactMatch
+    const sideMatch = lastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+    return sideMatch ?? lastPerf[0]
   }
 
   function getProgressionHint(ex: Exercise): string | null {
@@ -908,8 +914,13 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
             function getExLastPerfLabel(setNum: number, side: 'left' | 'right' | 'bilateral') {
               if (exLastPerf.length === 0) return null
-              const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
-              return match ?? exLastPerf[0]
+              const exactMatch = exLastPerf.find(p =>
+                (p as any).set_number === setNum &&
+                (side === 'bilateral' ? true : p.side === side)
+              )
+              if (exactMatch) return exactMatch
+              const sideMatch = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+              return sideMatch ?? exLastPerf[0]
             }
 
             return (
@@ -1110,8 +1121,13 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
                         function getExLastPerfLabel(side: 'left' | 'right' | 'bilateral') {
                           if (exLastPerf.length === 0) return null
-                          const match = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
-                          return match ?? exLastPerf[0]
+                          const exactMatch = exLastPerf.find(p =>
+                            (p as any).set_number === roundNum &&
+                            (side === 'bilateral' ? true : p.side === side)
+                          )
+                          if (exactMatch) return exactMatch
+                          const sideMatch = exLastPerf.find(p => side !== 'bilateral' ? p.side === side : true)
+                          return sideMatch ?? exLastPerf[0]
                         }
 
                         const exCode = `${supersetLetter}${exInGroupIdx + 1}`

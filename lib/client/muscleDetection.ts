@@ -1,5 +1,13 @@
 import { resolveExerciseMuscleCoverage } from "@/lib/programs/intelligence/exercise-resolver";
-import { CanonicalMuscle } from "@/lib/programs/intelligence/muscle-normalization";
+import { CanonicalMuscle, CANONICAL_MUSCLES, LEGACY_TO_CANONICAL } from "@/lib/programs/intelligence/muscle-normalization";
+
+// Normalise un slug sans throw — retourne null si inconnu
+function tryNormalizeMuscle(slug: string): CanonicalMuscle | null {
+  const clean = slug.toLowerCase().trim().replace(/\s+/g, '_')
+  if (CANONICAL_MUSCLES[clean as CanonicalMuscle]) return clean as CanonicalMuscle
+  const canonical = LEGACY_TO_CANONICAL[clean]
+  return canonical ?? null
+}
 
 export type MuscleGroup =
   | "chest"
@@ -205,10 +213,12 @@ export function computeMuscleIntensity(
   for (const ex of exercises) {
     const sets = ex.sets ?? 3;
 
-    // Primary muscles — use 1.0 activation for normalized columns, fallback to legacy coefficient
+    // Primary muscles — normalise les slugs (canonical ou legacy EN/FR) avant lookup
     const usePrimaryActivations = ex.primary_muscles.length > 0;
-    for (const primaryMuscle of ex.primary_muscles) {
-      const group = CANONICAL_TO_BODYMAP[primaryMuscle as CanonicalMuscle];
+    for (const rawSlug of ex.primary_muscles) {
+      const canonical = tryNormalizeMuscle(rawSlug);
+      if (!canonical) continue;
+      const group = CANONICAL_TO_BODYMAP[canonical];
       if (group) {
         const activation = usePrimaryActivations ? 1.0 : (ex.primary_activation ?? 0.8);
         const volume = sets * activation;
@@ -220,12 +230,13 @@ export function computeMuscleIntensity(
     // Secondary muscles with reduced activation
     const primaryGroups = new Set(
       ex.primary_muscles
-        .map(m => CANONICAL_TO_BODYMAP[m as CanonicalMuscle])
-        .filter(g => g !== null)
+        .map(m => { const c = tryNormalizeMuscle(m); return c ? CANONICAL_TO_BODYMAP[c] : null })
+        .filter((g): g is MuscleGroup => g !== null)
     );
     for (let i = 0; i < ex.secondary_muscles.length; i++) {
-      const secondaryMuscle = ex.secondary_muscles[i];
-      const group = CANONICAL_TO_BODYMAP[secondaryMuscle as CanonicalMuscle];
+      const canonical = tryNormalizeMuscle(ex.secondary_muscles[i]);
+      if (!canonical) continue;
+      const group = CANONICAL_TO_BODYMAP[canonical];
       if (group && !primaryGroups.has(group)) {
         const activation = ex.secondary_activations?.[i] ?? 0.4;
         const volume = sets * activation;

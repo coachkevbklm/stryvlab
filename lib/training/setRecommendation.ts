@@ -26,7 +26,6 @@ export interface SetRecommendationInput {
   }
   // Weight used in the previous set this session — recommendation never goes below this
   prev_set_weight_kg?: number
-  // Intentionally unused Phase 1 — branch added in Approach C
   historicalSessions?: HistoricalSession[]
 }
 
@@ -35,19 +34,18 @@ export interface SetRecommendation {
   reps: number
   confidence: 'high' | 'low'
   delta_vs_last: number | null
-  // Phase hint for UI — informs client of current progression phase
   phase: 'double_progression_reps' | 'double_progression_overload' | 'intra_session' | 'prescription'
 }
 
-// Arrondi au palier configuré (weight_increment_kg) — évite des valeurs impossibles sur machine/barre
+// Arrondi au palier configuré — parseFloat/toFixed élimine le floating point IEEE 754
 function roundToIncrement(value: number, increment: number): number {
   if (increment <= 0) return Math.round(value * 2) / 2
-  return Math.round(value / increment) * increment
+  return parseFloat((Math.round(value / increment) * increment).toFixed(10))
 }
 
 function estimateOneRM(weight_kg: number, reps: number, rir_actual: number): number {
   const repsToFailure = reps + rir_actual
-  const clampedRTF = Math.max(1, repsToFailure)
+  const clampedRTF = Math.max(1, Math.min(repsToFailure, 15)) // cap à 15 — précision ±15% au-delà
   const result = calculateOneRM({ weight: weight_kg, reps: clampedRTF }, 'average')
   return result.oneRM
 }
@@ -55,46 +53,48 @@ function estimateOneRM(weight_kg: number, reps: number, rir_actual: number): num
 export function recommendNextSet(input: SetRecommendationInput): SetRecommendation | null {
   const {
     actual_weight_kg, actual_reps, rir_actual,
-    goal, planned_reps,
+    goal,
     rep_min, rep_max, target_rir,
     weight_increment_kg = 2.5,
     lastWeek, prev_set_weight_kg,
   } = input
 
   if (actual_weight_kg <= 0 || actual_reps <= 0) return null
-  if (actual_reps + rir_actual < 1) return null
 
   const increment = weight_increment_kg > 0 ? weight_increment_kg : 2.5
+  const effectiveTargetRir = target_rir ?? 2
+  const effectiveRepMin = rep_min ?? 6
+  const effectiveRepMax = rep_max ?? 12
 
-  // ── Path A : double progression (historique disponible + plage reps configurée) ──
-  if (lastWeek && lastWeek.weight_kg > 0 && lastWeek.reps > 0 && rep_min !== undefined && rep_max !== undefined) {
-    const effectiveTargetRir = target_rir ?? 2
-
-    // Phase 2 — overload : S-1 avait atteint rep_max avec effort suffisant
-    const lastAtRepMax = lastWeek.reps >= rep_max
+  // ── Path A : double progression (historique S-1 disponible + plage reps configurée) ──
+  // Utilise S-1 comme référence — pas le set courant
+  if (lastWeek && lastWeek.weight_kg > 0 && lastWeek.reps > 0) {
+    const lastAtOrAboveRepMax = lastWeek.reps >= effectiveRepMax
     const lastRirCompliant = lastWeek.rir_actual <= effectiveTargetRir + 1
 
-    if (lastAtRepMax && lastRirCompliant) {
+    // Phase overload : S-1 avait atteint rep_max avec bon effort → augmenter la charge
+    if (lastAtOrAboveRepMax && lastRirCompliant) {
       let targetWeight = roundToIncrement(lastWeek.weight_kg + increment, increment)
+      // Ne jamais descendre sous le set précédent de cette session
       if (prev_set_weight_kg !== undefined && prev_set_weight_kg > 0) {
         targetWeight = Math.max(targetWeight, prev_set_weight_kg)
       }
       const delta = roundToIncrement(targetWeight - lastWeek.weight_kg, increment)
       return {
         weight_kg: targetWeight,
-        reps: rep_min,
+        reps: effectiveRepMin,
         confidence: 'high',
         delta_vs_last: delta,
         phase: 'double_progression_overload',
       }
     }
 
-    // Phase 1 — reps ↑ : garder charge, pousser vers rep_max
+    // Phase reps ↑ : garder la charge de S-1, viser +1 rep vers rep_max
     let targetWeight = roundToIncrement(lastWeek.weight_kg, increment)
     if (prev_set_weight_kg !== undefined && prev_set_weight_kg > 0) {
       targetWeight = Math.max(targetWeight, prev_set_weight_kg)
     }
-    const targetReps = Math.min(lastWeek.reps + 1, rep_max)
+    const targetReps = Math.min(lastWeek.reps + 1, effectiveRepMax)
     const delta = roundToIncrement(targetWeight - lastWeek.weight_kg, increment)
     return {
       weight_kg: targetWeight,
@@ -105,26 +105,56 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
     }
   }
 
-  // ── Path B : intra-séance uniquement (pas d'historique S-1) ──
-  // Utilise le 1RM du set courant pour estimer la charge optimale
-  const zone = getTrainingZone(goal)
-  const liveOneRM = estimateOneRM(actual_weight_kg, actual_reps, rir_actual)
-  const confidence: 'high' | 'low' = actual_reps > 8 ? 'low' : 'high'
+  // ── Path B : intra-séance (pas d'historique S-1) ──
+  // Logique basée sur la performance du set courant + prescription coach
+  //
+  // Règles :
+  //   Si client est dans la zone (rep_min ≤ reps ≤ rep_max) avec bon RIR → maintenir charge
+  //   Si client dépasse rep_max → progresser (charge actuelle + incrément)
+  //   Si client est sous rep_min → reculer légèrement (charge actuelle - incrément)
+  //   Si RIR < target → le client est proche de l'échec → maintenir ou descendre
+  //   Si RIR > target + 2 → trop facile → monter la charge
 
-  const rawWeight = liveOneRM * zone.targetPct
-  let targetWeight = roundToIncrement(rawWeight, increment)
+  const inZone = actual_reps >= effectiveRepMin && actual_reps <= effectiveRepMax
+  const aboveZone = actual_reps > effectiveRepMax
+  const belowZone = actual_reps < effectiveRepMin
 
-  // Jamais en dessous de la prescription coach ni du set précédent
-  if (actual_weight_kg > 0) targetWeight = Math.max(targetWeight, actual_weight_kg)
+  const rirTooLow = rir_actual < effectiveTargetRir - 1   // trop difficile
+  const rirTooHigh = rir_actual > effectiveTargetRir + 2  // trop facile
+
+  let targetWeight: number
+  let targetReps: number
+  let confidence: 'high' | 'low' = 'high'
+
+  if (aboveZone) {
+    // Client a fait trop de reps → charge trop légère → augmenter
+    targetWeight = roundToIncrement(actual_weight_kg + increment, increment)
+    targetReps = effectiveRepMin
+  } else if (belowZone && rirTooLow) {
+    // Client n'a pas atteint le min ET effort max → descendre légèrement
+    targetWeight = roundToIncrement(actual_weight_kg - increment, increment)
+    targetReps = effectiveRepMin
+  } else if (inZone && rirTooHigh) {
+    // Dans la zone mais trop facile → monter la charge
+    targetWeight = roundToIncrement(actual_weight_kg + increment, increment)
+    targetReps = effectiveRepMin
+  } else if (inZone && rirTooLow) {
+    // Dans la zone mais proche de l'échec → maintenir la charge
+    targetWeight = roundToIncrement(actual_weight_kg, increment)
+    targetReps = Math.min(actual_reps, effectiveRepMax)
+  } else {
+    // Cas standard — dans la zone avec bon effort → maintenir charge et viser +1 rep
+    targetWeight = roundToIncrement(actual_weight_kg, increment)
+    targetReps = Math.min(actual_reps + 1, effectiveRepMax)
+    confidence = 'low' // pas d'historique → confiance réduite
+  }
+
+  // Ne jamais descendre sous le set précédent de cette session
   if (prev_set_weight_kg !== undefined && prev_set_weight_kg > 0) {
     targetWeight = Math.max(targetWeight, prev_set_weight_kg)
   }
-
-  const targetReps = rep_min !== undefined
-    ? rep_min
-    : planned_reps > 0
-      ? planned_reps
-      : Math.round(((zone.repRangeMin + zone.repRangeMax) / 2))
+  // Ne jamais proposer 0kg ou charge négative
+  targetWeight = Math.max(targetWeight, increment)
 
   return {
     weight_kg: targetWeight,
