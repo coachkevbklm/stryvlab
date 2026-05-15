@@ -5,6 +5,8 @@
 
 ## 2026-05-16
 
+FIX: BodyMap trapèzes — primary_muscles génériques ['dos','biceps'] ignorés, fallback sur primary_muscle anatomique ('traps') pour Shrug et exercices similaires
+FIX: ExercisePicker — primaryMuscles peuplé depuis primaryMuscle anatomique précis au lieu de muscles[] générique
 FIX: ProgrammeClientPage — "exercicess" double pluriel (ct() retourne déjà "exercices", + 's' redondant supprimé)
 FIX: LEGACY_TO_CANONICAL — 40+ slugs catalog ajoutés (fessiers, gluteus_maximus, gluteus_medius, spine_erectors, gastrocnemius, mollets, etc.) — BodyMap vide séances jambes/fessiers/mollets résolu définitivement
 FIX: tryNormalizeMuscle — tirets convertis en underscores (ischio-jambiers → ischio_jambiers)

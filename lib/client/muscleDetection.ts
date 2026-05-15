@@ -214,11 +214,17 @@ export function computeMuscleIntensity(
   for (const ex of exercises) {
     const sets = ex.sets ?? 3;
 
-    // Primary muscles — normalise les slugs (canonical ou legacy EN/FR) avant lookup
-    // Fallback sur primary_muscle singulier (legacy catalog) si tableau vide
-    const primarySlugs: string[] = ex.primary_muscles.length > 0
-      ? ex.primary_muscles
-      : ex.primary_muscle ? [ex.primary_muscle] : []
+    // Slugs génériques catalog muscles[] — trop imprécis pour le BodyMap
+    // (ex: Shrug a muscles=['dos','biceps'] mais primaryMuscle='traps')
+    const GENERIC_MUSCLE_SLUGS = new Set(['dos','biceps','triceps','epaules','pectoraux','abdos','quadriceps','fessiers','ischio-jambiers','ischio_jambiers','mollets','avant_bras'])
+    const isAllGeneric = ex.primary_muscles.length > 0 && ex.primary_muscles.every(m => GENERIC_MUSCLE_SLUGS.has(m.toLowerCase()))
+
+    // Si primary_muscles[] vide OU uniquement slugs génériques → utiliser primary_muscle singulier (anatomique précis)
+    const primarySlugs: string[] = (!ex.primary_muscles.length || isAllGeneric) && ex.primary_muscle
+      ? [ex.primary_muscle]
+      : ex.primary_muscles.length > 0
+        ? ex.primary_muscles
+        : []
 
     for (const rawSlug of primarySlugs) {
       const canonical = tryNormalizeMuscle(rawSlug);

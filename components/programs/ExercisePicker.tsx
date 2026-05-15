@@ -729,8 +729,11 @@ export default function ExercisePicker({ onSelect, onClose }: Props) {
                       movementPattern: exercise.movementPattern ?? null,
                       equipment: exercise.equipment ?? [],
                       isCompound: exercise.isCompound ?? false,
-                      primaryMuscles: exercise.muscles ?? [],
-                      secondaryMuscles: [],
+                      // Priorité : primaryMuscle anatomique précis (ex: 'traps') > muscles[] générique (ex: 'dos')
+                      primaryMuscles: exercise.primaryMuscle
+                        ? [exercise.primaryMuscle]
+                        : exercise.muscles ?? [],
+                      secondaryMuscles: exercise.secondaryMuscles ?? [],
                       plane: exercise.plane ?? null,
                       mechanic: exercise.mechanic ?? null,
                       unilateral: exercise.unilateral ?? false,
