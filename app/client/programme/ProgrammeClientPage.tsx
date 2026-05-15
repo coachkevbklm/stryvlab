@@ -244,7 +244,7 @@ export default function ProgrammeClientPage({
                   </p>
                   <h2 className="text-[20px] font-bold text-white leading-tight">{todaySession.name}</h2>
                   <p className="text-[12px] text-white/35 mt-0.5">
-                    {todayExercises.length} {ct(lang, 'programme.session.exercises')}{todayExercises.length > 1 && lang === 'fr' ? 's' : ''}
+                    {todayExercises.length} {ct(lang, 'programme.session.exercises')}
                   </p>
                 </div>
 

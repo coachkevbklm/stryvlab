@@ -5,6 +5,7 @@
 
 ## 2026-05-16
 
+FIX: ProgrammeClientPage — "exercicess" double pluriel (ct() retourne déjà "exercices", + 's' redondant supprimé)
 FIX: LEGACY_TO_CANONICAL — 40+ slugs catalog ajoutés (fessiers, gluteus_maximus, gluteus_medius, spine_erectors, gastrocnemius, mollets, etc.) — BodyMap vide séances jambes/fessiers/mollets résolu définitivement
 FIX: tryNormalizeMuscle — tirets convertis en underscores (ischio-jambiers → ischio_jambiers)
 FIX: SessionLogger — suppression ↩ Xkg × N redondant dans colonne PRÉVU (info déjà dans placeholders inputs)
