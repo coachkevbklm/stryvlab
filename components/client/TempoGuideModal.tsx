@@ -16,54 +16,49 @@ interface TempoGuideModalProps {
   onClose: () => void    // called on manual close OR end of last rep
 }
 
-// Visual phase order: CON → ISO → ECC → PAUSE
-// CON  = concentrique (contraction, montée)
-// ISO  = isométrique (position tenue au sommet)
-// ECC  = excentrique (descente contrôlée)
-// PAUSE = pause/étirement (bas, position de départ)
-// Maps from DB tempo [ECC, PB, CON, PH] → visual [CON=2, ISO=3, ECC=0, PAUSE=1]
-const PHASE_LABELS = ['CON', 'ISO', 'ECC', 'PAUSE'] as const
+// Visual phase order: Concentrique → Isométrique → Excentrique → Pause
+// DB tempo notation [ECC, PB, CON, PH] remapped to visual order:
+//   visual 0 = CON  (parsed.concentric)
+//   visual 1 = ISO  (parsed.pauseTop)
+//   visual 2 = ECC  (parsed.eccentric)
+//   visual 3 = PAUSE(parsed.pauseBottom)
+const PHASE_LABELS    = ['Concentrique', 'Isométrique', 'Excentrique', 'Pause'] as const
+const PHASE_SUBLABELS = ['Contraction — montée', 'Maintien au sommet', 'Descente contrôlée', 'Étirement — position initiale'] as const
 const ACCENT = '#FFB800'
-// PAUSE phases (visual indices 1=ISO and 3=PAUSE) — ball stops and pulses
+// PAUSE phases (visual 1=ISO and 3=PAUSE) — ball stops and pulses
 const PAUSE_PHASES = new Set([1, 3])
 
 // ─── SVG Path definition ─────────────────────────────────────────────────────
-// Single wave: flat bottom (PAUSE zone) → rise CON → flat top ISO → fall ECC → flat bottom
-// Ball starts at far-left of flat bottom = point C (start of CON rise).
-// At end of PAUSE, ball teleports back to point C for next rep.
+// Shape: sinusoidal wave — starts bottom-left, rises (CON), flat top (ISO),
+//        falls (ECC), flat bottom-right (PAUSE), then loops.
+// The ball starts at the very beginning of the CON rise (x=0, y=bottom).
+// viewBox 0 0 400 180. Bottom y=155, top y=25.
 //
-// Visual phases (t 0→1):
-//   0.00–0.20 : CON  — rise bottom→top, easeOut
-//   0.20–0.55 : ISO  — flat top, linear, ball STOPS + pulses
-//   0.55–0.80 : ECC  — fall top→bottom, easeIn
-//   0.80–1.00 : PAUSE— flat bottom, linear, ball STOPS + pulses → teleport to 0.0
-//
-// viewBox 400×200. y=25 = top, y=175 = bottom.
-// Flat bottom wider on right (PAUSE zone), short on left (CON start = point C).
+// Phases (t 0→1 along path):
+//   0.00–0.25 : CON   — smooth rise bottom→top (bézier)
+//   0.25–0.55 : ISO   — flat top (wider = pause is longer visually)
+//   0.55–0.80 : ECC   — smooth fall top→bottom (bézier)
+//   0.80–1.00 : PAUSE — flat bottom-right
 const PATH_D = [
-  'M 0,175',               // point C — CON start, left edge
-  'C 20,175 35,25 80,25',  // CON rise (smooth bézier, easeOut shape)
-  'L 260,25',              // ISO flat top (wide = longer pause visible)
-  'C 305,25 320,175 340,175', // ECC fall (smooth bézier, easeIn shape)
-  'L 400,175',             // PAUSE flat bottom-right
+  'M 0,155',                      // CON start — bottom left
+  'C 15,155 45,25 90,25',         // CON rise — smooth bézier
+  'L 230,25',                     // ISO — flat top
+  'C 270,25 295,155 320,155',     // ECC fall — smooth bézier
+  'L 400,155',                    // PAUSE — flat bottom right
 ].join(' ')
 
-// Phase boundaries on path (0→1)
-const PHASE_START = [0,    0.20, 0.55, 0.80]
-const PHASE_END   = [0.20, 0.55, 0.80, 1.00]
+// Phase t-boundaries calibrated to path geometry above
+const PHASE_START = [0,    0.25, 0.55, 0.80]
+const PHASE_END   = [0.25, 0.55, 0.80, 1.00]
 
-// Easing per visual phase:
-//   CON  : easeOut — explosive start, slows at peak
-//   ISO  : linear  — static hold
-//   ECC  : easeIn  — slow under load, accelerates with gravity
-//   PAUSE: linear  — static rest
-function easeIn(t: number): number { return t * t }
+// Easing per visual phase
+function easeIn(t: number): number  { return t * t }
 function easeOut(t: number): number { return t * (2 - t) }
-function linear(t: number): number { return t }
+function linear(t: number): number  { return t }
 const PHASE_EASING = [easeOut, linear, easeIn, linear]
 
-// Diamond markers at CON→ISO, ISO→ECC, ECC→PAUSE transitions
-const DIAMOND_T = [0.20, 0.55, 0.80]
+// Diamonds at phase transitions
+const DIAMOND_T = [0.25, 0.55, 0.80]
 
 // ─── Haptic helper ───────────────────────────────────────────────────────────
 function vibrate(pattern: number | number[]) {
@@ -366,9 +361,9 @@ function TempoGuideModalInner({
   }, [tick, countdown])
 
   // ── Derived label values — visual order [CON, ISO, ECC, PAUSE] ──
-  // DB parsed: [ECC, PB, CON, PH] → visual remap: [CON=2, ISO=3, ECC=0, PAUSE=1]
+  // DB: [ECC=eccentric, PB=pauseBottom, CON=concentric, PH=pauseTop]
+  // Visual remap: [visual0=CON=concentric, visual1=ISO=pauseTop, visual2=ECC=eccentric, visual3=PAUSE=pauseBottom]
   const visualPhaseValues = [parsed.concentric, parsed.pauseTop, parsed.eccentric, parsed.pauseBottom]
-  const PHASE_SUBLABELS = ['Contraction', 'Maintien', 'Descente contrôlée', 'Étirement'] as const
   const phaseValue  = visualPhaseValues[currentPhase]
   const phaseIsX    = phaseValue === 'X'
   const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
@@ -452,7 +447,7 @@ function TempoGuideModalInner({
           {/* ── SVG Circuit ── */}
           <div className="flex-1 flex items-center px-2 min-h-0">
             <svg
-              viewBox="-10 0 420 210"
+              viewBox="-5 10 410 165"
               preserveAspectRatio="xMidYMid meet"
               className="w-full"
               style={{ overflow: 'visible' }}
@@ -527,21 +522,21 @@ function TempoGuideModalInner({
           </div>
 
           {/* ── Phase label + live timer ── */}
-          <div className="shrink-0 flex flex-col items-center px-6 pb-2" style={{ height: 64 }}>
+          <div className="shrink-0 flex flex-col items-center px-6 pb-1" style={{ height: 72 }}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentPhase}
-                initial={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.13 }}
-                className="flex flex-col items-center gap-0.5"
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.12 }}
+                className="flex flex-col items-center gap-0"
               >
-                <span className="font-mono text-[15px] font-black uppercase tracking-[0.22em]" style={{ color: ACCENT }}>
+                <span className="font-mono text-[13px] font-black uppercase tracking-[0.20em]" style={{ color: ACCENT }}>
                   {countdown !== null ? 'PRÊT' : PHASE_LABELS[currentPhase]}
                 </span>
                 {countdown === null && (
-                  <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-white/30">
+                  <span className="text-[9px] font-medium text-white/30 mt-0.5">
                     {PHASE_SUBLABELS[currentPhase]}
                   </span>
                 )}
