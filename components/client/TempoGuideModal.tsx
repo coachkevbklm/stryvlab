@@ -11,6 +11,7 @@ interface TempoGuideModalProps {
   tempo: string          // already resolved (coach value or getDefaultTempo result)
   reps: number           // planned reps for this set
   exerciseName: string
+  prepSeconds: number    // countdown before RAF starts (client-configured, default 5)
   onClose: () => void    // called on manual close OR end of last rep
 }
 
@@ -57,7 +58,7 @@ function vibrate(pattern: number | number[]) {
 // ─── Public component — validates tempo before rendering inner ────────────────
 
 export default function TempoGuideModal({
-  tempo, reps, exerciseName, onClose,
+  tempo, reps, exerciseName, prepSeconds, onClose,
 }: TempoGuideModalProps) {
   const parsed = parseTempo(tempo)
   if (!parsed || reps <= 0) return null
@@ -72,6 +73,7 @@ export default function TempoGuideModal({
       parsed={parsed}
       reps={reps}
       exerciseName={exerciseName}
+      prepSeconds={prepSeconds}
       onClose={onClose}
     />
   )
@@ -80,11 +82,12 @@ export default function TempoGuideModal({
 // ─── Inner component — receives validated parsed tempo ────────────────────────
 
 function TempoGuideModalInner({
-  parsed, reps, exerciseName, onClose,
+  parsed, reps, exerciseName, prepSeconds, onClose,
 }: {
   parsed: ParsedTempo
   reps: number
   exerciseName: string
+  prepSeconds: number
   onClose: () => void
 }) {
   // Phase durations in ms. "X" = 300ms (explosive flash). 0 = instant (skip).
@@ -101,8 +104,8 @@ function TempoGuideModalInner({
   const [currentRep, setCurrentRep]     = useState(0)
   const [done, setDone]                 = useState(false)
   const [closing, setClosing]           = useState(false)
-  // Countdown 3→2→1→GO before RAF starts
-  const [countdown, setCountdown]       = useState<number | null>(3)
+  // Countdown prepSeconds→...→1→GO before RAF starts
+  const [countdown, setCountdown]       = useState<number | null>(prepSeconds)
   // Remaining seconds in current phase (displayed as timer)
   const [phaseTimer, setPhaseTimer]     = useState<number>(0)
 
@@ -301,7 +304,7 @@ function TempoGuideModalInner({
             </div>
             <button
               onClick={handleClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/35 hover:text-white/70 hover:bg-white/[0.10] active:scale-95 transition-all"
+              className="flex h-10 w-10 items-center justify-center rounded-[2px] bg-white/[0.06] text-white/35 hover:text-white/70 hover:bg-white/[0.10] active:scale-95 transition-all"
             >
               <X size={16} />
             </button>
