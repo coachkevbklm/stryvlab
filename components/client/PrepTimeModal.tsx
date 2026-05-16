@@ -2,12 +2,27 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Timer } from 'lucide-react'
+import { X, Timer, Vibrate, VibrateOff } from 'lucide-react'
 
 interface PrepTimeModalProps {
   exerciseName: string
-  onConfirm: (seconds: number) => void
+  onConfirm: (seconds: number, hapticsEnabled: boolean) => void
   onClose: () => void
+}
+
+const HAPTICS_KEY = 'tempo_haptics_enabled'
+
+export function getHapticsEnabled(): boolean {
+  try {
+    const stored = localStorage.getItem(HAPTICS_KEY)
+    return stored === null ? true : stored === 'true' // default ON
+  } catch {
+    return true
+  }
+}
+
+function saveHapticsEnabled(enabled: boolean) {
+  try { localStorage.setItem(HAPTICS_KEY, String(enabled)) } catch { /* noop */ }
 }
 
 const PREP_KEY = (name: string) =>
@@ -39,14 +54,21 @@ function savePrepTime(exerciseName: string, seconds: number) {
 }
 
 export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: PrepTimeModalProps) {
-  const [seconds, setSeconds] = useState<number>(() => getPrepTime(exerciseName))
+  const [seconds, setSeconds]   = useState<number>(() => getPrepTime(exerciseName))
+  const [haptics, setHaptics]   = useState<boolean>(() => getHapticsEnabled())
 
   const dec = () => setSeconds(s => Math.max(3, s - 1))
   const inc = () => setSeconds(s => Math.min(30, s + 1))
 
+  const toggleHaptics = () => {
+    const next = !haptics
+    setHaptics(next)
+    saveHapticsEnabled(next)
+  }
+
   const handleConfirm = () => {
     savePrepTime(exerciseName, seconds)
-    onConfirm(seconds)
+    onConfirm(seconds, haptics)
   }
 
   return (
@@ -134,6 +156,29 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
               +
             </button>
           </div>
+
+          {/* Haptics toggle */}
+          <button
+            onClick={toggleHaptics}
+            className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] border ${
+              haptics
+                ? 'bg-[#FFB800]/[0.08] border-[#FFB800]/20'
+                : 'bg-white/[0.03] border-white/[0.05]'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              {haptics
+                ? <Vibrate size={14} style={{ color: '#FFB800' }} />
+                : <VibrateOff size={14} className="text-white/25" />
+              }
+              <span className={`text-[11px] font-semibold ${haptics ? 'text-white/80' : 'text-white/30'}`}>
+                Vibrations aux transitions
+              </span>
+            </div>
+            <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#FFB800]' : 'bg-white/[0.10]'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${haptics ? 'left-4' : 'left-0.5'}`} />
+            </div>
+          </button>
 
           {/* Confirm */}
           <button

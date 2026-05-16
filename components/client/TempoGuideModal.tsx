@@ -12,6 +12,7 @@ interface TempoGuideModalProps {
   reps: number           // planned reps for this set
   exerciseName: string
   prepSeconds: number    // countdown before RAF starts (client-configured, default 5)
+  hapticsEnabled: boolean // client-configured vibration toggle
   onClose: () => void    // called on manual close OR end of last rep
 }
 
@@ -75,7 +76,7 @@ function vibrate(pattern: number | number[]) {
 // ─── Public component — validates tempo before rendering inner ────────────────
 
 export default function TempoGuideModal({
-  tempo, reps, exerciseName, prepSeconds, onClose,
+  tempo, reps, exerciseName, prepSeconds, hapticsEnabled, onClose,
 }: TempoGuideModalProps) {
   const parsed = parseTempo(tempo)
   if (!parsed || reps <= 0) return null
@@ -91,6 +92,7 @@ export default function TempoGuideModal({
       reps={reps}
       exerciseName={exerciseName}
       prepSeconds={prepSeconds}
+      hapticsEnabled={hapticsEnabled}
       onClose={onClose}
     />
   )
@@ -99,14 +101,16 @@ export default function TempoGuideModal({
 // ─── Inner component — receives validated parsed tempo ────────────────────────
 
 function TempoGuideModalInner({
-  parsed, reps, exerciseName, prepSeconds, onClose,
+  parsed, reps, exerciseName, prepSeconds, hapticsEnabled, onClose,
 }: {
   parsed: ParsedTempo
   reps: number
   exerciseName: string
   prepSeconds: number
+  hapticsEnabled: boolean
   onClose: () => void
 }) {
+  const vib = (pattern: number | number[]) => { if (hapticsEnabled) vibrate(pattern) }
   // DB tempo = [ECC, PB, CON, PH]. Visual order = [CON, PH, ECC, PB].
   // Remap to visual order so phase index 0=CON, 1=PH, 2=ECC, 3=PB.
   const ms = (p: typeof parsed.eccentric) => p === 'X' ? 300 : (p as number) * 1000
@@ -197,7 +201,7 @@ function TempoGuideModalInner({
       ballRef.current.setAttribute('cy', String(pt.y))
       ballGlowRef.current.setAttribute('cx', String(pt.x))
       ballGlowRef.current.setAttribute('cy', String(pt.y))
-      vibrate([100, 40, 100, 40, 100])
+      vib([100, 40, 100, 40, 100])
       setDone(true)
       return
     }
@@ -206,7 +210,7 @@ function TempoGuideModalInner({
     if (repIndex !== repRef.current) {
       repRef.current = repIndex
       setCurrentRep(repIndex)
-      if (repIndex > 0) vibrate([70, 30, 70])
+      if (repIndex > 0) vib([70, 30, 70])
     }
 
     // Progress within current rep (0→1)
@@ -235,10 +239,10 @@ function TempoGuideModalInner({
       phaseRef.current = phase
       setCurrentPhase(phase)
       // Visual: 0=CON, 1=PH, 2=ECC, 3=PB
-      if (phase === 0) vibrate(70)  // start CON (explosive — stronger pulse)
-      else if (phase === 1) vibrate(40)  // PH pause starts
-      else if (phase === 2) vibrate(40)  // ECC starts
-      else if (phase === 3) vibrate(40)  // PB pause starts
+      if (phase === 0) vib(70)        // start CON (explosive — stronger pulse)
+      else if (phase === 1) vib(40)  // PH pause starts
+      else if (phase === 2) vib(40)  // ECC starts
+      else if (phase === 3) vib(40)  // PB pause starts
     }
 
     // Update phase countdown timer (seconds remaining in current phase)
