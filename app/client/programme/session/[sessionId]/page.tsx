@@ -112,9 +112,10 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
     // Filtre via client_session_logs pour garantir l'isolation par client
     const { data: lastLogs } = await service
       .from('client_set_logs')
-      .select('exercise_name, set_number, actual_weight_kg, actual_reps, rir_actual, side, completed, client_session_logs!inner(client_id)')
+      .select('exercise_name, set_number, actual_weight_kg, actual_reps, rir_actual, side, completed, client_session_logs!inner(client_id, completed_at)')
       .eq('completed', true)
       .eq('client_session_logs.client_id', client.id)
+      .not('client_session_logs.completed_at', 'is', null)
       .in('exercise_name', exerciseNames)
       .order('created_at', { ascending: false })
       .limit(200)
