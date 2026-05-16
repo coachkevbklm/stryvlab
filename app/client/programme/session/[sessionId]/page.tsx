@@ -146,6 +146,29 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
     clientAlternatives: alternativesMap[ex.name] ?? [],
   }))
 
+  // Fetch poids client (dernière valeur depuis assessment_submissions)
+  let clientWeight: number | undefined
+  const { data: weightData } = await service
+    .from('assessment_submissions')
+    .select('answers')
+    .eq('client_id', client.id)
+    .not('answers', 'is', null)
+    .order('bilan_date', { ascending: false })
+    .limit(5)
+
+  if (weightData) {
+    for (const sub of weightData) {
+      const answers = (sub as any).answers
+      if (typeof answers === 'object' && answers !== null) {
+        const w = answers.weight_kg ?? answers.poids_kg ?? answers.weight
+        if (typeof w === 'number' && w > 0 && w < 300) {
+          clientWeight = w
+          break
+        }
+      }
+    }
+  }
+
   return (
     <SessionLogger
       clientId={client.id}
@@ -155,6 +178,7 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       lastPerformance={lastPerformance}
       goal={goal}
       level={level}
+      clientWeight={clientWeight}
     />
   )
 }

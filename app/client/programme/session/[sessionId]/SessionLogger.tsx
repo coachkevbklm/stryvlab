@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Circle,
   Loader2, AlertCircle, RefreshCw, TrendingUp,
-  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight, Play
+  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight, Play, Droplets
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
@@ -75,6 +75,7 @@ interface Props {
   lastPerformance: Record<string, LastPerf[]>
   goal: string
   level: string
+  clientWeight?: number
 }
 
 type SaveState = 'idle' | 'saving' | 'error'
@@ -179,9 +180,17 @@ function DeltaBadge({ rec }: { rec: SetRecommendation }) {
   return <span className={`text-[10px] font-semibold ${colorClass}`}>{label}</span>
 }
 
+function calcHydrationPlan(weightKg: number, durationMin: number) {
+  const totalMl = weightKg * 35 + durationMin * 8
+  const intervalMin = 15
+  const sips = Math.max(1, Math.floor(durationMin / intervalMin))
+  const mlPerSip = Math.round(totalMl / sips)
+  return { totalMl, intervalMin, mlPerSip }
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level }: Props) {
+export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level, clientWeight }: Props) {
   const router = useRouter()
   const { t } = useClientT()
   const [sets, setSets] = useState<SetLog[]>(() => buildInitialSets(exercises, goal))
@@ -218,6 +227,17 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const [draftReady, setDraftReady] = useState(false)
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const DRAFT_KEY = `draft_session_log_id_${sessionId}`
+
+  // ── Hydratation ──
+  const [showHydration, setShowHydration] = useState(false)
+  const [sipsConsumed, setSipsConsumed] = useState(0)
+  const hydrationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const HYDRATION_INTERVAL_MS = 15 * 60 * 1000
+
+  const hydrationPlan = useMemo(() => {
+    const w = clientWeight ?? 70
+    return calcHydrationPlan(w, 60)
+  }, [clientWeight])
 
   // ── Chrono repos ──
   // restElapsed : secondes écoulées depuis le début du chrono (peut dépasser restPrescribed → overtime)
@@ -363,6 +383,17 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const totalSets = sets.length
   const progress = totalSets > 0 ? completedCount / totalSets : 0
   const allDone = completedCount === totalSets && totalSets > 0
+
+  // ── Hydratation timer ──
+  useEffect(() => {
+    hydrationTimerRef.current = setInterval(() => setShowHydration(true), HYDRATION_INTERVAL_MS)
+    return () => { if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current) }
+  }, [HYDRATION_INTERVAL_MS])
+
+  function resetHydrationTimer(delayMs: number) {
+    if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current)
+    hydrationTimerRef.current = setInterval(() => setShowHydration(true), delayMs)
+  }
 
   // ── Chrono global ──
   useEffect(() => {
@@ -771,6 +802,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             <p className="text-[10px] text-white/30 font-mono mt-1">{formatTime(elapsed)}</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Hydratation icon */}
+            <button
+              onClick={() => setShowHydration(true)}
+              className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/[0.04] active:scale-95 transition-all"
+              title="Rappel hydratation"
+            >
+              <Droplets size={14} className="text-blue-400 animate-pulse" />
+            </button>
             <span className="text-[11px] font-bold text-[#ffe01e]">{completedCount}/{totalSets}</span>
             {/* Mini-badge repos — temps restant positif */}
             {restStartedAt !== null && !isOvertime && restRemaining !== null && (
@@ -1438,6 +1477,56 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             setTempoGuideTarget(null)
           }}
         />
+      )}
+
+      {/* ── Hydratation reminder sheet ── */}
+      {showHydration && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] flex items-end"
+          onClick={() => {
+            setShowHydration(false)
+            resetHydrationTimer(5 * 60 * 1000)
+          }}
+        >
+          <div
+            className="w-full bg-[#161616] rounded-t-2xl border-t border-white/[0.08] px-5 pt-5 pb-8"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 shrink-0">
+                <Droplets size={18} className="text-blue-400" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-white">Hydratation</p>
+                <p className="text-[11px] text-white/40">
+                  Bois environ {hydrationPlan.mlPerSip} ml
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setSipsConsumed(prev => prev + 1)
+                  setShowHydration(false)
+                  resetHydrationTimer(HYDRATION_INTERVAL_MS)
+                }}
+                className="flex-1 h-11 rounded-xl font-bold text-[13px] uppercase tracking-[0.08em]"
+                style={{ backgroundColor: '#ffe01e', color: '#0d0d0d' }}
+              >
+                J&apos;ai bu
+              </button>
+              <button
+                onClick={() => {
+                  setShowHydration(false)
+                  resetHydrationTimer(5 * 60 * 1000)
+                }}
+                className="flex-1 h-11 rounded-xl bg-white/[0.04] text-white/50 font-medium text-[13px] hover:text-white/70 transition-colors"
+              >
+                Ignorer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Bouton Terminer (fixe) ── */}
