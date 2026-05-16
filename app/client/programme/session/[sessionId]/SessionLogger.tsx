@@ -1118,7 +1118,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                           {/* Tempo guide trigger */}
                           {(() => {
                             const resolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
-                            const repCount = resolveReps(ex)
+                            // Sync IA : utiliser rec.reps si disponible, sinon fallback resolveReps
+                            const setKey = recKey(ex.id, s.set_number, s.side)
+                            const recForSet = recommendations[setKey]
+                            const repCount = recForSet?.reps ?? resolveReps(ex)
                             const canGuide = parseTempo(resolvedTempo) !== null && repCount > 0 && !s.completed
                             if (!canGuide) return <div />
                             return (
@@ -1286,7 +1289,9 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                                   const lastP = getExLastPerfLabel(s.side)
                                   const key = recKey(ex.id, s.set_number, s.side)
                                   const isRec = !!recommendations[key] && !s.completed
-                                  const ssRepCount = resolveReps(ex)
+                                  // Sync IA : utiliser rec.reps si disponible, sinon fallback resolveReps
+                                  const ssRecForSet = recommendations[key]
+                                  const ssRepCount = ssRecForSet?.reps ?? resolveReps(ex)
                                   const ssCanGuide = ssHasTempo && ssRepCount > 0 && !s.completed
                                   return (
                                     <div key={`${s.set_number}-${s.side}`} className={`grid items-center gap-3 px-4 py-2.5 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: cols }}>
@@ -1408,7 +1413,30 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           exerciseName={tempoGuideTarget.exerciseName}
           prepSeconds={tempoGuideTarget.prepSeconds}
           hapticsEnabled={tempoGuideTarget.hapticsEnabled}
-          onClose={() => setTempoGuideTarget(null)}
+          onClose={(result) => {
+            // Feed bonusReps → actual_reps du set qui a déclenché le tempo
+            if (result.bonusReps > 0 && tempoGuideTarget) {
+              const targetEx = exercises.find(e =>
+                (swappedNames[e.id] ?? e.name) === tempoGuideTarget.exerciseName ||
+                e.name === tempoGuideTarget.exerciseName
+              )
+              if (targetEx) {
+                const firstUncompleted = sets.find(s => s.exercise_id === targetEx.id && !s.completed)
+                if (firstUncompleted) {
+                  const key = recKey(targetEx.id, firstUncompleted.set_number, firstUncompleted.side)
+                  setSets(prev => prev.map(s =>
+                    s.exercise_id === targetEx.id &&
+                    s.set_number === firstUncompleted.set_number &&
+                    s.side === firstUncompleted.side
+                      ? { ...s, actual_reps: String(result.totalReps) }
+                      : s
+                  ))
+                  setManuallyEdited(prev => new Set(prev).add(key))
+                }
+              }
+            }
+            setTempoGuideTarget(null)
+          }}
         />
       )}
 
