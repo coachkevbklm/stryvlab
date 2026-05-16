@@ -452,28 +452,12 @@ function TempoGuideModalInner({
               className="w-full"
               style={{ overflow: 'visible' }}
             >
-              {/* Outer glow track */}
+              {/* Base track — single clean rail, no glow, no accent line */}
               <path
                 d={PATH_D}
                 fill="none"
-                stroke="rgba(255,184,0,0.07)"
-                strokeWidth="56"
-                strokeLinecap="round"
-              />
-              {/* Base track — thicker rail for better visibility */}
-              <path
-                d={PATH_D}
-                fill="none"
-                stroke="rgba(255,255,255,0.08)"
+                stroke="rgba(255,255,255,0.09)"
                 strokeWidth="36"
-                strokeLinecap="round"
-              />
-              {/* Inner accent line */}
-              <path
-                d={PATH_D}
-                fill="none"
-                stroke="rgba(255,184,0,0.15)"
-                strokeWidth="5"
                 strokeLinecap="round"
               />
               {/* Invisible measurement path */}
@@ -490,7 +474,7 @@ function TempoGuideModalInner({
                 />
               ))}
 
-              {/* Diamond transition markers — rendered after diamondPositions computed */}
+              {/* Diamond transition markers — NO filter (filter creates stacking context, puts ball under) */}
               {diamondPositions.map((pos, i) => (
                 <polygon
                   key={i}
@@ -499,7 +483,6 @@ function TempoGuideModalInner({
                   fill={ACCENT}
                   opacity="0.55"
                   transform={`translate(${pos.x}, ${pos.y})`}
-                  style={{ filter: `drop-shadow(0 0 8px ${ACCENT})` }}
                 />
               ))}
 
