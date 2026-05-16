@@ -228,6 +228,74 @@ describe('recommendNextSet', () => {
     expect(result!.weight_kg).toBeGreaterThan(0)
   })
 
+  // ── Path A — RIR modulation + delta badge ──
+
+  it('Path A — overload dû MAIS RIR actuel trop bas (HOLD) → maintenir charge S-1', () => {
+    // S-1 à rep_max avec bon RIR → overload normalement dû
+    // MAIS rir_actual=0 ≤ target(2)-2=0 → HOLD → pas d'overload
+    const result = recommendNextSet({
+      actual_weight_kg: 80,
+      actual_reps: 10,
+      rir_actual: 0,
+      goal: 'hypertrophy',
+      level: 'intermediate',
+      planned_reps: 10,
+      set_number: 2,
+      rep_min: 8,
+      rep_max: 12,
+      target_rir: 2,
+      weight_increment_kg: 2.5,
+      lastWeek: { weight_kg: 80, reps: 12, rir_actual: 2 },
+    })
+    expect(result).not.toBeNull()
+    expect(result!.weight_kg).toBe(80)
+    expect(result!.phase).toBe('double_progression_overload')
+    expect(result!.confidence).toBe('high')
+  })
+
+  it('Path A — overload dû ET RIR actuel très haut (BOOST) → +2 incréments', () => {
+    // rir_actual=5 ≥ target(2)+3=5 → BOOST → +2×incrément
+    const result = recommendNextSet({
+      actual_weight_kg: 80,
+      actual_reps: 12,
+      rir_actual: 5,
+      goal: 'hypertrophy',
+      level: 'intermediate',
+      planned_reps: 10,
+      set_number: 2,
+      rep_min: 8,
+      rep_max: 12,
+      target_rir: 2,
+      weight_increment_kg: 2.5,
+      lastWeek: { weight_kg: 80, reps: 12, rir_actual: 2 },
+    })
+    expect(result).not.toBeNull()
+    expect(result!.weight_kg).toBe(85)
+    expect(result!.reps).toBe(8)
+  })
+
+  it('Path A — delta_vs_last null quand targetWeight <= prev_set_weight', () => {
+    // Client déjà à 82.5 cette session → badge "+2.5kg vs S-1" trompeur → null
+    const result = recommendNextSet({
+      actual_weight_kg: 82.5,
+      actual_reps: 10,
+      rir_actual: 2,
+      goal: 'hypertrophy',
+      level: 'intermediate',
+      planned_reps: 10,
+      set_number: 3,
+      rep_min: 8,
+      rep_max: 12,
+      target_rir: 2,
+      weight_increment_kg: 2.5,
+      lastWeek: { weight_kg: 80, reps: 12, rir_actual: 2 },
+      prev_set_weight_kg: 82.5,
+    })
+    expect(result).not.toBeNull()
+    expect(result!.weight_kg).toBe(82.5)
+    expect(result!.delta_vs_last).toBeNull()
+  })
+
   it('Path B — sous rep_min mais RIR OK → maintenir charge, viser planned_reps', () => {
     // Client fait 8 reps (sous rep_min=10) mais avec RIR 2 (pas proche de l'échec)
     // target_rir=1 → rirTooLow = rir_actual < (1-1) = rir < 0 → false

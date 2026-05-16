@@ -66,25 +66,39 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
   const effectiveRepMin = rep_min ?? 6
   const effectiveRepMax = rep_max ?? 12
 
-  // ── Path A : double progression (historique S-1 disponible + plage reps configurée) ──
-  // Utilise S-1 comme référence — pas le set courant
+  // ── Path A : double progression (historique S-1 disponible) ──
   if (lastWeek && lastWeek.weight_kg > 0 && lastWeek.reps > 0) {
     const lastAtOrAboveRepMax = lastWeek.reps >= effectiveRepMax
     const lastRirCompliant = lastWeek.rir_actual <= effectiveTargetRir + 1
 
-    // Phase overload : S-1 avait atteint rep_max avec bon effort → augmenter la charge
+    // RIR modulation sur le set courant
+    const rir_hold  = rir_actual <= effectiveTargetRir - 2  // trop difficile → veto overload
+    const rir_boost = rir_actual >= effectiveTargetRir + 3  // trop facile → double incrément
+
+    // Phase overload : S-1 avait atteint rep_max avec bon effort
     if (lastAtOrAboveRepMax && lastRirCompliant) {
-      let targetWeight = roundToIncrement(lastWeek.weight_kg + increment, increment)
-      // Ne jamais descendre sous le set précédent de cette session
+      let baseWeight: number
+      if (rir_hold) {
+        baseWeight = lastWeek.weight_kg                    // HOLD — pas d'overload
+      } else if (rir_boost) {
+        baseWeight = lastWeek.weight_kg + increment * 2   // BOOST — double incrément
+      } else {
+        baseWeight = lastWeek.weight_kg + increment        // NORMAL
+      }
+      let targetWeight = roundToIncrement(baseWeight, increment)
       if (prev_set_weight_kg !== undefined && prev_set_weight_kg > 0) {
         targetWeight = Math.max(targetWeight, prev_set_weight_kg)
       }
       const delta = roundToIncrement(targetWeight - lastWeek.weight_kg, increment)
+      // Delta null si client est déjà à ce niveau cette session
+      const delta_vs_last = (prev_set_weight_kg !== undefined && targetWeight <= prev_set_weight_kg)
+        ? null
+        : (delta !== 0 ? delta : null)
       return {
         weight_kg: targetWeight,
         reps: effectiveRepMin,
         confidence: 'high',
-        delta_vs_last: delta,
+        delta_vs_last,
         phase: 'double_progression_overload',
       }
     }
@@ -96,11 +110,14 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
     }
     const targetReps = Math.min(lastWeek.reps + 1, effectiveRepMax)
     const delta = roundToIncrement(targetWeight - lastWeek.weight_kg, increment)
+    const delta_vs_last = (prev_set_weight_kg !== undefined && targetWeight <= prev_set_weight_kg)
+      ? null
+      : (delta !== 0 ? delta : null)
     return {
       weight_kg: targetWeight,
       reps: targetReps,
       confidence: 'high',
-      delta_vs_last: delta !== 0 ? delta : null,
+      delta_vs_last,
       phase: 'double_progression_reps',
     }
   }
