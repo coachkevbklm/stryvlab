@@ -53,6 +53,7 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
   const {
     actual_weight_kg, actual_reps, rir_actual,
     goal,
+    planned_reps,
     rep_min, rep_max, target_rir,
     weight_increment_kg = 2.5,
     lastWeek, prev_set_weight_kg,
@@ -126,26 +127,32 @@ export function recommendNextSet(input: SetRecommendationInput): SetRecommendati
   let confidence: 'high' | 'low' = 'high'
 
   if (aboveZone) {
-    // Client a fait trop de reps → charge trop légère → augmenter
+    // Charge trop légère → augmenter
     targetWeight = roundToIncrement(actual_weight_kg + increment, increment)
     targetReps = effectiveRepMin
   } else if (belowZone && rirTooLow) {
-    // Client n'a pas atteint le min ET effort max → descendre légèrement
+    // Sous le min ET proche de l'échec → descendre
     targetWeight = roundToIncrement(actual_weight_kg - increment, increment)
     targetReps = effectiveRepMin
+  } else if (belowZone && !rirTooLow) {
+    // Sous le min MAIS effort OK → charge trop lourde techniquement, pas à l'effort
+    // Maintenir la charge, viser la prescription du coach
+    targetWeight = roundToIncrement(actual_weight_kg, increment)
+    targetReps = planned_reps > 0 ? planned_reps : effectiveRepMin
+    confidence = 'low'
   } else if (inZone && rirTooHigh) {
-    // Dans la zone mais trop facile → monter la charge
+    // Dans la zone mais trop facile → monter
     targetWeight = roundToIncrement(actual_weight_kg + increment, increment)
     targetReps = effectiveRepMin
   } else if (inZone && rirTooLow) {
-    // Dans la zone mais proche de l'échec → maintenir la charge
+    // Dans la zone mais proche de l'échec → maintenir
     targetWeight = roundToIncrement(actual_weight_kg, increment)
     targetReps = Math.min(actual_reps, effectiveRepMax)
   } else {
-    // Cas standard — dans la zone avec bon effort → maintenir charge et viser +1 rep
+    // Cas standard — dans la zone, bon effort → +1 rep
     targetWeight = roundToIncrement(actual_weight_kg, increment)
     targetReps = Math.min(actual_reps + 1, effectiveRepMax)
-    confidence = 'low' // pas d'historique → confiance réduite
+    confidence = 'low'
   }
 
   // Ne jamais descendre sous le set précédent de cette session

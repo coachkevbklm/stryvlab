@@ -227,4 +227,28 @@ describe('recommendNextSet', () => {
     expect(result).not.toBeNull()
     expect(result!.weight_kg).toBeGreaterThan(0)
   })
+
+  it('Path B — sous rep_min mais RIR OK → maintenir charge, viser planned_reps', () => {
+    // Client fait 8 reps (sous rep_min=10) mais avec RIR 2 (pas proche de l'échec)
+    // target_rir=1 → rirTooLow = rir_actual < (1-1) = rir < 0 → false
+    // Charge trop lourde techniquement, pas à l'effort → maintenir, viser prescription
+    const result = recommendNextSet({
+      actual_weight_kg: 50,
+      actual_reps: 8,
+      rir_actual: 2,
+      goal: 'hypertrophy',
+      level: 'intermediate',
+      planned_reps: 10,
+      set_number: 1,
+      rep_min: 10,
+      rep_max: 12,
+      target_rir: 1,
+      weight_increment_kg: 2.5,
+    })
+    expect(result).not.toBeNull()
+    expect(result!.weight_kg).toBe(50)
+    expect(result!.reps).toBe(10)
+    expect(result!.phase).toBe('intra_session')
+    expect(result!.confidence).toBe('low')
+  })
 })
