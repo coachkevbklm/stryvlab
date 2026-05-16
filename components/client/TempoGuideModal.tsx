@@ -16,57 +16,54 @@ interface TempoGuideModalProps {
   onClose: () => void    // called on manual close OR end of last rep
 }
 
-// Visual phase order: CON → PH → ECC → PB
-// This maps to DB tempo [ECC, PB, CON, PH] as visual indices [2, 3, 0, 1]
-// Intuitive: ball rises = contract, ball falls = eccentric, ball stops = pause
-const PHASE_LABELS = ['MONTÉE', 'PAUSE HAUT', 'DESCENTE', 'PAUSE BAS'] as const
+// Visual phase order: CON → ISO → ECC → PAUSE
+// CON  = concentrique (contraction, montée)
+// ISO  = isométrique (position tenue au sommet)
+// ECC  = excentrique (descente contrôlée)
+// PAUSE = pause/étirement (bas, position de départ)
+// Maps from DB tempo [ECC, PB, CON, PH] → visual [CON=2, ISO=3, ECC=0, PAUSE=1]
+const PHASE_LABELS = ['CON', 'ISO', 'ECC', 'PAUSE'] as const
 const ACCENT = '#FFB800'
-// PAUSE phases (visual indices 1 and 3) — ball stops and pulses
+// PAUSE phases (visual indices 1=ISO and 3=PAUSE) — ball stops and pulses
 const PAUSE_PHASES = new Set([1, 3])
 
 // ─── SVG Path definition ─────────────────────────────────────────────────────
-// Single arc: flat bottom → curve up → flat top → curve down → flat bottom
-//   0.00 → start PB (flat bottom-left)
-//   0.25 → PB→CON transition (bottom)
-//   0.50 → CON→PH transition (top)   ← peak
-//   0.75 → PH→ECC transition (top)
-//   1.00 → ECC→PB transition (bottom-right)
+// Single wave: flat bottom (PAUSE zone) → rise CON → flat top ISO → fall ECC → flat bottom
+// Ball starts at far-left of flat bottom = point C (start of CON rise).
+// At end of PAUSE, ball teleports back to point C for next rep.
 //
-// Visual phases (0→1):
-//   0.00–0.25 : CON — rise (bottom→top), easeOut
-//   0.25–0.50 : PH  — flat top, linear, BALL PAUSES
-//   0.50–0.75 : ECC — fall (top→bottom), easeIn
-//   0.75–1.00 : PB  — flat bottom, linear, BALL PAUSES
+// Visual phases (t 0→1):
+//   0.00–0.20 : CON  — rise bottom→top, easeOut
+//   0.20–0.55 : ISO  — flat top, linear, ball STOPS + pulses
+//   0.55–0.80 : ECC  — fall top→bottom, easeIn
+//   0.80–1.00 : PAUSE— flat bottom, linear, ball STOPS + pulses → teleport to 0.0
 //
-// viewBox 400×200. y=30 = top, y=170 = bottom.
+// viewBox 400×200. y=25 = top, y=175 = bottom.
+// Flat bottom wider on right (PAUSE zone), short on left (CON start = point C).
 const PATH_D = [
-  'M 0,170',          // start flat bottom-left (PB zone)
-  'L 60,170',         // flat bottom (PB)
-  'C 80,170 90,30 130,30',   // CON curve up (smooth bézier)
-  'L 270,30',         // flat top (PH)
-  'C 310,30 320,170 340,170', // ECC curve down (smooth bézier)
-  'L 400,170',        // flat bottom-right (PB/next rep start)
+  'M 0,175',               // point C — CON start, left edge
+  'C 20,175 35,25 80,25',  // CON rise (smooth bézier, easeOut shape)
+  'L 260,25',              // ISO flat top (wide = longer pause visible)
+  'C 305,25 320,175 340,175', // ECC fall (smooth bézier, easeIn shape)
+  'L 400,175',             // PAUSE flat bottom-right
 ].join(' ')
 
-// Normalised t-values for each VISUAL phase boundary (0→1)
-const PHASE_START = [0,    0.25, 0.50, 0.75]
-const PHASE_END   = [0.25, 0.50, 0.75, 1.00]
+// Phase boundaries on path (0→1)
+const PHASE_START = [0,    0.20, 0.55, 0.80]
+const PHASE_END   = [0.20, 0.55, 0.80, 1.00]
 
-// Easing per VISUAL phase:
-//   CON (rise)   : easeOut — fast start, decelerates at top (explosive contraction)
-//   PH  (flat)   : linear  — static pause
-//   ECC (fall)   : easeIn  — slow start under load, accelerates (gravity)
-//   PB  (flat)   : linear  — static pause
-function easeIn(t: number): number {
-  return t * t
-}
-function easeOut(t: number): number {
-  return t * (2 - t)
-}
-function linear(t: number): number {
-  return t
-}
+// Easing per visual phase:
+//   CON  : easeOut — explosive start, slows at peak
+//   ISO  : linear  — static hold
+//   ECC  : easeIn  — slow under load, accelerates with gravity
+//   PAUSE: linear  — static rest
+function easeIn(t: number): number { return t * t }
+function easeOut(t: number): number { return t * (2 - t) }
+function linear(t: number): number { return t }
 const PHASE_EASING = [easeOut, linear, easeIn, linear]
+
+// Diamond markers at CON→ISO, ISO→ECC, ECC→PAUSE transitions
+const DIAMOND_T = [0.20, 0.55, 0.80]
 
 // ─── Haptic helper ───────────────────────────────────────────────────────────
 function vibrate(pattern: number | number[]) {
@@ -153,18 +150,59 @@ function TempoGuideModalInner({
   useEffect(() => {
     if (!pathRef.current) return
     const len = pathRef.current.getTotalLength()
-    setDiamondPositions([0.25, 0.50, 0.75].map(t => pathRef.current!.getPointAtLength(t * len)))
+    setDiamondPositions(DIAMOND_T.map(t => pathRef.current!.getPointAtLength(t * len)))
   }, [])
 
-  // ── Countdown 3→2→1→null (then RAF starts) ──
+  // ── Countdown: tick every second ──
   useEffect(() => {
     if (countdown === null) return
-    if (countdown === 0) {
-      setCountdown(null)
-      return
-    }
+    if (countdown === 0) { setCountdown(null); return }
     const t = setTimeout(() => setCountdown(c => (c !== null && c > 0 ? c - 1 : null)), 1000)
     return () => clearTimeout(t)
+  }, [countdown])
+
+  // ── Countdown ball: visible on rail when countdown ≤ 3, creeps toward CON start ──
+  // Ball slides from x=leftEdge to x=CON_start (t=0.0 on path) over last 3 seconds
+  const prepRafRef = useRef<number>(0)
+  const prepStartRef = useRef<number | null>(null)
+  const PREP_CRAWL_SECS = 3 // ball appears 3s before GO
+
+  useEffect(() => {
+    if (countdown === null || countdown > PREP_CRAWL_SECS) {
+      // Ball not yet visible — hide it
+      if (ballRef.current) { ballRef.current.setAttribute('opacity', '0') }
+      if (ballGlowRef.current) { ballGlowRef.current.setAttribute('opacity', '0') }
+      cancelAnimationFrame(prepRafRef.current)
+      prepStartRef.current = null
+      return
+    }
+
+    // countdown is 1, 2 or 3 → ball crawls toward point C
+    // point C = t=0.0 on path = leftmost point
+    const crawlTick = (now: number) => {
+      if (!pathRef.current || !ballRef.current || !ballGlowRef.current) {
+        prepRafRef.current = requestAnimationFrame(crawlTick)
+        return
+      }
+      if (prepStartRef.current === null) prepStartRef.current = now
+      const remaining = (countdown / PREP_CRAWL_SECS) - ((now - prepStartRef.current) / (PREP_CRAWL_SECS * 1000))
+      // t=0 → ball at point C (left). Ball slides in from slightly left of point C.
+      // During prep, ball is at t=0.0 (origin) and glows softly.
+      const len = pathRef.current.getTotalLength()
+      const pt = pathRef.current.getPointAtLength(0) // point C
+      ballRef.current.setAttribute('cx', String(pt.x))
+      ballRef.current.setAttribute('cy', String(pt.y))
+      ballRef.current.setAttribute('opacity', '1')
+      ballRef.current.setAttribute('fill', 'white')
+      ballRef.current.setAttribute('r', String(11 + (1 - Math.max(remaining, 0)) * 3))
+      ballGlowRef.current.setAttribute('cx', String(pt.x))
+      ballGlowRef.current.setAttribute('cy', String(pt.y))
+      ballGlowRef.current.setAttribute('opacity', String(0.12 + (1 - Math.max(remaining, 0)) * 0.15))
+      prepRafRef.current = requestAnimationFrame(crawlTick)
+    }
+
+    prepRafRef.current = requestAnimationFrame(crawlTick)
+    return () => cancelAnimationFrame(prepRafRef.current)
   }, [countdown])
 
   // ── Manual close ──
@@ -306,7 +344,7 @@ function TempoGuideModalInner({
     })
 
     // Diamond pulse: scale up when ball is within 0.04 of transition point
-    const transitionPts = [0.25, 0.50, 0.75]
+    const transitionPts = DIAMOND_T
     diamondRefs.current.forEach((el, i) => {
       if (!el || !pathRef.current) return
       const dist = Math.abs(pathT - transitionPts[i])
@@ -327,9 +365,10 @@ function TempoGuideModalInner({
     return () => cancelAnimationFrame(rafRef.current)
   }, [tick, countdown])
 
-  // ── Derived label values — visual order [CON, PH, ECC, PB] ──
-  // DB parsed order: [ECC, PB, CON, PH] → visual remap: [CON=2, PH=3, ECC=0, PB=1]
+  // ── Derived label values — visual order [CON, ISO, ECC, PAUSE] ──
+  // DB parsed: [ECC, PB, CON, PH] → visual remap: [CON=2, ISO=3, ECC=0, PAUSE=1]
   const visualPhaseValues = [parsed.concentric, parsed.pauseTop, parsed.eccentric, parsed.pauseBottom]
+  const PHASE_SUBLABELS = ['Contraction', 'Maintien', 'Descente contrôlée', 'Étirement'] as const
   const phaseValue  = visualPhaseValues[currentPhase]
   const phaseIsX    = phaseValue === 'X'
   const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
@@ -368,17 +407,43 @@ function TempoGuideModalInner({
             {countdown !== null && countdown > 0 && (
               <motion.div
                 key={countdown}
-                initial={{ opacity: 0, scale: 1.6 }}
+                initial={{ opacity: 0, scale: 1.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none gap-2"
               >
                 <span
                   className="font-mono font-black tabular-nums"
-                  style={{ fontSize: 120, color: ACCENT, lineHeight: 1, textShadow: `0 0 60px rgba(255,184,0,0.5)` }}
+                  style={{ fontSize: 110, color: countdown <= 3 ? ACCENT : 'white', lineHeight: 1, textShadow: countdown <= 3 ? `0 0 60px rgba(255,184,0,0.6)` : 'none' }}
                 >
                   {countdown}
+                </span>
+                {countdown <= 3 && (
+                  <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/30">
+                    Positionnez-vous
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── GO flash ── */}
+          <AnimatePresence>
+            {countdown === 0 && (
+              <motion.div
+                key="go"
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1.1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+              >
+                <span
+                  className="font-mono font-black"
+                  style={{ fontSize: 90, color: ACCENT, textShadow: `0 0 80px rgba(255,184,0,0.8)` }}
+                >
+                  GO
                 </span>
               </motion.div>
             )}
@@ -462,7 +527,7 @@ function TempoGuideModalInner({
           </div>
 
           {/* ── Phase label + live timer ── */}
-          <div className="shrink-0 flex flex-col items-center px-6 pb-2" style={{ height: 60 }}>
+          <div className="shrink-0 flex flex-col items-center px-6 pb-2" style={{ height: 64 }}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentPhase}
@@ -470,11 +535,16 @@ function TempoGuideModalInner({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.13 }}
-                className="flex items-baseline gap-2.5"
+                className="flex flex-col items-center gap-0.5"
               >
-                <span className="font-mono text-[13px] font-bold uppercase tracking-[0.22em] text-white/80">
-                  {countdown !== null ? 'PRÊT...' : PHASE_LABELS[currentPhase]}
+                <span className="font-mono text-[15px] font-black uppercase tracking-[0.22em]" style={{ color: ACCENT }}>
+                  {countdown !== null ? 'PRÊT' : PHASE_LABELS[currentPhase]}
                 </span>
+                {countdown === null && (
+                  <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-white/30">
+                    {PHASE_SUBLABELS[currentPhase]}
+                  </span>
+                )}
               </motion.div>
             </AnimatePresence>
             {/* Live countdown timer — large, dominant */}
