@@ -15,30 +15,47 @@ interface TempoGuideModalProps {
   onClose: () => void    // called on manual close OR end of last rep
 }
 
-// Phase names in French
-const PHASE_LABELS = ['DESCENTE', 'PAUSE BAS', 'MONTÉE', 'PAUSE HAUT'] as const
+// Visual phase order: CON → PH → ECC → PB
+// This maps to DB tempo [ECC, PB, CON, PH] as visual indices [2, 3, 0, 1]
+// Intuitive: ball rises = contract, ball falls = eccentric, ball stops = pause
+const PHASE_LABELS = ['MONTÉE', 'PAUSE HAUT', 'DESCENTE', 'PAUSE BAS'] as const
 const ACCENT = '#FFB800'
+// PAUSE phases (visual indices 1 and 3) — ball stops and pulses
+const PAUSE_PHASES = new Set([1, 3])
 
 // ─── SVG Path definition ─────────────────────────────────────────────────────
-// Sinusoidal path crossing full width. 4 phases correspond to positions:
-//   0.0  → start ECC (top-left)
-//   0.25 → ECC→PB transition (bottom)
-//   0.50 → PB→CON transition (bottom)
-//   0.75 → CON→PH transition (top)
-//   1.0  → end PH (top-right) = wrap to next rep
+// Single arc: flat bottom → curve up → flat top → curve down → flat bottom
+//   0.00 → start PB (flat bottom-left)
+//   0.25 → PB→CON transition (bottom)
+//   0.50 → CON→PH transition (top)   ← peak
+//   0.75 → PH→ECC transition (top)
+//   1.00 → ECC→PB transition (bottom-right)
 //
-// Drawn in a 400×180 viewBox. Control points tuned to Technogym S-curve.
-const PATH_D = 'M 0,45 C 40,45 60,155 100,155 C 140,155 160,45 200,45 C 240,45 260,155 300,155 C 340,155 360,45 400,45'
+// Visual phases (0→1):
+//   0.00–0.25 : CON — rise (bottom→top), easeOut
+//   0.25–0.50 : PH  — flat top, linear, BALL PAUSES
+//   0.50–0.75 : ECC — fall (top→bottom), easeIn
+//   0.75–1.00 : PB  — flat bottom, linear, BALL PAUSES
+//
+// viewBox 400×200. y=30 = top, y=170 = bottom.
+const PATH_D = [
+  'M 0,170',          // start flat bottom-left (PB zone)
+  'L 60,170',         // flat bottom (PB)
+  'C 80,170 90,30 130,30',   // CON curve up (smooth bézier)
+  'L 270,30',         // flat top (PH)
+  'C 310,30 320,170 340,170', // ECC curve down (smooth bézier)
+  'L 400,170',        // flat bottom-right (PB/next rep start)
+].join(' ')
 
-// Normalised t-values for each phase boundary on the path (0→1)
-const PHASE_START = [0, 0.25, 0.50, 0.75]
+// Normalised t-values for each VISUAL phase boundary (0→1)
+const PHASE_START = [0,    0.25, 0.50, 0.75]
 const PHASE_END   = [0.25, 0.50, 0.75, 1.00]
 
-// Easing functions — tuned for biomechanical fidelity
-// ECC: easeIn  — slow start under load, accelerates (gravity + muscle lengthening)
-// PB:  linear  — static pause
-// CON: easeOut — explosive start, decelerates at top (peak contraction)
-// PH:  linear  — static pause at top
+// Easing per VISUAL phase:
+//   CON (rise)   : easeOut — fast start, decelerates at top (explosive contraction)
+//   PH  (flat)   : linear  — static pause
+//   ECC (fall)   : easeIn  — slow start under load, accelerates (gravity)
+//   PB  (flat)   : linear  — static pause
 function easeIn(t: number): number {
   return t * t
 }
@@ -48,7 +65,7 @@ function easeOut(t: number): number {
 function linear(t: number): number {
   return t
 }
-const PHASE_EASING = [easeIn, linear, easeOut, linear]
+const PHASE_EASING = [easeOut, linear, easeIn, linear]
 
 // ─── Haptic helper ───────────────────────────────────────────────────────────
 function vibrate(pattern: number | number[]) {
@@ -90,12 +107,14 @@ function TempoGuideModalInner({
   prepSeconds: number
   onClose: () => void
 }) {
-  // Phase durations in ms. "X" = 300ms (explosive flash). 0 = instant (skip).
+  // DB tempo = [ECC, PB, CON, PH]. Visual order = [CON, PH, ECC, PB].
+  // Remap to visual order so phase index 0=CON, 1=PH, 2=ECC, 3=PB.
+  const ms = (p: typeof parsed.eccentric) => p === 'X' ? 300 : (p as number) * 1000
   const phaseDurations: number[] = [
-    parsed.eccentric   === 'X' ? 300 : (parsed.eccentric   as number) * 1000,
-    parsed.pauseBottom === 'X' ? 300 : (parsed.pauseBottom as number) * 1000,
-    parsed.concentric  === 'X' ? 300 : (parsed.concentric  as number) * 1000,
-    parsed.pauseTop    === 'X' ? 300 : (parsed.pauseTop    as number) * 1000,
+    ms(parsed.concentric),   // visual 0: CON (rise)
+    ms(parsed.pauseTop),     // visual 1: PH  (flat top)
+    ms(parsed.eccentric),    // visual 2: ECC (fall)
+    ms(parsed.pauseBottom),  // visual 3: PB  (flat bottom)
   ]
   const repDuration = phaseDurations.reduce((a, b) => a + b, 0)
 
@@ -215,13 +234,14 @@ function TempoGuideModalInner({
       lastPhaseRef.current = phase
       phaseRef.current = phase
       setCurrentPhase(phase)
-      if (phase === 1) vibrate(40)       // ECC→PB
-      else if (phase === 2) vibrate(70)  // PB→CON (start of movement — stronger)
-      else if (phase === 3) vibrate(40)  // CON→PH
+      // Visual: 0=CON, 1=PH, 2=ECC, 3=PB
+      if (phase === 0) vibrate(70)  // start CON (explosive — stronger pulse)
+      else if (phase === 1) vibrate(40)  // PH pause starts
+      else if (phase === 2) vibrate(40)  // ECC starts
+      else if (phase === 3) vibrate(40)  // PB pause starts
     }
 
     // Update phase countdown timer (seconds remaining in current phase)
-    // X phase = 0.3s displayed as "X", 0s phase skipped
     const phaseMs = phaseDurations[phase]
     if (phaseMs > 0) {
       const elapsed_in_phase = tInPhase * phaseMs
@@ -235,11 +255,38 @@ function TempoGuideModalInner({
     const totalLen = pathRef.current.getTotalLength()
     const pt = pathRef.current.getPointAtLength(pathT * totalLen)
 
-    // Move ball (DOM mutation — no React state)
+    // Move ball — on pause phases, ball stays at path position but pulses
     ballRef.current.setAttribute('cx', String(pt.x))
     ballRef.current.setAttribute('cy', String(pt.y))
     ballGlowRef.current.setAttribute('cx', String(pt.x))
     ballGlowRef.current.setAttribute('cy', String(pt.y))
+
+    // Pulse animation during pause phases (visual 1=PH, 3=PB)
+    // Ball grows slightly and turns yellow as pause progresses
+    if (PAUSE_PHASES.has(phase) && phaseMs > 300) {
+      const pulseT = Math.min(tInPhase, 1)
+      const r = 13 + pulseT * 6  // grows from 13 to 19
+      const glowR = 22 + pulseT * 10
+      // Color: white → yellow (lerp via filter)
+      const yellowMix = pulseT  // 0=white, 1=full yellow
+      ballRef.current.setAttribute('r', String(r))
+      ballGlowRef.current.setAttribute('r', String(glowR))
+      ballGlowRef.current.setAttribute('opacity', String(0.18 + pulseT * 0.25))
+      // Simulate color shift: use filter brightness/saturate trick via style
+      ballRef.current.style.filter = `drop-shadow(0 0 ${14 + pulseT * 10}px rgba(255,184,0,${0.7 + pulseT * 0.3}))`
+      if (yellowMix > 0.5) {
+        ballRef.current.setAttribute('fill', ACCENT)
+      } else {
+        ballRef.current.setAttribute('fill', 'white')
+      }
+    } else {
+      // Active phase — reset to normal white ball
+      ballRef.current.setAttribute('r', '13')
+      ballGlowRef.current.setAttribute('r', '22')
+      ballGlowRef.current.setAttribute('opacity', '0.18')
+      ballRef.current.setAttribute('fill', 'white')
+      ballRef.current.style.filter = 'drop-shadow(0 0 16px rgba(255,184,0,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.8))'
+    }
 
     // Update comet trail buffer
     trailBuf.current.unshift({ x: pt.x, y: pt.y })
@@ -251,7 +298,7 @@ function TempoGuideModalInner({
       el.setAttribute('cx', String(pos.x))
       el.setAttribute('cy', String(pos.y))
       el.setAttribute('opacity', String(((TRAIL_LEN - i) / TRAIL_LEN) * 0.38))
-      el.setAttribute('r', String(Math.max(9 - i * 0.85, 1)))
+      el.setAttribute('r', String(Math.max(11 - i * 0.9, 1)))
     })
 
     // Diamond pulse: scale up when ball is within 0.04 of transition point
@@ -276,9 +323,11 @@ function TempoGuideModalInner({
     return () => cancelAnimationFrame(rafRef.current)
   }, [tick, countdown])
 
-  // ── Derived label values ──
-  const phaseValue = [parsed.eccentric, parsed.pauseBottom, parsed.concentric, parsed.pauseTop][currentPhase]
-  const phaseIsX   = phaseValue === 'X'
+  // ── Derived label values — visual order [CON, PH, ECC, PB] ──
+  // DB parsed order: [ECC, PB, CON, PH] → visual remap: [CON=2, PH=3, ECC=0, PB=1]
+  const visualPhaseValues = [parsed.concentric, parsed.pauseTop, parsed.eccentric, parsed.pauseBottom]
+  const phaseValue  = visualPhaseValues[currentPhase]
+  const phaseIsX    = phaseValue === 'X'
   const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
 
   return (
@@ -304,7 +353,7 @@ function TempoGuideModalInner({
             </div>
             <button
               onClick={handleClose}
-              className="flex h-10 w-10 items-center justify-center rounded-[2px] bg-white/[0.06] text-white/35 hover:text-white/70 hover:bg-white/[0.10] active:scale-95 transition-all"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/35 hover:text-white/70 hover:bg-white/[0.10] active:scale-95 transition-all"
             >
               <X size={16} />
             </button>
@@ -334,33 +383,33 @@ function TempoGuideModalInner({
           {/* ── SVG Circuit ── */}
           <div className="flex-1 flex items-center px-2 min-h-0">
             <svg
-              viewBox="0 0 400 200"
+              viewBox="-10 0 420 210"
               preserveAspectRatio="xMidYMid meet"
               className="w-full"
               style={{ overflow: 'visible' }}
             >
-              {/* Outer glow track — wide, very transparent */}
+              {/* Outer glow track */}
               <path
                 d={PATH_D}
                 fill="none"
                 stroke="rgba(255,184,0,0.07)"
-                strokeWidth="48"
+                strokeWidth="56"
                 strokeLinecap="round"
               />
-              {/* Base track — dark rail */}
+              {/* Base track — thicker rail for better visibility */}
               <path
                 d={PATH_D}
                 fill="none"
-                stroke="rgba(255,255,255,0.07)"
-                strokeWidth="28"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth="36"
                 strokeLinecap="round"
               />
-              {/* Inner accent line — subtle yellow tint on rail center */}
+              {/* Inner accent line */}
               <path
                 d={PATH_D}
                 fill="none"
-                stroke="rgba(255,184,0,0.12)"
-                strokeWidth="4"
+                stroke="rgba(255,184,0,0.15)"
+                strokeWidth="5"
                 strokeLinecap="round"
               />
               {/* Invisible measurement path */}
@@ -398,10 +447,10 @@ function TempoGuideModalInner({
                 opacity="0.18"
               />
 
-              {/* Ball — white with yellow glow */}
+              {/* Ball — white with yellow glow, r managed by RAF */}
               <circle
                 ref={ballRef}
-                r="11"
+                r="13"
                 fill="white"
                 style={{ filter: `drop-shadow(0 0 16px rgba(255,184,0,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.8))` }}
               />
@@ -447,7 +496,7 @@ function TempoGuideModalInner({
                 return (
                   <motion.div
                     key={i}
-                    className="flex-1 rounded-[2px]"
+                    className="flex-1 rounded-xl"
                     animate={{
                       backgroundColor: isDone || isCurrent ? ACCENT : 'rgba(255,255,255,0.10)',
                       boxShadow: isCurrent
