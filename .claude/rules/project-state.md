@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-04-28**
+**Dernière mise à jour : 2026-05-16**
 
 ---
 
@@ -19,6 +19,7 @@
 | Performance | Excellent (< 300ms API, real-time scoring) |
 | Adherence focus | ✅ 5-min client app target atteint |
 | Roadmap | Phase 2 Q3 2026 : wearables, export, IA coach |
+| Landing STRYVR | ✅ Refonte DA Technogym — `/stryvr` live |
 
 ---
 
@@ -27,10 +28,12 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo display | 2026-05-16 |
+| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo display + guide modal | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
-| **Design System v2.0** | ✅ Dark flat minimal DS-compliant | 2026-04-27 |
+| **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
+| **Design System v3.0** | ✅ DA Technogym — #F5D800 jaune, #0a0a0a fond (STRYVR native + landing) | 2026-05-16 |
+| **Landing STRYVR** | ✅ `/stryvr` — DA Technogym, waitlist Supabase, beta_waitlist table | 2026-05-16 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
@@ -39,23 +42,94 @@
 
 ## 🚀 Dernières Avancées (2026-05-16)
 
-### Tempo d'Exécution — Phase 1 (COMPLET)
+### Landing STRYVR — Refonte DA Technogym (COMPLET)
+
+**Fichiers :**
+- `app/stryvr/page.tsx` — Server Component, Urbanist via `next/font/google`, `getBetaCount()`
+- `app/stryvr/actions.ts` — Server Actions : `joinWaitlist()` + `getBetaCount()` → Supabase `beta_waitlist`
+- `app/stryvr/components/BetaLandingClient.tsx` — Landing complète
+- `app/stryvr/components/AppMockup.tsx` — Mockups `AgendaScreen` + `TrainingScreen` + `HeroPhoneStack`
+- `app/stryvr/components/BetaForm.tsx` — Formulaire prénom + email, jaune CTA
+- `supabase/migrations/20260514_beta_waitlist.sql` — Table `beta_waitlist` + RLS (anon INSERT, authenticated SELECT)
+
+**DA Technogym — tokens :**
+- Fond `#0a0a0a` noir pur, Card `#161616`, Border `rgba(255,255,255,0.08)`
+- Accent `#F5D800` jaune — CTA + marqueurs actifs seulement (usage chirurgical)
+- Typo Urbanist, uppercase, weight 800-900, `letterSpacing: '-0.04em'`
+- Grille industrielle `gap-1px` avec `backgroundColor: border` comme séparateur
+- Boutons secondaires outline blanc, CTA principal fond jaune + texte noir
+
+**Sections :**
+1. Navbar sticky — logo STRYVR + badge BÊTA + CTA desktop
+2. Hero — headline massive, geo badge, `BetaForm` + `HeroPhoneStack` (2 phones perspective)
+3. Stats bar — 3 colonnes séparées, chiffres 52px weight 900
+4. Features — grille 3 colonnes numérotées 01/02/03
+5. App Section — mockup training (sinusoïde SVG + barres jaune/gris) + tableau clé/valeur
+6. Nutrition Section — 4 couches Composer + mockup agenda
+7. Safety Layer — grille 2×2 (TCA / GLP-1 / Cycle / RED-S)
+8. CTA final — section pleine largeur jaune avec form dark intégré
+9. Footer — 4 colonnes, réseaux sociaux, note légale
+
+**Mockup TrainingScreen :**
+- Courbe sinusoïdale SVG bézier sur fond `#0f0f0f`
+- Barres verticales jaune (actives) / gris (reste) sans border-radius
+- Stats 3 colonnes : REPS jaune, CHARGE blanc, TEMPS blanc
+- Données RPE réelles (pas RIR — STRYVR utilise RPE dans les séances)
+
+**Points de vigilance :**
+- `beta_waitlist` : unique index sur `lower(email)` — dedup insensible à la casse
+- `getBetaCount()` arrondit à la dizaine inférieure (pas de "0 personnes" au lancement)
+- Urbanist chargé via `next/font/google` avec `variable` + `font-[family-name:var(--font-urbanist)]` dans le wrapper — les deux sont nécessaires
+- `HeroPhoneStack` masqué sur mobile via media query inline `@media (max-width: 768px)`
+- `three@0.170` requis (bumped depuis 0.157) — `BatchedMesh` peer dep de `three-mesh-bvh@0.7.8`
+
+**⚠️ Action manuelle requise :** appliquer `supabase/migrations/20260514_beta_waitlist.sql` via Supabase Dashboard SQL Editor si pas encore fait.
+
+---
+
+### Tempo d'Exécution — Phase 1 (COMPLET — 2026-05-16)
 
 - ✅ Migration `20260516_tempo.sql` : `tempo text` (nullable) sur `coach_program_template_exercises` + `program_exercises`, `tempo_used text` sur `client_set_logs`
 - ✅ `lib/training/tempo.ts` : `parseTempo`, `formatTempo`, `getDefaultTempo` (table pattern × objectif), `calcTUT` — 33 tests Vitest
 - ✅ Assign route : `tempo` propagé de template → `program_exercises` à l'assignation
-- ✅ Coach builder : input `tempo` dans `ExerciseCard` (placeholder "3-1-2-0"), persisté via `ExerciseData` interface + template API
-- ✅ Template API PATCH + POST (duplicate) : `tempo` inclus dans `exRow` + bloc copie
-- ✅ Template API SELECT : `tempo` inclus dans la query de chargement
-- ✅ SessionLogger : badge tempo sous le nom exercice — `auto` (bg gris) si calculé, `coach` (bg vert) si configuré manuellement
-- ✅ Sets API `PATCH /api/session-logs/[logId]/sets` : `tempo_used` dans Zod schema + upsert rows
+- ✅ Coach builder : input `tempo` dans `ExerciseCard` (placeholder "3-1-2-0")
+- ✅ Template API PATCH + POST (duplicate) + SELECT : `tempo` inclus
+- ✅ SessionLogger : badge tempo — `auto` (bg gris) si calculé, `coach` (bg vert) si configuré
+- ✅ Sets API : `tempo_used` dans Zod schema + upsert rows
+- ✅ `TempoGuideModal` : guide visuel plein écran — SVG sinusoïdal bézier, balle + trail comète, losanges aux transitions, barres reps animées, haptique — bouton ▶ par set dans SessionLogger
 
 **Invariants :**
-- `tempo null` en DB → `getDefaultTempo(movement_pattern, goal)` calculé au render-time, jamais persisté
-- `buildInitialSets(exercises, goal)` : `tempo_used` déterminé une fois à l'initialisation
+- `tempo null` → `getDefaultTempo(movement_pattern, goal)` calculé au render-time, jamais persisté
 - Non-bloquant : tempo absent ne bloque jamais une séance
 
-**⚠️ Action manuelle requise :** appliquer `supabase/migrations/20260516_tempo.sql` via Supabase Dashboard SQL Editor (3 ALTER TABLE).
+**⚠️ Action manuelle requise :** appliquer `supabase/migrations/20260516_tempo.sql` via Supabase Dashboard.
+
+---
+
+### BodyMap — Consolidation Muscles (COMPLET — 2026-05-16)
+
+- ✅ `LEGACY_TO_CANONICAL` : 40+ slugs catalog ajoutés (fessiers, gluteus_*, gastrocnemius, mollets, spine_erectors, etc.)
+- ✅ `tryNormalizeMuscle` : tirets → underscores (ischio-jambiers → ischio_jambiers)
+- ✅ Enrichissement catalog côté serveur dans `programme/page.tsx` — `getSecondaryMusclesFromCatalog()` ajouté à `catalog-utils`
+- ✅ BodyMap pré-séance : fallback sur `primary_muscle` singulier si `primary_muscles[]` vide
+- ✅ Recap : `computeMuscleIntensity` normalise les slugs via `LEGACY_TO_CANONICAL` avant lookup
+
+---
+
+### Recommandation Sets — 3 Corrections (COMPLET — 2026-05-15)
+
+- ✅ `inferWeightIncrement` : câble/poulie 5kg→1kg, machine stack 2.5kg
+- ✅ `allSetsRirCompliant` : RIR null ignoré (ne bloque plus la progression si client oublie RIR)
+- ✅ `roundToIncrement` : floating point corrigé (`32.199999…` → `32.2` via `toFixed(10)`)
+
+---
+
+### SessionLogger — Refonte recommandation + bugs (COMPLET — 2026-05-15)
+
+- ✅ Suppression ↩ Xkg × N redondant dans colonne PRÉVU
+- ✅ `getLastPerfLabel` / `getExLastPerfLabel` : match par `set_number` exact
+- ✅ `setRecommendation` : refonte Path B (suppression 1RM live instable, règles directes zone/RIR)
+- ✅ Import mort `getTrainingZone` supprimé
 
 ---
 
@@ -63,48 +137,22 @@
 
 ### SessionLogger — 5 Bugs Critiques Corrigés (COMPLET)
 
-**Bugs résolus :**
-
-1. **`parseSetForApi()`** (`SessionLogger.tsx`) — Fix bug `|| null` : `parseFloat("0") → 0 → falsy → null`. Les valeurs 0 sont maintenant correctement persistées.
-2. **Home page** (`app/client/page.tsx`) — Fetch `client_session_logs` complétés du jour pour masquer le CTA séance si déjà faite. Affichage "Séance réalisée ✓" avec option "Refaire".
-3. **muscleDetection.ts** — `CATALOG_SLUG_MAP` étendu aux slugs FR anatomiques : `trapeze_superieur`, `grand_dorsal`, `trapezes`, `lombaires`, `deltoide_*`, `ischio_jambiers`, etc. Les muscles stockés par l'intelligence engine (FR anatomique) sont maintenant détectés.
-4. **Rest timer** (`scheduleModalOpen`) — Délai 3s → 8s, modal bloqué pendant saisie active (`activeInputRef`). Si input focusé, replanifie dans 5s.
-5. **Superset UX** — Navigation par groupe (superset ou solo). Exercices d'un même `group_id` affichés en cartes empilées verticalement. Repos déclenché uniquement après le dernier exercice du groupe. Label "Superset · N exercices" + séparateur coloré.
-
-**Points de vigilance :**
-- `activeInputRef` est un `useRef` (pas state) pour éviter les re-renders lors de la saisie
-- Le repos de superset passe `restSecForToggle = null` pour les exercices non-finaux → pas de timer intermédiaire
-- `exerciseGroups` est recalculé à chaque render (stable, exercices ne changent pas)
-- Les dots de navigation représentent maintenant des groupes, pas des exercices individuels
-- `currentExIndex` est dérivé de `exerciseGroups[currentGroupIndex][0]` — rétrocompatibilité avec les getters lastPerf
+1. **`parseSetForApi()`** — Fix `parseFloat("0") → null` : valeurs 0 correctement persistées
+2. **Home page** — Fetch séances complétées du jour, masque CTA si déjà faite
+3. **muscleDetection.ts** — `CATALOG_SLUG_MAP` étendu aux slugs FR anatomiques
+4. **Rest timer** — Délai 3s→8s, modal bloqué pendant saisie active
+5. **Superset UX** — Navigation par groupe, repos après dernier exercice du groupe
 
 ### MorphoPro — Refonte Complète Phase 1 (COMPLET)
-- ✅ `morpho_photos` + `morpho_annotations` tables + RLS (migrations `20260428_morpho_photos_annotations.sql` + `20260428_morpho_analyses_extend.sql`)
-- ✅ Prompt GPT-4o structuré (`response_format: json_object`) — analyse posturale + asymétries + flags + recommandations + score 0–100
-- ✅ Analyse synchrone (plus Inngest) — résultat immédiat avec `maxDuration = 60` sur la route `/api/morpho/analyze`
-- ✅ Galerie avec filtres position/source, sélection multi, barre flottante (Comparer/Annoter/Analyser)
-- ✅ Upload coach direct (bucket `morpho-photos`) + auto-sync photos des bilans
-- ✅ Canvas Fabric.js v6 : 7 outils (select/ligne/crayon/rect/cercle/texte/gomme), undo/redo, zoom, save thumbnail, export PNG
-- ✅ Panel résultats : score 0–100, flags zones, attention_points, recommandations, asymétries cm, stimulus chips, évolution chart
-- ✅ Comparaison multi-photos : layouts 1×2 / 2×2 / 1+3, overlay opacité
-- ✅ `stimulus_adjustments` conservés → scoring programme inchangé
-- ⚠️ Actions manuelles requises : appliquer les 2 migrations SQL via Supabase Dashboard + créer bucket `morpho-photos` dans Supabase Storage
+- ✅ Tables `morpho_photos` + `morpho_annotations` + RLS
+- ✅ Prompt GPT-4o structuré — score 0-100, flags, asymétries, recommandations
+- ✅ Galerie + filtres + Canvas Fabric.js v6 (7 outils)
+- ✅ Comparaison multi-photos (layouts 1×2 / 2×2 / 1+3)
+- ⚠️ Actions manuelles : 2 migrations SQL + bucket `morpho-photos` Supabase Storage
 
-### Client Onboarding — 5-Screen Tour + Guided Tooltip (COMPLET)
-- ✅ `/app/client/onboarding/page.tsx` : flow complet (exchange → password → 5 écrans welcome)
-- ✅ 5 écrans swipables : bienvenue personnalisé (prénom), programme, séance en temps réel, progression/nutrition, hub dashboard
-- ✅ Prénom récupéré depuis `user.user_metadata.first_name` après session établie
-- ✅ `components/client/OnboardingTour.tsx` : tooltip tour guidé, 5 étapes, non-skippable
-- ✅ Tour déclenché au premier load `/client` via `localStorage('onboarding_tour_done')`
-- ✅ Tour intégré dans `ConditionalClientShell` — disponible sur toutes les pages authentifiées
-- ✅ Placeholder conditionnel prévu pour la feature Daily Check-ins (Phase 2)
-- ✅ Spec Daily Check-ins documentée : `docs/superpowers/specs/2026-04-27-daily-checkins-spec.md`
-
-### Nutrition Studio — 11-Task UX Refactor (COMPLET)
-- ✅ Tasks 1-10 : info modals, carb cycling toggle, action buttons TopBar
-- ✅ Task 10 : TopBar buttons (Eye, Save, Send icons), loading states
-- ✅ Résultat : Col 3 ~120px moins scrolling, UX plus claire
-- ✅ Tous les commits atomiques, zero TypeScript errors
+### Client Onboarding — 5-Screen Tour (COMPLET)
+- ✅ Flow complet : exchange → password → 5 écrans welcome → dashboard
+- ✅ `OnboardingTour.tsx` : 5 étapes, non-skippable, localStorage gate
 
 ---
 
@@ -112,20 +160,22 @@
 
 | Problème | Impact | Mitigation |
 |----------|--------|-----------|
+| `beta_waitlist` non appliquée | Waitlist non fonctionnelle | Appliquer `20260514_beta_waitlist.sql` via Supabase Dashboard |
+| `tempo` migration non appliquée | Tempo non persisté | Appliquer `20260516_tempo.sql` via Supabase Dashboard |
 | Supabase Redirect URLs | Onboarding brisé si pas whitelisted | Ajouter `/client/onboarding` manuellement |
-| Client pool auth | Race conditions rares | Session établie AVANT form render |
+| `three@0.170` requis | Build error si downgrade | Ne pas downgrader — `three-mesh-bvh` peer dep |
 | Data validation 85 anomalies | Calcul macros | Clamping 15–240 en place |
 
 ---
 
 ## 📅 Next Steps — Phase 2 (Immédiat)
 
+- [ ] Appliquer migrations manuelles : `20260514_beta_waitlist.sql` + `20260516_tempo.sql`
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard → tooltip tour complet
 - [ ] Daily Check-ins Phase 2 : DB schema, coach config UI, client time picker, Inngest cron, Web Push
 - [ ] Système de points gamification (check-ins, séances, bilans)
 - [ ] Mobile : TopBar buttons responsive, SessionLogger < 480px
-- [ ] Monitoring : dropoff rates onboarding par step
-- [ ] Optional : profil rapide ou sélection programme dans onboarding
+- [ ] Monitoring : dropoff rates landing `/stryvr` + onboarding par step
 - [ ] Wearables : Apple Health, Oura (Phase 2, ~6 weeks)
 - [ ] Export : PDF/CSV/JSON programme (Phase 2, ~4 weeks)
 - [ ] IA Coach : bulk protocol generation (Phase 2, ~8 weeks)
@@ -136,15 +186,20 @@
 
 **Database** : Supabase PostgreSQL + Prisma
 - RLS multi-tenant, migrations via Prisma, seeds idempotent
+- Table `beta_waitlist` : capture email bêta STRYVR native (unique index `lower(email)`)
 
 **Async Jobs** : Inngest
-- morpho/analyze.requested (OpenAI Vision, retry x3, timeout 5min)
+- `morpho/analyze.requested` (OpenAI Vision, retry x3, timeout 5min)
 
 **Real-time Intelligence** : Program builder
 - 6 subscores, morpho stimulus adjustments, client profile integration
 
-**Design System** : DS v2.0 (Dark flat minimal)
-- Background #121212, cards bg-white/[0.02], accent #1f8a65, borders 0.3px white/[0.06]
+**Design System** :
+- DS v2.0 (coach web) : `#121212` fond, `#1f8a65` accent vert
+- DS v3.0 (STRYVR native + landing) : `#0a0a0a` fond, `#F5D800` accent jaune, Urbanist, uppercase
+
+**Landing STRYVR** : `/stryvr` (Next.js route dans STRYVLAB)
+- DA Technogym : grille industrielle, tokens jaune/noir, mockup dark
 
 ---
 
@@ -175,9 +230,10 @@
 1. **Data Model First** — schéma avant UI
 2. **Zero TypeScript Errors** — `npx tsc --noEmit` obligatoire
 3. **CHANGELOG After Every Change** — MANDATORY
-4. **DS v2.0 Strict** — `#121212` unique, jamais `#181818` en bg
-5. **RLS + Ownership Checks** — API routes securisées
-6. **Inngest Only** — zéro `setImmediate`, tous jobs async via Inngest
+4. **DS v2.0 Strict (coach web)** — `#121212` bg, `#1f8a65` accent
+5. **DS v3.0 Strict (STRYVR native/landing)** — `#0a0a0a` bg, `#F5D800` accent, uppercase Urbanist
+6. **RLS + Ownership Checks** — API routes securisées
+7. **Inngest Only** — zéro `setImmediate`, tous jobs async via Inngest
 
 ---
 

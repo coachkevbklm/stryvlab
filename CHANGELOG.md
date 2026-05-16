@@ -5,6 +5,8 @@
 
 ## 2026-05-16
 
+REFACTOR: Landing STRYVR — refonte complète DA Technogym (#F5D800 jaune, #0a0a0a fond, grille industrielle gap-1px, typo uppercase 900, mockup training sinusoïde+barres, CTA pleine largeur jaune, footer 4 colonnes)
+FIX: deps — bump three 0.157→0.170 (BatchedMesh manquant, peer dep three-mesh-bvh@0.7.8 requiert three@^0.166)
 FEATURE: Tempo Guide Modal — guide visuel plein écran style Technogym (SVG sinusoïdal bézier, balle blanche + trail comète, losanges #FFB800 aux transitions, barres reps animées, haptique) — bouton ▶ par set dans SessionLogger
 FEATURE: Système tempo d'exécution — coach configure par exercice ("3-1-2-0"), badge auto-calculé par pattern/objectif dans SessionLogger, tempo_used persisté dans les set_logs
 SCHEMA: Add tempo (nullable) to coach_program_template_exercises + program_exercises; tempo_used to client_set_logs
