@@ -6,13 +6,14 @@ import Image from 'next/image'
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Circle,
   Loader2, AlertCircle, RefreshCw, TrendingUp,
-  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight
+  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight, Play
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
 import ClientAlternativesSheet from '@/components/client/ClientAlternativesSheet'
 import { recommendNextSet, type SetRecommendation } from '@/lib/training/setRecommendation'
-import { getDefaultTempo } from '@/lib/training/tempo'
+import { getDefaultTempo, parseTempo } from '@/lib/training/tempo'
+import TempoGuideModal from '@/components/client/TempoGuideModal'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -149,6 +150,13 @@ function recKey(exerciseId: string, setNumber: number, side: string): string {
   return `${exerciseId}_set${setNumber}_${side}`
 }
 
+function resolveReps(ex: Exercise): number {
+  const n = parseInt(ex.reps, 10)
+  if (!isNaN(n) && String(n) === ex.reps.trim()) return n
+  if (ex.rep_min !== null && ex.rep_min > 0) return ex.rep_min
+  return 8
+}
+
 function DeltaBadge({ rec }: { rec: SetRecommendation }) {
   if (rec.delta_vs_last === null) return null
   const isLowConfidence = rec.confidence === 'low'
@@ -182,6 +190,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [swappedNames, setSwappedNames] = useState<Record<string, string>>({})
   const [altSheetTarget, setAltSheetTarget] = useState<number | null>(null)
+  const [tempoGuideTarget, setTempoGuideTarget] = useState<{
+    tempo: string
+    reps: number
+    exerciseName: string
+  } | null>(null)
   const [recommendations, setRecommendations] = useState<Record<string, SetRecommendation>>({})
   const [manuallyEdited, setManuallyEdited] = useState<Set<string>>(new Set())
 
@@ -997,7 +1010,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                     return (
                       <div key={`${s.set_number}-${s.side}`}>
                         {ex.is_unilateral && isFirstOfSet && idx > 0 && <div className="h-px bg-white/[0.04] mx-5" />}
-                        <div className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#1f8a65]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}>
+                        <div className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#1f8a65]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 0.8fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 0.8fr 1fr' }}>
                           <div className="text-[12px] font-mono font-bold text-white/30">{(!ex.is_unilateral || s.side === 'left') ? s.set_number : ''}</div>
                           {ex.is_unilateral && <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
                           {(() => {
@@ -1032,6 +1045,26 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                             onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
                             placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
                             className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors" />
+                          {/* Tempo guide trigger */}
+                          {(() => {
+                            const resolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
+                            const repCount = resolveReps(ex)
+                            const canGuide = parseTempo(resolvedTempo) !== null && repCount > 0 && !s.completed
+                            if (!canGuide) return <div />
+                            return (
+                              <button
+                                onClick={() => setTempoGuideTarget({
+                                  tempo: resolvedTempo,
+                                  reps: repCount,
+                                  exerciseName: swappedNames[ex.id] ?? ex.name,
+                                })}
+                                title="Guide tempo"
+                                className="flex justify-center items-center h-10 w-10 rounded-xl bg-white/[0.04] text-white/30 hover:text-[#FFB800] hover:bg-[#FFB800]/[0.08] active:scale-95 transition-all"
+                              >
+                                <Play size={11} fill="currentColor" />
+                              </button>
+                            )
+                          })()}
                           <button onClick={() => toggleSet(ex.id, s.set_number, s.side, ex.rest_sec)} title="Valider" className={`flex justify-center items-center h-10 w-10 rounded-xl transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#1f8a65]/20 shadow-[0_0_12px_rgba(31,138,101,0.3)]' : 'hover:bg-white/[0.06]'}`}>
                             {s.completed ? <CheckCircle2 size={22} className="text-[#1f8a65]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
                           </button>
@@ -1265,6 +1298,16 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           onClose={() => setAltSheetTarget(null)}
         />
       ) : null}
+
+      {/* ── Tempo Guide Modal ── */}
+      {tempoGuideTarget && (
+        <TempoGuideModal
+          tempo={tempoGuideTarget.tempo}
+          reps={tempoGuideTarget.reps}
+          exerciseName={tempoGuideTarget.exerciseName}
+          onClose={() => setTempoGuideTarget(null)}
+        />
+      )}
 
       {/* ── Bouton Terminer (fixe) ── */}
       <div className="fixed bottom-6 left-0 right-0 px-5 z-40">
