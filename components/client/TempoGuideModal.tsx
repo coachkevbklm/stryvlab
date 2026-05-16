@@ -33,14 +33,21 @@ const PATH_D = 'M 0,45 C 40,45 60,155 100,155 C 140,155 160,45 200,45 C 240,45 2
 const PHASE_START = [0, 0.25, 0.50, 0.75]
 const PHASE_END   = [0.25, 0.50, 0.75, 1.00]
 
-// Easing functions
-function easeInOut(t: number): number {
-  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+// Easing functions — tuned for biomechanical fidelity
+// ECC: easeIn  — slow start under load, accelerates (gravity + muscle lengthening)
+// PB:  linear  — static pause
+// CON: easeOut — explosive start, decelerates at top (peak contraction)
+// PH:  linear  — static pause at top
+function easeIn(t: number): number {
+  return t * t
+}
+function easeOut(t: number): number {
+  return t * (2 - t)
 }
 function linear(t: number): number {
   return t
 }
-const PHASE_EASING = [easeInOut, linear, easeInOut, linear]
+const PHASE_EASING = [easeIn, linear, easeOut, linear]
 
 // ─── Haptic helper ───────────────────────────────────────────────────────────
 function vibrate(pattern: number | number[]) {
@@ -94,6 +101,10 @@ function TempoGuideModalInner({
   const [currentRep, setCurrentRep]     = useState(0)
   const [done, setDone]                 = useState(false)
   const [closing, setClosing]           = useState(false)
+  // Countdown 3→2→1→GO before RAF starts
+  const [countdown, setCountdown]       = useState<number | null>(3)
+  // Remaining seconds in current phase (displayed as timer)
+  const [phaseTimer, setPhaseTimer]     = useState<number>(0)
 
   // SVG DOM refs — mutated directly in RAF loop
   const pathRef      = useRef<SVGPathElement>(null)
@@ -118,6 +129,17 @@ function TempoGuideModalInner({
     const len = pathRef.current.getTotalLength()
     setDiamondPositions([0.25, 0.50, 0.75].map(t => pathRef.current!.getPointAtLength(t * len)))
   }, [])
+
+  // ── Countdown 3→2→1→null (then RAF starts) ──
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown === 0) {
+      setCountdown(null)
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => (c !== null && c > 0 ? c - 1 : null)), 1000)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   // ── Manual close ──
   const handleClose = useCallback(() => {
@@ -195,6 +217,15 @@ function TempoGuideModalInner({
       else if (phase === 3) vibrate(40)  // CON→PH
     }
 
+    // Update phase countdown timer (seconds remaining in current phase)
+    // X phase = 0.3s displayed as "X", 0s phase skipped
+    const phaseMs = phaseDurations[phase]
+    if (phaseMs > 0) {
+      const elapsed_in_phase = tInPhase * phaseMs
+      const remaining = Math.ceil((phaseMs - elapsed_in_phase) / 1000)
+      setPhaseTimer(Math.max(remaining, 0))
+    }
+
     // Compute position on path with easing
     const easedT = PHASE_EASING[phase](Math.min(Math.max(tInPhase, 0), 1))
     const pathT  = PHASE_START[phase] + easedT * (PHASE_END[phase] - PHASE_START[phase])
@@ -235,14 +266,17 @@ function TempoGuideModalInner({
     rafRef.current = requestAnimationFrame(tick)
   }, [reps, repDuration, phaseDurations])
 
+  // Only start RAF after countdown completes
   useEffect(() => {
+    if (countdown !== null) return
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [tick])
+  }, [tick, countdown])
 
   // ── Derived label values ──
   const phaseValue = [parsed.eccentric, parsed.pauseBottom, parsed.concentric, parsed.pauseTop][currentPhase]
-  const phaseLabel = phaseValue === 'X' ? 'X' : `${phaseValue}s`
+  const phaseIsX   = phaseValue === 'X'
+  const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
 
   return (
     <AnimatePresence onExitComplete={onClose}>
@@ -272,6 +306,27 @@ function TempoGuideModalInner({
               <X size={16} />
             </button>
           </div>
+
+          {/* ── Countdown overlay ── */}
+          <AnimatePresence>
+            {countdown !== null && countdown > 0 && (
+              <motion.div
+                key={countdown}
+                initial={{ opacity: 0, scale: 1.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+              >
+                <span
+                  className="font-mono font-black tabular-nums"
+                  style={{ fontSize: 120, color: ACCENT, lineHeight: 1, textShadow: `0 0 60px rgba(255,184,0,0.5)` }}
+                >
+                  {countdown}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── SVG Circuit ── */}
           <div className="flex-1 flex items-center px-2 min-h-0">
@@ -350,8 +405,8 @@ function TempoGuideModalInner({
             </svg>
           </div>
 
-          {/* ── Phase label ── */}
-          <div className="shrink-0 flex justify-center items-center px-6 pb-3" style={{ height: 48 }}>
+          {/* ── Phase label + live timer ── */}
+          <div className="shrink-0 flex flex-col items-center px-6 pb-2" style={{ height: 60 }}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentPhase}
@@ -361,17 +416,23 @@ function TempoGuideModalInner({
                 transition={{ duration: 0.13 }}
                 className="flex items-baseline gap-2.5"
               >
-                <span className="font-mono text-[14px] font-bold uppercase tracking-[0.22em] text-white">
-                  {PHASE_LABELS[currentPhase]}
-                </span>
-                <span
-                  className="font-mono text-[13px] font-bold tabular-nums"
-                  style={{ color: ACCENT }}
-                >
-                  {phaseLabel}
+                <span className="font-mono text-[13px] font-bold uppercase tracking-[0.22em] text-white/80">
+                  {countdown !== null ? 'PRÊT...' : PHASE_LABELS[currentPhase]}
                 </span>
               </motion.div>
             </AnimatePresence>
+            {/* Live countdown timer — large, dominant */}
+            {countdown === null && phaseTotalS > 0 && (
+              <motion.span
+                key={`timer-${currentPhase}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-mono font-black tabular-nums leading-none mt-0.5"
+                style={{ fontSize: 34, color: ACCENT }}
+              >
+                {phaseIsX ? 'X' : `${phaseTimer}s`}
+              </motion.span>
+            )}
           </div>
 
           {/* ── Rep bars (Technogym style) ── */}
