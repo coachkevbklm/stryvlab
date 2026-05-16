@@ -5,6 +5,7 @@
 
 ## 2026-05-16
 
+FEATURE: Tempo Guide Modal — guide visuel plein écran style Technogym (SVG sinusoïdal bézier, balle blanche + trail comète, losanges #FFB800 aux transitions, barres reps animées, haptique) — bouton ▶ par set dans SessionLogger
 FEATURE: Système tempo d'exécution — coach configure par exercice ("3-1-2-0"), badge auto-calculé par pattern/objectif dans SessionLogger, tempo_used persisté dans les set_logs
 SCHEMA: Add tempo (nullable) to coach_program_template_exercises + program_exercises; tempo_used to client_set_logs
 FIX: BodyMap — enrichissement catalog côté serveur dans programme/page.tsx (primary_muscle + secondary_muscles lookupés depuis catalog-utils si absents ou génériques en DB)
