@@ -135,6 +135,12 @@ function formatTime(sec: number) {
   return sec < 0 ? `-${m}:${s}` : `${m}:${s}`
 }
 
+function formatWeight(kg: number): string {
+  // Locale-independent: always '.' as decimal, strips trailing zeros/dot
+  // 47.50 → "47.5" | 47.00 → "47" | 47.5 → "47.5"
+  return parseFloat(kg.toFixed(2)).toString()
+}
+
 function sideLabel(side: 'left' | 'right' | 'bilateral') {
   if (side === 'left') return 'G'
   if (side === 'right') return 'D'
@@ -326,7 +332,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     setRecommendations(prev => ({ ...prev, [nextKey]: rec }))
     setSets(prev => prev.map(s => {
       if (s.exercise_id === exercise_id && s.set_number === nextSet.set_number && s.side === side) {
-        return { ...s, actual_weight_kg: String(rec.weight_kg), actual_reps: String(rec.reps) }
+        return { ...s, actual_weight_kg: formatWeight(rec.weight_kg), actual_reps: String(rec.reps) }
       }
       return s
     }))
@@ -811,62 +817,89 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       )}
 
       {/* ── Modal repos ── */}
-      {restModalOpen && restStartedAt !== null && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-[#161616] border border-white/[0.06] rounded-lg p-8 w-full max-w-xs text-center">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
-                {isOvertime ? 'Temps dépassé' : 'Temps de repos'}
-              </p>
-              <button
-                onClick={() => setRestModalOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] text-white/30 hover:bg-white/[0.07] hover:text-white/60 transition-colors"
-              >
-                <X size={13} />
-              </button>
-            </div>
+      {restModalOpen && restStartedAt !== null && (() => {
+        const nextEx = pendingRestSet ? exercises.find(e => e.id === pendingRestSet.exId) : null
+        const nextSetNum = pendingRestSet?.setNum ?? null
+        const progressPct = restPrescribed !== null ? Math.min(restElapsed / restPrescribed, 1) : 0
+        const timeDisplay = restPrescribed !== null ? formatTime(restPrescribed - restElapsed) : formatTime(restElapsed)
+        const accentColor = isOvertime ? (restElapsed > (restPrescribed ?? 0) + 30 ? '#ef4444' : '#f97316') : '#ffe01e'
 
-            {/* Jauge circulaire */}
-            <div className="relative flex items-center justify-center mb-6">
-              <svg className="w-48 h-48 -rotate-90" viewBox="0 0 100 100">
-                {/* Track */}
-                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-                {/* Progress */}
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 gap-6">
+
+            {/* Label */}
+            <p className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.22em] ${isOvertime ? 'text-red-400/70' : 'text-white/30'}`}>
+              {isOvertime ? 'Temps dépassé' : 'Temps de repos'}
+            </p>
+
+            {/* Timer central — jauge circulaire */}
+            <div className="relative flex items-center justify-center">
+              <svg className="w-52 h-52 -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
                 {restPrescribed !== null && (
                   <circle
-                    cx="50" cy="50" r="40"
+                    cx="50" cy="50" r="42"
                     fill="none"
-                    stroke={isOvertime ? (restElapsed > (restPrescribed + 30) ? '#ef4444' : '#f97316') : '#ffe01e'}
-                    strokeWidth="5"
+                    stroke={accentColor}
+                    strokeWidth="3"
                     strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 40}`}
-                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - Math.min(restElapsed / restPrescribed, 1))}`}
+                    strokeDasharray={`${2 * Math.PI * 42}`}
+                    strokeDashoffset={`${2 * Math.PI * 42 * (1 - progressPct)}`}
                     className="transition-all duration-1000"
                   />
                 )}
               </svg>
               <div className="absolute text-center">
-                <p className={`text-[2.4rem] font-black font-mono leading-none tracking-tight ${isOvertime ? 'text-red-400' : 'text-white'}`}>
-                  {restPrescribed !== null
-                    ? formatTime(restPrescribed - restElapsed)
-                    : formatTime(restElapsed)
-                  }
+                <p className={`text-[3rem] font-barlow-condensed font-black leading-none tabular-nums ${isOvertime ? 'text-red-400' : 'text-white'}`}>
+                  {timeDisplay}
                 </p>
                 {isOvertime && (
-                  <p className="text-[10px] font-bold text-red-400/70 mt-1 uppercase tracking-wider">Overtime</p>
+                  <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-widest text-red-400/60 mt-1">Overtime</p>
                 )}
               </div>
             </div>
 
+            {/* Boutons +/- temps */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setRestPrescribed(p => p !== null ? Math.max(10, p - 30) : p)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:bg-white/[0.10] hover:text-white/80 transition-colors text-[18px] font-bold"
+              >−</button>
+              <span className="text-[10px] font-barlow-condensed uppercase tracking-wider text-white/25 w-10 text-center">30s</span>
+              <button
+                onClick={() => setRestPrescribed(p => p !== null ? p + 30 : p)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:bg-white/[0.10] hover:text-white/80 transition-colors text-[18px] font-bold"
+              >+</button>
+            </div>
+
+            {/* Prochaine série */}
+            {nextEx && (
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-3 w-full max-w-xs text-center">
+                <p className="text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.20em] text-white/25 mb-1">Série suivante</p>
+                <p className="text-[13px] font-semibold text-white/80 truncate">{swappedNames[nextEx.id] ?? nextEx.name}</p>
+                {nextSetNum !== null && (
+                  <p className="text-[11px] text-white/35 mt-0.5">
+                    Série <span className="font-bold text-white/55">{nextSetNum}</span> · <span className="font-barlow-condensed font-bold text-[#ffe01e]/70">{nextEx.sets} × {nextEx.reps}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Passer */}
             <button
               onClick={() => setRestModalOpen(false)}
-              className="w-full py-3 rounded-lg bg-white/[0.04] text-[13px] font-bold text-white/60 hover:bg-white/[0.07] hover:text-white/90 transition-colors"
+              className="w-full max-w-xs py-3.5 rounded-xl bg-white/[0.04] text-[12px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/40 hover:bg-white/[0.07] hover:text-white/70 transition-colors"
             >
               {t('logger.rest.skip')}
             </button>
+
+            {/* Fermer discret */}
+            <button onClick={() => setRestModalOpen(false)} className="absolute top-6 right-6 flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] text-white/25 hover:text-white/50 transition-colors">
+              <X size={14} />
+            </button>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ── Modal confirmation Terminer ── */}
       {showFinishConfirm && (
@@ -1025,8 +1058,15 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   {ex.notes && <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>}
                 </div>
                 <div className="border-t border-white/[0.05]">
-                  <div className="grid items-center px-5 py-2 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.6fr 1.6fr 1.6fr 1.2fr 0.7fr 0.7fr' : '0.5fr 1.6fr 1.6fr 1.6fr 1.2fr 0.7fr 0.7fr' }}>
-                    <div>#</div>{ex.is_unilateral && <div>{t('logger.set')}</div>}<div>{t('logger.target.label')}</div><div>{t('logger.actual.label')}</div><div>Kg</div><div>{t('logger.rir.label')}</div><div className="flex justify-center"><Play size={8} fill="currentColor" className="text-[#FFB800]/60" /></div><div className="text-center">✓</div>
+                  {/* COLS: #+prévu | RÉALISÉ | KG | RIR | ▶ | ✓ */}
+                  <div className="grid items-center gap-3 px-5 py-2 text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/20" style={{ gridTemplateColumns: ex.is_unilateral ? '1.2fr 0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1.2fr 1fr 1fr 1fr 0.55fr 0.55fr' }}>
+                    <div className="truncate">#</div>
+                    {ex.is_unilateral && <div className="text-center truncate">G/D</div>}
+                    <div className="text-center truncate">REP</div>
+                    <div className="text-center truncate">KG</div>
+                    <div className="text-center truncate">RIR</div>
+                    <div className="flex justify-center"><Play size={7} fill="currentColor" className="text-[#FFB800]/50" /></div>
+                    <div className="text-center">✓</div>
                   </div>
                   {exSetsForEx.map((s, idx) => {
                     const lastP = getExLastPerfLabel(s.set_number, s.side)
@@ -1034,23 +1074,26 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                     return (
                       <div key={`${s.set_number}-${s.side}`}>
                         {ex.is_unilateral && isFirstOfSet && idx > 0 && <div className="h-px bg-white/[0.04] mx-5" />}
-                        <div className={`grid items-center gap-2 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.6fr 1.6fr 1.6fr 1.2fr 0.7fr 0.7fr' : '0.5fr 1.6fr 1.6fr 1.6fr 1.2fr 0.7fr 0.7fr' }}>
-                          <div className="flex items-center gap-1">
-                            {s.completed && (!ex.is_unilateral || s.side === 'left') && <CheckCircle2 size={10} className="text-[#ffe01e]/50 shrink-0" />}
-                            <span className={`text-[12px] font-mono font-bold ${s.completed ? 'text-[#ffe01e]/40' : 'text-white/30'}`}>{(!ex.is_unilateral || s.side === 'left') ? s.set_number : ''}</span>
+                        <div className={`grid items-center gap-3 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1.2fr 0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1.2fr 1fr 1fr 1fr 0.55fr 0.55fr' }}>
+                          {/* Col 1 : # + prévu */}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {s.completed && (!ex.is_unilateral || s.side === 'left') && <CheckCircle2 size={9} className="text-[#ffe01e]/50 shrink-0" />}
+                            {(!ex.is_unilateral || s.side === 'left') && (
+                              <span className={`text-[11px] font-mono font-bold shrink-0 ${s.completed ? 'text-[#ffe01e]/40' : 'text-white/30'}`}>{s.set_number}</span>
+                            )}
+                            {(() => {
+                              const key = recKey(ex.id, s.set_number, s.side)
+                              const rec = recommendations[key]
+                              const isRec = !!rec && !s.completed
+                              return (
+                                <div className="min-w-0">
+                                  <span className="text-[11px] font-mono text-white/25 truncate block">{s.planned_reps}</span>
+                                  {isRec && <DeltaBadge rec={rec} />}
+                                </div>
+                              )
+                            })()}
                           </div>
-                          {ex.is_unilateral && <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
-                          {(() => {
-                            const key = recKey(ex.id, s.set_number, s.side)
-                            const rec = recommendations[key]
-                            const isRec = !!rec && !s.completed
-                            return (
-                              <div>
-                                <div className="text-[11px] font-mono text-white/30 truncate">{s.planned_reps}</div>
-                                {isRec && <DeltaBadge rec={rec} />}
-                              </div>
-                            )
-                          })()}
+                          {ex.is_unilateral && <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
                           {(() => {
                             const key = recKey(ex.id, s.set_number, s.side)
                             const isRec = !!recommendations[key] && !s.completed
@@ -1225,51 +1268,67 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                               )}
                             </div>
 
-                            {/* Header colonnes */}
-                            <div className="grid items-center px-4 pb-1 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1.8fr 1.8fr 1.5fr 1fr' : '1.8fr 1.8fr 1.5fr 1fr' }}>
-                              {ex.is_unilateral && <div>{t('logger.set')}</div>}
-                              <div>{t('logger.actual.label')}</div>
-                              <div>Kg</div>
-                              <div>{t('logger.rir.label')}</div>
-                              <div className="text-center">✓</div>
-                            </div>
-
-                            {/* Sets (bilatéral ou unilatéral) */}
-                            {exSetsForRound.map((s) => {
-                              const lastP = getExLastPerfLabel(s.side)
-                              const key = recKey(ex.id, s.set_number, s.side)
-                              const isRec = !!recommendations[key] && !s.completed
-
-                              return (
-                                <div key={`${s.set_number}-${s.side}`} className={`grid items-center gap-2 px-4 pb-3 pt-1 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1.8fr 1.8fr 1.5fr 1fr' : '1.8fr 1.8fr 1.5fr 1fr' }}>
-                                  {ex.is_unilateral && (
-                                    <div className={`text-[11px] font-bold ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>
-                                  )}
-                                  {/* Reps */}
-                                  <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
-                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                    onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
-                                    placeholder={lastP?.reps ? String(lastP.reps) : s.planned_reps || '—'}
-                                    className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                                  {/* Kg */}
-                                  <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
-                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                    onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
-                                    placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                                    className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                                  {/* RIR */}
-                                  <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
-                                    onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                    onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
-                                    placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
-                                    className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 w-full placeholder:text-white/20 transition-colors" />
-                                  {/* Valider */}
-                                  <button onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)} className={`flex justify-center items-center h-10 w-10 rounded-lg transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#ffe01e]/20 shadow-[0_0_12px_rgba(255,224,30,0.3)]' : 'hover:bg-white/[0.06]'}`}>
-                                    {s.completed ? <CheckCircle2 size={22} className="text-[#ffe01e]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
-                                  </button>
+                            {/* Header colonnes — identique exercice solo */}
+                            {(() => {
+                              const cols = ex.is_unilateral ? '0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1fr 1fr 1fr 0.55fr 0.55fr'
+                              const ssResolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
+                              const ssHasTempo = parseTempo(ssResolvedTempo) !== null
+                              return <>
+                                <div className="grid items-center gap-3 px-4 py-1 text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/20" style={{ gridTemplateColumns: cols }}>
+                                  {ex.is_unilateral && <div className="text-center truncate">G/D</div>}
+                                  <div className="text-center truncate">REP</div>
+                                  <div className="text-center truncate">KG</div>
+                                  <div className="text-center truncate">RIR</div>
+                                  <div className="flex justify-center">{ssHasTempo ? <Play size={7} fill="currentColor" className="text-[#FFB800]/50" /> : <span />}</div>
+                                  <div className="text-center">✓</div>
                                 </div>
-                              )
-                            })}
+                                {exSetsForRound.map((s) => {
+                                  const lastP = getExLastPerfLabel(s.side)
+                                  const key = recKey(ex.id, s.set_number, s.side)
+                                  const isRec = !!recommendations[key] && !s.completed
+                                  const ssRepCount = resolveReps(ex)
+                                  const ssCanGuide = ssHasTempo && ssRepCount > 0 && !s.completed
+                                  return (
+                                    <div key={`${s.set_number}-${s.side}`} className={`grid items-center gap-3 px-4 py-2.5 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: cols }}>
+                                      {ex.is_unilateral && <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
+                                      <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
+                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                        onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const n2 = { ...prev }; delete n2[key]; return n2 }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
+                                        placeholder={lastP?.reps ? String(lastP.reps) : s.planned_reps || '—'}
+                                        className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
+                                      <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
+                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                        onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const n2 = { ...prev }; delete n2[key]; return n2 }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
+                                        placeholder={lastP?.weight ? String(lastP.weight) : '—'}
+                                        className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
+                                      <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
+                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
+                                        onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
+                                        placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
+                                        className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#FFB800]/30 w-full placeholder:text-white/20 transition-colors" />
+                                      {ssCanGuide ? (
+                                        <button
+                                          onClick={() => {
+                                            const exName = swappedNames[ex.id] ?? ex.name
+                                            if (!hasPrepTimeConfigured(exName)) {
+                                              setPrepTimeTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName })
+                                            } else {
+                                              setTempoGuideTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName, prepSeconds: getPrepTime(exName), hapticsEnabled: getHapticsEnabled() })
+                                            }
+                                          }}
+                                          className="flex justify-center items-center h-10 w-full rounded-lg bg-white/[0.04] text-white/30 hover:text-[#FFB800] hover:bg-[#FFB800]/[0.08] active:scale-95 transition-all"
+                                        >
+                                          <Play size={11} fill="currentColor" />
+                                        </button>
+                                      ) : <div />}
+                                      <button onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)} className={`flex justify-center items-center h-10 w-full rounded-lg transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#ffe01e]/20' : 'hover:bg-white/[0.06]'}`}>
+                                        {s.completed ? <CheckCircle2 size={20} className="text-[#ffe01e]" /> : <Circle size={20} className="text-white/20 hover:text-white/50 transition-colors" />}
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </>
+                            })()}
                           </div>
                         )
                       })}
