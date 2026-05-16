@@ -28,7 +28,7 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo display + guide modal | 2026-05-16 |
+| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo guide modal v2 (triangle, couleurs, bonus reps, landscape, hydratation) | 2026-05-17 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable DA v3.0, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -42,6 +42,28 @@
 ---
 
 ## 🚀 Dernières Avancées (2026-05-17)
+
+### Tempo Guide Modal v2 + Hydratation (COMPLET — session 2)
+
+**Fichiers modifiés :**
+- `components/client/TempoGuideModal.tsx` — refonte complète
+- `app/client/programme/session/[sessionId]/SessionLogger.tsx` — sync IA, bonus reps, hydratation
+- `app/client/programme/session/[sessionId]/page.tsx` — fetch clientWeight
+
+**Changements :**
+- ✅ Circuit triangle fermé : balle trace C→A→B→C en continu, zéro snap entre phases
+- ✅ Codes couleurs par phase : CONTRACTER #22c55e / FREINER #f97316 / TENIR #ef4444 / PAUSE #ef4444 — labels `font-barlow-condensed bold uppercase`
+- ✅ Anticipation isométrique multi-canal : décélération balle + clignotement label orange→rouge + haptic 10ms à 0.8s avant ISO
+- ✅ Reps bonus mode relais : tempo continu au-delà des reps planifiées, barres bonus `rgba(255,255,255,0.3)`, `onClose` enrichi `{ plannedReps, bonusReps, totalReps }`
+- ✅ Layout landscape responsive : triangle gauche, contrôles droite, hook `useIsLandscape` (resize listener)
+- ✅ Sync IA↔tempo : `rec?.reps ?? resolveReps(ex)` au tap ▶ (sets solo + superset)
+- ✅ Feed bonusReps → `actual_reps` du set si `bonusReps > 0`
+- ✅ Rappel hydratation : calcul EFSA `poids × 35ml + durée × 8ml`, timer 15min, bottom sheet DS v3.0 "J'ai bu" / "Ignorer"
+
+**Invariants respectés :**
+- `lib/training/tempo.ts` inchangé
+- `TempoCloseResult` exporté — SessionLogger consomme le type
+- Erreurs TS pré-existantes (stripe, dashboard, BodyFatCalculator) hors périmètre — nos 3 fichiers = 0 erreurs
 
 ### SessionLogger — Set Recommendation Engine v2 (COMPLET)
 

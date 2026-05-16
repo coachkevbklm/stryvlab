@@ -5,6 +5,19 @@
 
 ## 2026-05-17
 
+FEATURE: TempoGuideModal v2 — circuit triangle fermé (balle continue, zéro snap entre phases)
+FEATURE: TempoGuideModal v2 — codes couleurs par phase : CONTRACTER vert / FREINER orange / TENIR rouge / PAUSE rouge (labels font-barlow-condensed)
+FEATURE: TempoGuideModal v2 — anticipation isométrique multi-canal : décélération balle + clignotement label orange→rouge + haptic 10ms à 0.8s avant ISO
+FEATURE: TempoGuideModal v2 — reps bonus mode relais : tempo continu après reps planifiées, barres bonus grises, onClose enrichi { plannedReps, bonusReps, totalReps }
+FEATURE: TempoGuideModal v2 — layout landscape responsive : triangle gauche / contrôles droite, zéro overflow
+FEATURE: SessionLogger — sync IA↔tempo : utilise rec.reps de la recommandation au tap ▶ (fallback resolveReps)
+FEATURE: SessionLogger — reps bonus alimentent actual_reps du set si bonusReps > 0
+FEATURE: SessionLogger — rappels hydratation toutes les 15min : calcul EFSA (poids × 35ml + durée × 8ml), bottom sheet "J'ai bu" / "Ignorer"
+FEATURE: session/page.tsx — fetch clientWeight depuis assessment_submissions, passé à SessionLogger
+
+FIX: computePhysiologicalDate — utilisait toISOString() (UTC) au lieu de l'heure locale, causait décalage -1/-2 jours en timezone UTC+2 (Paris) après minuit
+REFACTOR: Nutrition hub — refonte architecture : hero calories 48px, macro bars P/G/L/eau compactes dans 1 seul bloc, CTA "+ Ajouter" inline en bas du bloc, protocole coach discret en bas (plus de double CTA journal)
+
 FIX: setRecommendation — belowZone+!rirTooLow branch now maintains weight, targets planned_reps
 FIX: setRecommendation — Path A HOLD (rir≤target-2) veto overload, BOOST (rir≥target+3) double incrément
 FIX: setRecommendation — delta_vs_last null when targetWeight already reached this session (badge trompeur supprimé)
