@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-05-16**
+**Dernière mise à jour : 2026-05-17**
 
 ---
 
@@ -29,6 +29,7 @@
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
 | **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo display + guide modal | 2026-05-16 |
+| **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable DA v3.0, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
@@ -37,6 +38,25 @@
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-17)
+
+### SessionLogger — Set Recommendation Engine v2 (COMPLET)
+
+- ✅ Path B : branche `belowZone && !rirTooLow` ajoutée — maintien charge, vise `planned_reps` (bug critique)
+- ✅ Path A : modulation RIR sur set courant — HOLD (`rir ≤ target-2`) veto overload, BOOST (`rir ≥ target+3`) double incrément
+- ✅ Path A : `delta_vs_last → null` quand `targetWeight ≤ prev_set_weight_kg` (badge "+Xkg" trompeur supprimé)
+- ✅ Fetch historique `page.tsx` : filtre `.not('client_session_logs.completed_at', 'is', null)` — exclut sessions en cours
+- ✅ Display : `formatWeight()` — `47.50 → "47.5"`, `47.00 → "47"`, locale-independent (fin des `"47."` et `"48,"`)
+- Tests : 16 tests Vitest, tous PASS
+
+**Fichiers modifiés :**
+- `lib/training/setRecommendation.ts`
+- `tests/lib/training/setRecommendation.test.ts`
+- `app/client/programme/session/[sessionId]/page.tsx`
+- `app/client/programme/session/[sessionId]/SessionLogger.tsx`
 
 ---
 
@@ -84,6 +104,48 @@
 - `three@0.170` requis (bumped depuis 0.157) — `BatchedMesh` peer dep de `three-mesh-bvh@0.7.8`
 
 **⚠️ Action manuelle requise :** appliquer `supabase/migrations/20260514_beta_waitlist.sql` via Supabase Dashboard SQL Editor si pas encore fait.
+
+---
+
+### Nutrition Composer — Phase 1 (COMPLET — 2026-05-16)
+
+**Fichiers créés :**
+- `supabase/migrations/20260516_food_composer.sql` — 3 tables : `food_items`, `nutrition_meals`, `nutrition_entries` + RLS
+- `supabase/migrations/20260516_nutrition_meal_editing.sql` — `nutrition_meals.title`, `photo_urls`, index entries
+- `scripts/seed-food-items.ts` — ~150 aliments (6 cat × sous-types), idempotent via `ON CONFLICT (item_key)`
+- `lib/nutrition/physiological-date.ts` — `computePhysiologicalDate()` (cutoff 04:00) + `inferMealType()`
+- `lib/nutrition/food-items.ts` — types `FoodItem`, `NutritionMeal`, `EntryDraft`, `PORTION_SIZES`, `calcEntryMacros()`
+- `app/api/client/food-items/route.ts` — GET search aliments par catégorie/sous-type/texte
+- `app/api/client/nutrition/meals/route.ts` — POST créer repas + GET liste du jour
+- `app/api/client/nutrition/meals/[id]/route.ts` — PATCH titre/type/photo + DELETE repas structuré
+- `app/api/client/nutrition/entries/[id]/route.ts` — PATCH quantité + DELETE aliment + recalcul totaux
+- `app/client/nutrition/log/page.tsx` — Nutrition Composer 4 couches (catégorie → sous-type → item → quantité)
+- `app/client/nutrition/journal/page.tsx` — Journal alimentaire DA v3.0, cartes repas éditables/story-ready
+
+**Fichiers modifiés :**
+- `components/client/BottomNavPlusMenu.tsx` — "Ajouter un repas" → `/client/nutrition/log`
+- `app/client/nutrition/page.tsx` — lien journal → `/client/nutrition/journal`
+- `app/client/agenda/meals/new/page.tsx` — redirect → `/client/nutrition/log`
+- `app/client/checkin/meals/page.tsx` — redirect → `/client/nutrition/journal`
+
+**Architecture :**
+- `food_items` : base interne ~150 aliments, macros/100g, `item_key` slug stable
+- `nutrition_meals` : conteneur repas (meal_type, physiological_date, totaux calculés)
+- `nutrition_entries` : items individuels (food_item_id, quantity_g, macros calculées, confidence_score)
+- `meal_logs` : conservé pour rétrocompat IA (photo/vocal fallback)
+- Journée physiologique : repas < 04:00 → daté de la veille
+- Journal éditable : contenu des repas visible, quantité par aliment modifiable, suppression d'aliment/repas, photo et titre personnalisé
+
+**Points de vigilance :**
+- Migration `20260516_food_composer.sql` à appliquer manuellement via Supabase Dashboard
+- Seed via `npx tsx scripts/seed-food-items.ts` (nécessite SUPABASE_SERVICE_ROLE_KEY en env)
+- `pg_trgm` extension requise pour l'index GIN sur `name_fr` (probablement déjà active)
+- `nutrition_meals` et `meal_logs` coexistent — `today-progress` agrège les deux
+
+**⚠️ Actions manuelles requises :**
+1. Appliquer `20260516_food_composer.sql` via Supabase Dashboard SQL Editor
+2. Lancer seed : `npx tsx scripts/seed-food-items.ts`
+3. Appliquer `20260516_nutrition_meal_editing.sql` via Supabase Dashboard SQL Editor pour activer photos + titres des repas
 
 ---
 

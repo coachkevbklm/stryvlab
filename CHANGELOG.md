@@ -3,8 +3,81 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-17
+
+FIX: setRecommendation — belowZone+!rirTooLow branch now maintains weight, targets planned_reps
+FIX: setRecommendation — Path A HOLD (rir≤target-2) veto overload, BOOST (rir≥target+3) double incrément
+FIX: setRecommendation — delta_vs_last null when targetWeight already reached this session (badge trompeur supprimé)
+FIX: session/page.tsx — lastPerformance fetch excludes in-progress session logs (completed_at IS NOT NULL)
+FIX: SessionLogger — formatWeight() strips trailing dot/zeros from recommendation weight inputs
+
 ## 2026-05-16
 
+REFACTOR: Journal — refonte complète DA Technogym : bilan 36px font-black, macros P bleu / G jaune #ffe01e / L rouge, barres progression, ingrédients auto-expanded, swipe-to-delete gestuel, type repas modifiable inline
+FEATURE: Journal — ingrédients visibles dans chaque repas (nom + quantité + kcal), auto-expanded au chargement, collapsible via tap
+FEATURE: Journal — swipe-to-delete (-72px seuil) sur repas Composer ET legacy IA, confirmation rouge visuelle
+FEATURE: Journal — type repas modifiable inline (dropdown 🌅☀️🌙⚡ → PATCH /api/client/nutrition/meals/[id])
+FEATURE: Journal nutrition — cartes repas Composer éditables : photo, titre personnalisé, type repas, contenu détaillé, quantités modifiables, suppression aliment/repas
+SCHEMA: nutrition_meals — add title + photo_urls for editable/story-ready meal cards
+FEATURE: API nutrition meals/[id] — PATCH metadata/photo + DELETE structured meal with ownership check
+FEATURE: API nutrition entries/[id] — PATCH quantity + DELETE entry, recalcul automatique des totaux meal
+REFACTOR: Journal nutrition — carte repas DA Technogym : hero photo, kcal massif, macro tiles, détail expandable, actions rapides
+FIX: Build — wrap useSearchParams() in Suspense on /client/nutrition/log (prerender error)
+FIX: Build — add force-dynamic to /stryvr page (Supabase call during static prerender)
+
+REFACTOR: TempoGuideModal — refonte architecture complète : path pyramide arrondie (arche), balle immobile pendant ISO et PAUSE (seuls CON et ECC la déplacent), trail caché en phases statiques, diamonds à peak et base droite uniquement
+
+FEATURE: Catégorie "Boissons" (drinks) — 7ème catégorie Composer dédiée : Eau & Hydratation, Boissons chaudes, Jus & Smoothies, Laits végétaux, Boissons sportives, Alcools
+FEATURE: food_items drinks — 31 boissons (eau plate, gazeuse, café, thé, tisane, jus, laits végétaux, isotonique, bières, vins, spiritueux)
+FEATURE: QuickWaterModal — modale hydratation rapide depuis le + : 4 quantités prédéfinies (150/250/330/500ml) + ajustement 50ml, feedback ✓ vert
+FEATURE: BottomNavPlusMenu — bouton "Loguer de l'eau" (icône bleue) accès direct QuickWaterModal sans passer par Composer
+FEATURE: Nutrition hub — widget hydratation : ml consommés / cible protocole, barre bleue, alerte "encore X.xL à boire" si < 50%
+FIX: Composer — bouton "Ajouter au repas" déplacé dans le footer fixe (plus jamais caché sous le scroll) — "Terminer" devient secondaire en couche 4, principal sur les autres couches
+FEATURE: Composer — support ?meal_id=xxx : ajouter des aliments à un repas existant (totaux recalculés, ownership vérifié)
+FEATURE: Journal — bouton "Ajouter des aliments à ce repas" sur chaque carte repas Composer → ouvre Composer avec meal_id
+FIX: API POST /api/client/nutrition/meals — mode append (meal_id fourni) : INSERT entries + UPDATE totaux meal existant, ownership check, pas de points/agenda dupliqués
+FEATURE: Nutrition hub — suivi prévu vs réalisé : barres progression par macro (P/G/L), alertes texte manque >20%, agrégation Composer + legacy IA, CTA "Loguer mon premier repas" si rien loggé
+FIX: Nutrition hub — aggregation nutrition_meals (Composer, confiance 0.85) + meal_logs (IA, confiance 0.55) via journée physiologique
+FIX: Composer — scroll area hauteur dynamique via ResizeObserver sur footer (pb fixe remplacé, plus de contenu caché)
+FEATURE: Composer couche 2 — emojis sous-types (24 icônes) à gauche de chaque label subcategory
+FEATURE: Composer couche 3 — mini barre P/G/L colorée (bleu/amber/rouge, proportions kcal) sur chaque item
+FEATURE: Composer couche 4 — emojis portions visuelles (🤚✊👍🥄☕🙌🍽️) dans chaque bouton portion
+FEATURE: food_items — +80 aliments (noix étendus, sodas, chips, Nutella, Oreo, fast-food, alcools, céréales petit-déj)
+FEATURE: Composer extras — snacks-sales, snacks-sucres, fast-food (6 sous-types)
+REFACTOR: CATEGORY_LABELS extras → "Snacks & Extras", icône 🍿
+SCHEMA: Add food_items, nutrition_meals, nutrition_entries tables — Nutrition Composer foundation
+FEATURE: Nutrition Composer 4 couches — /client/nutrition/log — catégorie → sous-type → item → quantité (grammes + portions visuelles)
+FEATURE: Journal alimentaire unifié — /client/nutrition/journal — DA v3.0, repas structurés + legacy IA, barre macros vs protocole, journée physiologique
+FEATURE: GET /api/client/food-items — recherche aliments par catégorie/sous-type/texte
+FEATURE: POST /api/client/nutrition/meals — créer repas structuré avec nutrition_entries + totaux + smart_agenda_events + points
+FEATURE: GET /api/client/nutrition/meals — liste repas structurés du jour avec entries
+FEATURE: lib/nutrition/physiological-date.ts — computePhysiologicalDate() + inferMealType()
+FEATURE: lib/nutrition/food-items.ts — types FoodItem, NutritionMeal, EntryDraft, PORTION_SIZES, calcEntryMacros()
+FEATURE: scripts/seed-food-items.ts — ~150 aliments base interne (6 catégories × sous-types)
+FIX: BottomNavPlusMenu — "Ajouter un repas" → /client/nutrition/log (remplace /client/agenda/meals/new)
+FIX: nutrition/page.tsx — lien Journal alimentaire → /client/nutrition/journal
+REFACTOR: /client/agenda/meals/new — redirect vers /client/nutrition/log
+REFACTOR: /client/checkin/meals — redirect vers /client/nutrition/journal
+
+FIX: SessionLogger superset — ajout colonne Tempo ▶ (#FFB800, PrepTime + TempoGuide identique au solo), grille unifiée REP/KG/RIR/▶/✓
+FIX: SessionLogger — grilles solo et superset unifiées : mêmes colonnes, gap-3, px, labels courts — alignement parfait garanti dans les deux modes
+FIX: DS v3.0 — suppression tous rounded-[2px] restants dans /client (journal, log, checkin, access, bilans) → rounded-xl
+CHORE: CLAUDE.md — ajout section DS v3.0 non-négociable (tokens, hiérarchie radius, règles borders/shadows/gradients)
+FIX: SessionLogger — refonte grille colonnes : fusion # + PRÉVU en col unique (1.2fr), 6 colonnes totales gap-3, header et data rows identiques — alignement parfait garanti
+FIX: SessionLogger — headers colonnes RÉALISÉ/KG/RIR/✓ alignés text-center, cohérents avec inputs centrés — alignement parfait header↔data
+FIX: SessionLogger modal repos — refonte : plein écran, jauge circulaire fine, boutons +30s/-30s, card prochaine série, Barlow Condensed, fermer discret
+FIX: SessionLogger — header colonne RIR → "RIR" court (supprime retour à la ligne qui décalait les colonnes)
+FIX: Home — nom séance du jour text-[19px] font-semibold (supprime uppercase font-black trop agressif)
+FIX: Home — suppression gradient vert #1f8a65 + lueurs shadow sur card séance du jour, border check-in neutralisée
+FIX: Home — labels stats + progression en font-barlow-condensed uppercase, dots séances → barres w-5 h-1, nom séance uppercase Barlow Condensed 22px
+FIX: SessionLogger — muscles en pills jaunes dans header, sets×reps Barlow Condensed 18px, overlay image éditorial renforcé, micro-checkmark sur set complété, header Barlow Condensed uppercase
+FIX: SessionLogger — grille colonnes réalignée (proportions 0.5/1.6/1.6/1.6/1.2/0.7/0.7fr), header Tempo avec icône ▶ #FFB800, titre RIR aligné sur sa colonne
+REFACTOR: Client app — radius restauré rounded-xl (inputs/boutons) sur tous les fichiers, aligné sur PrepTimeModal, plus agréable visuellement
+REFACTOR: Migrate entire client app (/client) to DS v3.0 Technogym — accent #ffe01e jaune, fond #0d0d0d, surfaces #161616, radius 2px, police Barlow Condensed, texte #0d0d0d sur CTAs jaunes
+REFACTOR: Add Barlow + Barlow_Condensed via next/font/google — variables CSS + tokens Tailwind font-barlow / font-barlow-condensed
+REFACTOR: BottomNav — fond #0d0d0d, tab actif #ffe01e, bouton + jaune texte #0d0d0d, rounded-[2px]
+REFACTOR: ClientTopBar — bord bas border-b, fond #0d0d0d, titres font-barlow-condensed uppercase, rounded-[2px]
+REFACTOR: manifest.json — background_color + theme_color #121212 → #0d0d0d
 REFACTOR: Migrate SessionLogger, ExerciseSwapSheet, TempoGuideModal, ClientAlternativesSheet to DS v3.0 Technogym — #ffe01e accent, #0d0d0d bg, #161616 surfaces, rounded-[2px], text-[#0d0d0d] on yellow CTAs
 
 REFACTOR: Landing STRYVR — refonte complète DA Technogym (#F5D800 jaune, #0a0a0a fond, grille industrielle gap-1px, typo uppercase 900, mockup training sinusoïde+barres, CTA pleine largeur jaune, footer 4 colonnes)
