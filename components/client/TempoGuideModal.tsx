@@ -55,6 +55,11 @@ export default function TempoGuideModal({
   const parsed = parseTempo(tempo)
   if (!parsed || reps <= 0) return null
 
+  // Guard: all-zero tempo would cause repDuration=0 and division by zero in RAF
+  const phaseMs = (p: typeof parsed.eccentric) => p === 'X' ? 300 : (p as number) * 1000
+  const totalMs = phaseMs(parsed.eccentric) + phaseMs(parsed.pauseBottom) + phaseMs(parsed.concentric) + phaseMs(parsed.pauseTop)
+  if (totalMs === 0) return null
+
   return (
     <TempoGuideModalInner
       parsed={parsed}

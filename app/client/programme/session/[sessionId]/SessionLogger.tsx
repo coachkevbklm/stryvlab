@@ -1001,8 +1001,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   {ex.notes && <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>}
                 </div>
                 <div className="border-t border-white/[0.05]">
-                  <div className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.5fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 1fr' }}>
-                    <div>#</div>{ex.is_unilateral && <div>{t('logger.set')}</div>}<div>{t('logger.target.label')}</div><div>{t('logger.actual.label')}</div><div>Kg</div><div>{t('logger.rir.label')}</div><div className="text-center">✓</div>
+                  <div className="grid items-center px-5 py-2 text-[9px] font-bold uppercase tracking-[0.14em] text-white/25" style={{ gridTemplateColumns: ex.is_unilateral ? '1fr 1fr 1.8fr 1.8fr 1.8fr 1.5fr 0.8fr 1fr' : '0.6fr 1.8fr 1.8fr 1.8fr 1.5fr 0.8fr 1fr' }}>
+                    <div>#</div>{ex.is_unilateral && <div>{t('logger.set')}</div>}<div>{t('logger.target.label')}</div><div>{t('logger.actual.label')}</div><div>Kg</div><div>{t('logger.rir.label')}</div><div /><div className="text-center">✓</div>
                   </div>
                   {exSetsForEx.map((s, idx) => {
                     const lastP = getExLastPerfLabel(s.set_number, s.side)
