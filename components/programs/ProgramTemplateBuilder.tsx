@@ -168,6 +168,7 @@ interface Exercise {
   primary_muscles: string[];
   secondary_muscles: string[];
   is_compound: boolean | undefined;
+  is_unilateral: boolean;
   tempo: string | null;
   group_id?: string;
   dbId?: string;
@@ -223,6 +224,7 @@ function emptyExercise(): Exercise {
     primary_muscles: [],
     secondary_muscles: [],
     is_compound: undefined,
+    is_unilateral: false,
     tempo: null,
     group_id: undefined,
     dbId: undefined,
@@ -324,6 +326,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             primary_muscles: (e.primary_muscles ?? []).length > 0 ? e.primary_muscles : getMusclesFromCatalog(e.name),
             secondary_muscles: e.secondary_muscles ?? [],
             is_compound: e.is_compound ?? undefined,
+            is_unilateral: e.is_unilateral ?? false,
             tempo: e.tempo ?? null,
             group_id: e.group_id ?? undefined,
             dbId: e.id ?? undefined,
@@ -459,6 +462,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
       primary_muscles: e.primary_muscles,
       secondary_muscles: e.secondary_muscles,
       is_compound: e.is_compound,
+      is_unilateral: e.is_unilateral ?? false,
       plane: e.plane ?? null,
       mechanic: e.mechanic ?? null,
       unilateral: e.unilateral ?? false,
@@ -641,6 +645,7 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
             primary_muscles: e.primary_muscles,
             secondary_muscles: e.secondary_muscles,
             is_compound: e.is_compound,
+            is_unilateral: e.is_unilateral ?? false,
             tempo: e.tempo ?? null,
             group_id: e.group_id,
             dbId: e.dbId,

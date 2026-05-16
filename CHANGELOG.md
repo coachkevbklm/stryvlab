@@ -5,6 +5,20 @@
 
 ## 2026-05-17
 
+FEATURE: ExerciseCard (builder) — toggle "Unilatéral (G + D par série)" pour cocher is_unilateral directement dans le builder coach
+FIX: is_unilateral propagé dans save payload (template PATCH/POST + program assign) → program_exercises
+SCHEMA: migration 20260517_template_exercises_is_unilateral.sql — ajoute is_unilateral sur coach_program_template_exercises
+FIX: page.tsx regex fallback — ajout abduction|adduction pour détection auto exercices unilatéraux
+FIX: Nutrition hub — lien "Journal" déplacé dans le header (ClientTopBar right prop), suppression du doublon dans le bloc hero
+FIX: Journal — suppression avec confirmation modale obligatoire (bouton rouge "Supprimer" + bouton "Annuler") sur swipe ET bouton corbeille — plus de suppression directe
+FIX: QuickWaterModal — utilise /api/client/nutrition/hydration (nouveau) au lieu de /meals — ne crée plus de carte "Collation" dans le journal
+FEATURE: API POST /api/client/nutrition/hydration — endpoint dédié eau/boissons : réutilise/crée un seul repas meal_type="drinks" par jour, entries comptées dans totaux, invisible dans la liste du journal
+FIX: Journal — filtre meal_type="drinks" dans la liste des repas affichés (hydratation comptée mais pas listée)
+FEATURE: Aliment personnalisé — formulaire "Créer un aliment personnalisé" dans Composer couche 1 (nom + macros/100g) → POST /api/client/food-items → sélection immédiate
+FEATURE: API POST /api/client/food-items — INSERT food_items avec client_id (ownership), item_key slug stable, source='user'
+FEATURE: API DELETE /api/client/food-items?id=xxx — suppression aliment custom avec ownership check
+FIX: GET /api/client/food-items — expose source + client_id, filtre ?mine=true pour aliments perso uniquement
+
 FEATURE: TempoGuideModal v2 — circuit triangle fermé (balle continue, zéro snap entre phases)
 FEATURE: TempoGuideModal v2 — codes couleurs par phase : CONTRACTER vert / FREINER orange / TENIR rouge / PAUSE rouge (labels font-barlow-condensed)
 FEATURE: TempoGuideModal v2 — anticipation isométrique multi-canal : décélération balle + clignotement label orange→rouge + haptic 10ms à 0.8s avant ISO

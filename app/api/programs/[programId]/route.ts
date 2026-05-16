@@ -17,7 +17,7 @@ const SELECT = `
     program_exercises (
       id, name, sets, reps, rest_sec, rir, notes, position, image_url,
       movement_pattern, equipment_required, primary_muscles, secondary_muscles,
-      group_id, is_compound, target_rir, weight_increment_kg,
+      group_id, is_compound, target_rir, weight_increment_kg, tempo,
       plane, mechanic, unilateral, primary_muscle, primary_activation,
       secondary_muscles_detail, secondary_activations, stabilizers,
       joint_stress_spine, joint_stress_knee, joint_stress_shoulder,
@@ -101,8 +101,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             secondary_muscles: e.secondary_muscles ?? [],
             group_id: e.group_id ?? null,
             is_compound: e.is_compound ?? null,
+            is_unilateral: e.is_unilateral ?? false,
             target_rir: e.target_rir ?? null,
             weight_increment_kg: e.weight_increment_kg ?? 2.5,
+            tempo: e.tempo ?? null,
             // Biomech fields
             plane: e.plane ?? null,
             mechanic: e.mechanic ?? null,

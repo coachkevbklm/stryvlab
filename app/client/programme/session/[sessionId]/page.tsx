@@ -55,8 +55,9 @@ export default async function SessionLogPage({ params }: { params: { sessionId: 
       ...ex,
       progressive_overload_enabled: progressionEnabled,
       // Détection unilatéral : flag DB OU nom contient un mot-clé unilatéral
+      // NOTE: préférer cocher is_unilateral dans le builder coach — la regex est un filet de sécurité
       is_unilateral: ex.is_unilateral ||
-        /unilat[eé]ral|single|alterné|alternée|1 bras|1 jambe|un bras|une jambe|kick.?back|extension.?hanche|hip.?thrust.?unilat|curl.?unilat|presse.?unilat|fente|split.?squat|bulgarian/i.test(ex.name ?? ''),
+        /unilat[eé]ral|single|alterné|alternée|1 bras|1 jambe|un bras|une jambe|kick.?back|extension.?hanche|hip.?thrust.?unilat|curl.?unilat|presse.?unilat|fente|split.?squat|bulgarian|abduction|adduction/i.test(ex.name ?? ''),
       clientAlternatives: [],  // Will be populated below
     }))
 

@@ -82,6 +82,7 @@ export interface ExerciseData {
   primary_muscles: string[]
   secondary_muscles: string[]
   is_compound: boolean | undefined
+  is_unilateral: boolean
   tempo: string | null
   group_id?: string
   dbId?: string
@@ -118,18 +119,18 @@ interface Props {
 const TEMPO_PRESETS = [
   {
     label: 'Hypertrophie standard',
-    value: '3-1-2-0',
-    note: 'ECC lent (3s) → étirement (1s) → CON contrôlé (2s) → pas de pause haut',
+    value: '2-0-3-1',
+    note: 'CON contrôlée (2s) → ISO (0s) → ECC lente (3s) → pause étirement (1s)',
   },
   {
     label: 'Hypertrophie excentrique',
-    value: '4-0-2-0',
-    note: 'ECC très lent (4s) → CON rapide (2s) — tension excentrique maximale',
+    value: '2-0-4-0',
+    note: 'CON contrôlée (2s) → ISO (0s) → ECC très lente (4s) → pas de pause',
   },
   {
     label: 'Force / Puissance',
-    value: '2-0-X-0',
-    note: 'ECC contrôlé (2s) → CON explosif (X) — recrutement neuromusculaire max',
+    value: 'X-0-2-0',
+    note: 'CON explosive (X) → ISO (0s) → ECC contrôlée (2s) → pas de pause',
   },
   {
     label: 'Endurance / Cardio',
@@ -139,7 +140,7 @@ const TEMPO_PRESETS = [
   {
     label: 'Explosif pur',
     value: 'X-0-X-0',
-    note: 'Toutes phases aussi vite que possible — puissance athlétique',
+    note: 'CON et ECC explosives — puissance athlétique',
   },
   {
     label: 'Manuel',
@@ -149,7 +150,7 @@ const TEMPO_PRESETS = [
 ] as const
 
 function detectPreset(tempo: string | null): string {
-  if (!tempo) return '3-1-2-0'
+  if (!tempo) return '2-0-3-1'
   const match = TEMPO_PRESETS.find(p => p.value === tempo && p.value !== '__manual__')
   return match ? match.value : '__manual__'
 }
@@ -437,7 +438,7 @@ export default function ExerciseCard({
               return (
                 <div>
                   <label className="block text-[9px] text-white/30 mb-0.5">
-                    Tempo (ECC – PB – CON – PH)
+                    Tempo (CON – ISO – ECC – PAUSE)
                   </label>
                   <select
                     value={selectedPreset}
@@ -486,14 +487,14 @@ export default function ExerciseCard({
                             setManualError(true)
                           }
                         }}
-                        placeholder="ex: 3-1-2-0"
+                        placeholder="ex: 2-2-3-1"
                         className={`w-full bg-[#0a0a0a] rounded-md border-[0.3px] text-[11px] text-white/80 placeholder:text-white/20 px-1.5 py-1 outline-none font-mono ${
                           manualError ? 'border-red-500/40' : 'border-white/[0.06]'
                         }`}
                       />
                       {manualError && (
                         <p className="text-[9px] text-red-400/60 mt-0.5">
-                          Format attendu : 3-1-2-0  (chiffre ou X par phase)
+                          Format attendu : 2-2-3-1  (chiffre ou X par phase)
                         </p>
                       )}
                     </div>
@@ -523,6 +524,20 @@ export default function ExerciseCard({
                 Charge ajoutée quand rep_max atteint sur tous les sets
               </p>
             </div>
+
+            {/* Unilatéral toggle */}
+            <button
+              type="button"
+              onClick={() => onUpdate({ is_unilateral: !exercise.is_unilateral })}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md border-[0.3px] text-[10px] font-semibold transition-colors ${
+                exercise.is_unilateral
+                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                  : 'bg-white/[0.02] border-white/[0.06] text-white/30 hover:text-white/50'
+              }`}
+            >
+              <span className={`w-3 h-3 rounded-full border flex-shrink-0 ${exercise.is_unilateral ? 'bg-blue-400 border-blue-400' : 'border-white/20'}`} />
+              Unilatéral (G + D par série)
+            </button>
 
             {/* Notes */}
             <textarea
