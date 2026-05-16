@@ -1,7 +1,7 @@
 // components/programs/studio/ExerciseCard.tsx
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import {
   Trash2, Upload, Library, Link2, Link2Off, ChevronUp, ChevronDown, GripVertical,
@@ -11,6 +11,7 @@ import { CSS } from '@dnd-kit/utilities'
 import IntelligenceAlertBadge from '@/components/programs/IntelligenceAlertBadge'
 import ExerciseClientAlternatives, { type ExerciseClientAlternativesHandle } from '@/components/programs/ExerciseClientAlternatives'
 import type { IntelligenceAlert } from '@/lib/programs/intelligence'
+import { parseTempo } from '@/lib/training/tempo'
 
 const MOVEMENT_PATTERNS = [
   { value: '', label: '— Pattern —' },
@@ -114,6 +115,45 @@ interface Props {
   performanceSuggestion?: string | null
 }
 
+const TEMPO_PRESETS = [
+  {
+    label: 'Hypertrophie standard',
+    value: '3-1-2-0',
+    note: 'ECC lent (3s) → étirement (1s) → CON contrôlé (2s) → pas de pause haut',
+  },
+  {
+    label: 'Hypertrophie excentrique',
+    value: '4-0-2-0',
+    note: 'ECC très lent (4s) → CON rapide (2s) — tension excentrique maximale',
+  },
+  {
+    label: 'Force / Puissance',
+    value: '2-0-X-0',
+    note: 'ECC contrôlé (2s) → CON explosif (X) — recrutement neuromusculaire max',
+  },
+  {
+    label: 'Endurance / Cardio',
+    value: '2-0-2-0',
+    note: 'Tempo modéré, soutenable sur hautes répétitions',
+  },
+  {
+    label: 'Explosif pur',
+    value: 'X-0-X-0',
+    note: 'Toutes phases aussi vite que possible — puissance athlétique',
+  },
+  {
+    label: 'Manuel',
+    value: '__manual__',
+    note: '',
+  },
+] as const
+
+function detectPreset(tempo: string | null): string {
+  if (!tempo) return '3-1-2-0'
+  const match = TEMPO_PRESETS.find(p => p.value === tempo && p.value !== '__manual__')
+  return match ? match.value : '__manual__'
+}
+
 const SUPERSET_COLORS = [
   '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316',
 ]
@@ -148,6 +188,18 @@ export default function ExerciseCard({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const altRef = useRef<ExerciseClientAlternativesHandle>(null)
   const isInSuperset = !!exercise.group_id
+
+  // ── Tempo selector state ──
+  const [selectedPreset, setSelectedPreset] = useState<string>(() => detectPreset(exercise.tempo))
+  const [manualValue, setManualValue]       = useState<string>(exercise.tempo ?? '')
+  const [manualError, setManualError]       = useState(false)
+
+  useEffect(() => {
+    setSelectedPreset(detectPreset(exercise.tempo))
+    if (exercise.tempo && !TEMPO_PRESETS.find(p => p.value === exercise.tempo)) {
+      setManualValue(exercise.tempo)
+    }
+  }, [exercise.tempo])
 
   const {
     attributes,
@@ -380,19 +432,75 @@ export default function ExerciseCard({
             </div>
 
             {/* Tempo d'exécution */}
-            <div>
-              <label className="block text-[9px] text-white/30 mb-0.5">Tempo (Exc-PB-Con-PH)</label>
-              <input
-                type="text"
-                value={exercise.tempo ?? ''}
-                onChange={e => {
-                  const v = e.target.value.trim()
-                  onUpdate({ tempo: v || null })
-                }}
-                placeholder="ex: 3-1-2-0  (laisser vide = défaut auto)"
-                className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 placeholder:text-white/20 px-1.5 py-1 outline-none font-mono"
-              />
-            </div>
+            {(() => {
+              const activePreset = TEMPO_PRESETS.find(p => p.value === selectedPreset)
+              return (
+                <div>
+                  <label className="block text-[9px] text-white/30 mb-0.5">
+                    Tempo (ECC – PB – CON – PH)
+                  </label>
+                  <select
+                    value={selectedPreset}
+                    onChange={e => {
+                      const v = e.target.value
+                      setSelectedPreset(v)
+                      setManualError(false)
+                      if (v !== '__manual__') {
+                        onUpdate({ tempo: v })
+                      }
+                    }}
+                    className="w-full bg-[#0a0a0a] rounded-md border-[0.3px] border-white/[0.06] text-[11px] text-white/80 px-1.5 py-1 outline-none cursor-pointer"
+                  >
+                    {TEMPO_PRESETS.map(p => (
+                      <option key={p.value} value={p.value} className="bg-[#0a0a0a]">
+                        {p.value === '__manual__' ? 'Manuel...' : `${p.label}  ·  ${p.value}`}
+                      </option>
+                    ))}
+                  </select>
+                  {activePreset && activePreset.note && (
+                    <p className="text-[9px] text-white/25 leading-relaxed mt-0.5">
+                      {activePreset.note}
+                    </p>
+                  )}
+                  {selectedPreset === '__manual__' && (
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        value={manualValue}
+                        onChange={e => {
+                          setManualValue(e.target.value)
+                          setManualError(false)
+                        }}
+                        onBlur={() => {
+                          const v = manualValue.trim().toUpperCase()
+                          if (!v) {
+                            onUpdate({ tempo: null })
+                            setManualError(false)
+                            return
+                          }
+                          if (parseTempo(v) !== null) {
+                            onUpdate({ tempo: v })
+                            setManualValue(v)
+                            setManualError(false)
+                          } else {
+                            setManualError(true)
+                          }
+                        }}
+                        placeholder="ex: 3-1-2-0"
+                        className={`w-full bg-[#0a0a0a] rounded-md border-[0.3px] text-[11px] text-white/80 placeholder:text-white/20 px-1.5 py-1 outline-none font-mono ${
+                          manualError ? 'border-red-500/40' : 'border-white/[0.06]'
+                        }`}
+                      />
+                      {manualError && (
+                        <p className="text-[9px] text-red-400/60 mt-0.5">
+                          Format attendu : 3-1-2-0  (chiffre ou X par phase)
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Palier de surcharge progressive */}
             <div className="flex items-start gap-2">
