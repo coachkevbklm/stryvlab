@@ -154,15 +154,15 @@ function HeroSection({ betaCount }: { betaCount: number }) {
           >
             PAS UN<br />
             TRACKER.<br />
-            <span style={{ color: AC }}>TON MOTEUR</span><br />
-            PHYSIO.
+            <span style={{ color: AC }}>TON COACH</span><br />
+            PHYSIOLOGIQUE.
           </motion.h1>
 
           <motion.p
             initial="hidden" animate="visible" variants={fadeUp} custom={2}
             style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.65, color: 'rgba(255,255,255,0.5)', maxWidth: 420, marginBottom: 36 }}
           >
-            STRYVR comprend ta biologie et adapte chaque recommandation en temps réel — nutrition, entraînement, récupération. 5 min par jour.
+            STRYVR comprend ta physiologie, s'adapte à ton rythme, et prend des décisions coaching fondées sur la science. Pas un générateur de programmes — un moteur vivant.
           </motion.p>
 
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3} id="waitlist">
@@ -192,8 +192,8 @@ function HeroSection({ betaCount }: { betaCount: number }) {
 function StatsSection() {
   const stats = [
     { value: '95%', label: 'ABANDONNENT EN 12 SEMAINES', sub: 'Le statu quo actuel' },
-    { value: '5 MIN', label: 'PAR JOUR SUFFISENT', sub: 'Check-in complet' },
-    { value: '20', label: 'SIGNAUX ANALYSÉS', sub: 'Quotidiennement' },
+    { value: '5 MIN', label: 'PAR JOUR', sub: 'Check-in + log complet' },
+    { value: '8', label: 'FLUX PHYSIOLOGIQUES', sub: 'Du check-in au bilan mensuel' },
   ];
 
   return (
@@ -241,8 +241,8 @@ function FeaturesSection() {
     },
     {
       num: '03',
-      title: 'CYCLE & PHYSIOLOGIE',
-      desc: 'Adapté à ta biologie réelle — cycle féminin, niveau training, conditions médicales. Chaque recommandation est individualisée.',
+      title: 'MOTEUR ADAPTATIF',
+      desc: 'Cycle féminin, adaptation métabolique, overreaching, rebond post-cut — le moteur détecte les phénomènes physiologiques et ajuste sans que tu n\'aies à y penser.',
     },
   ];
 
@@ -298,17 +298,17 @@ function AppSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.15 }}
         >
-          <Eyebrow>Séances</Eyebrow>
-          <SectionH2>DATA EN TEMPS RÉEL.<br />CHAQUE RÉPÉTITION.</SectionH2>
+          <Eyebrow>Flux 3C — Training</Eyebrow>
+          <SectionH2>LOG EN 30 SECONDES.<br />ANALYSE EN CONTINU.</SectionH2>
           <p style={{ fontSize: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.45)', marginBottom: 32 }}>
-            Courbe de charge en temps réel. Barres de progression par série. RPE adaptatif. L'app recalibrate automatiquement tes recommandations selon ta fatigue réelle.
+            Log ta séance pendant que tu t'entraînes. Le moteur analyse la progression, détecte le surmenage et planifie les semaines suivantes — tout en arrière-plan.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 32 }}>
             {[
-              ['Charge recommandée', 'Calculée depuis RPE + historique'],
-              ['Adaptation automatique', 'Si fatigue détectée en cours de séance'],
-              ['Mésocycle intelligent', '4–6 semaines avec déload planifié'],
+              ['Charge de travail', 'Calculée depuis ton historique réel'],
+              ['Détection surmenage', 'Bascule automatique en récupération'],
+              ['Mésocycle', '4–6 semaines + déload planifié'],
             ].map(([k, v], i) => (
               <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, backgroundColor: BD }}>
                 <div style={{ backgroundColor: BG, padding: '12px 16px' }}>
@@ -342,19 +342,19 @@ function NutritionSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <Eyebrow>Nutrition Composer</Eyebrow>
+          <Eyebrow>Flux 3A — Nutrition Composer</Eyebrow>
           <SectionH2>4 COUCHES.<br />ZÉRO BALANCE.</SectionH2>
           <p style={{ fontSize: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.45)', marginBottom: 32 }}>
-            Estime tes portions avec ta main. Le moteur calcule les macros en temps réel depuis ta morphologie, ton cycle et ton activité du jour.
+            Estime tes portions avec ta main — calibrée sur ta morphologie. Le moteur calcule les macros selon ton objectif du jour, ton cycle et ton activité réelle.
           </p>
 
           {/* Composer layers */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {[
-              { n: '1', label: 'CATÉGORIE', sub: 'Protéines · Glucides · Lipides · Légumes' },
-              { n: '2', label: 'ALIMENT', sub: 'Base de données 300k+ produits' },
-              { n: '3', label: 'PORTION', sub: 'Paume · Poing · Pouce · Cuillère' },
-              { n: '4', label: 'CONFIRMATION', sub: 'Macros calculés — 2 taps suffisent' },
+              { n: '1', label: 'CATÉGORIE', sub: 'Protéines · Glucides · Lipides · Légumes · Extras' },
+              { n: '2', label: 'ALIMENT', sub: 'Recherche full-text + scan code-barres' },
+              { n: '3', label: 'PORTION', sub: 'Paume · Poing · Pouce · Cuillère · Pincée' },
+              { n: '4', label: 'CONFIRMATION', sub: 'Macros calculés en temps réel — 2 taps' },
             ].map(l => (
               <div key={l.n} style={{ display: 'flex', alignItems: 'center', gap: 0, backgroundColor: BD }}>
                 <div style={{ width: 40, padding: '12px 0', backgroundColor: CARD, textAlign: 'center', flexShrink: 0 }}>
@@ -389,19 +389,19 @@ function NutritionSection() {
    ═══════════════════════════════════════════ */
 function SafetySection() {
   const items = [
-    { code: 'TCA', title: 'MODE TCA-SAFE', desc: 'Aucun chiffre de poids ni calories affiché. Tracking désactivé. Protocole adapté au profil clinique.' },
-    { code: 'GLP-1', title: 'GLP-1 & BARIATRIQUE', desc: 'Déficit ajusté, protéines majorées, planchers caloriques renforcés selon le type de chirurgie et le stade.' },
-    { code: 'CYCLE', title: 'CYCLE FÉMININ', desc: 'Modulations nutrition + training par phase (folliculaire, ovulatoire, lutéale, menstruelle).' },
-    { code: 'RED-S', title: 'SURMENAGE & RED-S', desc: 'Détection automatique. Bascule en mode Recovery sans validation requise. Alertes niveau 4-5 non masquables.' },
+    { code: 'TCA', title: 'PROFILS SENSIBLES', desc: 'En mode TCA-safe, aucun chiffre de poids ni calorie affiché. Le moteur adapte son comportement sans jamais exposer l\'utilisateur à un risque.' },
+    { code: 'GLP-1', title: 'CONDITIONS MÉDICALES', desc: 'GLP-1, post-bariatrique, grossesse — les planchers caloriques, les protocoles et les alertes s\'ajustent automatiquement selon le profil.' },
+    { code: 'CYCLE', title: 'CYCLE FÉMININ', desc: 'Nutrition et training modulés par phase hormonale. Folliculaire, ovulatoire, lutéale, menstruelle — chaque phase a ses recommandations propres.' },
+    { code: 'RED-S', title: 'SURMENAGE', desc: 'Le moteur détecte l\'overreaching et le RED-S. Bascule automatique en mode Recovery — sans validation manuelle requise.' },
   ];
 
   return (
     <Section>
       <div style={{ marginBottom: 48 }}>
-        <Eyebrow>Safety Layer</Eyebrow>
+        <Eyebrow>Flux 6 — Safety Layer</Eyebrow>
         <SectionH2>CONÇU POUR<br />TOUS LES PROFILS.</SectionH2>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', maxWidth: 480, marginTop: 8 }}>
-          Le moteur détecte et adapte automatiquement les recommandations selon les conditions médicales, sans jamais exposer l'utilisateur à un risque.
+          Le moteur tourne en continu. Il détecte les situations à risque et adapte le protocole en silence — sans t'alarmer, sans t'exposer.
         </p>
       </div>
 
@@ -475,7 +475,7 @@ function Footer() {
         <div>
           <p style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em', color: '#ffffff', marginBottom: 8 }}>STRYVR</p>
           <p style={{ fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,0.35)', maxWidth: 260, marginBottom: 24 }}>
-            Moteur physiologique intelligent. Pas un tracker — une plateforme d'adhérence fondée sur ta biologie réelle.
+            Le coach physiologique intelligent dans ta poche. Pas un tracker. Pas un générateur de programmes. Un moteur fondé sur la science.
           </p>
           <div style={{ display: 'flex', gap: 16 }}>
             {['INSTAGRAM', 'TIKTOK', 'LINKEDIN'].map(s => (
