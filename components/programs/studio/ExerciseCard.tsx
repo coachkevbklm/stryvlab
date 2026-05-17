@@ -119,13 +119,13 @@ interface Props {
 const TEMPO_PRESETS = [
   {
     label: 'Hypertrophie standard',
-    value: '2-0-3-1',
-    note: 'CON contrôlée (2s) → ISO (0s) → ECC lente (3s) → pause étirement (1s)',
+    value: '2-1-3-1',
+    note: 'CON contrôlée (2s) → ISO contraction (1s) → ECC lente (3s) → pause étirement (1s)',
   },
   {
     label: 'Hypertrophie excentrique',
-    value: '2-0-4-0',
-    note: 'CON contrôlée (2s) → ISO (0s) → ECC très lente (4s) → pas de pause',
+    value: '2-1-4-0',
+    note: 'CON contrôlée (2s) → ISO contraction (1s) → ECC très lente (4s) → pas de pause',
   },
   {
     label: 'Force / Puissance',
@@ -150,7 +150,7 @@ const TEMPO_PRESETS = [
 ] as const
 
 function detectPreset(tempo: string | null): string {
-  if (!tempo) return '2-0-3-1'
+  if (!tempo) return '2-1-3-1'
   const match = TEMPO_PRESETS.find(p => p.value === tempo && p.value !== '__manual__')
   return match ? match.value : '__manual__'
 }

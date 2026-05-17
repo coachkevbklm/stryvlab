@@ -394,15 +394,9 @@ function TempoGuideModalInner({
   const anticipationColor = blinkOrange ? '#f97316' : '#ef4444'
   const labelColor = isAnticipating ? anticipationColor : phaseColor
 
-  // ── SVG section ──
-  const svgEl = (
-    <svg
-      viewBox="0 0 300 280"
-      preserveAspectRatio="xMidYMid meet"
-      className={isLandscape ? 'h-[80vh] w-auto' : 'w-full'}
-      style={{ overflow: 'visible' }}
-    >
-      {/* Triangle track */}
+  // ── SVG content (shared between portrait inline and landscape) ──
+  const svgContent = (
+    <>
       <path
         d={PATH_D}
         fill="none"
@@ -410,8 +404,6 @@ function TempoGuideModalInner({
         strokeWidth="36"
         strokeLinejoin="round"
       />
-
-      {/* Comet trail */}
       {Array.from({ length: TRAIL_LEN }).map((_, i) => (
         <circle
           key={i}
@@ -421,8 +413,6 @@ function TempoGuideModalInner({
           opacity="0"
         />
       ))}
-
-      {/* Diamond at ISO peak (A) */}
       <polygon
         ref={peakDiamondRef}
         points="-8,0 0,-8 8,0 0,8"
@@ -430,8 +420,6 @@ function TempoGuideModalInner({
         opacity="0.55"
         transform={`translate(${TRI_A.x}, ${TRI_A.y})`}
       />
-
-      {/* Diamond at base right (B) */}
       <polygon
         ref={baseRDiamondRef}
         points="-8,0 0,-8 8,0 0,8"
@@ -439,8 +427,6 @@ function TempoGuideModalInner({
         opacity="0.40"
         transform={`translate(${TRI_B.x}, ${TRI_B.y})`}
       />
-
-      {/* Diamond at base left (C) */}
       <polygon
         ref={baseLDiamondRef}
         points="-8,0 0,-8 8,0 0,8"
@@ -448,18 +434,14 @@ function TempoGuideModalInner({
         opacity="0.40"
         transform={`translate(${TRI_C.x}, ${TRI_C.y})`}
       />
-
-      {/* Ball glow */}
       <circle ref={ballGlowRef} r="28" fill={ACCENT_TEMPO} opacity="0.18" />
-
-      {/* Ball */}
       <circle
         ref={ballRef}
         r="18"
         fill="white"
         style={{ filter: `drop-shadow(0 0 18px ${ACCENT_TEMPO}99) drop-shadow(0 0 6px white)` }}
       />
-    </svg>
+    </>
   )
 
   // ── Phase label + timer ──
@@ -623,7 +605,14 @@ function TempoGuideModalInner({
             <div className="flex flex-row items-center h-full pt-16 px-4 gap-6">
               {/* Triangle — colonne gauche */}
               <div className="flex items-center justify-center w-[45vw] h-full">
-                {svgEl}
+                <svg
+                  viewBox="0 0 300 280"
+                  preserveAspectRatio="xMidYMid meet"
+                  className="h-[80vh] w-auto"
+                  style={{ overflow: 'visible' }}
+                >
+                  {svgContent}
+                </svg>
               </div>
               {/* Contrôles — colonne droite */}
               <div className="flex flex-col justify-center gap-4 w-[45vw] pb-4">
@@ -639,15 +628,21 @@ function TempoGuideModalInner({
               </div>
             </div>
           ) : (
-            /* Portrait — colonne verticale */
-            <div className="flex flex-col items-center h-full pt-2">
-              {/* SVG Triangle */}
-              <div className="flex-1 flex items-center w-full px-4 min-h-0">
-                {svgEl}
+            /* Portrait — colonne verticale, hauteurs fixes pour éviter overflow */
+            <div className="flex flex-col items-center" style={{ height: '100%', paddingTop: 8 }}>
+              {/* SVG Triangle — hauteur contrainte, ne prend pas tout l'écran */}
+              <div className="flex items-center justify-center w-full px-6" style={{ height: '44vh', maxHeight: 340 }}>
+                <svg
+                  viewBox="0 0 300 280"
+                  preserveAspectRatio="xMidYMid meet"
+                  style={{ width: '100%', height: '100%', overflow: 'visible' }}
+                >
+                  {svgContent}
+                </svg>
               </div>
 
               {/* Phase label + timer */}
-              <div className="shrink-0 flex flex-col items-center px-6 pt-3 pb-2" style={{ minHeight: 80 }}>
+              <div className="shrink-0 flex flex-col items-center px-6 pt-4 pb-2" style={{ minHeight: 88 }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentPhase}
@@ -667,7 +662,7 @@ function TempoGuideModalInner({
               </div>
 
               {/* Rep counter */}
-              <div className="shrink-0 pb-14">
+              <div className="shrink-0 pb-10">
                 {repCounterEl}
               </div>
             </div>
