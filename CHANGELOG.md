@@ -3,7 +3,43 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-18
+
+FEATURE: TempoGuideModal — couleur balle prédictive (annonce phase suivante avant le mouvement)
+FEATURE: TempoGuideModal — 3 diamants aux points-clés (creux/sommet) — pulse au passage, dim après traversée
+FEATURE: TempoGuideModal — circuit strokeWidth 40 + balle r=18 (proportions cohérentes)
+
+FIX: today-progress — agrège nutrition_meals (Composer) + meal_logs (IA), timezone locale, tri jours par position
+FIX: MacroStrip journal + labels carte repas — couleurs Macrofactor P=#e85d04 / G=#2d9a4e / L=#d4a017
+CHORE: Suppression NutritionRings.tsx zombie
+
+FEATURE: i18n nutrition — ~80 clés ajoutées (catégories alimentaires, sous-types, journal, log/composer, types repas, hydratation)
+REFACTOR: app/client/nutrition/page.tsx — tous strings via ct(lang, ...) : today, hydratation, CTA repas, protocole coach
+REFACTOR: app/client/nutrition/journal/page.tsx — useClientT() partout — formatDate/formatTime locale-aware, MEAL_TYPE_LABELS → MEAL_TYPE_KEYS, strings delete modal traduits
+REFACTOR: app/client/nutrition/log/page.tsx — useClientT() dans NutritionLogInner/QuickSearch/CustomFoodForm — CATEGORY_LABELS/SUBCATEGORY_LABELS construits dynamiquement via t()
+FEATURE: i18n client app — traduction complète ES + EN : ~150 clés ajoutées à clientTranslations.ts (login, onboarding, tour, profil, progress, agenda, recap, form, notifications, password reset)
+REFACTOR: app/client/login/page.tsx — tous strings via useClientT(), messages d'erreur hash traduits
+REFACTOR: app/client/onboarding/page.tsx — WELCOME_SCREENS + password flow + error states via i18n (useClientT)
+REFACTOR: components/client/OnboardingTour.tsx — TOUR_STEPS via clés dictionnaire, CTA traduits
+REFACTOR: components/client/profile/ProfileForm.tsx — labels champs + options TRAINING_GOALS/FITNESS_LEVELS/GENDERS/SPORT_PRACTICES via useClientT
+REFACTOR: components/client/profile/PreferencesForm.tsx — labels via useClientT
+REFACTOR: components/client/profile/NotificationsPanel.tsx — labels + TYPE_LABELS + timeAgo via useClientT
+REFACTOR: components/client/profile/PasswordResetButton.tsx — tous strings via useClientT
+REFACTOR: app/client/page.tsx — gamification (niveau, points, série, record), check-in labels, stats semaine via ct()
+REFACTOR: app/client/profil/page.tsx — restrictions, progression, LEVEL_META, ACTION_LABELS via ct()
+REFACTOR: app/client/progress/ProgressClientPage.tsx — streak labels, insights, section labels, dates locale-aware via useClientT
+REFACTOR: app/client/agenda/page.tsx — section/title/toggles via useClientT
+REFACTOR: app/client/programme/recap/[sessionLogId]/page.tsx — bannière, muscles, notes, repos via ct()
+
 ## 2026-05-17
+
+FEATURE: NutritionWidget — refonte Macrofactor exacte : arc 270° bleu #3b82f6 (calories), couleurs exactes P=#e85d04 / G=#2d9a4e / L=#d4a017, barres 7px, 52px font-black centre, toggle Consommé/Restant pill blanc, flancs Restant·Cible, glow jaune si dépassement
+REFACTOR: nutrition/page + journal — NutritionRings → NutritionWidget (calories jaune / protéines bleu / glucides ambre / lipides rouge), caps arrondis, glow jaune si dépassement, tiles Technogym dessous (valeur 18px font-black + label uppercase coloré)
+FEATURE: Nutrition hub — anneaux intégrés (size=240, stroke=16) + hydratation row + CTA loguer
+FEATURE: Journal — anneaux intégrés dans "Bilan du jour" (size=220, stroke=14) — barres supprimées
+
+FIX: Journal — swipe-to-delete supprimé sur ComposerMealCard et MealLogCard — seul bouton corbeille reste (+ modale confirmation)
+FIX: Journal — MealLogCard (legacy IA) : bouton corbeille ajouté, drag supprimé, layout propre
 
 REFACTOR: SessionLogger hydratation — suppression bouton Droplets header, modal intro au démarrage séance (total ml + conseils), modal rappel 15min immersif centré (style repos) au lieu de bottom sheet
 FEATURE: TempoGuideModal — double courbe sinusoïdale continue (style Technogym) remplace triangle — balle avance sans retour arrière, viewBox glisse horizontalement
