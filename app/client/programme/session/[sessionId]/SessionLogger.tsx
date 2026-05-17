@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Circle,
   Loader2, AlertCircle, RefreshCw, TrendingUp,
-  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight, Play, Droplets
+  Clock, ChevronUp, X, MessageSquare, Flag, ArrowLeftRight, Play
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
@@ -229,6 +229,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const DRAFT_KEY = `draft_session_log_id_${sessionId}`
 
   // ── Hydratation ──
+  const [showHydrationIntro, setShowHydrationIntro] = useState(true)  // modal intro au mount
   const [showHydration, setShowHydration] = useState(false)
   const [sipsConsumed, setSipsConsumed] = useState(0)
   const hydrationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -802,14 +803,6 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             <p className="text-[10px] text-white/30 font-mono mt-1">{formatTime(elapsed)}</p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Hydratation icon */}
-            <button
-              onClick={() => setShowHydration(true)}
-              className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/[0.04] active:scale-95 transition-all"
-              title="Rappel hydratation"
-            >
-              <Droplets size={14} className="text-blue-400 animate-pulse" />
-            </button>
             <span className="text-[11px] font-bold text-[#ffe01e]">{completedCount}/{totalSets}</span>
             {/* Mini-badge repos — temps restant positif */}
             {restStartedAt !== null && !isOvertime && restRemaining !== null && (
@@ -1479,50 +1472,103 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         />
       )}
 
-      {/* ── Hydratation reminder sheet ── */}
-      {showHydration && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[60] flex items-end"
-          onClick={() => {
-            setShowHydration(false)
-            resetHydrationTimer(5 * 60 * 1000)
-          }}
-        >
-          <div
-            className="w-full bg-[#161616] rounded-t-2xl border-t border-white/[0.08] px-5 pt-5 pb-8"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 shrink-0">
-                <Droplets size={18} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold text-white">Hydratation</p>
-                <p className="text-[11px] text-white/40">
-                  Bois environ {hydrationPlan.mlPerSip} ml
-                </p>
-              </div>
+      {/* ── Hydratation intro modal (au démarrage de séance) ── */}
+      {showHydrationIntro && (
+        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center px-5">
+          <div className="w-full max-w-sm bg-[#161616] rounded-2xl border border-white/[0.08] overflow-hidden">
+            {/* Drops animation header */}
+            <div className="relative flex items-center justify-center bg-[#0d0d0d] py-8 overflow-hidden">
+              {/* Gouttes SVG animées */}
+              <svg width="120" height="80" viewBox="0 0 120 80" className="relative z-10">
+                {/* Goutte centrale — grande */}
+                <ellipse cx="60" cy="52" rx="14" ry="18" fill="rgba(59,130,246,0.15)" />
+                <path d="M60 18 Q72 34 72 50 Q72 64 60 68 Q48 64 48 50 Q48 34 60 18Z" fill="rgba(59,130,246,0.5)" />
+                {/* Goutte gauche — petite */}
+                <path d="M28 28 Q34 37 34 45 Q34 52 28 54 Q22 52 22 45 Q22 37 28 28Z" fill="rgba(59,130,246,0.3)" />
+                {/* Goutte droite — moyenne */}
+                <path d="M92 22 Q100 34 100 44 Q100 53 92 56 Q84 53 84 44 Q84 34 92 22Z" fill="rgba(59,130,246,0.35)" />
+              </svg>
+              {/* Reflet lumineux */}
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
             </div>
-            <div className="flex gap-3">
+
+            {/* Contenu */}
+            <div className="px-5 pt-5 pb-6">
+              <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-blue-400/70 mb-1">
+                Hydratation
+              </p>
+              <p className="text-[18px] font-bold text-white leading-snug mb-1">
+                Pense à bien t&apos;hydrater
+              </p>
+              <p className="text-[13px] text-white/50 leading-relaxed mb-4">
+                Pour cette séance, vise environ{' '}
+                <span className="text-white font-semibold">{hydrationPlan.totalMl} ml</span> d&apos;eau au total —
+                soit ~{hydrationPlan.mlPerSip} ml toutes les 15 min.
+              </p>
+
+              {/* Conseils */}
+              <div className="space-y-2 mb-5">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 text-[11px] mt-0.5 shrink-0">•</span>
+                  <p className="text-[12px] text-white/50 leading-snug">Bois entre chaque série, pas en plein effort.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 text-[11px] mt-0.5 shrink-0">•</span>
+                  <p className="text-[12px] text-white/50 leading-snug">3 à 5 gorgées suffisent — inutile de boire trop d&apos;un coup.</p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-white/25 mb-4">
+                Un rappel apparaîtra toutes les 15 min pendant la séance.
+              </p>
+
+              <button
+                onClick={() => setShowHydrationIntro(false)}
+                className="w-full h-12 rounded-xl font-bold text-[14px] uppercase tracking-[0.1em] transition-all active:scale-[0.98]"
+                style={{ backgroundColor: '#ffe01e', color: '#0d0d0d' }}
+              >
+                C&apos;est parti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Hydratation reminder modal (toutes les 15min) ── */}
+      {showHydration && !showHydrationIntro && (
+        <div className="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center px-5">
+          <div className="w-full max-w-sm bg-[#161616] rounded-2xl border border-white/[0.08] overflow-hidden">
+            {/* Header avec gouttes */}
+            <div className="relative flex items-center justify-center bg-[#0d0d0d] py-6 overflow-hidden">
+              <svg width="80" height="56" viewBox="0 0 80 56" className="relative z-10">
+                <path d="M40 10 Q50 24 50 36 Q50 46 40 50 Q30 46 30 36 Q30 24 40 10Z" fill="rgba(59,130,246,0.55)" />
+                <path d="M18 18 Q24 27 24 34 Q24 40 18 42 Q12 40 12 34 Q12 27 18 18Z" fill="rgba(59,130,246,0.3)" />
+                <path d="M62 14 Q68 23 68 30 Q68 36 62 38 Q56 36 56 30 Q56 23 62 14Z" fill="rgba(59,130,246,0.3)" />
+              </svg>
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+            </div>
+
+            {/* Contenu */}
+            <div className="px-5 pt-4 pb-6 text-center">
+              <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-blue-400/70 mb-1">
+                Rappel hydratation
+              </p>
+              <p className="text-[17px] font-bold text-white mb-1">
+                Prends quelques gorgées
+              </p>
+              <p className="text-[13px] text-white/40 mb-5">
+                ~{hydrationPlan.mlPerSip} ml · entre les séries
+              </p>
               <button
                 onClick={() => {
                   setSipsConsumed(prev => prev + 1)
                   setShowHydration(false)
                   resetHydrationTimer(HYDRATION_INTERVAL_MS)
                 }}
-                className="flex-1 h-11 rounded-xl font-bold text-[13px] uppercase tracking-[0.08em]"
+                className="w-full h-12 rounded-xl font-bold text-[14px] uppercase tracking-[0.1em] transition-all active:scale-[0.98]"
                 style={{ backgroundColor: '#ffe01e', color: '#0d0d0d' }}
               >
-                J&apos;ai bu
-              </button>
-              <button
-                onClick={() => {
-                  setShowHydration(false)
-                  resetHydrationTimer(5 * 60 * 1000)
-                }}
-                className="flex-1 h-11 rounded-xl bg-white/[0.04] text-white/50 font-medium text-[13px] hover:text-white/70 transition-colors"
-              >
-                Ignorer
+                OK, j&apos;ai bu
               </button>
             </div>
           </div>

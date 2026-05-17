@@ -5,6 +5,7 @@
 
 ## 2026-05-17
 
+REFACTOR: SessionLogger hydratation — suppression bouton Droplets header, modal intro au démarrage séance (total ml + conseils), modal rappel 15min immersif centré (style repos) au lieu de bottom sheet
 FIX: TempoGuideModal — portrait layout tronqué : SVG contraint à 44vh max, label/barres/counter toujours visibles
 FIX: tempo — ISO=1 sur tous les patterns hypertrophie (HYPERTROPHY_TEMPO_MAP) — contraction isométrique minimale au sommet
 FIX: ExerciseCard — presets "Hypertrophie standard" 2-1-3-1 et "Hypertrophie excentrique" 2-1-4-0
