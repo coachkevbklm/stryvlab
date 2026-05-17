@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-05-17**
+**Dernière mise à jour : 2026-05-18 (Smart Trio refonte app client)**
 
 ---
 
@@ -28,7 +28,7 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Session logging, PWA, weights, superset UX, tempo guide modal v2 (triangle, couleurs, bonus reps, landscape, hydratation) | 2026-05-17 |
+| **Client App** | ✅ Smart Trio refonte (Smart Agenda + Smart Workout + Smart Nutrition + RadialActionMenu + alertes IA) | 2026-05-18 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable DA v3.0, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,44 @@
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-18)
+
+### Smart Trio — Refonte App Client (COMPLET)
+
+**Spec :** `docs/superpowers/specs/2026-05-17-smart-trio-client-app-redesign.md`
+**Plan :** `docs/superpowers/plans/2026-05-17-smart-trio-client-app-redesign.md`
+
+**Fichiers principaux :**
+- `app/client/page.tsx` — Smart Agenda (4 sections)
+- `app/client/nutrition/page.tsx` — Smart Nutrition (5 sections + alertes IA)
+- `app/client/programme/ProgrammeClientPage.tsx` — Smart Workout (alertes + volume + récent)
+- `components/client/BottomNav.tsx` — 5 slots + logo STRYVR central
+- `components/client/smart/` — 16 nouveaux composants
+- `lib/client/smart/` — 4 libs pures (nutritionAlerts, workoutAlerts, waterAggregation, timelineBuilder)
+- `supabase/migrations/20260517_coach_client_notifications.sql` + `20260517_client_activity_logs.sql`
+
+**Changements :**
+- ✅ Accueil = Smart Agenda : notifs → nutrition widget (demi-cercle MacroFactor) → workout widget → timeline
+- ✅ /client/nutrition = Smart Nutrition : héro demi-cercle + 4 alertes IA + protocole coach + restant + trend 7j
+- ✅ /client/programme = Smart Workout : alertes RIR/stagnation + volume coverage MEV/MAV/MRV + dernières séances
+- ✅ BottomNav : logo STRYVR central → RadialActionMenu arc (repas/eau/activité/check-in)
+- ✅ FreeActivitySheet : logger activité libre → `client_activity_logs`
+- ✅ Routes supprimées : /client/agenda + /client/progress → redirect 301 → /client
+- ✅ 11 API routes nouvelles fonctionnelles
+- ✅ 19 tests Vitest PASS (libs pures)
+- ✅ i18n FR/EN/ES : 48 nouvelles clés `smart.*`
+
+**⚠️ Actions manuelles requises :**
+1. Appliquer `20260517_coach_client_notifications.sql` via Supabase Dashboard SQL Editor
+2. Appliquer `20260517_client_activity_logs.sql` via Supabase Dashboard SQL Editor
+
+**Invariants respectés :**
+- DS v3.0 strict : `#0d0d0d` bg, `#161616` surfaces, `#ffe01e` accent, radius hiérarchie
+- Libs pures testées Vitest — aucune logique métier dans les composants React
+- API routes : auth → client_id → query pattern cohérent
 
 ---
 

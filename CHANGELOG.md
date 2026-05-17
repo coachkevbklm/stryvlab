@@ -5,6 +5,77 @@
 
 ## 2026-05-18
 
+FEATURE: Smart Trio refonte app client — Smart Agenda (accueil) + Smart Workout + Smart Nutrition 3 piliers
+FEATURE: BottomNav 5 slots + logo STRYVR central + RadialActionMenu 4 actions arc (repas/eau/activité/check-in)
+FEATURE: FreeActivitySheet — logger activité libre (running, cycling, etc.) → client_activity_logs
+FEATURE: SmartNutritionWidget — demi-cercle calorique MacroFactor style + macros P/L/G + hydratation
+FEATURE: SmartWorkoutWidget — résumé séance + BodyMap mini + CTA démarrer
+FEATURE: SmartAgendaTimeline — timeline logs journée avec agrégation eau par tranche horaire
+FEATURE: NotificationsBar — notifications coach conditionnelles (bilans, programme, notes, rappels)
+FEATURE: Smart Nutrition page — héro demi-cercle + alertes IA (4 règles) + protocole coach + restant + trend
+FEATURE: Smart Workout page — alertes RIR/stagnation + volume coverage MEV/MAV/MRV + dernières séances
+FEATURE: Alertes IA nutrition — protéines en retard, limite glucides, hydratation faible, déjeuner non logué
+FEATURE: Alertes IA workout — surmenage RIR, stagnation 3sem, progression positive
+SCHEMA: coach_client_notifications table + RLS (bilans, programme, coach_note, system_reminder)
+SCHEMA: client_activity_logs table + RLS (running, cycling, swimming, walking, team_sport, other)
+REFACTOR: suppression routes /client/agenda + /client/progress → redirects 301 vers /client
+REFACTOR: BottomNavPlusMenu remplacé par RadialActionMenu
+REFACTOR: AgendaDayView, AgendaWeekView, AgendaEventCard supprimés
+CHORE: i18n smart.* namespace (FR/EN/ES) — 48 nouvelles clés
+
+FEATURE: Portions scaling main user — `coach_clients.hand_length_cm` + helper `getScaledPortionG` (réf 18cm, fallback taille × 0.108 Pheasant)
+FEATURE: PORTION_SIZES refactor — 15 portions (8 nouvelles : demi-paume, poing sec, bol mains, pince, tbsp bombée, tranche pain, œuf, verre) + tag `scales: 'hand' | 'fixed'`
+FEATURE: Composer couche 4 — multiplicateur ×1 → ×5 sur portions (réutilise même portion N fois) + badge "ajusté à ta main" si override actif
+FEATURE: Endpoint GET/PATCH /api/client/profile-scaling (hand_length_cm + height_cm)
+FEATURE: Profil client — section "Portions visuelles" : input main + guide mesure + preview palm=Xg dynamique
+FEATURE: Bananes plantains — 5 variantes (vert cru, mûr cru, bouilli, frit, mûr frit)
+SCHEMA: ALTER coach_clients ADD COLUMN hand_length_cm DECIMAL(4,1) — migration 20260518_portion_scaling_and_plantains.sql
+
+FIX: Landing /stryvr — inscription bêta : service role client utilisé (bypass RLS, route publique sans session)
+REFACTOR: Landing /stryvr — DS v3.0 strict : radius sur tous les éléments (cards R16, boutons R12, badges R8, pills), border 1px solid rgba(255,255,255,0.08), gap au lieu de borderRadius:0
+REFACTOR: BetaForm — DS v3.0 : toggle grid 2 cols avec gap, inputs rounded-xl avec border focus, CTA rounded-xl avec icon box
+FEATURE: Landing /stryvr — mockups app refaits (HomeScreen, SessionScreen, NutritionScreen, AgendaScreen) fidèles à la vraie UI DS v3.0
+REFACTOR: Landing /stryvr — toggle bêta "JE VEUX ÊTRE COACHÉ" (plus générique que remise en forme)
+FEATURE: Landing /stryvr — HeroPhoneStack 3 phones en perspective (home, nutrition, agenda)
+FEATURE: Landing /stryvr — formulaire bêta avec toggle COACH / ATHLÈTE (rôle transmis en DB + email)
+FEATURE: Landing /stryvr — email de confirmation bêta branded STRYVR (sendBetaWaitlistEmail) selon rôle
+FEATURE: Landing /stryvr — vrai logo SVG STRYVR dans navbar + footer
+FEATURE: Landing /stryvr — section "On construit ensemble" (bêta testeur : offre vs demande)
+REFACTOR: Landing /stryvr — responsive mobile complet (hero, stats, features, app, safety, CTA, footer)
+SCHEMA: beta_waitlist — colonne role TEXT CHECK('coach','athlete') ajoutée (migration 20260517_beta_waitlist_role.sql)
+CHORE: PWA icons — remplacé favicon2 par les icônes officielles STRYVR (public/logo/icons) — icon-192.png, icon-512.png, apple-touch-icon.png
+CHORE: mailer — logo email remplacé par PNG officiel (logo-stryvr.png) — SVG non supporté par certains clients mail
+
+## 2026-05-18
+
+CHORE: mailer.ts — DS v3.0 tokens appliqués (fond #0d0d0d, surface #161616, accent #ffe01e, texte bouton #0d0d0d, dot jaune, border 0.08)
+FIX: invite route — active client with existing password gets login email (reactivation), not set-password email — fixes "deleted PWA" resend scenario
+FEATURE: PWA manifest.json — created with STRYVR name + favicon2 icons (dark bg, yellow S) for correct home screen icon on iOS/Android
+CHORE: client/layout — wire apple-touch-icon + favicon to favicon2 set (STRYVR yellow)
+CHORE: Branding audit — all client-visible touchpoints now use STRYVR (was STRYV) — emails FROM, subjects, body, footer, logo in emails + AssessmentForm
+
+FIX: calcHydrationPlan — formule EFSA daily→session (exercise delta ~700-900ml vs 3000ml+)
+REFACTOR: Hydratation intro modal — design rest-timer (backdrop-blur, plein écran, volume centré large, sans card box)
+REFACTOR: Hydratation reminder modal — même design rest-timer, bouton "Ignorer" discret aligné sur "Passer le repos"
+
+
+
+CHORE: Replace logo.png with SVG logo (Logo STRYVR.svg) across all client-facing pages — login, onboarding, home, acces-suspendu, access/expired, access/invalid
+
+FIX: today-progress + nutrition/page — timestamp T27:59:59 invalide → borne haute correcte nextDay T04:00:00
+FIX: NutritionWidget — suppression drop-shadow coloré sur arc over-target (violation DS v3.0)
+FIX: NutritionWidget — mode sans cible (targetCal=0) → résumé compact (valeur + strip + 3 tiles macro) au lieu d'arc vide
+FIX: MealLogCard macro labels — couleurs Macrofactor P=#e85d04 / G=#2d9a4e / L=#d4a017 (était blue-400/jaune/rouge)
+FIX: Protocol days bars (nutrition/page) — couleurs Macrofactor (était bg-blue-400/ffe01e/red-400)
+FIX: Composer item list + macro preview + footer totals — couleurs Macrofactor (était blue/amber/red)
+FIX: saveMeal() — gestion erreur API explicite (était silencieux sur !res.ok)
+FIX: executeDelete() journal — vérifie res.ok avant retrait de la liste locale (évite phantom state)
+FIX: QuickWaterModal — CTA bg-blue-500 → bg-[#ffe01e] text-[#0d0d0d] (DS v3.0 CTA token)
+FIX: QuickWaterModal — message d'erreur si food_item introuvable (était silencieux)
+FIX: QuickWaterModal — selected pill blue → neutre white (DS v3.0)
+FIX: journal MealTypeChooser dropdown — bg-[#1e1e1e] → bg-[#161616] (DS v3.0 surface token)
+FIX: journal delete modal — bg-[#1a1a1a] → bg-[#161616] (DS v3.0 surface token)
+
 FEATURE: TempoGuideModal — couleur balle prédictive (annonce phase suivante avant le mouvement)
 FEATURE: TempoGuideModal — 3 diamants aux points-clés (creux/sommet) — pulse au passage, dim après traversée
 FEATURE: TempoGuideModal — circuit strokeWidth 40 + balle r=18 (proportions cohérentes)
