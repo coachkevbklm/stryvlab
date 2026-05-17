@@ -79,6 +79,13 @@ const PHASE_CONFIG = [
 const ACCENT_TEMPO = '#FFB800'
 const TRAIL_LEN = 6
 
+// Seuil en ms : si la phase statique (ISO/PAUSE) est >= ce seuil → passe rouge.
+// En dessous → skip rouge, reste dans la couleur de transition.
+const STATIC_RED_THRESHOLD_MS = 2000
+
+// Temps en ms avant la FIN d'une phase statique pour passer vert (annonce redémarrage)
+const GREEN_PREVIEW_MS = 400
+
 // ─── Landscape hook ───────────────────────────────────────────────────────────
 
 function useIsLandscape(): boolean {
@@ -164,13 +171,15 @@ function TempoGuideModalInner({
   const isAnticipatingRef    = useRef(false)
 
   // ── SVG DOM refs ──
-  const pathRef      = useRef<SVGPathElement>(null)  // pour getTotalLength
-  const ballRef      = useRef<SVGCircleElement>(null)
-  const ballGlowRef  = useRef<SVGCircleElement>(null)
-  const trailRefs    = useRef<SVGCircleElement[]>([])
-  const svgRef       = useRef<SVGSVGElement>(null)   // pour animer le viewBox
+  const pathRef         = useRef<SVGPathElement>(null)
+  const ballRef         = useRef<SVGCircleElement>(null)
+  const ballGlowRef     = useRef<SVGCircleElement>(null)
+  const trailRefs       = useRef<SVGCircleElement[]>([])
+  const svgRef          = useRef<SVGSVGElement>(null)
+  // Diamants : 0=creux gauche(début rep), 1=sommet, 2=creux droit(fin rep)
+  const diamondRefs     = useRef<SVGPolygonElement[]>([])
 
-  // ── Label DOM refs — mis à jour directement dans RAF (zéro latence React) ──
+  // ── Label DOM refs ──
   const phaseLabelRef = useRef<HTMLSpanElement>(null)
   const phaseTimerRef = useRef<HTMLSpanElement>(null)
 
@@ -180,8 +189,12 @@ function TempoGuideModalInner({
   const repRef        = useRef(0)
   const bonusRepsRef  = useRef(0)
   const lastPhaseRef  = useRef(-1)
-  const pathLenRef    = useRef<number>(0)    // longueur totale du path (3 bosses)
-  const repLenRef     = useRef<number>(0)    // longueur d'une bosse (1 rep)
+  const pathLenRef    = useRef<number>(0)
+  const repLenRef     = useRef<number>(0)
+  // Couleur balle courante (DOM direct, évite setState)
+  const ballColorRef  = useRef<string>(PHASE_CONFIG[0].color)
+  // Diamant dernièrement pulsé (évite répétitions)
+  const lastDiamondRef = useRef<number>(-1)
 
   // ── Countdown ──
   useEffect(() => {
@@ -274,145 +287,150 @@ function TempoGuideModalInner({
       tInPhaseMs = phaseDurations[i]
     }
 
-    const phaseMs     = phaseDurations[phase]
+    const phaseMs      = phaseDurations[phase]
     const tInPhaseFrac = phaseMs > 0 ? Math.min(tInPhaseMs / phaseMs, 1) : 1
+    const timeLeftMs   = phaseMs - tInPhaseMs
 
-    // ── Phase change — DOM direct ──
+    // ── Phase change ──
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase
       setCurrentPhase(phase)
-      const cfg = PHASE_CONFIG[phase]
-      if (phaseLabelRef.current) {
-        phaseLabelRef.current.textContent = cfg.label
-        phaseLabelRef.current.style.color  = cfg.color
-      }
-      if (phaseTimerRef.current) {
-        phaseTimerRef.current.style.color = cfg.color
-      }
-      setPhaseColor(cfg.color)
-      isAnticipatingRef.current  = false
-      setIsAnticipating(false)
+      isAnticipatingRef.current    = false
       anticipationFiredRef.current = false
+      lastDiamondRef.current       = -1
       if (phase === 0) vib(80)
       else if (phase === 1) vib(40)
       else if (phase === 2) vib(40)
       else if (phase === 3) vib(30)
     }
 
+    // ── Couleur balle prédictive ──
+    // Règle : la couleur ANNONCE ce qui va se passer, pas ce qui se passe.
+    //
+    // En mouvement CON  → vert
+    // En mouvement ECC  → orange
+    // Arrivée sommet ISO ≥ 2s → rouge immédiat
+    // Arrivée sommet ISO < 2s → orange (skip rouge, trop court)
+    // 400ms avant fin ISO     → vert (annonce redémarrage ECC... attend, ECC est orange)
+    //   → en fait : avant fin ISO, passer orange (annonce ECC)
+    // Arrivée creux PAUSE ≥ 2s → rouge immédiat
+    // Arrivée creux PAUSE < 2s → orange
+    // 400ms avant fin PAUSE   → vert (annonce CON)
+
+    let ballColor: string
+    const isoDurMs   = phaseDurations[1]
+    const pauseDurMs = phaseDurations[3]
+
+    if (phase === 0) {
+      // CON — vert. Sauf si anticipation approche ISO : 500ms avant fin → orange
+      if (isoDurMs > 0 && timeLeftMs <= 500) {
+        ballColor = '#f97316' // orange — annonce ISO imminent
+      } else {
+        ballColor = '#22c55e' // vert CON
+      }
+    } else if (phase === 1) {
+      // ISO (sommet)
+      if (isoDurMs >= STATIC_RED_THRESHOLD_MS) {
+        // Long ISO : rouge → puis orange 400ms avant fin (annonce ECC)
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : '#ef4444'
+      } else {
+        // Court ISO : orange continu → vert 400ms avant fin
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : '#f97316'
+      }
+    } else if (phase === 2) {
+      // ECC — orange. 500ms avant creux → reste orange (creux = rouge ou orange)
+      ballColor = '#f97316'
+    } else {
+      // PAUSE (creux)
+      if (pauseDurMs >= STATIC_RED_THRESHOLD_MS) {
+        // Long PAUSE : rouge → vert 400ms avant fin (annonce CON)
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#ef4444'
+      } else {
+        // Court PAUSE : orange → vert 400ms avant fin
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#f97316'
+      }
+    }
+
+    // Appliquer couleur balle si changée
+    if (ballColor !== ballColorRef.current) {
+      ballColorRef.current = ballColor
+      // Mettre à jour label aussi (phase label suit la couleur balle pour cohérence)
+      if (phaseLabelRef.current) {
+        // Label = action correspondant à ballColor
+        const labelText = ballColor === '#22c55e' ? 'CONTRACTER'
+          : ballColor === '#ef4444' ? (phase === 1 ? 'TENIR' : 'PAUSE')
+          : ballColor === '#f97316' ? (phase === 2 ? 'FREINER' : phase === 0 ? 'TENIR' : 'FREINER')
+          : PHASE_CONFIG[phase].label
+        phaseLabelRef.current.textContent = labelText
+        phaseLabelRef.current.style.color  = ballColor
+      }
+      if (phaseTimerRef.current) {
+        phaseTimerRef.current.style.color = ballColor
+      }
+      setPhaseColor(ballColor)
+    }
+
     // ── Phase timer — DOM direct ──
     if (phaseMs > 0) {
-      const remaining = Math.ceil((phaseMs - tInPhaseMs) / 1000)
+      const remaining = Math.ceil(timeLeftMs / 1000)
       const timerVal  = Math.max(remaining, 0)
       setPhaseTimer(timerVal)
       if (phaseTimerRef.current) {
         phaseTimerRef.current.textContent = `${timerVal}s`
-        phaseTimerRef.current.style.color  = PHASE_CONFIG[phase].color
       }
     }
 
-    // ── Anticipation isométrique ──
-    const nextPhaseIsIso  = (phase === 0 && phaseDurations[1] > 0) || (phase === 3 && phaseDurations[1] > 0)
-    const phaseDurSec     = phaseMs / 1000
-    const anticipationThreshold = phaseDurSec > 0.8 ? 1 - (0.8 / phaseDurSec) : 0
-    const shouldAnticipate = nextPhaseIsIso && tInPhaseFrac >= anticipationThreshold
-
-    if (shouldAnticipate && !anticipationFiredRef.current) {
-      anticipationFiredRef.current = true
-      isAnticipatingRef.current    = true
-      setIsAnticipating(true)
-      if (hapticsEnabled) { try { navigator.vibrate(10) } catch { /* */ } }
-      // Blink label DOM direct
-      let blinkCount = 0
-      const blinkIv = setInterval(() => {
-        if (!phaseLabelRef.current) { clearInterval(blinkIv); return }
-        phaseLabelRef.current.style.color = blinkCount % 2 === 0 ? '#f97316' : '#ef4444'
-        blinkCount++
-        if (blinkCount >= 4) clearInterval(blinkIv)
-      }, 125)
-    }
-
-    // ── Position balle sur la double courbe ──
-    // Stratégie : la balle est toujours sur la bosse centrale du path (bosse 2 sur 3).
-    // On calcule la progression dans la rep (0→1) et on la mappe sur la longueur d'une bosse.
-    // Le viewBox SVG est décalé horizontalement pour donner l'illusion de mouvement continu.
-
+    // ── Position balle ──
     const repLen = repLenRef.current
     if (repLen === 0) { rafRef.current = requestAnimationFrame(tick); return }
 
-    // Progression 0→1 dans la rep courante en tenant compte de l'easing par phase
-    let repFrac: number
-    // Chaque phase occupe une fraction de la bosse
-    // CON : 0 → 0.5 (montée), ISO : 0.5 (pic), ECC : 0.5 → 1 (descente), PAUSE : 1 (creux)
-    const conDur   = phaseDurations[0]
-    const isoDur   = phaseDurations[1]
-    const eccDur   = phaseDurations[2]
-    const pauseDur = phaseDurations[3]
-    const totalDur = conDur + isoDur + eccDur + pauseDur
-
-    // Fraction temporelle dans la rep complète (0→1)
+    const conDur  = phaseDurations[0]
+    const isoDur  = phaseDurations[1]
+    const eccDur  = phaseDurations[2]
+    const totalDur = conDur + isoDur + eccDur + pauseDurMs
     const timeFrac = Math.min(tRep / totalDur, 1)
+    const conFrac  = totalDur > 0 ? conDur / totalDur : 0.25
+    const isoFrac  = totalDur > 0 ? isoDur / totalDur : 0
+    const eccFrac  = totalDur > 0 ? eccDur / totalDur : 0.25
 
-    // Mapper timeFrac → position sur la bosse (0=creux gauche, 0.5=pic, 1=creux droite)
-    // CON  : 0 → 0.5 linéairement (montée)
-    // ISO  : freeze à 0.5
-    // ECC  : 0.5 → 1 linéairement (descente)
-    // PAUSE: freeze à 1 (= 0 du prochain cycle)
-    const conFrac   = totalDur > 0 ? conDur / totalDur : 0.25
-    const isoFrac   = totalDur > 0 ? isoDur / totalDur : 0
-    const eccFrac   = totalDur > 0 ? eccDur / totalDur : 0.25
-    // pauseFrac = 1 - conFrac - isoFrac - eccFrac
-
+    let repFrac: number
     if (timeFrac <= conFrac) {
-      // CON phase : 0 → 0.5 sur la bosse, ease-out quad
       const t = conFrac > 0 ? timeFrac / conFrac : 1
-      const eased = isAnticipatingRef.current
-        ? Math.min(t * (2 - t * 0.3), 1)  // décélération anticipation
-        : t * (2 - t)                       // ease-out normal
-      repFrac = eased * 0.5
+      repFrac = t * (2 - t) * 0.5  // ease-out quad, 0→0.5
     } else if (timeFrac <= conFrac + isoFrac) {
-      // ISO phase : freeze au pic
       repFrac = 0.5
     } else if (timeFrac <= conFrac + isoFrac + eccFrac) {
-      // ECC phase : 0.5 → 1, ease-in quad
       const t = eccFrac > 0 ? (timeFrac - conFrac - isoFrac) / eccFrac : 1
-      repFrac = 0.5 + (t * t) * 0.5
+      repFrac = 0.5 + (t * t) * 0.5  // ease-in quad, 0.5→1
     } else {
-      // PAUSE phase : freeze au creux
       repFrac = 1.0
     }
 
-    // Position sur la bosse centrale (bosse index 1, de repLen à 2×repLen)
     const pathPos = repLen + repFrac * repLen
     const pt = pathRef.current.getPointAtLength(pathPos)
 
-    // Décalage viewBox : centrer la balle horizontalement
-    // La balle est à pt.x dans le path (coordonnées du path complet 0→1200)
-    // On veut que la balle soit toujours au centre du SVG affiché (WAVE_W/2 = 200)
     const viewBoxX = pt.x - WAVE_W / 2
     svgRef.current.setAttribute('viewBox', `${viewBoxX} 0 ${WAVE_W} ${WAVE_H}`)
 
-    // La balle est toujours au centre horizontal dans le viewBox mouvant
     ballRef.current.setAttribute('cx', String(pt.x))
     ballRef.current.setAttribute('cy', String(pt.y))
     ballGlowRef.current.setAttribute('cx', String(pt.x))
     ballGlowRef.current.setAttribute('cy', String(pt.y))
 
-    // ── Ball appearance ──
-    const currentColor  = PHASE_CONFIG[phase].color
+    // ── Ball appearance (taille + glow) ──
     const isStaticPhase = (phase === 1 || phase === 3) && phaseMs > 200
-
-    ballRef.current.setAttribute('fill', currentColor)
-    ballRef.current.style.filter = `drop-shadow(0 0 14px ${currentColor}99) drop-shadow(0 0 5px ${currentColor}cc)`
-    ballGlowRef.current.setAttribute('fill', currentColor)
+    ballRef.current.setAttribute('fill', ballColor)
+    ballRef.current.style.filter = `drop-shadow(0 0 16px ${ballColor}bb) drop-shadow(0 0 6px ${ballColor})`
+    ballGlowRef.current.setAttribute('fill', ballColor)
 
     if (isStaticPhase) {
-      const r = 14 + tInPhaseFrac * 3
-      ballRef.current.setAttribute('r', String(r))
-      ballGlowRef.current.setAttribute('r', String(22 + tInPhaseFrac * 6))
-      ballGlowRef.current.setAttribute('opacity', String(0.18 + tInPhaseFrac * 0.18))
+      const pulse = Math.sin(tInPhaseFrac * Math.PI)
+      ballRef.current.setAttribute('r', String(18 + pulse * 3))
+      ballGlowRef.current.setAttribute('r', String(28 + pulse * 8))
+      ballGlowRef.current.setAttribute('opacity', String(0.20 + pulse * 0.15))
     } else {
-      ballRef.current.setAttribute('r', '14')
-      ballGlowRef.current.setAttribute('r', '22')
+      ballRef.current.setAttribute('r', '18')
+      ballGlowRef.current.setAttribute('r', '28')
       ballGlowRef.current.setAttribute('opacity', '0.18')
     }
 
@@ -430,12 +448,47 @@ function TempoGuideModalInner({
       trail[0]?.setAttribute('cy', String(pt.y))
       trail.forEach((el, i) => {
         if (!el) return
-        el.setAttribute('fill', currentColor)
-        el.setAttribute('opacity', String(((TRAIL_LEN - i) / TRAIL_LEN) * 0.22))
-        el.setAttribute('r',       String(Math.max(10 - i, 2)))
+        el.setAttribute('fill', ballColor)
+        el.setAttribute('opacity', String(((TRAIL_LEN - i) / TRAIL_LEN) * 0.20))
+        el.setAttribute('r', String(Math.max(13 - i * 1.5, 2)))
       })
     } else {
       trail.forEach(el => el?.setAttribute('opacity', '0'))
+    }
+
+    // ── Diamants — 3 points clés sur la bosse centrale ──
+    // Index 0 = creux gauche (repFrac=0), 1 = sommet (repFrac=0.5), 2 = creux droit (repFrac=1)
+    const diamondPositions = [0, 0.5, 1]
+    const diamonds = diamondRefs.current
+    if (diamonds.length >= 3) {
+      diamondPositions.forEach((frac, idx) => {
+        const dPathPos = repLen + frac * repLen
+        const dPt = pathRef.current!.getPointAtLength(dPathPos)
+        const el = diamonds[idx]
+        if (!el) return
+
+        // Couleur du diamant selon sa position
+        const dColor = frac === 0.5
+          ? (isoDurMs >= STATIC_RED_THRESHOLD_MS ? '#ef4444' : '#f97316')  // sommet
+          : (pauseDurMs >= STATIC_RED_THRESHOLD_MS ? '#ef4444' : '#f97316') // creux
+
+        // Distance balle → diamant en unités de repFrac
+        const dist = Math.abs(repFrac - frac)
+        const near = dist < 0.08
+
+        if (near && lastDiamondRef.current !== idx) {
+          lastDiamondRef.current = idx
+          // Pulse : scale 1→2→1 via setAttribute transform
+          el.setAttribute('opacity', '1')
+        }
+
+        const scale = near ? 1.8 : 1.0
+        const opacity = near ? 1.0 : (repFrac > frac ? 0.20 : 0.55)
+
+        el.setAttribute('fill', dColor)
+        el.setAttribute('opacity', String(opacity))
+        el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y}) scale(${scale})`)
+      })
     }
 
     rafRef.current = requestAnimationFrame(tick)
@@ -466,15 +519,15 @@ function TempoGuideModalInner({
       preserveAspectRatio="xMidYMid meet"
       style={{ width: '100%', height: '100%', overflow: 'visible' }}
     >
-      {/* Path invisible pour mesure */}
+      {/* Path invisible pour mesure getTotalLength */}
       <path ref={pathRef} d={WAVE_PATH_D} fill="none" stroke="none" />
 
-      {/* Wave track visible */}
+      {/* Wave track — plus épais */}
       <path
         d={WAVE_PATH_D}
         fill="none"
-        stroke="rgba(255,255,255,0.08)"
-        strokeWidth="28"
+        stroke="rgba(255,255,255,0.07)"
+        strokeWidth="40"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -484,21 +537,33 @@ function TempoGuideModalInner({
         <circle
           key={i}
           ref={el => { if (el) trailRefs.current[i] = el }}
-          r="8"
+          r="10"
           fill="white"
           opacity="0"
         />
       ))}
 
-      {/* Glow */}
-      <circle ref={ballGlowRef} r="22" fill={ACCENT_TEMPO} opacity="0.18" />
+      {/* Diamants — 3 points clés (creux gauche, sommet, creux droit) */}
+      {[0, 1, 2].map(idx => (
+        <polygon
+          key={idx}
+          ref={el => { if (el) diamondRefs.current[idx] = el }}
+          points="-7,0 0,-7 7,0 0,7"
+          fill={ACCENT_TEMPO}
+          opacity="0.55"
+          transform={`translate(${WAVE_W / 2}, ${WAVE_H / 2})`}
+        />
+      ))}
 
-      {/* Ball */}
+      {/* Glow */}
+      <circle ref={ballGlowRef} r="28" fill={ACCENT_TEMPO} opacity="0.18" />
+
+      {/* Ball — plus grosse, correspond au track */}
       <circle
         ref={ballRef}
-        r="14"
-        fill="white"
-        style={{ filter: `drop-shadow(0 0 14px ${ACCENT_TEMPO}99) drop-shadow(0 0 5px white)` }}
+        r="18"
+        fill={PHASE_CONFIG[0].color}
+        style={{ filter: `drop-shadow(0 0 16px ${PHASE_CONFIG[0].color}bb) drop-shadow(0 0 6px ${PHASE_CONFIG[0].color})` }}
       />
     </svg>
   )
