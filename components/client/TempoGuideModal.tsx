@@ -201,12 +201,25 @@ function TempoGuideModalInner({
     return () => clearTimeout(t)
   }, [countdown])
 
-  // ── Init path lengths au premier mount ──
+  // ── Init path lengths + viewBox initial au mount ──
   useEffect(() => {
-    if (!pathRef.current) return
+    if (!pathRef.current || !svgRef.current) return
     const total = pathRef.current.getTotalLength()
     pathLenRef.current = total
-    repLenRef.current  = total / 3  // 3 bosses dans le path
+    repLenRef.current  = total / 3
+    // Positionner le viewBox sur le creux de départ (bosse 2, repFrac=0 → x=repLen)
+    const repLen = total / 3
+    const startPt = pathRef.current.getPointAtLength(repLen)
+    svgRef.current.setAttribute('viewBox', `${startPt.x - WAVE_W / 2} 0 ${WAVE_W} ${WAVE_H}`)
+    // Positionner la balle sur ce creux
+    if (ballRef.current) {
+      ballRef.current.setAttribute('cx', String(startPt.x))
+      ballRef.current.setAttribute('cy', String(startPt.y))
+    }
+    if (ballGlowRef.current) {
+      ballGlowRef.current.setAttribute('cx', String(startPt.x))
+      ballGlowRef.current.setAttribute('cy', String(startPt.y))
+    }
   }, [])
 
   // ── Position balle pendant prep ──
@@ -549,27 +562,44 @@ function TempoGuideModalInner({
 
   const PHASE_SUBLABELS = ['Montée — contraction', 'Maintien au sommet', 'Descente contrôlée', 'Pause bas']
 
-  // ── Rep bars — flex-wrap pour beaucoup de reps ──
-  const totalBars = reps + bonusReps
+  // ── Rep bars — fenêtre glissante, N barres fixes, centrées ──
+  // Fenêtre : toujours N barres à l'écran.
+  // Quand bonusReps > 0 : la fenêtre avance — on perd la première barre complétée à gauche,
+  // on gagne une nouvelle barre grise à droite.
+  const BAR_COUNT = isLandscape ? 12 : 20  // nb fixe de barres visibles
+  const barGap = 3
+  const barContainerW = isLandscape ? 120 : 300
+  const barW = Math.max(8, Math.floor((barContainerW - barGap * (BAR_COUNT - 1)) / BAR_COUNT))
+
+  // windowStart : premier index affiché (glisse quand bonus)
+  const windowStart = Math.max(0, (reps + bonusReps) - BAR_COUNT + 1)
+
   const repBarsEl = (
-    <div className="flex flex-row flex-wrap gap-[3px]" style={{ height: 'auto' }}>
-      {Array.from({ length: totalBars }).map((_, i) => {
+    <div
+      className="flex flex-row items-center justify-center gap-[3px]"
+      style={{ width: '100%' }}
+    >
+      {Array.from({ length: BAR_COUNT }).map((_, slot) => {
+        const i = windowStart + slot
         const isBonus   = i >= reps
         const isDone    = i < currentRep
         const isCurrent = i === currentRep
+        const exists    = i < reps + bonusReps + 1  // +1 pour la barre courante
         return (
           <motion.div
             key={i}
-            className="rounded-lg"
-            style={{ width: Math.min(36, Math.max(10, (isLandscape ? 120 : 280) / (reps > 20 ? reps : Math.max(reps, 8)) - 3)), height: 28 }}
+            className="shrink-0 rounded-lg"
+            style={{ width: barW, height: 28 }}
             animate={{
-              backgroundColor: isBonus
-                ? (isDone || isCurrent ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)')
-                : (isDone || isCurrent ? '#ffe01e' : 'rgba(255,255,255,0.09)'),
-              boxShadow: isCurrent && !isBonus ? '0 0 10px rgba(255,224,30,0.5)' : 'none',
+              backgroundColor: !exists
+                ? 'rgba(255,255,255,0.06)'
+                : isBonus
+                  ? (isDone || isCurrent ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)')
+                  : (isDone || isCurrent ? '#FFB800' : 'rgba(255,255,255,0.09)'),
+              boxShadow: isCurrent ? '0 0 10px rgba(255,184,0,0.5)' : 'none',
             }}
             initial={false}
-            transition={{ backgroundColor: { duration: 0.2 } }}
+            transition={{ backgroundColor: { duration: 0.15 } }}
           />
         )
       })}
