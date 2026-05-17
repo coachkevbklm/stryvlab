@@ -207,11 +207,10 @@ function TempoGuideModalInner({
     const total = pathRef.current.getTotalLength()
     pathLenRef.current = total
     repLenRef.current  = total / 3
-    // Positionner le viewBox sur le creux de départ (bosse 2, repFrac=0 → x=repLen)
-    const repLen = total / 3
-    const startPt = pathRef.current.getPointAtLength(repLen)
+    // Balle au tout début : bosse 1 creux gauche = position 0 sur le path
+    // viewBox centré sur ce point → rien à gauche de la courbe (pas d'historique)
+    const startPt = pathRef.current.getPointAtLength(0)
     svgRef.current.setAttribute('viewBox', `${startPt.x - WAVE_W / 2} 0 ${WAVE_W} ${WAVE_H}`)
-    // Positionner la balle sur ce creux
     if (ballRef.current) {
       ballRef.current.setAttribute('cx', String(startPt.x))
       ballRef.current.setAttribute('cy', String(startPt.y))
@@ -398,7 +397,8 @@ function TempoGuideModalInner({
       repFrac = 1.0
     }
 
-    const pathPos = repLen + repFrac * repLen
+    // Bosse 1 (pas bosse 2) — balle commence sans historique à gauche
+    const pathPos = repFrac * repLen
     const pt = pathRef.current.getPointAtLength(pathPos)
 
     const viewBoxX = pt.x - WAVE_W / 2
@@ -452,34 +452,17 @@ function TempoGuideModalInner({
     // Index 0 = creux gauche (repFrac=0), 1 = sommet (repFrac=0.5), 2 = creux droit (repFrac=1)
     const diamondPositions = [0, 0.5, 1]
     const diamonds = diamondRefs.current
+    // Diamants — positions fixes, pas d'animation, juste placement
     if (diamonds.length >= 3) {
       diamondPositions.forEach((frac, idx) => {
-        const dPathPos = repLen + frac * repLen
+        const dPathPos = frac * repLen
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
-
-        // Couleur du diamant = couleur de la phase qui DÉMARRE à ce point
-        // Creux (frac=0 ou 1) = début CON → vert
-        // Sommet (frac=0.5)   = début ISO → jaune accent
         const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
-
-        // Distance balle → diamant en unités de repFrac
-        const dist = Math.abs(repFrac - frac)
-        const near = dist < 0.08
-
-        if (near && lastDiamondRef.current !== idx) {
-          lastDiamondRef.current = idx
-          // Pulse : scale 1→2→1 via setAttribute transform
-          el.setAttribute('opacity', '1')
-        }
-
-        const scale = near ? 1.8 : 1.0
-        const opacity = near ? 1.0 : (repFrac > frac ? 0.20 : 0.55)
-
         el.setAttribute('fill', dColor)
-        el.setAttribute('opacity', String(opacity))
-        el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y}) scale(${scale})`)
+        el.setAttribute('opacity', '0.6')
+        el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y})`)
       })
     }
 
@@ -571,8 +554,9 @@ function TempoGuideModalInner({
   const barContainerW = isLandscape ? 120 : 300
   const barW = Math.max(8, Math.floor((barContainerW - barGap * (BAR_COUNT - 1)) / BAR_COUNT))
 
-  // windowStart : premier index affiché (glisse quand bonus)
-  const windowStart = Math.max(0, (reps + bonusReps) - BAR_COUNT + 1)
+  // windowStart : la fenêtre glisse pour garder currentRep visible.
+  // Commence à 0 jusqu'à ce que currentRep dépasse BAR_COUNT-1.
+  const windowStart = Math.max(0, currentRep - BAR_COUNT + 2)
 
   const repBarsEl = (
     <div
@@ -626,19 +610,31 @@ function TempoGuideModalInner({
               {/* Courbe — occupe toute la hauteur, ~60% de la largeur */}
               <div style={{ flex: '1 1 0', position: 'relative', minWidth: 0 }}>
                 {waveEl}
-                {/* Countdown overlay sur la courbe */}
+                {/* Countdown overlay — fond assombri + blur */}
                 <AnimatePresence>
                   {countdown !== null && countdown > 0 && (
                     <motion.div
-                      key={countdown}
-                      initial={{ opacity: 0, scale: 1.3 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.22 }}
-                      style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}
+                      key="countdown-bg"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.82)', backdropFilter: 'blur(3px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, pointerEvents: 'none' }}
                     >
-                      <span style={{ fontSize: 96, color: countdown <= 3 ? ACCENT_TEMPO : 'white', fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}>
-                        {countdown}
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={countdown}
+                          initial={{ opacity: 0, scale: 1.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.6 }}
+                          transition={{ duration: 0.22 }}
+                          style={{ fontSize: 120, color: ACCENT_TEMPO, fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}
+                        >
+                          {countdown}
+                        </motion.span>
+                      </AnimatePresence>
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                        Positionnez-vous
                       </span>
                     </motion.div>
                   )}
@@ -725,25 +721,32 @@ function TempoGuideModalInner({
               {/* Courbe — flex-1, prend tout l'espace disponible */}
               <div style={{ flex: '1 1 0', position: 'relative', minHeight: 0 }}>
                 {waveEl}
-                {/* Countdown sur la courbe */}
+                {/* Countdown portrait — fond assombri + blur */}
                 <AnimatePresence>
                   {countdown !== null && countdown > 0 && (
                     <motion.div
-                      key={countdown}
-                      initial={{ opacity: 0, scale: 1.3 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.22 }}
-                      style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', gap: 8 }}
+                      key="countdown-bg-portrait"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.82)', backdropFilter: 'blur(3px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, pointerEvents: 'none' }}
                     >
-                      <span style={{ fontSize: 120, color: countdown <= 3 ? ACCENT_TEMPO : 'white', fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}>
-                        {countdown}
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={countdown}
+                          initial={{ opacity: 0, scale: 1.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.6 }}
+                          transition={{ duration: 0.22 }}
+                          style={{ fontSize: 120, color: ACCENT_TEMPO, fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}
+                        >
+                          {countdown}
+                        </motion.span>
+                      </AnimatePresence>
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                        Positionnez-vous
                       </span>
-                      {countdown <= 3 && (
-                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
-                          Positionnez-vous
-                        </span>
-                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
