@@ -322,31 +322,29 @@ function TempoGuideModalInner({
     const pauseDurMs = phaseDurations[3]
 
     if (phase === 0) {
-      // CON — vert. Sauf si anticipation approche ISO : 500ms avant fin → orange
-      if (isoDurMs > 0 && timeLeftMs <= 500) {
-        ballColor = '#f97316' // orange — annonce ISO imminent
-      } else {
-        ballColor = '#22c55e' // vert CON
-      }
+      // CON — vert toute la montée, sans exception.
+      // La balle reste verte jusqu'au contact du diamant sommet (phase ISO).
+      // C'est l'entrée en ISO qui déclenche le changement de couleur, pas l'approche.
+      ballColor = '#22c55e'
     } else if (phase === 1) {
-      // ISO (sommet)
+      // ISO (sommet) — balle vient d'arriver sur le diamant jaune.
+      // ISO ≥ 2s : jaune accent immédiat (stop long visible) → orange 400ms avant fin (annonce ECC)
+      // ISO < 2s : orange direct (trop court pour jaune, ECC arrive vite)
       if (isoDurMs >= STATIC_RED_THRESHOLD_MS) {
-        // Long ISO : rouge → puis orange 400ms avant fin (annonce ECC)
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : '#ef4444'
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : ACCENT_TEMPO
       } else {
-        // Court ISO : orange continu → vert 400ms avant fin
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : '#f97316'
+        ballColor = '#f97316'
       }
     } else if (phase === 2) {
-      // ECC — orange. 500ms avant creux → reste orange (creux = rouge ou orange)
+      // ECC — orange toute la descente
       ballColor = '#f97316'
     } else {
       // PAUSE (creux)
+      // PAUSE ≥ 2s : rouge immédiat → vert 400ms avant fin (annonce CON)
+      // PAUSE < 2s : orange → vert 400ms avant fin
       if (pauseDurMs >= STATIC_RED_THRESHOLD_MS) {
-        // Long PAUSE : rouge → vert 400ms avant fin (annonce CON)
         ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#ef4444'
       } else {
-        // Court PAUSE : orange → vert 400ms avant fin
         ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#f97316'
       }
     }
@@ -359,8 +357,8 @@ function TempoGuideModalInner({
         // Label = action correspondant à ballColor
         const labelText = ballColor === '#22c55e' ? 'CONTRACTER'
           : ballColor === '#ef4444' ? (phase === 1 ? 'TENIR' : 'PAUSE')
-          : ballColor === '#f97316' ? (phase === 2 ? 'FREINER' : phase === 0 ? 'TENIR' : 'FREINER')
-          : PHASE_CONFIG[phase].label
+          : ballColor === ACCENT_TEMPO ? 'TENIR'
+          : (phase === 2 ? 'FREINER' : PHASE_CONFIG[phase].label)
         phaseLabelRef.current.textContent = labelText
         phaseLabelRef.current.style.color  = ballColor
       }
