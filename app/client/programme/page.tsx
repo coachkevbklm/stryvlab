@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
@@ -11,6 +12,7 @@ import {
 } from '@/lib/client/progressTypes'
 import ProgrammeClientPage from './ProgrammeClientPage'
 import { getPrimaryMuscleFromCatalog, getSecondaryMusclesFromCatalog } from '@/lib/programs/intelligence/catalog-utils'
+import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
 
 function getTodayDow() {
   const jsDay = new Date().getDay()
@@ -34,6 +36,29 @@ export default async function ClientProgrammePage({
   if (!client) return <NoProgramPage lang="fr" />
 
   const todayIso = new Date().toISOString().slice(0, 10)
+
+  // Smart Workout data fetch
+  const h = headers()
+  const proto = h.get('x-forwarded-proto') ?? 'http'
+  const host = h.get('host')
+  const origin = `${proto}://${host}`
+  const cookie = h.get('cookie') ?? ''
+
+  const [smartAlertsResult, volumeResult, recentResult] = await Promise.allSettled([
+    fetch(`${origin}/api/client/workout-alerts`, { headers: { cookie }, cache: 'no-store' }),
+    fetch(`${origin}/api/client/volume-coverage`, { headers: { cookie }, cache: 'no-store' }),
+    fetch(`${origin}/api/client/recent-sessions`, { headers: { cookie }, cache: 'no-store' }),
+  ])
+
+  const workoutAlerts: GenericAlert[] = smartAlertsResult.status === 'fulfilled' && smartAlertsResult.value.ok
+    ? (await smartAlertsResult.value.json()).alerts?.map((a: any) => ({ code: a.code, severity: a.severity, title: a.title, body: a.body })) ?? []
+    : []
+  const volumeCoverage = volumeResult.status === 'fulfilled' && volumeResult.value.ok
+    ? await volumeResult.value.json()
+    : { week_start: '', sessions_count: 0, groups: [] }
+  const recentSessions = recentResult.status === 'fulfilled' && recentResult.value.ok
+    ? (await recentResult.value.json()).sessions ?? []
+    : []
 
   const [programsResult, prefsLangResult, completedTodayResult, sessionLogsResult] = await Promise.all([
     service.from('programs')
@@ -139,13 +164,15 @@ export default async function ClientProgrammePage({
       daysShort={daysShort}
       daysFull={daysFull}
       lang={lang}
-      // Performance props
       streak={streak}
       bestStreak={bestStreak}
       heatmapData={heatmapData}
       allTimePRs={allTimePRs}
       sessionList={sessionList}
       rawLogs={rawLogs}
+      workoutAlerts={workoutAlerts}
+      volumeCoverage={volumeCoverage}
+      smartRecentSessions={recentSessions}
     />
   )
 }

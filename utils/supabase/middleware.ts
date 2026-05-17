@@ -36,6 +36,19 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // Redirect removed routes to Smart Agenda home
+  if (pathname === '/client/agenda' || pathname.startsWith('/client/agenda/')) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/client'
+    return NextResponse.redirect(redirectUrl, { status: 301 })
+  }
+  if (pathname === '/client/progress' || pathname.startsWith('/client/progress/')) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/client'
+    return NextResponse.redirect(redirectUrl, { status: 301 })
+  }
+
   const isAuthRoute = pathname.startsWith('/auth')
   const isHomePage = pathname === '/'
 

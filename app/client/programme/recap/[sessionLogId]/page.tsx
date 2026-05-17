@@ -128,10 +128,10 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
   const volumeDelta = prevVolume > 0 ? Math.round(((totalVolume - prevVolume) / prevVolume) * 100) : null
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans pb-10">
+    <div className="min-h-screen bg-[#0d0d0d] font-sans pb-10">
 
       {/* Header */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
+      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
         <div className="relative z-10 max-w-lg mx-auto flex items-center gap-3 h-full px-4">
           <RecapNavButtons icon href="/client/programme" />
@@ -145,10 +145,10 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
       <main className="max-w-lg mx-auto px-5 pt-[88px] pb-5 flex flex-col gap-4">
 
         {/* ── Bannière succès ── */}
-        <div className="flex items-center gap-3 bg-[#1f8a65]/[0.08] border border-[#1f8a65]/20 rounded-2xl px-5 py-4">
-          <CheckCircle2 size={20} className="text-[#1f8a65] shrink-0" />
+        <div className="flex items-center gap-3 bg-[#ffe01e]/[0.08] border border-[#ffe01e]/20 rounded-xl px-5 py-4">
+          <CheckCircle2 size={20} className="text-[#ffe01e] shrink-0" />
           <div>
-            <p className="text-[13px] font-bold text-white">Séance enregistrée !</p>
+            <p className="text-[13px] font-bold text-white">{ct(lang, 'recap.sessionRecorded')}</p>
             <p className="text-[11px] text-white/40 mt-0.5">
               {completedSets.length} série{completedSets.length > 1 ? 's' : ''} complétée{completedSets.length > 1 ? 's' : ''}
               {sessionLog.duration_min ? ` · ${sessionLog.duration_min}min` : ''}
@@ -172,7 +172,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
           <StatCard
             label={ct(lang, 'recap.sets')}
             value={String(completedSets.length)}
-            sub={`sur ${allSets.length}`}
+            sub={ct(lang, 'recap.sets.on', { n: allSets.length })}
             icon={<CheckCircle2 size={11} />}
           />
           {sessionLog.duration_min ? (
@@ -184,7 +184,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
             />
           ) : avgRestSec !== null ? (
             <StatCard
-              label="Repos moyen"
+              label={ct(lang, 'recap.avgRest')}
               value={avgRestSec >= 60 ? `${Math.floor(avgRestSec / 60)}m${avgRestSec % 60 > 0 ? `${avgRestSec % 60}s` : ''}` : `${avgRestSec}s`}
               icon={<Clock size={11} />}
             />
@@ -192,14 +192,14 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         </div>
 
         {/* ── Schéma corporel ── */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-4">Muscles sollicités</p>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-4">{ct(lang, 'recap.musclesWorked')}</p>
           <BodyMap intensityMap={muscleIntensityMap} />
         </div>
 
         {/* ── Analyse par exercice ── */}
         {exercises.length > 0 && (
-          <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/[0.05]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'recap.exercises')}</p>
             </div>
@@ -221,7 +221,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
                     </div>
                     {delta !== null && (
                       <div className={`flex items-center gap-1 text-[11px] font-bold shrink-0 ${
-                        delta > 0 ? 'text-[#1f8a65]' : delta < 0 ? 'text-red-400' : 'text-white/30'
+                        delta > 0 ? 'text-[#ffe01e]' : delta < 0 ? 'text-red-400' : 'text-white/30'
                       }`}>
                         {delta > 0 ? <TrendingUp size={12} /> : delta < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
                         {delta > 0 ? '+' : ''}{delta}kg
@@ -235,8 +235,8 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         )}
 
         {/* ── Notes libres ── */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-3">Notes de séance</p>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-3">{ct(lang, 'recap.sessionNotes')}</p>
           {Object.keys(sessionLog.exercise_notes ?? {}).length > 0 ? (
             <div className="flex flex-col gap-2">
               {Object.entries(sessionLog.exercise_notes as Record<string, string>).map(([exId, note]) => {
@@ -250,7 +250,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
               })}
             </div>
           ) : (
-            <p className="text-[12px] text-white/25 italic">Aucune note pour cette séance.</p>
+            <p className="text-[12px] text-white/25 italic">{ct(lang, 'recap.noNotes')}</p>
           )}
         </div>
 
@@ -280,7 +280,7 @@ function StatCard({
       <div className="flex items-end gap-2">
         <p className="text-[1.4rem] font-black text-white font-mono leading-none">{value}</p>
         {delta !== null && delta !== undefined && (
-          <span className={`text-[10px] font-bold mb-0.5 ${delta > 0 ? 'text-[#1f8a65]' : delta < 0 ? 'text-red-400' : 'text-white/30'}`}>
+          <span className={`text-[10px] font-bold mb-0.5 ${delta > 0 ? 'text-[#ffe01e]' : delta < 0 ? 'text-red-400' : 'text-white/30'}`}>
             {delta > 0 ? '+' : ''}{delta}%
           </span>
         )}

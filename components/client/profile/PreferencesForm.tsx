@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface Prefs {
   weight_unit: 'kg' | 'lbs'
@@ -12,6 +13,7 @@ interface Prefs {
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function PreferencesForm({ initial }: { initial: Prefs }) {
+  const { t } = useClientT()
   const [prefs, setPrefs] = useState<Prefs>(initial)
   const [saveState, setSaveState] = useState<SaveState>('idle')
 
@@ -29,9 +31,7 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
     })
     if (res.ok) {
       setSaveState('saved')
-      // Persist lang to localStorage so ClientI18nProvider picks it up instantly
       localStorage.setItem('client_lang', prefs.language)
-      // Full page reload to re-render all server components in the new language
       setTimeout(() => window.location.reload(), 800)
     } else {
       setSaveState('error')
@@ -41,19 +41,19 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
   return (
     <div className="flex flex-col gap-4">
       <ToggleGroup
-        label="Unité de poids"
+        label={t('prefs.weight')}
         options={[{ value: 'kg', label: 'kg' }, { value: 'lbs', label: 'lbs' }]}
         value={prefs.weight_unit}
         onChange={(v) => update('weight_unit', v as 'kg' | 'lbs')}
       />
       <ToggleGroup
-        label="Unité de taille"
+        label={t('prefs.height')}
         options={[{ value: 'cm', label: 'cm' }, { value: 'ft', label: 'ft / in' }]}
         value={prefs.height_unit}
         onChange={(v) => update('height_unit', v as 'cm' | 'ft')}
       />
       <ToggleGroup
-        label="Langue"
+        label={t('prefs.language')}
         options={[
           { value: 'fr', label: '🇫🇷 Français' },
           { value: 'en', label: '🇬🇧 English' },
@@ -66,15 +66,15 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
       <button
         onClick={handleSave}
         disabled={saveState === 'saving'}
-        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+        className={`w-full py-2.5 rounded-xl text-sm font-barlow-condensed font-bold uppercase transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-[#1f8a65] text-white'
-            : 'bg-[#1f8a65] text-white hover:bg-[#217356] disabled:opacity-50'
+            ? 'bg-[#ffe01e] text-[#0d0d0d]'
+            : 'bg-[#ffe01e] text-[#0d0d0d] hover:bg-[#ffd000] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
         {saveState === 'saved'  && <Check size={14} />}
-        {saveState === 'saved' ? 'Sauvegardé' : saveState === 'saving' ? 'Sauvegarde…' : 'Sauvegarder'}
+        {saveState === 'saved' ? t('prefs.saved') : saveState === 'saving' ? t('prefs.saving') : t('prefs.save')}
       </button>
     </div>
   )
@@ -99,9 +99,9 @@ function ToggleGroup({
           <button
             key={o.value}
             onClick={() => onChange(o.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               value === o.value
-                ? 'bg-[#1f8a65] text-white'
+                ? 'bg-[#ffe01e] text-[#0d0d0d]'
                 : 'bg-white/[0.04] text-white/55 hover:text-white/80'
             }`}
           >

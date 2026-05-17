@@ -86,7 +86,7 @@ export default function ExerciseSwapSheet({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-[#181818] rounded-t-2xl">
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-[#161616] rounded-t-[2px]">
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-1" />
         <div className="flex items-center justify-between px-4 py-3">
           <div>
@@ -95,7 +95,7 @@ export default function ExerciseSwapSheet({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-white/50"
+            className="w-8 h-8 rounded-xl bg-white/[0.06] flex items-center justify-center text-white/50"
           >
             <X size={14} />
           </button>
@@ -119,7 +119,7 @@ export default function ExerciseSwapSheet({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-[13px] font-semibold text-white truncate">{alt.entry.name}</p>
-                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1f8a65]/10 text-[#1f8a65]">
+                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ffe01e]/10 text-[#ffe01e]">
                     {QUALITY_LABEL[idx] ?? 'Alternative'}
                   </span>
                 </div>
@@ -127,7 +127,7 @@ export default function ExerciseSwapSheet({
               </div>
               <button
                 onClick={() => handleUse(alt.entry.name)}
-                className="shrink-0 h-8 px-3 rounded-lg bg-[#1f8a65] text-[11px] font-bold text-white hover:bg-[#217356] transition-colors"
+                className="shrink-0 h-8 px-3 rounded-xl bg-[#ffe01e] text-[11px] font-bold uppercase text-[#0d0d0d] hover:bg-[#ffd000] transition-colors"
               >
                 Utiliser
               </button>

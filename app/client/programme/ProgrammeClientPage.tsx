@@ -18,9 +18,9 @@ import type {
   SessionSummary,
   SessionLog,
 } from '@/lib/client/progressTypes'
-import ProgressHeatmap from '@/app/client/progress/ProgressHeatmap'
-import PRsPodium from '@/app/client/progress/PRsPodium'
-import ProgressVolumeChart from '@/app/client/progress/ProgressVolumeChart'
+import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
+import VolumeCoverageWidget from '@/components/client/smart/VolumeCoverageWidget'
+import RecentSessionsStrip from '@/components/client/smart/RecentSessionsStrip'
 
 type Tab = 'seance' | 'performances' | 'historique'
 
@@ -68,6 +68,10 @@ interface Props {
   allTimePRs: PREntry[]
   sessionList: SessionSummary[]
   rawLogs: SessionLog[]
+  // Smart Workout
+  workoutAlerts?: GenericAlert[]
+  volumeCoverage?: { week_start: string; sessions_count: number; groups: any[] }
+  smartRecentSessions?: { id: string; completed_at: string; program_session_id: string | null; volume_kg: number; avg_rir: number | null }[]
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -89,6 +93,9 @@ export default function ProgrammeClientPage({
   allTimePRs,
   sessionList,
   rawLogs,
+  workoutAlerts = [],
+  volumeCoverage = { week_start: '', sessions_count: 0, groups: [] },
+  smartRecentSessions = [],
 }: Props) {
   const { t } = useClientT()
 
@@ -164,7 +171,7 @@ export default function ProgrammeClientPage({
   const isOnFire = streak >= 7
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans pb-32">
+    <div className="min-h-screen bg-[#0d0d0d] font-sans pb-32">
       <ClientTopBar
         section={ct(lang, 'programme.section')}
         title={program.name}
@@ -177,15 +184,26 @@ export default function ProgrammeClientPage({
 
       <main className="max-w-lg mx-auto px-5 pt-[88px] flex flex-col gap-4">
 
+        {/* ── Smart Workout sections ── */}
+        {workoutAlerts.length > 0 && <SmartAlertsFeed alerts={workoutAlerts} />}
+        {volumeCoverage.groups.length > 0 && (
+          <VolumeCoverageWidget
+            weekStart={volumeCoverage.week_start}
+            sessionsCount={volumeCoverage.sessions_count}
+            groups={volumeCoverage.groups}
+          />
+        )}
+        {smartRecentSessions.length > 0 && <RecentSessionsStrip sessions={smartRecentSessions} />}
+
         {/* ── Tab bar ── */}
         <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
           {TABS.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
+              className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 ${
                 tab === id
-                  ? 'bg-[#1f8a65] text-white shadow-sm'
+                  ? 'bg-[#ffe01e] text-[#0d0d0d] shadow-sm font-barlow-condensed font-bold uppercase tracking-wide'
                   : 'text-white/40 hover:text-white/70'
               }`}
             >
@@ -208,17 +226,17 @@ export default function ProgrammeClientPage({
                 )
                 const isToday = dow === todayDow
                 const isSelected = dow === selectedDow
-                const cls = `flex-1 flex flex-col items-center py-2 rounded-lg text-[10px] font-bold transition-colors ${
+                const cls = `flex-1 flex flex-col items-center py-2 rounded-xl text-[10px] font-bold transition-colors ${
                   isSelected
-                    ? 'bg-[#1f8a65] text-white'
+                    ? 'bg-[#ffe01e] text-[#0d0d0d]'
                     : isToday
-                    ? 'bg-[#1f8a65]/20 text-[#1f8a65]'
+                    ? 'bg-[#ffe01e]/20 text-[#ffe01e]'
                     : hasSession
                     ? 'bg-white/[0.04] text-white/50 hover:bg-white/[0.07] cursor-pointer'
                     : 'text-white/20'
                 }`
                 const dot = hasSession && (
-                  <span className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-[#1f8a65]/50'}`} />
+                  <span className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-[#0d0d0d]' : 'bg-[#ffe01e]/50'}`} />
                 )
                 if (!hasSession && !isToday) {
                   return <div key={d} className={cls}><span>{d}</span>{dot}</div>
@@ -236,7 +254,7 @@ export default function ProgrammeClientPage({
             </div>
 
             {todaySession ? (
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
                 {/* Header */}
                 <div className="px-5 pt-5 pb-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-1">
@@ -275,13 +293,13 @@ export default function ProgrammeClientPage({
                 {/* CTA */}
                 <div className="px-5 pb-5 pt-3">
                   {(completedIdsSet.has(todaySession.id) || completedNamesSet.has(todaySession.name)) ? (
-                    <div className="flex items-center justify-between w-full bg-[#1f8a65]/10 border border-[#1f8a65]/20 pl-5 pr-1.5 py-1.5 rounded-xl">
-                      <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#1f8a65]">
+                    <div className="flex items-center justify-between w-full bg-[#ffe01e]/10 border border-[#ffe01e]/20 pl-5 pr-1.5 py-1.5 rounded-xl">
+                      <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ffe01e]">
                         Séance réalisée ✓
                       </span>
                       <Link
                         href={`/client/programme/session/${todaySession.id}`}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1f8a65]/10 text-[#1f8a65] text-[10px] font-bold"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ffe01e]/10 text-[#ffe01e] text-[10px] font-bold"
                       >
                         Refaire
                       </Link>
@@ -289,20 +307,20 @@ export default function ProgrammeClientPage({
                   ) : (
                     <Link
                       href={`/client/programme/session/${todaySession.id}`}
-                      className="flex items-center justify-between w-full bg-[#1f8a65] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#217356] active:scale-[0.99] transition-all"
+                      className="flex items-center justify-between w-full bg-[#ffe01e] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#ffd000] active:scale-[0.99] transition-all"
                     >
-                      <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
+                      <span className="text-[12px] font-barlow-condensed font-bold uppercase tracking-wide text-[#0d0d0d]">
                         {ct(lang, 'programme.session.start')}
                       </span>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.15]">
-                        <Dumbbell size={15} className="text-white" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/[0.15]">
+                        <Dumbbell size={15} className="text-[#0d0d0d]" />
                       </div>
                     </Link>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-10 text-center">
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-10 text-center">
                 <Coffee size={28} className="text-white/20 mx-auto mb-3" />
                 <p className="text-[14px] font-semibold text-white/50">{ct(lang, 'programme.rest.today')}</p>
                 <p className="text-[11px] text-white/25 mt-1">Profite de la récupération</p>
@@ -347,7 +365,7 @@ export default function ProgrammeClientPage({
                         >
                           <div className="flex items-center gap-3">
                             <div className="flex flex-col items-center w-8">
-                              <span className={`text-[9px] font-bold uppercase ${isSessionToday ? 'text-[#1f8a65]' : 'text-white/30'}`}>
+                              <span className={`text-[9px] font-bold uppercase ${isSessionToday ? 'text-[#ffe01e]' : 'text-white/30'}`}>
                                 {sessionDays.map((d: number) => daysShort[d - 1]).join('/')}
                               </span>
                             </div>
@@ -377,23 +395,23 @@ export default function ProgrammeClientPage({
             {/* Streak */}
             {streak > 0 ? (
               <div
-                className="relative rounded-2xl overflow-hidden px-5 py-5"
+                className="relative rounded-xl overflow-hidden px-5 py-5"
                 style={{
                   background: isOnFire
-                    ? 'linear-gradient(135deg, rgba(31,138,101,0.18) 0%, rgba(31,138,101,0.06) 100%)'
+                    ? 'linear-gradient(135deg, rgba(255,224,30,0.18) 0%, rgba(255,224,30,0.06) 100%)'
                     : 'rgba(255,255,255,0.02)',
-                  border: `0.3px solid ${isOnFire ? 'rgba(31,138,101,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                  border: `0.3px solid ${isOnFire ? 'rgba(255,224,30,0.35)' : 'rgba(255,255,255,0.06)'}`,
                 }}
               >
                 <div className="flex items-center">
                   <div className="flex-1">
                     <div className="flex items-end gap-2 mb-1">
                       <span className="font-black font-mono leading-none text-[3.5rem]"
-                        style={{ color: isOnFire ? '#1f8a65' : 'white', lineHeight: 1 }}>
+                        style={{ color: isOnFire ? '#ffe01e' : 'white', lineHeight: 1 }}>
                         {streak}
                       </span>
                       <span className="text-[1.1rem] font-semibold text-white/40 mb-2">j</span>
-                      {isOnFire && <Flame size={22} className="text-[#1f8a65] mb-1.5 ml-1" />}
+                      {isOnFire && <Flame size={22} className="text-[#ffe01e] mb-1.5 ml-1" />}
                     </div>
                     <p className="text-[11px] text-white/50">
                       {isOnFire ? 'Feu vert — continue comme ça' : 'Jours consécutifs'}
@@ -406,7 +424,7 @@ export default function ProgrammeClientPage({
                     </p>
                     <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ width: 56, background: 'rgba(255,255,255,0.06)' }}>
                       <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${Math.min((streak / Math.max(bestStreak, 1)) * 100, 100)}%`, background: '#1f8a65' }} />
+                        style={{ width: `${Math.min((streak / Math.max(bestStreak, 1)) * 100, 100)}%`, background: '#ffe01e' }} />
                     </div>
                   </div>
                 </div>
@@ -428,7 +446,7 @@ export default function ProgrammeClientPage({
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-200 ${
+                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 ${
                     period === p ? 'bg-white/[0.08] text-white' : 'text-white/30 hover:text-white/50'
                   }`}
                 >
@@ -469,28 +487,29 @@ export default function ProgrammeClientPage({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
                     Activité — {heatLabel}
                   </p>
-                  <ProgressHeatmap data={filteredHeatmap} />
+                  <div className="flex flex-wrap gap-1">
+                    {filteredHeatmap.map((d, i) => (
+                      <div key={i} className={`w-4 h-4 rounded-sm ${d.level > 0 ? 'bg-[#ffe01e]/70' : 'bg-white/[0.05]'}`} title={d.date} />
+                    ))}
+                  </div>
                 </div>
               )
             })()}
 
-            {/* Volume chart */}
-            {timeline.length >= 2 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                  Volume par séance
-                </p>
-                <ProgressVolumeChart timeline={timeline} />
-              </div>
-            )}
-
-            {/* PRs */}
+            {/* PRs inline */}
             {allTimePRs.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
                   Records personnels
                 </p>
-                <PRsPodium prs={allTimePRs} />
+                <div className="space-y-2">
+                  {allTimePRs.slice(0, 5).map((pr, i) => (
+                    <div key={i} className="flex items-center justify-between bg-white/[0.02] rounded-xl px-3 py-2">
+                      <span className="text-[12px] text-white/70">{pr.exercise}</span>
+                      <span className="text-[12px] font-bold text-[#ffe01e] tabular-nums">{pr.maxWeight}kg</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -530,7 +549,7 @@ export default function ProgrammeClientPage({
                         <div className="flex items-center gap-2">
                           <p className="text-[12px] font-semibold text-white/80 truncate">{session.name}</p>
                           {session.hasPR && (
-                            <span className="shrink-0 flex items-center gap-1 bg-[#1f8a65]/15 text-[#1f8a65] text-[9px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md">
+                            <span className="shrink-0 flex items-center gap-1 bg-[#ffe01e]/15 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full">
                               <Trophy size={8} />PR
                             </span>
                           )}
@@ -569,7 +588,7 @@ export default function ProgrammeClientPage({
 
 function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 bg-white/[0.04] rounded-lg px-3 py-1.5">
+    <div className="flex items-center gap-1.5 bg-white/[0.04] rounded-xl px-3 py-1.5">
       <span className="text-white/35">{icon}</span>
       <span className="text-[11px] font-medium text-white/55">{label}</span>
     </div>

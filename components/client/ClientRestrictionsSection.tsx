@@ -108,7 +108,7 @@ export default function ClientRestrictionsSection() {
         <button
           type="button"
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/[0.04] text-[11px] font-semibold text-white/60 hover:bg-white/[0.07] hover:text-white transition-colors"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-white/[0.04] text-[11px] font-semibold text-white/60 hover:bg-white/[0.07] hover:text-white transition-colors"
         >
           <Plus size={12} />
           Ajouter
@@ -175,17 +175,17 @@ export default function ClientRestrictionsSection() {
                   key={s.value}
                   type="button"
                   onClick={() => setFormSeverity(s.value)}
-                  className={`flex items-start gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                  className={`flex items-start gap-2 rounded-xl px-3 py-2 text-left transition-colors ${
                     formSeverity === s.value
-                      ? 'bg-[#1f8a65]/10 border border-[#1f8a65]/20'
+                      ? 'bg-[#ffe01e]/10 border border-[#ffe01e]/20'
                       : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.04]'
                   }`}
                 >
                   <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 border ${
-                    formSeverity === s.value ? 'bg-[#1f8a65] border-[#1f8a65]' : 'border-white/20'
+                    formSeverity === s.value ? 'bg-[#ffe01e] border-[#ffe01e]' : 'border-white/20'
                   }`} />
                   <div>
-                    <p className={`text-[12px] font-semibold ${formSeverity === s.value ? 'text-[#1f8a65]' : 'text-white/70'}`}>{s.label}</p>
+                    <p className={`text-[12px] font-semibold ${formSeverity === s.value ? 'text-[#ffe01e]' : 'text-white/70'}`}>{s.label}</p>
                     <p className="text-[10px] text-white/30">{s.desc}</p>
                   </div>
                 </button>
@@ -216,7 +216,7 @@ export default function ClientRestrictionsSection() {
               type="button"
               onClick={handleAdd}
               disabled={!formBodyPart || saving}
-              className="flex-1 h-9 rounded-xl bg-[#1f8a65] text-[12px] font-bold text-white hover:bg-[#217356] disabled:opacity-50 transition-colors"
+              className="flex-1 h-9 rounded-xl bg-[#ffe01e] text-[12px] font-barlow-condensed font-bold uppercase text-[#0d0d0d] hover:bg-[#ffd000] disabled:opacity-50 transition-colors"
             >
               {saving ? '…' : 'Enregistrer'}
             </button>

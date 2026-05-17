@@ -14,26 +14,26 @@ interface Props {
 
 export default function ClientTopBar({ left, section, title, backHref, right }: Props) {
   return (
-    <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-2xl border-[0.3px] border-white/[0.06] bg-[#121212] px-4 flex items-center justify-between gap-3">
+    <header className="fixed top-0 left-0 right-0 z-40 h-14 border-b border-white/[0.08] bg-[#0d0d0d] px-4 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {left ?? (
           <>
             {backHref && (
               <Link
                 href={backHref}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/70 transition-colors shrink-0"
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:bg-white/[0.10] hover:text-white/80 transition-colors shrink-0"
               >
                 <ChevronLeft size={16} />
               </Link>
             )}
             <div className="min-w-0">
               {section && (
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30 leading-none mb-0.5">
+                <p className="text-[9px] font-barlow-condensed font-semibold uppercase tracking-[0.18em] text-white/30 leading-none mb-0.5">
                   {section}
                 </p>
               )}
               {title && (
-                <p className="text-[13px] font-semibold text-white leading-tight truncate">
+                <p className="text-[13px] font-barlow-condensed font-semibold uppercase tracking-wide text-white leading-tight truncate">
                   {title}
                 </p>
               )}

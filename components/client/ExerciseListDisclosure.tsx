@@ -34,7 +34,7 @@ export default function ExerciseListDisclosure({ exercises }: { exercises: Exerc
             <div key={ex.id} className="flex items-center gap-3 py-1.5">
               <span className="text-[9px] font-mono text-white/20 w-4 shrink-0 text-right">{i + 1}</span>
               <span className="text-[12px] text-white/65 flex-1">{ex.name}</span>
-              <span className="text-[11px] font-mono text-[#1f8a65]/70 shrink-0">{ex.sets}×{ex.reps}</span>
+              <span className="text-[11px] font-mono text-[#ffe01e]/70 shrink-0">{ex.sets}×{ex.reps}</span>
             </div>
           ))}
         </div>

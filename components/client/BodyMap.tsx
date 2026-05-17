@@ -26,13 +26,13 @@ export default function BodyMap({ intensityMap, primaryGroups, secondaryGroups, 
       if (ratio < MIN_RATIO) return 'rgba(255,255,255,0.08)'
       // Interpolation : opacity 0.10 → 1.0 selon ratio
       const opacity = 0.10 + ratio * 0.90
-      return `rgba(31,138,101,${opacity.toFixed(2)})`
+      return `rgba(255,224,30,${opacity.toFixed(2)})`
     }
     // Fallback binaire
     const _stab = stabilizerGroups ?? new Set<MuscleGroup>()
-    if (primaryGroups?.has(group))   return '#1f8a65'
-    if (secondaryGroups?.has(group)) return 'rgba(31,138,101,0.42)'
-    if (_stab.has(group))            return 'rgba(31,138,101,0.14)'
+    if (primaryGroups?.has(group))   return '#ffe01e'
+    if (secondaryGroups?.has(group)) return 'rgba(255,224,30,0.42)'
+    if (_stab.has(group))            return 'rgba(255,224,30,0.14)'
     return 'rgba(255,255,255,0.08)'
   }
   function s(group: MuscleGroup): string {
@@ -40,12 +40,12 @@ export default function BodyMap({ intensityMap, primaryGroups, secondaryGroups, 
       const ratio = intensityMap.get(group) ?? 0
       if (ratio < MIN_RATIO) return 'rgba(255,255,255,0.10)'
       const opacity = 0.12 + ratio * 0.40
-      return `rgba(31,138,101,${opacity.toFixed(2)})`
+      return `rgba(255,224,30,${opacity.toFixed(2)})`
     }
     const _stab = stabilizerGroups ?? new Set<MuscleGroup>()
-    if (primaryGroups?.has(group))   return 'rgba(31,138,101,0.50)'
-    if (secondaryGroups?.has(group)) return 'rgba(31,138,101,0.28)'
-    if (_stab.has(group))            return 'rgba(31,138,101,0.12)'
+    if (primaryGroups?.has(group))   return 'rgba(255,224,30,0.50)'
+    if (secondaryGroups?.has(group)) return 'rgba(255,224,30,0.28)'
+    if (_stab.has(group))            return 'rgba(255,224,30,0.12)'
     return 'rgba(255,255,255,0.10)'
   }
   function sw(group: MuscleGroup): string {

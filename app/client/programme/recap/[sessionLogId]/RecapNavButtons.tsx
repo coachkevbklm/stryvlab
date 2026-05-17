@@ -23,7 +23,7 @@ export default function RecapNavButtons({ label, icon, href = '/client' }: Props
     return (
       <button
         onClick={go}
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:bg-white/[0.10] hover:text-white/70 transition-colors shrink-0"
+        className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] text-white/40 hover:bg-white/[0.10] hover:text-white/70 transition-colors shrink-0"
       >
         <ChevronLeft size={16} />
       </button>

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+import type { ClientDictKey } from '@/lib/i18n/clientTranslations'
 
 interface ProfileData {
   first_name:       string
@@ -21,41 +23,42 @@ interface Props {
   initial: ProfileData
 }
 
-const TRAINING_GOALS = [
-  { value: 'hypertrophy',  label: 'Hypertrophie' },
-  { value: 'strength',     label: 'Force' },
-  { value: 'fat_loss',     label: 'Perte de graisse' },
-  { value: 'endurance',    label: 'Endurance' },
-  { value: 'recomp',       label: 'Recomposition' },
-  { value: 'maintenance',  label: 'Maintien' },
-  { value: 'athletic',     label: 'Performance athlétique' },
+const TRAINING_GOAL_KEYS: { value: string; key: ClientDictKey }[] = [
+  { value: 'hypertrophy',  key: 'form.goal.hypertrophy' },
+  { value: 'strength',     key: 'form.goal.strength' },
+  { value: 'fat_loss',     key: 'form.goal.fat_loss' },
+  { value: 'endurance',    key: 'form.goal.endurance' },
+  { value: 'recomp',       key: 'form.goal.recomp' },
+  { value: 'maintenance',  key: 'form.goal.maintenance' },
+  { value: 'athletic',     key: 'form.goal.athletic' },
 ]
 
-const FITNESS_LEVELS = [
-  { value: 'beginner',     label: 'Débutant' },
-  { value: 'intermediate', label: 'Intermédiaire' },
-  { value: 'advanced',     label: 'Avancé' },
-  { value: 'elite',        label: 'Elite' },
+const FITNESS_LEVEL_KEYS: { value: string; key: ClientDictKey }[] = [
+  { value: 'beginner',     key: 'form.level.beginner' },
+  { value: 'intermediate', key: 'form.level.intermediate' },
+  { value: 'advanced',     key: 'form.level.advanced' },
+  { value: 'elite',        key: 'form.level.elite' },
 ]
 
-const SPORT_PRACTICES = [
-  { value: 'sedentary', label: 'Sédentaire' },
-  { value: 'light',     label: 'Légèrement actif' },
-  { value: 'moderate',  label: 'Modérément actif' },
-  { value: 'active',    label: 'Actif' },
-  { value: 'athlete',   label: 'Athlète' },
+const SPORT_PRACTICE_KEYS: { value: string; key: ClientDictKey }[] = [
+  { value: 'sedentary', key: 'form.activity.sedentary' },
+  { value: 'light',     key: 'form.activity.light' },
+  { value: 'moderate',  key: 'form.activity.moderate' },
+  { value: 'active',    key: 'form.activity.active' },
+  { value: 'athlete',   key: 'form.activity.athlete' },
 ]
 
-const GENDERS = [
-  { value: 'male',              label: 'Homme' },
-  { value: 'female',            label: 'Femme' },
-  { value: 'other',             label: 'Autre' },
-  { value: 'prefer_not_to_say', label: 'Préfère ne pas préciser' },
+const GENDER_KEYS: { value: string; key: ClientDictKey }[] = [
+  { value: 'male',              key: 'form.gender.male' },
+  { value: 'female',            key: 'form.gender.female' },
+  { value: 'other',             key: 'form.gender.other' },
+  { value: 'prefer_not_to_say', key: 'form.gender.prefer_not_to_say' },
 ]
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function ProfileForm({ clientId, initial }: Props) {
+  const { t } = useClientT()
   const [form, setForm] = useState<ProfileData>(initial)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -91,7 +94,7 @@ export default function ProfileForm({ clientId, initial }: Props) {
       setTimeout(() => setSaveState('idle'), 2500)
     } else {
       const d = await res.json().catch(() => ({}))
-      setErrorMsg(d.error ?? 'Erreur de sauvegarde')
+      setErrorMsg(d.error ?? t('form.error.save'))
       setSaveState('error')
     }
   }
@@ -100,28 +103,28 @@ export default function ProfileForm({ clientId, initial }: Props) {
     <div className="flex flex-col gap-4">
       {/* Nom */}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Prénom">
+        <Field label={t('form.firstName')}>
           <input
             type="text"
             value={form.first_name}
             onChange={(e) => update('first_name', e.target.value)}
             className={inputCls}
-            placeholder="Prénom"
+            placeholder={t('form.firstName')}
           />
         </Field>
-        <Field label="Nom">
+        <Field label={t('form.lastName')}>
           <input
             type="text"
             value={form.last_name}
             onChange={(e) => update('last_name', e.target.value)}
             className={inputCls}
-            placeholder="Nom"
+            placeholder={t('form.lastName')}
           />
         </Field>
       </div>
 
       {/* Téléphone */}
-      <Field label="Téléphone">
+      <Field label={t('form.phone')}>
         <input
           type="tel"
           value={form.phone}
@@ -132,7 +135,7 @@ export default function ProfileForm({ clientId, initial }: Props) {
       </Field>
 
       {/* Date de naissance */}
-      <Field label="Date de naissance">
+      <Field label={t('form.birthDate')}>
         <input
           type="date"
           value={form.date_of_birth}
@@ -142,81 +145,81 @@ export default function ProfileForm({ clientId, initial }: Props) {
       </Field>
 
       {/* Genre */}
-      <Field label="Genre">
+      <Field label={t('form.gender')}>
         <select
           value={form.gender}
           onChange={(e) => update('gender', e.target.value)}
           className={inputCls}
         >
-          <option value="">Sélectionner…</option>
-          {GENDERS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          <option value="">{t('common.select')}</option>
+          {GENDER_KEYS.map((o) => (
+            <option key={o.value} value={o.value}>{t(o.key)}</option>
           ))}
         </select>
       </Field>
 
       {/* Objectif texte libre */}
-      <Field label="Objectif personnel">
+      <Field label={t('form.goal')}>
         <textarea
           value={form.goal}
           onChange={(e) => update('goal', e.target.value)}
           className={`${inputCls} resize-none h-16`}
-          placeholder="Décris ton objectif en quelques mots…"
+          placeholder={t('form.goal.placeholder')}
         />
       </Field>
 
       {/* Objectif entraînement */}
-      <Field label="Type d'entraînement">
+      <Field label={t('form.trainingGoal')}>
         <select
           value={form.training_goal}
           onChange={(e) => update('training_goal', e.target.value)}
           className={inputCls}
         >
-          <option value="">Sélectionner…</option>
-          {TRAINING_GOALS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          <option value="">{t('common.select')}</option>
+          {TRAINING_GOAL_KEYS.map((o) => (
+            <option key={o.value} value={o.value}>{t(o.key)}</option>
           ))}
         </select>
       </Field>
 
       {/* Niveau */}
-      <Field label="Niveau">
+      <Field label={t('form.fitnessLevel')}>
         <select
           value={form.fitness_level}
           onChange={(e) => update('fitness_level', e.target.value)}
           className={inputCls}
         >
-          <option value="">Sélectionner…</option>
-          {FITNESS_LEVELS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          <option value="">{t('common.select')}</option>
+          {FITNESS_LEVEL_KEYS.map((o) => (
+            <option key={o.value} value={o.value}>{t(o.key)}</option>
           ))}
         </select>
       </Field>
 
       {/* Activité */}
-      <Field label="Niveau d'activité">
+      <Field label={t('form.activityLevel')}>
         <select
           value={form.sport_practice}
           onChange={(e) => update('sport_practice', e.target.value)}
           className={inputCls}
         >
-          <option value="">Sélectionner…</option>
-          {SPORT_PRACTICES.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          <option value="">{t('common.select')}</option>
+          {SPORT_PRACTICE_KEYS.map((o) => (
+            <option key={o.value} value={o.value}>{t(o.key)}</option>
           ))}
         </select>
       </Field>
 
       {/* Fréquence */}
-      <Field label="Séances par semaine">
+      <Field label={t('form.sessionsPerWeek')}>
         <div className="flex gap-2">
           {[1,2,3,4,5,6,7].map((n) => (
             <button
               key={n}
               onClick={() => update('weekly_frequency', form.weekly_frequency === n ? null : n)}
-              className={`w-9 h-9 rounded-lg text-[13px] font-bold transition-all ${
+              className={`w-9 h-9 rounded-xl text-[13px] font-bold transition-all ${
                 form.weekly_frequency === n
-                  ? 'bg-[#1f8a65] text-white'
+                  ? 'bg-[#ffe01e] text-[#0d0d0d]'
                   : 'bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-white/40 hover:text-white/70'
               }`}
             >
@@ -235,15 +238,15 @@ export default function ProfileForm({ clientId, initial }: Props) {
       <button
         onClick={handleSave}
         disabled={saveState === 'saving'}
-        className={`w-full h-11 rounded-xl text-[12px] font-bold uppercase tracking-[0.10em] transition-all flex items-center justify-center gap-2 ${
+        className={`w-full h-11 rounded-xl text-[12px] font-barlow-condensed font-bold uppercase tracking-[0.10em] transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-[#1f8a65] text-white'
-            : 'bg-[#1f8a65] text-white hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50'
+            ? 'bg-[#ffe01e] text-[#0d0d0d]'
+            : 'bg-[#ffe01e] text-[#0d0d0d] hover:bg-[#ffd000] active:scale-[0.99] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
         {saveState === 'saved'  && <Check size={14} />}
-        {saveState === 'saved' ? 'Sauvegardé' : saveState === 'saving' ? 'Sauvegarde…' : 'Sauvegarder'}
+        {saveState === 'saved' ? t('common.saved') : saveState === 'saving' ? t('common.saving') : t('common.save')}
       </button>
     </div>
   )

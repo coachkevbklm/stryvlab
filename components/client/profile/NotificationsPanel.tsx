@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, BellOff, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, CheckCheck, Loader2 } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+import type { ClientDictKey } from '@/lib/i18n/clientTranslations'
 
 interface Notification {
   id: string
@@ -22,30 +24,31 @@ interface Props {
   preferences:   NotifPrefs
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  assessment_completed:  'Bilan complété',
-  assessment_sent:       'Bilan envoyé',
-  program_updated:       'Programme mis à jour',
-  program_assigned:      'Programme assigné',
-  session_reminder:      'Rappel séance',
-  bilan_received:        'Bilan reçu',
-}
-
-function timeAgo(iso: string) {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
-  if (diff < 60)  return 'À l\'instant'
-  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}min`
-  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`
-  return `Il y a ${Math.floor(diff / 86400)}j`
+const TYPE_KEY_MAP: Record<string, ClientDictKey> = {
+  assessment_completed:  'notif.type.assessment_completed',
+  assessment_sent:       'notif.type.assessment_sent',
+  program_updated:       'notif.type.program_updated',
+  program_assigned:      'notif.type.program_assigned',
+  session_reminder:      'notif.type.session_reminder',
+  bilan_received:        'notif.type.bilan_received',
 }
 
 export default function NotificationsPanel({ notifications: initial, preferences: initialPrefs }: Props) {
+  const { t } = useClientT()
   const [notifications, setNotifications] = useState<Notification[]>(initial)
   const [prefs, setPrefs] = useState<NotifPrefs>(initialPrefs)
   const [markingAll, setMarkingAll] = useState(false)
   const [savingPrefs, setSavingPrefs] = useState(false)
 
   const unread = notifications.filter((n) => !n.read)
+
+  function timeAgo(iso: string): string {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+    if (diff < 60)  return t('notif.time.now')
+    if (diff < 3600) return t('notif.time.min', { n: Math.floor(diff / 60) })
+    if (diff < 86400) return t('notif.time.hour', { n: Math.floor(diff / 3600) })
+    return t('notif.time.day', { n: Math.floor(diff / 86400) })
+  }
 
   async function markRead(id: string) {
     setNotifications((prev) =>
@@ -79,7 +82,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
       {notifications.length === 0 ? (
         <div className="text-center py-6">
           <Bell size={24} className="text-secondary mx-auto mb-2 opacity-40" />
-          <p className="text-xs text-secondary">Aucune notification</p>
+          <p className="text-xs text-secondary">{t('notif.empty')}</p>
         </div>
       ) : (
         <div>
@@ -91,7 +94,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
                 className="flex items-center gap-1.5 text-xs text-accent font-medium hover:underline disabled:opacity-50"
               >
                 {markingAll ? <Loader2 size={11} className="animate-spin" /> : <CheckCheck size={11} />}
-                Tout marquer comme lu
+                {t('notif.markAllRead')}
               </button>
             </div>
           )}
@@ -100,7 +103,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
               <button
                 key={n.id}
                 onClick={() => !n.read && markRead(n.id)}
-                className={`w-full text-left px-3 py-3 rounded-lg transition-colors flex items-start gap-3 ${
+                className={`w-full text-left px-3 py-3 rounded-xl transition-colors flex items-start gap-3 ${
                   n.read
                     ? 'bg-transparent'
                     : 'bg-accent/5 hover:bg-accent/10'
@@ -112,7 +115,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
                     {n.message}
                   </p>
                   <p className="text-[10px] text-secondary mt-0.5">
-                    {TYPE_LABELS[n.type] ?? n.type} · {timeAgo(n.created_at)}
+                    {TYPE_KEY_MAP[n.type] ? t(TYPE_KEY_MAP[n.type]) : n.type} · {timeAgo(n.created_at)}
                   </p>
                 </div>
               </button>
@@ -124,22 +127,22 @@ export default function NotificationsPanel({ notifications: initial, preferences
       {/* Notification preferences */}
       <div className="border-t border-white/40 pt-4">
         <p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-3">
-          Recevoir des notifications pour
+          {t('notif.prefsTitle')}
           {savingPrefs && <Loader2 size={10} className="inline ml-1.5 animate-spin" />}
         </p>
         <div className="flex flex-col gap-2">
           <PrefToggle
-            label="Rappels de séance"
+            label={t('notif.sessionReminder')}
             value={prefs.notif_session_reminder}
             onChange={() => togglePref('notif_session_reminder')}
           />
           <PrefToggle
-            label="Bilans reçus du coach"
+            label={t('notif.bilanReceived')}
             value={prefs.notif_bilan_received}
             onChange={() => togglePref('notif_bilan_received')}
           />
           <PrefToggle
-            label="Mise à jour du programme"
+            label={t('notif.programUpdated')}
             value={prefs.notif_program_updated}
             onChange={() => togglePref('notif_program_updated')}
           />
