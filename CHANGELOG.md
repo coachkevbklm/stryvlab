@@ -6,6 +6,9 @@
 ## 2026-05-17
 
 REFACTOR: SessionLogger hydratation — suppression bouton Droplets header, modal intro au démarrage séance (total ml + conseils), modal rappel 15min immersif centré (style repos) au lieu de bottom sheet
+FEATURE: TempoGuideModal — double courbe sinusoïdale continue (style Technogym) remplace triangle — balle avance sans retour arrière, viewBox glisse horizontalement
+FIX: TempoGuideModal — layout portrait refait (hauteurs fixes shrink-0), countdown overlay centré sur courbe uniquement, zéro superposition d'éléments
+FIX: TempoGuideModal — landscape : contrôles à droite de la courbe (label + timer + barres + counter + Terminer)
 FIX: TempoGuideModal — label/couleur phase synchronisés via DOM direct (refs) dans RAF — élimine le délai React setState (~16-32ms) entre changement de phase et affichage label
 FIX: TempoGuideModal — portrait layout tronqué : SVG contraint à 44vh max, label/barres/counter toujours visibles
 FIX: tempo — ISO=1 sur tous les patterns hypertrophie (HYPERTROPHY_TEMPO_MAP) — contraction isométrique minimale au sommet
