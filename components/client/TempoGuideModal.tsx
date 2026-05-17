@@ -467,10 +467,10 @@ function TempoGuideModalInner({
         const el = diamonds[idx]
         if (!el) return
 
-        // Couleur du diamant selon sa position
-        const dColor = frac === 0.5
-          ? (isoDurMs >= STATIC_RED_THRESHOLD_MS ? '#ef4444' : '#f97316')  // sommet
-          : (pauseDurMs >= STATIC_RED_THRESHOLD_MS ? '#ef4444' : '#f97316') // creux
+        // Couleur du diamant = couleur de la phase qui DÉMARRE à ce point
+        // Creux (frac=0 ou 1) = début CON → vert
+        // Sommet (frac=0.5)   = début ISO → jaune accent
+        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#22c55e'
 
         // Distance balle → diamant en unités de repFrac
         const dist = Math.abs(repFrac - frac)
