@@ -152,7 +152,7 @@ function TempoGuideModalInner({
   ], [parsed]) // eslint-disable-line react-hooks/exhaustive-deps
   const repDuration = phaseDurations.reduce((a, b) => a + b, 0)
 
-  // ── React state (barres reps uniquement — label piloté via DOM refs) ──
+  // ── React state ──
   const [currentPhase, setCurrentPhase] = useState(0)
   const [currentRep,   setCurrentRep]   = useState(0)
   const [bonusReps,    setBonusReps]     = useState(0)
@@ -161,6 +161,10 @@ function TempoGuideModalInner({
   const [countdown,    setCountdown]     = useState<number | null>(prepSeconds > 0 ? prepSeconds : null)
   const [phaseTimer,   setPhaseTimer]    = useState<number>(0)
   const [phaseColor,   setPhaseColor]    = useState<string>(PHASE_CONFIG[0].color)
+  // Pause/reprise
+  const [paused,         setPaused]         = useState(false)
+  const [resumeCountdown, setResumeCountdown] = useState<number | null>(null)
+  const pausedAtRef       = useRef<number | null>(null)  // elapsed au moment de la pause
 
   // Anticipation
   const [isAnticipating, setIsAnticipating] = useState(false)
@@ -470,9 +474,48 @@ function TempoGuideModalInner({
 
   useEffect(() => {
     if (countdown !== null) return
+    if (paused) return  // RAF stoppé pendant pause
+    if (resumeCountdown !== null) return  // RAF stoppé pendant countdown reprise
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [tick, countdown])
+  }, [tick, countdown, paused, resumeCountdown])
+
+  // ── Resume countdown tick ──
+  useEffect(() => {
+    if (resumeCountdown === null) return
+    if (resumeCountdown === 0) {
+      // Repartir : balle au début de la rep courante, startRef recalculé pour que tRep=0
+      const elapsedAtPause = pausedAtRef.current ?? 0
+      const repIndex = Math.floor(elapsedAtPause / repDuration)
+      // Nouveau startRef : maintenant - (repIndex * repDuration) → tRep démarre à 0 de cette rep
+      startRef.current = performance.now() - repIndex * repDuration
+      pausedAtRef.current = null
+      lastPhaseRef.current = -1  // force phase change pour redéclencher couleur/label
+      setResumeCountdown(null)
+      return
+    }
+    const t = setTimeout(() => setResumeCountdown(c => (c !== null && c > 0 ? c - 1 : null)), 1000)
+    return () => clearTimeout(t)
+  }, [resumeCountdown, repDuration])
+
+  // ── Tap handler : pause/play sur tap n'importe où ──
+  const handleTap = useCallback(() => {
+    if (countdown !== null) return  // pendant prep countdown : ignore
+    if (resumeCountdown !== null) return  // déjà en train de redémarrer
+
+    if (!paused) {
+      // Première pression : pause
+      pausedAtRef.current = startRef.current !== null
+        ? performance.now() - startRef.current
+        : 0
+      cancelAnimationFrame(rafRef.current)
+      setPaused(true)
+    } else {
+      // Deuxième pression : démarrer countdown 3s
+      setPaused(false)
+      setResumeCountdown(3)
+    }
+  }, [paused, countdown, resumeCountdown])
 
   // ── Derived (premier rendu uniquement — ensuite DOM direct) ──
   const visualPhaseValues = [
@@ -598,9 +641,88 @@ function TempoGuideModalInner({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none"
+          onClick={handleTap}
+          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none cursor-pointer"
           style={{ display: 'flex', flexDirection: isLandscape ? 'row' : 'column' }}
         >
+          {/* ── Fond couleur synchronisé balle — visible du coin de l'œil ── */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `radial-gradient(circle at center, ${phaseColor}22 0%, transparent 70%)`,
+              transition: 'background 200ms ease-out',
+              pointerEvents: 'none',
+              animation: (currentPhase === 1 || currentPhase === 3) ? 'tempoBgPulse 1.2s ease-in-out infinite' : 'none',
+            }}
+          />
+          <style>{`
+            @keyframes tempoBgPulse {
+              0%, 100% { opacity: 0.7; }
+              50%      { opacity: 1.0; }
+            }
+          `}</style>
+
+          {/* ── Overlay PAUSE — full screen, tap pour reprendre ── */}
+          <AnimatePresence>
+            {paused && (
+              <motion.div
+                key="pause-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'absolute', inset: 0, zIndex: 5,
+                  background: 'rgba(8,8,8,0.85)', backdropFilter: 'blur(4px)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 16, pointerEvents: 'none',
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-barlow-condensed, sans-serif)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.22em', fontSize: 32, color: 'white' }}>
+                  PAUSE
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                  Touche l&apos;écran pour reprendre
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Overlay countdown reprise — 3..2..1 ── */}
+          <AnimatePresence>
+            {resumeCountdown !== null && resumeCountdown > 0 && (
+              <motion.div
+                key="resume-bg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'absolute', inset: 0, zIndex: 6,
+                  background: 'rgba(8,8,8,0.85)', backdropFilter: 'blur(4px)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 12, pointerEvents: 'none',
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={resumeCountdown}
+                    initial={{ opacity: 0, scale: 1.4 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ fontSize: 120, color: ACCENT_TEMPO, fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}
+                  >
+                    {resumeCountdown}
+                  </motion.span>
+                </AnimatePresence>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                  Reprise
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {isLandscape ? (
             /* ══ LANDSCAPE ══
                Courbe plein hauteur à gauche, panneau contrôles à droite.
@@ -656,7 +778,7 @@ function TempoGuideModalInner({
                     <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>Tempo</p>
                     <p style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1.2 }}>{exerciseName}</p>
                   </div>
-                  <button onClick={handleClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleClose(); }} style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
                     <X size={14} />
                   </button>
                 </div>
@@ -712,7 +834,7 @@ function TempoGuideModalInner({
                   <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>Tempo guide</p>
                   <p style={{ fontSize: 16, fontWeight: 700, color: 'white' }}>{exerciseName}</p>
                 </div>
-                <button onClick={handleClose} style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                <button onClick={(e) => { e.stopPropagation(); handleClose(); }} style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
                   <X size={16} />
                 </button>
               </div>
