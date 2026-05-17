@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { parseTempo, type ParsedTempo } from '@/lib/training/tempo'
 
@@ -22,22 +22,50 @@ interface TempoGuideModalProps {
   onClose: (result: TempoCloseResult) => void
 }
 
-// ─── Geometry ────────────────────────────────────────────────────────────────
-// Triangle fermé — viewBox 300×280
-// CON  : C → A (montée gauche)
-// ISO  : point A (sommet)
-// ECC  : A → B (descente droite)
-// PAUSE: B → C (retour horizontal bas)
+// ─── Double-wave path ─────────────────────────────────────────────────────────
+// viewBox 400×160 — 2 bosses visibles simultanément
+// Balle avance toujours de gauche à droite (jamais de retour arrière)
+// 1 rep = 1 bosse complète (creux→pic→creux), x progresse de 0 à 200
+//
+// Path : sinusoïde bézier — 3 bosses définies pour que la balle reste toujours
+// dans le viewport quelle que soit sa position dans la rep.
+//
+//   x=0,y=140  creux gauche (hors écran gauche)
+//   x=100,y=20  pic 1
+//   x=200,y=140 creux centre
+//   x=300,y=20  pic 2
+//   x=400,y=140 creux droite (hors écran droit)
+//
+// La balle est positionnée sur ce path via getPointAtLength.
+// On décale le viewBox horizontalement selon la progression dans la rep
+// pour donner l'illusion de mouvement continu.
 
-const TRI_A = { x: 150, y: 40  }  // sommet ISO
-const TRI_B = { x: 280, y: 240 }  // base droite fin ECC
-const TRI_C = { x: 20,  y: 240 }  // base gauche fin PAUSE / début CON
+const WAVE_W = 400   // largeur d'une période (1 rep)
+const WAVE_H = 160   // hauteur viewBox
+const WAVE_PEAK_Y  = 20   // y des pics (ISO)
+const WAVE_TROUGH_Y = 140 // y des creux (PAUSE/début CON)
 
-const PATH_D = `M ${TRI_C.x} ${TRI_C.y} L ${TRI_A.x} ${TRI_A.y} L ${TRI_B.x} ${TRI_B.y} Z`
-
-function lerpPt(p1: { x: number; y: number }, p2: { x: number; y: number }, t: number) {
-  return { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t }
+// Path avec 3 bosses (largeur totale = 3 × WAVE_W = 1200)
+// Chaque bosse : creux → pic → creux via béziers symétriques
+function buildWavePath(): string {
+  const segs: string[] = []
+  segs.push(`M 0,${WAVE_TROUGH_Y}`)
+  for (let i = 0; i < 3; i++) {
+    const x0 = i * WAVE_W
+    const xPeak = x0 + WAVE_W / 2
+    const x1 = x0 + WAVE_W
+    // montée : creux → pic
+    segs.push(`C ${x0 + WAVE_W * 0.25},${WAVE_TROUGH_Y} ${x0 + WAVE_W * 0.25},${WAVE_PEAK_Y} ${xPeak},${WAVE_PEAK_Y}`)
+    // descente : pic → creux
+    segs.push(`C ${xPeak + WAVE_W * 0.25},${WAVE_PEAK_Y} ${xPeak + WAVE_W * 0.25},${WAVE_TROUGH_Y} ${x1},${WAVE_TROUGH_Y}`)
+  }
+  return segs.join(' ')
 }
+
+const WAVE_PATH_D = buildWavePath()
+// Longueur totale du path (3 bosses × longueur d'une bosse)
+// Longueur analytique approx d'une bosse sinusoïdale avec ces béziers ≈ 470px
+// Calculé dynamiquement via pathRef.getTotalLength() au premier frame.
 
 // ─── Phase config ─────────────────────────────────────────────────────────────
 
@@ -48,11 +76,8 @@ const PHASE_CONFIG = [
   { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE
 ] as const
 
-// Accent for countdown / GO flash — kept separate from phase colors
 const ACCENT_TEMPO = '#FFB800'
-
-// Trail length
-const TRAIL_LEN = 8
+const TRAIL_LEN = 6
 
 // ─── Landscape hook ───────────────────────────────────────────────────────────
 
@@ -73,7 +98,7 @@ function vibrate(pattern: number | number[]) {
   try { navigator.vibrate(pattern) } catch { /* not supported */ }
 }
 
-// ─── Public wrapper — validates tempo ────────────────────────────────────────
+// ─── Public wrapper ───────────────────────────────────────────────────────────
 
 export default function TempoGuideModal({
   tempo, reps, exerciseName, prepSeconds, hapticsEnabled, onClose,
@@ -115,7 +140,7 @@ function TempoGuideModalInner({
   }, [hapticsEnabled])
 
   const ms = (p: typeof parsed.eccentric) => p === 'X' ? 300 : (p as number) * 1000
-  const phaseDurations: number[] = useMemo(() => [
+  const phaseDurations = useMemo<number[]>(() => [
     ms(parsed.concentric),
     ms(parsed.isometric ?? parsed.pauseTop),
     ms(parsed.eccentric),
@@ -123,41 +148,42 @@ function TempoGuideModalInner({
   ], [parsed]) // eslint-disable-line react-hooks/exhaustive-deps
   const repDuration = phaseDurations.reduce((a, b) => a + b, 0)
 
-  // ── React state ──
+  // ── React state (barres reps uniquement — label piloté via DOM refs) ──
   const [currentPhase, setCurrentPhase] = useState(0)
-  const [currentRep, setCurrentRep]     = useState(0)
-  const [bonusReps, setBonusReps]       = useState(0)
-  const [closing, setClosing]           = useState(false)
+  const [currentRep,   setCurrentRep]   = useState(0)
+  const [bonusReps,    setBonusReps]     = useState(0)
+  const [closing,      setClosing]       = useState(false)
   const [closingResult, setClosingResult] = useState<TempoCloseResult | null>(null)
-  const [countdown, setCountdown]       = useState<number | null>(prepSeconds > 0 ? prepSeconds : null)
-  const [phaseTimer, setPhaseTimer]     = useState<number>(0)
-  const [phaseColor, setPhaseColor]     = useState<string>(PHASE_CONFIG[0].color)
+  const [countdown,    setCountdown]     = useState<number | null>(prepSeconds > 0 ? prepSeconds : null)
+  const [phaseTimer,   setPhaseTimer]    = useState<number>(0)
+  const [phaseColor,   setPhaseColor]    = useState<string>(PHASE_CONFIG[0].color)
 
   // Anticipation
-  const [isAnticipating, setIsAnticipating]   = useState(false)
-  const anticipationFiredRef                  = useRef(false)
-  const isAnticipatingRef                     = useRef(false)
+  const [isAnticipating, setIsAnticipating] = useState(false)
+  const anticipationFiredRef = useRef(false)
+  const isAnticipatingRef    = useRef(false)
 
   // ── SVG DOM refs ──
-  const ballRef         = useRef<SVGCircleElement>(null)
-  const ballGlowRef     = useRef<SVGCircleElement>(null)
-  const trailRefs       = useRef<SVGCircleElement[]>([])
-  const peakDiamondRef  = useRef<SVGPolygonElement>(null)
-  const baseRDiamondRef = useRef<SVGPolygonElement>(null)
-  const baseLDiamondRef = useRef<SVGPolygonElement>(null)
+  const pathRef      = useRef<SVGPathElement>(null)  // pour getTotalLength
+  const ballRef      = useRef<SVGCircleElement>(null)
+  const ballGlowRef  = useRef<SVGCircleElement>(null)
+  const trailRefs    = useRef<SVGCircleElement[]>([])
+  const svgRef       = useRef<SVGSVGElement>(null)   // pour animer le viewBox
 
-  // ── Label DOM refs — mis à jour directement dans RAF pour zéro latence React ──
+  // ── Label DOM refs — mis à jour directement dans RAF (zéro latence React) ──
   const phaseLabelRef = useRef<HTMLSpanElement>(null)
   const phaseTimerRef = useRef<HTMLSpanElement>(null)
 
   // ── RAF mutable refs ──
-  const rafRef       = useRef<number>(0)
-  const startRef     = useRef<number | null>(null)
-  const repRef       = useRef(0)
-  const bonusRepsRef = useRef(0)
-  const lastPhaseRef = useRef(-1)
+  const rafRef        = useRef<number>(0)
+  const startRef      = useRef<number | null>(null)
+  const repRef        = useRef(0)
+  const bonusRepsRef  = useRef(0)
+  const lastPhaseRef  = useRef(-1)
+  const pathLenRef    = useRef<number>(0)    // longueur totale du path (3 bosses)
+  const repLenRef     = useRef<number>(0)    // longueur d'une bosse (1 rep)
 
-  // ── Countdown tick ──
+  // ── Countdown ──
   useEffect(() => {
     if (countdown === null) return
     if (countdown === 0) { setCountdown(null); return }
@@ -165,24 +191,30 @@ function TempoGuideModalInner({
     return () => clearTimeout(t)
   }, [countdown])
 
-  // ── Position ball at start during prep ──
+  // ── Init path lengths au premier mount ──
   useEffect(() => {
-    if (!ballRef.current || !ballGlowRef.current) return
+    if (!pathRef.current) return
+    const total = pathRef.current.getTotalLength()
+    pathLenRef.current = total
+    repLenRef.current  = total / 3  // 3 bosses dans le path
+  }, [])
+
+  // ── Position balle pendant prep ──
+  useEffect(() => {
+    if (!ballRef.current || !ballGlowRef.current || !pathRef.current) return
     if (countdown === null) return
-    const pos = TRI_C
-    ballRef.current.setAttribute('cx', String(pos.x))
-    ballRef.current.setAttribute('cy', String(pos.y))
-    ballRef.current.setAttribute('opacity', countdown <= 3 ? '1' : '0.4')
+    // Position initiale = début de la bosse 2 (centre du path)
+    const startLen = repLenRef.current || pathLenRef.current / 3
+    const pt = pathRef.current.getPointAtLength(startLen)
+    ballRef.current.setAttribute('cx', String(pt.x))
+    ballRef.current.setAttribute('cy', String(pt.y))
     ballRef.current.setAttribute('fill', 'white')
-    ballRef.current.setAttribute('r', '18')
-    ballGlowRef.current.setAttribute('cx', String(pos.x))
-    ballGlowRef.current.setAttribute('cy', String(pos.y))
-    ballGlowRef.current.setAttribute('opacity', countdown <= 3 ? '0.25' : '0.08')
+    ballRef.current.setAttribute('r', '14')
+    ballGlowRef.current.setAttribute('cx', String(pt.x))
+    ballGlowRef.current.setAttribute('cy', String(pt.y))
   }, [countdown])
 
-  // Blink géré via DOM direct dans RAF — useEffect supprimé
-
-  // ── Manual close ──
+  // ── Close handler ──
   const handleClose = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
     const result: TempoCloseResult = {
@@ -196,17 +228,23 @@ function TempoGuideModalInner({
 
   // ── RAF Loop ──
   const tick = useCallback((now: number) => {
-    if (!ballRef.current || !ballGlowRef.current) {
+    if (!ballRef.current || !ballGlowRef.current || !pathRef.current || !svgRef.current) {
       rafRef.current = requestAnimationFrame(tick)
       return
+    }
+
+    // Init path lengths si pas encore fait
+    if (pathLenRef.current === 0) {
+      const total = pathRef.current.getTotalLength()
+      pathLenRef.current = total
+      repLenRef.current  = total / 3
     }
 
     if (startRef.current === null) startRef.current = now
     const elapsed = now - startRef.current
 
-    // Rep index — no cap (bonus reps continue past props.reps)
     const repIndex = Math.floor(elapsed / repDuration)
-    const isBonus = repIndex >= reps
+    const isBonus  = repIndex >= reps
 
     if (repIndex !== repRef.current) {
       repRef.current = repIndex
@@ -218,10 +256,9 @@ function TempoGuideModalInner({
       if (repIndex > 0) vib([60, 30, 60])
     }
 
-    // Time within current rep
     const tRep = elapsed % repDuration
 
-    // Determine phase and time-within-phase
+    // Déterminer phase et temps dans la phase
     let cumMs = 0
     let phase = 3
     let tInPhaseMs = 0
@@ -237,21 +274,23 @@ function TempoGuideModalInner({
       tInPhaseMs = phaseDurations[i]
     }
 
-    // Phase change — DOM direct pour zéro latence React
+    const phaseMs     = phaseDurations[phase]
+    const tInPhaseFrac = phaseMs > 0 ? Math.min(tInPhaseMs / phaseMs, 1) : 1
+
+    // ── Phase change — DOM direct ──
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase
-      setCurrentPhase(phase)  // conservé pour barres reps (React)
+      setCurrentPhase(phase)
       const cfg = PHASE_CONFIG[phase]
-      // Label DOM direct — synchrone avec la balle
       if (phaseLabelRef.current) {
         phaseLabelRef.current.textContent = cfg.label
-        phaseLabelRef.current.style.color = cfg.color
+        phaseLabelRef.current.style.color  = cfg.color
       }
       if (phaseTimerRef.current) {
         phaseTimerRef.current.style.color = cfg.color
       }
-      setPhaseColor(cfg.color)  // conservé pour anticipation blink (React)
-      isAnticipatingRef.current = false
+      setPhaseColor(cfg.color)
+      isAnticipatingRef.current  = false
       setIsAnticipating(false)
       anticipationFiredRef.current = false
       if (phase === 0) vib(80)
@@ -260,36 +299,29 @@ function TempoGuideModalInner({
       else if (phase === 3) vib(30)
     }
 
-    // Phase timer — DOM direct pour zéro latence React
-    const phaseMs = phaseDurations[phase]
+    // ── Phase timer — DOM direct ──
     if (phaseMs > 0) {
       const remaining = Math.ceil((phaseMs - tInPhaseMs) / 1000)
-      const timerVal = Math.max(remaining, 0)
-      setPhaseTimer(timerVal)  // conservé pour montage initial
+      const timerVal  = Math.max(remaining, 0)
+      setPhaseTimer(timerVal)
       if (phaseTimerRef.current) {
-        const cfg = PHASE_CONFIG[phase]
         phaseTimerRef.current.textContent = `${timerVal}s`
-        phaseTimerRef.current.style.color = cfg.color
+        phaseTimerRef.current.style.color  = PHASE_CONFIG[phase].color
       }
     }
 
-    const tInPhaseFrac = phaseMs > 0 ? Math.min(tInPhaseMs / phaseMs, 1) : 1
-
     // ── Anticipation isométrique ──
-    const nextPhaseIsIso = (phase === 0 && phaseDurations[1] > 0)
-                        || (phase === 3 && phaseDurations[1] > 0)
-    const phaseDurSec = phaseMs / 1000
+    const nextPhaseIsIso  = (phase === 0 && phaseDurations[1] > 0) || (phase === 3 && phaseDurations[1] > 0)
+    const phaseDurSec     = phaseMs / 1000
     const anticipationThreshold = phaseDurSec > 0.8 ? 1 - (0.8 / phaseDurSec) : 0
     const shouldAnticipate = nextPhaseIsIso && tInPhaseFrac >= anticipationThreshold
 
     if (shouldAnticipate && !anticipationFiredRef.current) {
       anticipationFiredRef.current = true
-      isAnticipatingRef.current = true
+      isAnticipatingRef.current    = true
       setIsAnticipating(true)
-      if (hapticsEnabled) {
-        try { navigator.vibrate(10) } catch { /* not supported */ }
-      }
-      // Blink DOM direct — orange/rouge 2 cycles à 4Hz
+      if (hapticsEnabled) { try { navigator.vibrate(10) } catch { /* */ } }
+      // Blink label DOM direct
       let blinkCount = 0
       const blinkIv = setInterval(() => {
         if (!phaseLabelRef.current) { clearInterval(blinkIv); return }
@@ -298,48 +330,89 @@ function TempoGuideModalInner({
         if (blinkCount >= 4) clearInterval(blinkIv)
       }, 125)
     }
-    if (!shouldAnticipate && anticipationFiredRef.current && phase === lastPhaseRef.current) {
-      // reset handled by phase-change block on next phase
-    }
 
-    // ── Ball position ──
-    let ballPos: { x: number; y: number }
+    // ── Position balle sur la double courbe ──
+    // Stratégie : la balle est toujours sur la bosse centrale du path (bosse 2 sur 3).
+    // On calcule la progression dans la rep (0→1) et on la mappe sur la longueur d'une bosse.
+    // Le viewBox SVG est décalé horizontalement pour donner l'illusion de mouvement continu.
 
-    if (phase === 0) {
-      const easedNormal = tInPhaseFrac * (2 - tInPhaseFrac)
-      const easedDecel  = Math.min(tInPhaseFrac * (2 - tInPhaseFrac * 0.3), 1)
-      const eased = isAnticipatingRef.current ? easedDecel : easedNormal
-      ballPos = lerpPt(TRI_C, TRI_A, Math.min(eased, 1))
-    } else if (phase === 1) {
-      ballPos = TRI_A
-    } else if (phase === 2) {
-      const eased = tInPhaseFrac * tInPhaseFrac
-      ballPos = lerpPt(TRI_A, TRI_B, eased)
+    const repLen = repLenRef.current
+    if (repLen === 0) { rafRef.current = requestAnimationFrame(tick); return }
+
+    // Progression 0→1 dans la rep courante en tenant compte de l'easing par phase
+    let repFrac: number
+    // Chaque phase occupe une fraction de la bosse
+    // CON : 0 → 0.5 (montée), ISO : 0.5 (pic), ECC : 0.5 → 1 (descente), PAUSE : 1 (creux)
+    const conDur   = phaseDurations[0]
+    const isoDur   = phaseDurations[1]
+    const eccDur   = phaseDurations[2]
+    const pauseDur = phaseDurations[3]
+    const totalDur = conDur + isoDur + eccDur + pauseDur
+
+    // Fraction temporelle dans la rep complète (0→1)
+    const timeFrac = Math.min(tRep / totalDur, 1)
+
+    // Mapper timeFrac → position sur la bosse (0=creux gauche, 0.5=pic, 1=creux droite)
+    // CON  : 0 → 0.5 linéairement (montée)
+    // ISO  : freeze à 0.5
+    // ECC  : 0.5 → 1 linéairement (descente)
+    // PAUSE: freeze à 1 (= 0 du prochain cycle)
+    const conFrac   = totalDur > 0 ? conDur / totalDur : 0.25
+    const isoFrac   = totalDur > 0 ? isoDur / totalDur : 0
+    const eccFrac   = totalDur > 0 ? eccDur / totalDur : 0.25
+    // pauseFrac = 1 - conFrac - isoFrac - eccFrac
+
+    if (timeFrac <= conFrac) {
+      // CON phase : 0 → 0.5 sur la bosse, ease-out quad
+      const t = conFrac > 0 ? timeFrac / conFrac : 1
+      const eased = isAnticipatingRef.current
+        ? Math.min(t * (2 - t * 0.3), 1)  // décélération anticipation
+        : t * (2 - t)                       // ease-out normal
+      repFrac = eased * 0.5
+    } else if (timeFrac <= conFrac + isoFrac) {
+      // ISO phase : freeze au pic
+      repFrac = 0.5
+    } else if (timeFrac <= conFrac + isoFrac + eccFrac) {
+      // ECC phase : 0.5 → 1, ease-in quad
+      const t = eccFrac > 0 ? (timeFrac - conFrac - isoFrac) / eccFrac : 1
+      repFrac = 0.5 + (t * t) * 0.5
     } else {
-      ballPos = lerpPt(TRI_B, TRI_C, tInPhaseFrac)
+      // PAUSE phase : freeze au creux
+      repFrac = 1.0
     }
 
-    ballRef.current.setAttribute('cx', String(ballPos.x))
-    ballRef.current.setAttribute('cy', String(ballPos.y))
-    ballGlowRef.current.setAttribute('cx', String(ballPos.x))
-    ballGlowRef.current.setAttribute('cy', String(ballPos.y))
+    // Position sur la bosse centrale (bosse index 1, de repLen à 2×repLen)
+    const pathPos = repLen + repFrac * repLen
+    const pt = pathRef.current.getPointAtLength(pathPos)
+
+    // Décalage viewBox : centrer la balle horizontalement
+    // La balle est à pt.x dans le path (coordonnées du path complet 0→1200)
+    // On veut que la balle soit toujours au centre du SVG affiché (WAVE_W/2 = 200)
+    const viewBoxX = pt.x - WAVE_W / 2
+    svgRef.current.setAttribute('viewBox', `${viewBoxX} 0 ${WAVE_W} ${WAVE_H}`)
+
+    // La balle est toujours au centre horizontal dans le viewBox mouvant
+    ballRef.current.setAttribute('cx', String(pt.x))
+    ballRef.current.setAttribute('cy', String(pt.y))
+    ballGlowRef.current.setAttribute('cx', String(pt.x))
+    ballGlowRef.current.setAttribute('cy', String(pt.y))
 
     // ── Ball appearance ──
-    const currentColor = PHASE_CONFIG[phase].color
-    const isStaticPhase = (phase === 1 || phase === 3) && phaseDurations[phase] > 200
+    const currentColor  = PHASE_CONFIG[phase].color
+    const isStaticPhase = (phase === 1 || phase === 3) && phaseMs > 200
 
     ballRef.current.setAttribute('fill', currentColor)
-    ballRef.current.style.filter = `drop-shadow(0 0 18px ${currentColor}99) drop-shadow(0 0 6px ${currentColor}cc)`
+    ballRef.current.style.filter = `drop-shadow(0 0 14px ${currentColor}99) drop-shadow(0 0 5px ${currentColor}cc)`
     ballGlowRef.current.setAttribute('fill', currentColor)
 
     if (isStaticPhase) {
-      const r = 18 + tInPhaseFrac * 4
+      const r = 14 + tInPhaseFrac * 3
       ballRef.current.setAttribute('r', String(r))
-      ballGlowRef.current.setAttribute('r', String(28 + tInPhaseFrac * 8))
-      ballGlowRef.current.setAttribute('opacity', String(0.20 + tInPhaseFrac * 0.22))
+      ballGlowRef.current.setAttribute('r', String(22 + tInPhaseFrac * 6))
+      ballGlowRef.current.setAttribute('opacity', String(0.18 + tInPhaseFrac * 0.18))
     } else {
-      ballRef.current.setAttribute('r', '18')
-      ballGlowRef.current.setAttribute('r', '28')
+      ballRef.current.setAttribute('r', '14')
+      ballGlowRef.current.setAttribute('r', '22')
       ballGlowRef.current.setAttribute('opacity', '0.18')
     }
 
@@ -353,37 +426,16 @@ function TempoGuideModalInner({
           trail[i]?.setAttribute('cy', prev.getAttribute('cy') ?? '0')
         }
       }
-      trail[0]?.setAttribute('cx', String(ballPos.x))
-      trail[0]?.setAttribute('cy', String(ballPos.y))
+      trail[0]?.setAttribute('cx', String(pt.x))
+      trail[0]?.setAttribute('cy', String(pt.y))
       trail.forEach((el, i) => {
         if (!el) return
         el.setAttribute('fill', currentColor)
-        el.setAttribute('opacity', String(((TRAIL_LEN - i) / TRAIL_LEN) * 0.25))
-        el.setAttribute('r', String(Math.max(14 - i * 1.3, 2)))
+        el.setAttribute('opacity', String(((TRAIL_LEN - i) / TRAIL_LEN) * 0.22))
+        el.setAttribute('r',       String(Math.max(10 - i, 2)))
       })
     } else {
       trail.forEach(el => el?.setAttribute('opacity', '0'))
-    }
-
-    // ── Diamond markers ──
-    const nearA = phase === 1 || (phase === 0 && tInPhaseFrac > 0.85) || (phase === 2 && tInPhaseFrac < 0.1)
-    const nearB = phase === 3 || (phase === 2 && tInPhaseFrac > 0.85)
-    const nearC = phase === 0 && tInPhaseFrac < 0.1
-
-    if (peakDiamondRef.current) {
-      peakDiamondRef.current.setAttribute('opacity', nearA ? '1.0' : '0.55')
-      const scale = nearA ? 1.8 : 1.0
-      peakDiamondRef.current.setAttribute('transform', `translate(${TRI_A.x}, ${TRI_A.y}) scale(${scale})`)
-    }
-    if (baseRDiamondRef.current) {
-      baseRDiamondRef.current.setAttribute('opacity', nearB ? '1.0' : '0.40')
-      const scale = nearB ? 1.8 : 1.0
-      baseRDiamondRef.current.setAttribute('transform', `translate(${TRI_B.x}, ${TRI_B.y}) scale(${scale})`)
-    }
-    if (baseLDiamondRef.current) {
-      baseLDiamondRef.current.setAttribute('opacity', nearC ? '1.0' : '0.40')
-      const scale = nearC ? 1.8 : 1.0
-      baseLDiamondRef.current.setAttribute('transform', `translate(${TRI_C.x}, ${TRI_C.y}) scale(${scale})`)
     }
 
     rafRef.current = requestAnimationFrame(tick)
@@ -395,7 +447,7 @@ function TempoGuideModalInner({
     return () => cancelAnimationFrame(rafRef.current)
   }, [tick, countdown])
 
-  // ── Derived label values ──
+  // ── Derived (premier rendu uniquement — ensuite DOM direct) ──
   const visualPhaseValues = [
     parsed.concentric,
     parsed.isometric ?? parsed.pauseTop,
@@ -406,89 +458,55 @@ function TempoGuideModalInner({
   const phaseIsX    = phaseValue === 'X'
   const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
 
-  // Label color pour le premier rendu React uniquement — ensuite piloté via DOM direct dans RAF
-  const labelColor = phaseColor
+  // ── SVG wave ──
+  const waveEl = (
+    <svg
+      ref={svgRef}
+      viewBox={`${-WAVE_W / 2} 0 ${WAVE_W} ${WAVE_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ width: '100%', height: '100%', overflow: 'visible' }}
+    >
+      {/* Path invisible pour mesure */}
+      <path ref={pathRef} d={WAVE_PATH_D} fill="none" stroke="none" />
 
-  // ── SVG content (shared between portrait inline and landscape) ──
-  const svgContent = (
-    <>
+      {/* Wave track visible */}
       <path
-        d={PATH_D}
+        d={WAVE_PATH_D}
         fill="none"
         stroke="rgba(255,255,255,0.08)"
-        strokeWidth="36"
+        strokeWidth="28"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
+
+      {/* Trail */}
       {Array.from({ length: TRAIL_LEN }).map((_, i) => (
         <circle
           key={i}
           ref={el => { if (el) trailRefs.current[i] = el }}
-          r="12"
+          r="8"
           fill="white"
           opacity="0"
         />
       ))}
-      <polygon
-        ref={peakDiamondRef}
-        points="-8,0 0,-8 8,0 0,8"
-        fill={ACCENT_TEMPO}
-        opacity="0.55"
-        transform={`translate(${TRI_A.x}, ${TRI_A.y})`}
-      />
-      <polygon
-        ref={baseRDiamondRef}
-        points="-8,0 0,-8 8,0 0,8"
-        fill={ACCENT_TEMPO}
-        opacity="0.40"
-        transform={`translate(${TRI_B.x}, ${TRI_B.y})`}
-      />
-      <polygon
-        ref={baseLDiamondRef}
-        points="-8,0 0,-8 8,0 0,8"
-        fill={ACCENT_TEMPO}
-        opacity="0.40"
-        transform={`translate(${TRI_C.x}, ${TRI_C.y})`}
-      />
-      <circle ref={ballGlowRef} r="28" fill={ACCENT_TEMPO} opacity="0.18" />
+
+      {/* Glow */}
+      <circle ref={ballGlowRef} r="22" fill={ACCENT_TEMPO} opacity="0.18" />
+
+      {/* Ball */}
       <circle
         ref={ballRef}
-        r="18"
+        r="14"
         fill="white"
-        style={{ filter: `drop-shadow(0 0 18px ${ACCENT_TEMPO}99) drop-shadow(0 0 6px white)` }}
+        style={{ filter: `drop-shadow(0 0 14px ${ACCENT_TEMPO}99) drop-shadow(0 0 5px white)` }}
       />
-    </>
-  )
-
-  // ── Phase label + timer ──
-  // Couleur/texte mis à jour via DOM direct (phaseLabelRef/phaseTimerRef) dans RAF → zéro latence React.
-  // Les valeurs initiales React restent correctes pour le premier rendu.
-  const phaseLabelEl = (
-    <div className={`flex flex-col ${isLandscape ? 'items-start' : 'items-center'} gap-1`}>
-      <span
-        ref={phaseLabelRef}
-        className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-2xl"
-        style={{ color: countdown !== null ? ACCENT_TEMPO : labelColor }}
-      >
-        {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
-      </span>
-      {countdown === null && phaseTotalS > 0 && (
-        <span
-          ref={phaseTimerRef}
-          className="font-mono font-black tabular-nums leading-none"
-          style={{ fontSize: 44, color: labelColor }}
-        >
-          {phaseIsX ? 'X' : `${phaseTimer}s`}
-        </span>
-      )}
-    </div>
+    </svg>
   )
 
   // ── Rep bars ──
   const repBarsEl = (
-    <div
-      className={isLandscape ? 'flex flex-col gap-[3px]' : 'flex flex-row gap-[3px] px-6'}
-      style={isLandscape ? { width: 38 } : { height: 38 }}
-    >
+    <div className={isLandscape ? 'flex flex-col gap-[3px]' : 'flex flex-row gap-[3px]'}
+         style={isLandscape ? { width: 32 } : { height: 32 }}>
       {Array.from({ length: reps + bonusReps }).map((_, i) => {
         const isBonus   = i >= reps
         const isDone    = i < currentRep
@@ -496,49 +514,21 @@ function TempoGuideModalInner({
         return (
           <motion.div
             key={i}
-            className={isLandscape ? 'rounded-xl' : 'flex-1 rounded-xl'}
-            style={isLandscape ? { height: 24, minWidth: 38 } : {}}
+            className={isLandscape ? 'rounded-lg' : 'flex-1 rounded-lg'}
+            style={isLandscape ? { height: 20, minWidth: 32 } : {}}
             animate={{
               backgroundColor: isBonus
-                ? (isDone || isCurrent ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.08)')
-                : (isDone || isCurrent ? '#ffe01e' : 'rgba(255,255,255,0.10)'),
+                ? (isDone || isCurrent ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)')
+                : (isDone || isCurrent ? '#ffe01e' : 'rgba(255,255,255,0.09)'),
               boxShadow: isCurrent && !isBonus
-                ? '0 0 14px rgba(255,224,30,0.6), 0 0 4px rgba(255,224,30,0.9)'
-                : isCurrent && isBonus
-                  ? '0 0 10px rgba(255,255,255,0.2)'
-                  : 'none',
-              scaleY: !isLandscape && isCurrent ? [1, 1.06, 1] : 1,
+                ? '0 0 10px rgba(255,224,30,0.5)'
+                : 'none',
             }}
             initial={false}
-            transition={{
-              backgroundColor: { duration: 0.25 },
-              boxShadow: { duration: 0.25 },
-              scaleY: { duration: 0.4, repeat: isCurrent && !isLandscape ? Infinity : 0, repeatType: 'reverse' },
-            }}
+            transition={{ backgroundColor: { duration: 0.2 } }}
           />
         )
       })}
-    </div>
-  )
-
-  // ── Rep counter ──
-  const repCounterEl = (
-    <div className={`flex items-baseline gap-1 ${isLandscape ? '' : 'justify-center'}`}>
-      <span
-        className="font-mono text-[36px] font-black leading-none tabular-nums"
-        style={{ color: currentRep >= reps ? 'rgba(255,255,255,0.6)' : '#ffe01e' }}
-      >
-        {currentRep + 1}
-      </span>
-      <span className="font-mono text-[22px] font-bold text-white/20 mx-1">/</span>
-      <span className="font-mono text-[28px] font-black text-white/60 leading-none tabular-nums">
-        {reps}
-      </span>
-      {bonusReps > 0 && (
-        <span className="font-mono text-[16px] font-bold text-white/30 ml-1">
-          +{bonusReps}
-        </span>
-      )}
     </div>
   )
 
@@ -547,139 +537,179 @@ function TempoGuideModalInner({
       {!closing && (
         <motion.div
           key="tempo-guide"
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none flex flex-col"
         >
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between px-6 pt-8 pb-2 shrink-0">
+          {/* ── Header fixe ── */}
+          <div className="shrink-0 flex items-center justify-between px-5 pt-safe pt-6 pb-3">
             <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/25 mb-0.5">
                 Tempo guide
               </p>
-              <p className="text-[15px] font-bold text-white leading-tight truncate max-w-[240px]">
+              <p className="text-[15px] font-bold text-white leading-tight truncate max-w-[220px]">
                 {exerciseName}
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/35 hover:text-white/70 hover:bg-white/[0.10] active:scale-95 transition-all"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/35 hover:text-white/70 active:scale-95 transition-all"
             >
               <X size={16} />
             </button>
           </div>
 
-          {/* ── Countdown overlay ── */}
-          <AnimatePresence>
-            {countdown !== null && countdown > 0 && (
-              <motion.div
-                key={countdown}
-                initial={{ opacity: 0, scale: 1.4 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.6 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none gap-2"
-              >
+          {isLandscape ? (
+            /* ── Landscape : courbe à gauche, contrôles à droite ── */
+            <div className="flex-1 flex flex-row items-center gap-0 min-h-0 px-4 pb-4">
+              {/* Courbe */}
+              <div className="flex-1 flex items-center justify-center h-full min-w-0">
+                {waveEl}
+              </div>
+
+              {/* Contrôles — colonne droite fixe */}
+              <div className="shrink-0 flex flex-col items-start justify-center gap-4 w-36 pl-4">
+                {/* Label */}
                 <span
-                  className="font-mono font-black tabular-nums"
-                  style={{ fontSize: 110, color: countdown <= 3 ? ACCENT_TEMPO : 'white', lineHeight: 1, textShadow: countdown <= 3 ? `0 0 60px rgba(255,184,0,0.6)` : 'none' }}
+                  ref={phaseLabelRef}
+                  className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-xl"
+                  style={{ color: countdown !== null ? ACCENT_TEMPO : phaseColor }}
                 >
-                  {countdown}
+                  {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
                 </span>
-                {countdown <= 3 && (
-                  <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/30">
-                    Positionnez-vous
+                {/* Timer */}
+                {countdown === null && phaseTotalS > 0 && (
+                  <span
+                    ref={phaseTimerRef}
+                    className="font-mono font-black tabular-nums leading-none"
+                    style={{ fontSize: 36, color: phaseColor }}
+                  >
+                    {phaseIsX ? 'X' : `${phaseTimer}s`}
                   </span>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── GO flash ── */}
-          <AnimatePresence>
-            {countdown === 0 && (
-              <motion.div
-                key="go"
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1.1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
-              >
-                <span className="font-mono font-black" style={{ fontSize: 90, color: ACCENT_TEMPO, textShadow: `0 0 80px rgba(255,184,0,0.8)` }}>
-                  GO
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── Corps principal ── */}
-          {isLandscape ? (
-            /* Landscape — split horizontal */
-            <div className="flex flex-row items-center h-full pt-16 px-4 gap-6">
-              {/* Triangle — colonne gauche */}
-              <div className="flex items-center justify-center w-[45vw] h-full">
-                <svg
-                  viewBox="0 0 300 280"
-                  preserveAspectRatio="xMidYMid meet"
-                  className="h-[80vh] w-auto"
-                  style={{ overflow: 'visible' }}
-                >
-                  {svgContent}
-                </svg>
-              </div>
-              {/* Contrôles — colonne droite */}
-              <div className="flex flex-col justify-center gap-4 w-[45vw] pb-4">
-                {phaseLabelEl}
+                {/* Barres */}
                 {repBarsEl}
-                {repCounterEl}
+                {/* Counter */}
+                <div className="flex items-baseline gap-1">
+                  <span className="font-mono text-[28px] font-black leading-none tabular-nums" style={{ color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
+                    {currentRep + 1}
+                  </span>
+                  <span className="font-mono text-[18px] font-bold text-white/20 mx-0.5">/</span>
+                  <span className="font-mono text-[22px] font-black text-white/55 leading-none tabular-nums">{reps}</span>
+                  {bonusReps > 0 && <span className="font-mono text-[13px] font-bold text-white/30 ml-1">+{bonusReps}</span>}
+                </div>
+                {/* Fermer en landscape */}
                 <button
                   onClick={handleClose}
-                  className="mt-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] text-white/40 hover:text-white/70 transition-all text-[12px] font-medium"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.05] text-white/35 hover:text-white/60 text-[11px] font-medium transition-all mt-auto"
                 >
-                  <X size={14} /> Terminer
+                  <X size={12} /> Terminer
                 </button>
               </div>
             </div>
           ) : (
-            /* Portrait — colonne verticale, hauteurs fixes pour éviter overflow */
-            <div className="flex flex-col items-center" style={{ height: '100%', paddingTop: 8 }}>
-              {/* SVG Triangle — hauteur contrainte, ne prend pas tout l'écran */}
-              <div className="flex items-center justify-center w-full px-6" style={{ height: '44vh', maxHeight: 340 }}>
-                <svg
-                  viewBox="0 0 300 280"
-                  preserveAspectRatio="xMidYMid meet"
-                  style={{ width: '100%', height: '100%', overflow: 'visible' }}
-                >
-                  {svgContent}
-                </svg>
-              </div>
+            /* ── Portrait : layout vertical fixe, hauteurs déterminées ── */
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Courbe — hauteur fixe */}
+              <div className="shrink-0 relative" style={{ height: 140 }}>
+                {waveEl}
 
-              {/* Phase label + timer */}
-              <div className="shrink-0 flex flex-col items-center px-6 pt-4 pb-2" style={{ minHeight: 88 }}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentPhase}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.14 }}
-                  >
-                    {phaseLabelEl}
-                  </motion.div>
+                {/* Countdown overlay — centré sur la courbe uniquement */}
+                <AnimatePresence>
+                  {countdown !== null && countdown > 0 && (
+                    <motion.div
+                      key={countdown}
+                      initial={{ opacity: 0, scale: 1.3 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      transition={{ duration: 0.25 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <span
+                        className="font-mono font-black tabular-nums"
+                        style={{ fontSize: 80, color: countdown <= 3 ? ACCENT_TEMPO : 'white', lineHeight: 1 }}
+                      >
+                        {countdown}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* GO flash */}
+                <AnimatePresence>
+                  {countdown === 0 && (
+                    <motion.div
+                      key="go"
+                      initial={{ opacity: 0, scale: 0.7 }}
+                      animate={{ opacity: 1, scale: 1.05 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <span className="font-mono font-black" style={{ fontSize: 72, color: ACCENT_TEMPO }}>
+                        GO
+                      </span>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
 
-              {/* Rep bars */}
-              <div className="shrink-0 w-full pb-3">
+              {/* Séparateur */}
+              <div className="shrink-0 h-px bg-white/[0.04] mx-5 mt-2" />
+
+              {/* Label phase */}
+              <div className="shrink-0 flex flex-col items-center pt-5 pb-2">
+                <span
+                  ref={phaseLabelRef}
+                  className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-2xl"
+                  style={{ color: countdown !== null ? ACCENT_TEMPO : phaseColor }}
+                >
+                  {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
+                </span>
+                {countdown === null && (
+                  <p className="text-[10px] text-white/25 mt-0.5 tracking-[0.06em]">
+                    {['entre les séries', 'pic de contraction', 'descente contrôlée', 'étirement initial'][currentPhase]}
+                  </p>
+                )}
+              </div>
+
+              {/* Timer */}
+              <div className="shrink-0 flex justify-center pb-4">
+                {countdown === null && phaseTotalS > 0 ? (
+                  <span
+                    ref={phaseTimerRef}
+                    className="font-mono font-black tabular-nums leading-none"
+                    style={{ fontSize: 52, color: phaseColor }}
+                  >
+                    {phaseIsX ? 'X' : `${phaseTimer}s`}
+                  </span>
+                ) : (
+                  <div style={{ height: 52 }} />
+                )}
+              </div>
+
+              {/* Barres reps */}
+              <div className="shrink-0 px-5 pb-3">
                 {repBarsEl}
               </div>
 
-              {/* Rep counter */}
-              <div className="shrink-0 pb-10">
-                {repCounterEl}
+              {/* Counter */}
+              <div className="shrink-0 flex justify-center items-baseline gap-1 pb-8">
+                <span
+                  className="font-mono font-black leading-none tabular-nums"
+                  style={{ fontSize: 40, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}
+                >
+                  {currentRep + 1}
+                </span>
+                <span className="font-mono text-[24px] font-bold text-white/20 mx-1">/</span>
+                <span className="font-mono font-black text-white/55 leading-none tabular-nums" style={{ fontSize: 30 }}>
+                  {reps}
+                </span>
+                {bonusReps > 0 && (
+                  <span className="font-mono text-[15px] font-bold text-white/30 ml-1">+{bonusReps}</span>
+                )}
               </div>
             </div>
           )}
