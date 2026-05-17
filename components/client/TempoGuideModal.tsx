@@ -73,18 +73,15 @@ const PHASE_CONFIG = [
   { label: 'CONTRACTER', color: '#3b82f6' },  // 0 CON — bleu
   { label: 'TENIR',      color: '#FFB800' },  // 1 ISO — jaune accent
   { label: 'FREINER',    color: '#FFB800' },  // 2 ECC — jaune accent
-  { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE — rouge si long
+  { label: 'PAUSE',      color: '#FFB800' },  // 3 PAUSE — jaune (même que ECC)
 ] as const
 
 const ACCENT_TEMPO = '#FFB800'
 const TRAIL_LEN = 6
 
-// Seuil en ms : si la phase statique (ISO/PAUSE) est >= ce seuil → passe rouge.
-// En dessous → skip rouge, reste dans la couleur de transition.
-const STATIC_RED_THRESHOLD_MS = 2000
-
-// Temps en ms avant la FIN d'une phase statique pour passer vert (annonce redémarrage)
-const GREEN_PREVIEW_MS = 400
+// 300ms avant la fin d'une phase statique (ISO/PAUSE) → balle change de couleur
+// pour annoncer la prochaine phase.
+const PREVIEW_MS = 300
 
 // ─── Landscape hook ───────────────────────────────────────────────────────────
 
@@ -322,24 +319,17 @@ function TempoGuideModalInner({
     const pauseDurMs = phaseDurations[3]
 
     if (phase === 0) {
-      // CON — vert toute la montée
+      // CON — bleu toute la montée
       ballColor = '#3b82f6'
     } else if (phase === 1) {
-      // ISO (sommet) — jaune accent (stop) → jaune avant fin (annonce ECC descent)
-      // Pas d'orange : jaune = signal sommet, vert = signal départ
-      ballColor = ACCENT_TEMPO
+      // ISO (sommet) — bleu pendant stop, jaune 300ms avant fin (annonce ECC)
+      ballColor = timeLeftMs <= PREVIEW_MS ? ACCENT_TEMPO : '#3b82f6'
     } else if (phase === 2) {
-      // ECC — jaune toute la descente (remplace orange)
+      // ECC — jaune toute la descente
       ballColor = ACCENT_TEMPO
     } else {
-      // PAUSE (creux)
-      // PAUSE ≥ 2s : rouge immédiat → vert 400ms avant fin
-      // PAUSE < 2s : jaune → vert 400ms avant fin
-      if (pauseDurMs >= STATIC_RED_THRESHOLD_MS) {
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#3b82f6' : '#ef4444'
-      } else {
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#3b82f6' : ACCENT_TEMPO
-      }
+      // PAUSE (creux) — jaune pendant stop, bleu 300ms avant fin (annonce CON)
+      ballColor = timeLeftMs <= PREVIEW_MS ? '#3b82f6' : ACCENT_TEMPO
     }
 
     // Appliquer couleur balle si changée
@@ -349,9 +339,7 @@ function TempoGuideModalInner({
       if (phaseLabelRef.current) {
         // Label = action correspondant à ballColor
         const labelText = ballColor === '#3b82f6' ? 'CONTRACTER'
-          : ballColor === '#ef4444' ? 'PAUSE'
-          : ballColor === ACCENT_TEMPO ? (phase === 1 ? 'TENIR' : phase === 2 ? 'FREINER' : 'FREINER')
-          : PHASE_CONFIG[phase].label
+          : (phase === 1 ? 'TENIR' : phase === 2 ? 'FREINER' : 'FREINER')
         phaseLabelRef.current.textContent = labelText
         phaseLabelRef.current.style.color  = ballColor
       }
