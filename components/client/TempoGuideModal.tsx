@@ -503,26 +503,26 @@ function TempoGuideModalInner({
     </svg>
   )
 
-  // ── Rep bars ──
+  const PHASE_SUBLABELS = ['Montée — contraction', 'Maintien au sommet', 'Descente contrôlée', 'Pause bas']
+
+  // ── Rep bars — flex-wrap pour beaucoup de reps ──
+  const totalBars = reps + bonusReps
   const repBarsEl = (
-    <div className={isLandscape ? 'flex flex-col gap-[3px]' : 'flex flex-row gap-[3px]'}
-         style={isLandscape ? { width: 32 } : { height: 32 }}>
-      {Array.from({ length: reps + bonusReps }).map((_, i) => {
+    <div className="flex flex-row flex-wrap gap-[3px]" style={{ height: 'auto' }}>
+      {Array.from({ length: totalBars }).map((_, i) => {
         const isBonus   = i >= reps
         const isDone    = i < currentRep
         const isCurrent = i === currentRep
         return (
           <motion.div
             key={i}
-            className={isLandscape ? 'rounded-lg' : 'flex-1 rounded-lg'}
-            style={isLandscape ? { height: 20, minWidth: 32 } : {}}
+            className="rounded-lg"
+            style={{ width: Math.min(36, Math.max(10, (isLandscape ? 120 : 280) / (reps > 20 ? reps : Math.max(reps, 8)) - 3)), height: 28 }}
             animate={{
               backgroundColor: isBonus
                 ? (isDone || isCurrent ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)')
                 : (isDone || isCurrent ? '#ffe01e' : 'rgba(255,255,255,0.09)'),
-              boxShadow: isCurrent && !isBonus
-                ? '0 0 10px rgba(255,224,30,0.5)'
-                : 'none',
+              boxShadow: isCurrent && !isBonus ? '0 0 10px rgba(255,224,30,0.5)' : 'none',
             }}
             initial={false}
             transition={{ backgroundColor: { duration: 0.2 } }}
@@ -541,82 +541,18 @@ function TempoGuideModalInner({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none flex flex-col"
+          className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none"
+          style={{ display: 'flex', flexDirection: isLandscape ? 'row' : 'column' }}
         >
-          {/* ── Header fixe ── */}
-          <div className="shrink-0 flex items-center justify-between px-5 pt-safe pt-6 pb-3">
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/25 mb-0.5">
-                Tempo guide
-              </p>
-              <p className="text-[15px] font-bold text-white leading-tight truncate max-w-[220px]">
-                {exerciseName}
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/35 hover:text-white/70 active:scale-95 transition-all"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
           {isLandscape ? (
-            /* ── Landscape : courbe à gauche, contrôles à droite ── */
-            <div className="flex-1 flex flex-row items-center gap-0 min-h-0 px-4 pb-4">
-              {/* Courbe */}
-              <div className="flex-1 flex items-center justify-center h-full min-w-0">
+            /* ══ LANDSCAPE ══
+               Courbe plein hauteur à gauche, panneau contrôles à droite.
+               Header intégré dans le panneau droit (pas de bande séparée). */
+            <>
+              {/* Courbe — occupe toute la hauteur, ~60% de la largeur */}
+              <div style={{ flex: '1 1 0', position: 'relative', minWidth: 0 }}>
                 {waveEl}
-              </div>
-
-              {/* Contrôles — colonne droite fixe */}
-              <div className="shrink-0 flex flex-col items-start justify-center gap-4 w-36 pl-4">
-                {/* Label */}
-                <span
-                  ref={phaseLabelRef}
-                  className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-xl"
-                  style={{ color: countdown !== null ? ACCENT_TEMPO : phaseColor }}
-                >
-                  {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
-                </span>
-                {/* Timer */}
-                {countdown === null && phaseTotalS > 0 && (
-                  <span
-                    ref={phaseTimerRef}
-                    className="font-mono font-black tabular-nums leading-none"
-                    style={{ fontSize: 36, color: phaseColor }}
-                  >
-                    {phaseIsX ? 'X' : `${phaseTimer}s`}
-                  </span>
-                )}
-                {/* Barres */}
-                {repBarsEl}
-                {/* Counter */}
-                <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-[28px] font-black leading-none tabular-nums" style={{ color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
-                    {currentRep + 1}
-                  </span>
-                  <span className="font-mono text-[18px] font-bold text-white/20 mx-0.5">/</span>
-                  <span className="font-mono text-[22px] font-black text-white/55 leading-none tabular-nums">{reps}</span>
-                  {bonusReps > 0 && <span className="font-mono text-[13px] font-bold text-white/30 ml-1">+{bonusReps}</span>}
-                </div>
-                {/* Fermer en landscape */}
-                <button
-                  onClick={handleClose}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.05] text-white/35 hover:text-white/60 text-[11px] font-medium transition-all mt-auto"
-                >
-                  <X size={12} /> Terminer
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* ── Portrait : layout vertical fixe, hauteurs déterminées ── */
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Courbe — hauteur fixe */}
-              <div className="shrink-0 relative" style={{ height: 140 }}>
-                {waveEl}
-
-                {/* Countdown overlay — centré sur la courbe uniquement */}
+                {/* Countdown overlay sur la courbe */}
                 <AnimatePresence>
                   {countdown !== null && countdown > 0 && (
                     <motion.div
@@ -624,94 +560,176 @@ function TempoGuideModalInner({
                       initial={{ opacity: 0, scale: 1.3 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.25 }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      transition={{ duration: 0.22 }}
+                      style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}
                     >
-                      <span
-                        className="font-mono font-black tabular-nums"
-                        style={{ fontSize: 80, color: countdown <= 3 ? ACCENT_TEMPO : 'white', lineHeight: 1 }}
-                      >
+                      <span style={{ fontSize: 96, color: countdown <= 3 ? ACCENT_TEMPO : 'white', fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}>
                         {countdown}
                       </span>
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                {/* GO flash */}
                 <AnimatePresence>
                   {countdown === 0 && (
-                    <motion.div
-                      key="go"
-                      initial={{ opacity: 0, scale: 0.7 }}
-                      animate={{ opacity: 1, scale: 1.05 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    >
-                      <span className="font-mono font-black" style={{ fontSize: 72, color: ACCENT_TEMPO }}>
-                        GO
-                      </span>
+                    <motion.div key="go" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                      <span style={{ fontSize: 80, color: ACCENT_TEMPO, fontFamily: 'monospace', fontWeight: 900 }}>GO</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Séparateur */}
-              <div className="shrink-0 h-px bg-white/[0.04] mx-5 mt-2" />
+              {/* Panneau droit — 180px, flex-col, tout centré verticalement */}
+              <div style={{ width: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '16px 16px 16px 12px', borderLeft: '1px solid rgba(255,255,255,0.04)' }}>
+                {/* Nom exercice + fermer */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>Tempo</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1.2 }}>{exerciseName}</p>
+                  </div>
+                  <button onClick={handleClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                    <X size={14} />
+                  </button>
+                </div>
 
-              {/* Label phase */}
-              <div className="shrink-0 flex flex-col items-center pt-5 pb-2">
+                {/* Phase label + sous-label */}
+                <div>
+                  <span
+                    ref={phaseLabelRef}
+                    style={{ fontFamily: 'var(--font-barlow-condensed, sans-serif)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: 20, color: countdown !== null ? ACCENT_TEMPO : phaseColor, display: 'block', marginBottom: 2 }}
+                  >
+                    {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
+                  </span>
+                  {countdown === null && (
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' }}>
+                      {PHASE_SUBLABELS[currentPhase]}
+                    </p>
+                  )}
+                </div>
+
+                {/* Timer grand */}
+                <div style={{ minHeight: 52 }}>
+                  {countdown === null && phaseTotalS > 0 && (
+                    <span
+                      ref={phaseTimerRef}
+                      style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 48, lineHeight: 1, color: phaseColor, display: 'block' }}
+                    >
+                      {phaseIsX ? 'X' : `${phaseTimer}s`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Barres reps */}
+                <div>{repBarsEl}</div>
+
+                {/* Counter */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 32, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
+                    {currentRep + 1}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 18, color: 'rgba(255,255,255,0.2)' }}>/</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 24, color: 'rgba(255,255,255,0.55)' }}>{reps}</span>
+                  {bonusReps > 0 && <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>+{bonusReps}</span>}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* ══ PORTRAIT ══
+               Header compact → Courbe flex-1 → Label+Timer → Barres → Counter */
+            <>
+              {/* Header */}
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '48px 20px 12px' }}>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>Tempo guide</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: 'white' }}>{exerciseName}</p>
+                </div>
+                <button onClick={handleClose} style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Courbe — flex-1, prend tout l'espace disponible */}
+              <div style={{ flex: '1 1 0', position: 'relative', minHeight: 0 }}>
+                {waveEl}
+                {/* Countdown sur la courbe */}
+                <AnimatePresence>
+                  {countdown !== null && countdown > 0 && (
+                    <motion.div
+                      key={countdown}
+                      initial={{ opacity: 0, scale: 1.3 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      transition={{ duration: 0.22 }}
+                      style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', gap: 8 }}
+                    >
+                      <span style={{ fontSize: 120, color: countdown <= 3 ? ACCENT_TEMPO : 'white', fontFamily: 'monospace', fontWeight: 900, lineHeight: 1 }}>
+                        {countdown}
+                      </span>
+                      {countdown <= 3 && (
+                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
+                          Positionnez-vous
+                        </span>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {countdown === 0 && (
+                    <motion.div key="go" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                      <span style={{ fontSize: 96, color: ACCENT_TEMPO, fontFamily: 'monospace', fontWeight: 900 }}>GO</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Divider */}
+              <div style={{ flexShrink: 0, height: 1, background: 'rgba(255,255,255,0.04)', margin: '0 20px' }} />
+
+              {/* Label + sous-label */}
+              <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 20px 8px' }}>
                 <span
                   ref={phaseLabelRef}
-                  className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-2xl"
-                  style={{ color: countdown !== null ? ACCENT_TEMPO : phaseColor }}
+                  style={{ fontFamily: 'var(--font-barlow-condensed, sans-serif)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: 28, color: countdown !== null ? ACCENT_TEMPO : phaseColor }}
                 >
                   {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
                 </span>
                 {countdown === null && (
-                  <p className="text-[10px] text-white/25 mt-0.5 tracking-[0.06em]">
-                    {['entre les séries', 'pic de contraction', 'descente contrôlée', 'étirement initial'][currentPhase]}
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', marginTop: 3, letterSpacing: '0.06em' }}>
+                    {PHASE_SUBLABELS[currentPhase]}
                   </p>
                 )}
               </div>
 
               {/* Timer */}
-              <div className="shrink-0 flex justify-center pb-4">
-                {countdown === null && phaseTotalS > 0 ? (
+              <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', minHeight: 72, alignItems: 'center', paddingBottom: 8 }}>
+                {countdown === null && phaseTotalS > 0 && (
                   <span
                     ref={phaseTimerRef}
-                    className="font-mono font-black tabular-nums leading-none"
-                    style={{ fontSize: 52, color: phaseColor }}
+                    style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 64, lineHeight: 1, color: phaseColor }}
                   >
                     {phaseIsX ? 'X' : `${phaseTimer}s`}
                   </span>
-                ) : (
-                  <div style={{ height: 52 }} />
                 )}
               </div>
 
               {/* Barres reps */}
-              <div className="shrink-0 px-5 pb-3">
+              <div style={{ flexShrink: 0, padding: '0 20px 12px' }}>
                 {repBarsEl}
               </div>
 
               {/* Counter */}
-              <div className="shrink-0 flex justify-center items-baseline gap-1 pb-8">
-                <span
-                  className="font-mono font-black leading-none tabular-nums"
-                  style={{ fontSize: 40, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}
-                >
+              <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, paddingBottom: 40 }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 52, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
                   {currentRep + 1}
                 </span>
-                <span className="font-mono text-[24px] font-bold text-white/20 mx-1">/</span>
-                <span className="font-mono font-black text-white/55 leading-none tabular-nums" style={{ fontSize: 30 }}>
-                  {reps}
-                </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 28, color: 'rgba(255,255,255,0.2)' }}>/</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 36, color: 'rgba(255,255,255,0.55)' }}>{reps}</span>
                 {bonusReps > 0 && (
-                  <span className="font-mono text-[15px] font-bold text-white/30 ml-1">+{bonusReps}</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 16, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>+{bonusReps}</span>
                 )}
               </div>
-            </div>
+            </>
           )}
         </motion.div>
       )}
