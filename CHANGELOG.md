@@ -5,6 +5,10 @@
 
 ## 2026-05-17
 
+FIX: TempoGuideModal — portrait layout tronqué : SVG contraint à 44vh max, label/barres/counter toujours visibles
+FIX: tempo — ISO=1 sur tous les patterns hypertrophie (HYPERTROPHY_TEMPO_MAP) — contraction isométrique minimale au sommet
+FIX: ExerciseCard — presets "Hypertrophie standard" 2-1-3-1 et "Hypertrophie excentrique" 2-1-4-0
+
 FEATURE: ExerciseCard (builder) — toggle "Unilatéral (G + D par série)" pour cocher is_unilateral directement dans le builder coach
 FIX: is_unilateral propagé dans save payload (template PATCH/POST + program assign) → program_exercises
 SCHEMA: migration 20260517_template_exercises_is_unilateral.sql — ajoute is_unilateral sur coach_program_template_exercises
