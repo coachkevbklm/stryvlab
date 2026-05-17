@@ -207,9 +207,8 @@ function TempoGuideModalInner({
     const total = pathRef.current.getTotalLength()
     pathLenRef.current = total
     repLenRef.current  = total / 3
-    // Balle au tout début : bosse 1 creux gauche = position 0 sur le path
-    // viewBox centré sur ce point → rien à gauche de la courbe (pas d'historique)
-    const startPt = pathRef.current.getPointAtLength(0)
+    // Balle sur bosse 2 creux gauche = total/3 → toujours contexte gauche+droite visible
+    const startPt = pathRef.current.getPointAtLength(total / 3)
     svgRef.current.setAttribute('viewBox', `${startPt.x - WAVE_W / 2} 0 ${WAVE_W} ${WAVE_H}`)
     if (ballRef.current) {
       ballRef.current.setAttribute('cx', String(startPt.x))
@@ -397,8 +396,8 @@ function TempoGuideModalInner({
       repFrac = 1.0
     }
 
-    // Bosse 1 (pas bosse 2) — balle commence sans historique à gauche
-    const pathPos = repFrac * repLen
+    // Bosse 2 (milieu du path) — toujours du contexte à gauche et à droite, pas de coupure
+    const pathPos = repLen + repFrac * repLen
     const pt = pathRef.current.getPointAtLength(pathPos)
 
     const viewBoxX = pt.x - WAVE_W / 2
@@ -455,7 +454,7 @@ function TempoGuideModalInner({
     // Diamants — positions fixes, pas d'animation, juste placement
     if (diamonds.length >= 3) {
       diamondPositions.forEach((frac, idx) => {
-        const dPathPos = frac * repLen
+        const dPathPos = repLen + frac * repLen
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
