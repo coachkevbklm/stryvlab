@@ -1,17 +1,20 @@
-// Tempo d'exécution — 4 phases: Excentrique-PauseBasse-Concentrique-PauseHaute
-// Notation: "3-1-2-0" = 3s descente, 1s pause basse, 2s montée, 0s pause haute
+// Tempo d'exécution — 4 phases: Concentrique-Isométrique-Excentrique-Pause
+// Notation: "2-2-3-1" = 2s montée, 2s contraction max, 3s descente, 1s position initiale
 // Valeur spéciale: "X" = explosif (aussi vite que possible)
 
 export type TempoPhase = number | 'X'
 
 export interface ParsedTempo {
-  eccentric: TempoPhase
-  pauseBottom: TempoPhase
   concentric: TempoPhase
+  isometric?: TempoPhase
+  eccentric: TempoPhase
+  pause?: TempoPhase
+  // Backward-compatible aliases for older call sites.
+  pauseBottom: TempoPhase
   pauseTop: TempoPhase
 }
 
-// Parse "3-1-2-0" or "X-0-X-0" into structured object.
+// Parse "2-2-3-1" or "X-0-X-0" into structured object.
 // Returns null if format is invalid (not 4 parts, non-numeric/X values, out of range).
 export function parseTempo(raw: string): ParsedTempo | null {
   if (!raw || typeof raw !== 'string') return null
@@ -31,29 +34,31 @@ export function parseTempo(raw: string): ParsedTempo | null {
     }
   }
   return {
-    eccentric: parsed[0],
-    pauseBottom: parsed[1],
-    concentric: parsed[2],
-    pauseTop: parsed[3],
+    concentric: parsed[0],
+    isometric: parsed[1],
+    eccentric: parsed[2],
+    pause: parsed[3],
+    pauseBottom: parsed[3],
+    pauseTop: parsed[1],
   }
 }
 
 // Format parsed tempo back to canonical string
 export function formatTempo(t: ParsedTempo): string {
   const fmt = (p: TempoPhase) => (p === 'X' ? 'X' : String(p))
-  return `${fmt(t.eccentric)}-${fmt(t.pauseBottom)}-${fmt(t.concentric)}-${fmt(t.pauseTop)}`
+  return `${fmt(t.concentric)}-${fmt(t.isometric ?? t.pauseTop)}-${fmt(t.eccentric)}-${fmt(t.pause ?? t.pauseBottom)}`
 }
 
 // Time Under Tension in seconds for a given parsed tempo and rep count.
 // X phases count as 1s (explosive — near-zero time but not zero for calculation).
 export function calcTUT(t: ParsedTempo, reps: number): number {
   const val = (p: TempoPhase) => (p === 'X' ? 1 : p)
-  return (val(t.eccentric) + val(t.pauseBottom) + val(t.concentric) + val(t.pauseTop)) * reps
+  return (val(t.concentric) + val(t.isometric ?? t.pauseTop) + val(t.eccentric) + val(t.pause ?? t.pauseBottom)) * reps
 }
 
 // ─── Default Tempos ────────────────────────────────────────────────────────────
 // Scientific basis:
-//   Hypertrophy: maximize TUT — long eccentric (3-4s), pause, controlled concentric
+//   Hypertrophy: maximize TUT — controlled concentric, optional iso, long eccentric
 //   Strength: explosive concentric (X), controlled eccentric for safety
 //   Endurance: moderate tempo (2-0-2-0) — sustainable over high reps
 //
@@ -74,31 +79,31 @@ const ISOLATION_PATTERNS = new Set([
 
 // Per-pattern hypertrophy tempos — research-based TUT targets
 const HYPERTROPHY_TEMPO_MAP: Record<string, string> = {
-  vertical_pull:         '3-1-2-0', // lat sous tension excentrique
-  horizontal_pull:       '3-1-2-0',
-  vertical_push:         '2-1-2-0',
-  horizontal_push:       '3-1-2-1', // pec sous tension en allongé
-  hip_hinge:             '3-1-1-0', // ischio sous tension excentrique
-  squat_pattern:         '3-1-2-0',
-  knee_flexion:          '3-1-2-0',
-  knee_extension:        '3-0-2-0',
-  elbow_flexion:         '3-1-2-1',
-  elbow_extension:       '3-1-2-1',
-  lateral_raise:         '2-1-2-1',
-  calf_raise:            '2-1-2-0',
-  hip_abduction:         '2-1-2-0',
-  hip_adduction:         '2-1-2-0',
-  shoulder_rotation:     '2-1-2-0',
-  core_anti_flex:        '2-1-2-1',
-  core_flex:             '2-1-2-1',
-  core_rotation:         '2-1-2-1',
-  carry:                 '2-0-2-0',
-  scapular_elevation:    '2-1-2-0',
-  scapular_retraction:   '2-1-2-0',
-  scapular_protraction:  '2-0-2-0',
+  vertical_pull:         '2-1-3-1', // lat sous tension excentrique + 1s contraction haute
+  horizontal_pull:       '2-1-3-1', // rowing : squeeze omoplate 1s
+  vertical_push:         '2-1-2-1', // overhead : contraction deltoïde au sommet
+  horizontal_push:       '2-1-3-1', // pec sous tension en allongé
+  hip_hinge:             '1-1-3-1', // ischio excentrique + 1s contraction fessier au sommet
+  squat_pattern:         '2-1-3-1', // quad : 1s verrouillage genou haut
+  knee_flexion:          '2-1-3-1', // leg curl : contraction ischio 1s
+  knee_extension:        '2-1-3-0', // leg extension : contraction quad 1s
+  elbow_flexion:         '2-1-3-1', // biceps : contraction pic 1s
+  elbow_extension:       '2-1-3-1', // triceps : verrouillage coude 1s
+  lateral_raise:         '2-1-2-1', // déjà à 1 — maintenu
+  calf_raise:            '2-1-2-1', // mollet : contraction plantar 1s
+  hip_abduction:         '2-1-2-1', // fessier moyen : contraction abduction 1s
+  hip_adduction:         '2-1-2-1', // adducteur : 1s
+  shoulder_rotation:     '2-1-2-1', // coiffe : 1s
+  core_anti_flex:        '2-1-2-1', // déjà à 1 — maintenu
+  core_flex:             '2-1-2-1', // déjà à 1 — maintenu
+  core_rotation:         '2-1-2-1', // déjà à 1 — maintenu
+  carry:                 '2-1-2-0', // farmer carry : tension isométrique portée
+  scapular_elevation:    '2-1-2-1', // haussement : sommet 1s
+  scapular_retraction:   '2-1-2-1', // rétraction : squeeze 1s
+  scapular_protraction:  '2-1-2-0', // protraction : 1s
 }
 
-const STRENGTH_COMPOUND  = '2-0-X-0' // explosif concentrique
+const STRENGTH_COMPOUND  = 'X-0-2-0' // explosif concentrique
 const STRENGTH_ISOLATION = '2-0-2-0' // contrôlé même en force
 const ENDURANCE_DEFAULT  = '2-0-2-0'
 const FALLBACK_DEFAULT   = '2-0-2-0'
