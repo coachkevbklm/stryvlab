@@ -135,7 +135,6 @@ function TempoGuideModalInner({
 
   // Anticipation
   const [isAnticipating, setIsAnticipating]   = useState(false)
-  const [blinkOrange, setBlinkOrange]         = useState(false)
   const anticipationFiredRef                  = useRef(false)
   const isAnticipatingRef                     = useRef(false)
 
@@ -146,6 +145,10 @@ function TempoGuideModalInner({
   const peakDiamondRef  = useRef<SVGPolygonElement>(null)
   const baseRDiamondRef = useRef<SVGPolygonElement>(null)
   const baseLDiamondRef = useRef<SVGPolygonElement>(null)
+
+  // ── Label DOM refs — mis à jour directement dans RAF pour zéro latence React ──
+  const phaseLabelRef = useRef<HTMLSpanElement>(null)
+  const phaseTimerRef = useRef<HTMLSpanElement>(null)
 
   // ── RAF mutable refs ──
   const rafRef       = useRef<number>(0)
@@ -177,17 +180,7 @@ function TempoGuideModalInner({
     ballGlowRef.current.setAttribute('opacity', countdown <= 3 ? '0.25' : '0.08')
   }, [countdown])
 
-  // ── Blink effect for anticipation ──
-  useEffect(() => {
-    if (!isAnticipating) { setBlinkOrange(false); return }
-    let count = 0
-    const iv = setInterval(() => {
-      setBlinkOrange(prev => !prev)
-      count++
-      if (count >= 4) clearInterval(iv)
-    }, 125)
-    return () => clearInterval(iv)
-  }, [isAnticipating])
+  // Blink géré via DOM direct dans RAF — useEffect supprimé
 
   // ── Manual close ──
   const handleClose = useCallback(() => {
@@ -244,11 +237,20 @@ function TempoGuideModalInner({
       tInPhaseMs = phaseDurations[i]
     }
 
-    // Phase change
+    // Phase change — DOM direct pour zéro latence React
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase
-      setCurrentPhase(phase)
-      setPhaseColor(PHASE_CONFIG[phase].color)
+      setCurrentPhase(phase)  // conservé pour barres reps (React)
+      const cfg = PHASE_CONFIG[phase]
+      // Label DOM direct — synchrone avec la balle
+      if (phaseLabelRef.current) {
+        phaseLabelRef.current.textContent = cfg.label
+        phaseLabelRef.current.style.color = cfg.color
+      }
+      if (phaseTimerRef.current) {
+        phaseTimerRef.current.style.color = cfg.color
+      }
+      setPhaseColor(cfg.color)  // conservé pour anticipation blink (React)
       isAnticipatingRef.current = false
       setIsAnticipating(false)
       anticipationFiredRef.current = false
@@ -258,11 +260,17 @@ function TempoGuideModalInner({
       else if (phase === 3) vib(30)
     }
 
-    // Phase timer
+    // Phase timer — DOM direct pour zéro latence React
     const phaseMs = phaseDurations[phase]
     if (phaseMs > 0) {
       const remaining = Math.ceil((phaseMs - tInPhaseMs) / 1000)
-      setPhaseTimer(Math.max(remaining, 0))
+      const timerVal = Math.max(remaining, 0)
+      setPhaseTimer(timerVal)  // conservé pour montage initial
+      if (phaseTimerRef.current) {
+        const cfg = PHASE_CONFIG[phase]
+        phaseTimerRef.current.textContent = `${timerVal}s`
+        phaseTimerRef.current.style.color = cfg.color
+      }
     }
 
     const tInPhaseFrac = phaseMs > 0 ? Math.min(tInPhaseMs / phaseMs, 1) : 1
@@ -281,9 +289,17 @@ function TempoGuideModalInner({
       if (hapticsEnabled) {
         try { navigator.vibrate(10) } catch { /* not supported */ }
       }
+      // Blink DOM direct — orange/rouge 2 cycles à 4Hz
+      let blinkCount = 0
+      const blinkIv = setInterval(() => {
+        if (!phaseLabelRef.current) { clearInterval(blinkIv); return }
+        phaseLabelRef.current.style.color = blinkCount % 2 === 0 ? '#f97316' : '#ef4444'
+        blinkCount++
+        if (blinkCount >= 4) clearInterval(blinkIv)
+      }, 125)
     }
     if (!shouldAnticipate && anticipationFiredRef.current && phase === lastPhaseRef.current) {
-      // reset only if still in same phase (not handled by phase-change block)
+      // reset handled by phase-change block on next phase
     }
 
     // ── Ball position ──
@@ -390,9 +406,8 @@ function TempoGuideModalInner({
   const phaseIsX    = phaseValue === 'X'
   const phaseTotalS = phaseIsX ? 0.3 : (phaseValue as number)
 
-  // Anticipation color for label
-  const anticipationColor = blinkOrange ? '#f97316' : '#ef4444'
-  const labelColor = isAnticipating ? anticipationColor : phaseColor
+  // Label color pour le premier rendu React uniquement — ensuite piloté via DOM direct dans RAF
+  const labelColor = phaseColor
 
   // ── SVG content (shared between portrait inline and landscape) ──
   const svgContent = (
@@ -445,24 +460,25 @@ function TempoGuideModalInner({
   )
 
   // ── Phase label + timer ──
+  // Couleur/texte mis à jour via DOM direct (phaseLabelRef/phaseTimerRef) dans RAF → zéro latence React.
+  // Les valeurs initiales React restent correctes pour le premier rendu.
   const phaseLabelEl = (
     <div className={`flex flex-col ${isLandscape ? 'items-start' : 'items-center'} gap-1`}>
       <span
-        className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-2xl transition-colors duration-150"
+        ref={phaseLabelRef}
+        className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-2xl"
         style={{ color: countdown !== null ? ACCENT_TEMPO : labelColor }}
       >
         {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
       </span>
       {countdown === null && phaseTotalS > 0 && (
-        <motion.span
-          key={`timer-${currentPhase}`}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <span
+          ref={phaseTimerRef}
           className="font-mono font-black tabular-nums leading-none"
           style={{ fontSize: 44, color: labelColor }}
         >
           {phaseIsX ? 'X' : `${phaseTimer}s`}
-        </motion.span>
+        </span>
       )}
     </div>
   )
