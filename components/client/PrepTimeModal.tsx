@@ -13,9 +13,15 @@ interface PrepTimeModalProps {
 const HAPTICS_KEY = 'tempo_haptics_enabled'
 
 export function getHapticsEnabled(): boolean {
+  // iOS ne supporte pas navigator.vibrate — retourne false immédiatement
+  if (typeof navigator !== 'undefined' &&
+      (/iP(hone|od|ad)/.test(navigator.userAgent) ||
+       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) {
+    return false
+  }
   try {
     const stored = localStorage.getItem(HAPTICS_KEY)
-    return stored === null ? true : stored === 'true' // default ON
+    return stored === null ? true : stored === 'true'
   } catch {
     return true
   }
@@ -53,9 +59,16 @@ function savePrepTime(exerciseName: string, seconds: number) {
   } catch { /* noop */ }
 }
 
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iP(hone|od|ad)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
 export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: PrepTimeModalProps) {
   const [seconds, setSeconds]   = useState<number>(() => getPrepTime(exerciseName))
   const [haptics, setHaptics]   = useState<boolean>(() => getHapticsEnabled())
+  const iosDevice = typeof window !== 'undefined' ? isIOS() : false
 
   const dec = () => setSeconds(s => Math.max(3, s - 1))
   const inc = () => setSeconds(s => Math.min(30, s + 1))
@@ -157,28 +170,37 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
             </button>
           </div>
 
-          {/* Haptics toggle */}
-          <button
-            onClick={toggleHaptics}
-            className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] border ${
-              haptics
-                ? 'bg-[#FFB800]/[0.08] border-[#FFB800]/20'
-                : 'bg-white/[0.03] border-white/[0.05]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              {haptics
-                ? <Vibrate size={14} style={{ color: '#FFB800' }} />
-                : <VibrateOff size={14} className="text-white/25" />
-              }
-              <span className={`text-[11px] font-semibold ${haptics ? 'text-white/80' : 'text-white/30'}`}>
-                Vibrations aux transitions
+          {/* Haptics toggle — masqué sur iOS (API non supportée) */}
+          {iosDevice ? (
+            <div className="w-full flex items-center gap-2.5 px-4 h-11 rounded-xl mb-4 bg-white/[0.02] border border-white/[0.04]">
+              <VibrateOff size={14} className="text-white/20 shrink-0" />
+              <span className="text-[11px] text-white/25">
+                Vibrations non disponibles sur iOS
               </span>
             </div>
-            <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#FFB800]' : 'bg-white/[0.10]'}`}>
-              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${haptics ? 'left-4' : 'left-0.5'}`} />
-            </div>
-          </button>
+          ) : (
+            <button
+              onClick={toggleHaptics}
+              className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] border ${
+                haptics
+                  ? 'bg-[#FFB800]/[0.08] border-[#FFB800]/20'
+                  : 'bg-white/[0.03] border-white/[0.05]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {haptics
+                  ? <Vibrate size={14} style={{ color: '#FFB800' }} />
+                  : <VibrateOff size={14} className="text-white/25" />
+                }
+                <span className={`text-[11px] font-semibold ${haptics ? 'text-white/80' : 'text-white/30'}`}>
+                  Vibrations aux transitions
+                </span>
+              </div>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#FFB800]' : 'bg-white/[0.10]'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${haptics ? 'left-4' : 'left-0.5'}`} />
+              </div>
+            </button>
+          )}
 
           {/* Confirm */}
           <button
