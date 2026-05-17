@@ -70,10 +70,10 @@ const WAVE_PATH_D = buildWavePath()
 // ─── Phase config ─────────────────────────────────────────────────────────────
 
 const PHASE_CONFIG = [
-  { label: 'CONTRACTER', color: '#22c55e' },  // 0 CON
-  { label: 'TENIR',      color: '#ef4444' },  // 1 ISO
-  { label: 'FREINER',    color: '#f97316' },  // 2 ECC
-  { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE
+  { label: 'CONTRACTER', color: '#3b82f6' },  // 0 CON — bleu
+  { label: 'TENIR',      color: '#FFB800' },  // 1 ISO — jaune accent
+  { label: 'FREINER',    color: '#FFB800' },  // 2 ECC — jaune accent
+  { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE — rouge si long
 ] as const
 
 const ACCENT_TEMPO = '#FFB800'
@@ -322,30 +322,23 @@ function TempoGuideModalInner({
     const pauseDurMs = phaseDurations[3]
 
     if (phase === 0) {
-      // CON — vert toute la montée, sans exception.
-      // La balle reste verte jusqu'au contact du diamant sommet (phase ISO).
-      // C'est l'entrée en ISO qui déclenche le changement de couleur, pas l'approche.
-      ballColor = '#22c55e'
+      // CON — vert toute la montée
+      ballColor = '#3b82f6'
     } else if (phase === 1) {
-      // ISO (sommet) — balle vient d'arriver sur le diamant jaune.
-      // ISO ≥ 2s : jaune accent immédiat (stop long visible) → orange 400ms avant fin (annonce ECC)
-      // ISO < 2s : orange direct (trop court pour jaune, ECC arrive vite)
-      if (isoDurMs >= STATIC_RED_THRESHOLD_MS) {
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#f97316' : ACCENT_TEMPO
-      } else {
-        ballColor = '#f97316'
-      }
+      // ISO (sommet) — jaune accent (stop) → jaune avant fin (annonce ECC descent)
+      // Pas d'orange : jaune = signal sommet, vert = signal départ
+      ballColor = ACCENT_TEMPO
     } else if (phase === 2) {
-      // ECC — orange toute la descente
-      ballColor = '#f97316'
+      // ECC — jaune toute la descente (remplace orange)
+      ballColor = ACCENT_TEMPO
     } else {
       // PAUSE (creux)
-      // PAUSE ≥ 2s : rouge immédiat → vert 400ms avant fin (annonce CON)
-      // PAUSE < 2s : orange → vert 400ms avant fin
+      // PAUSE ≥ 2s : rouge immédiat → vert 400ms avant fin
+      // PAUSE < 2s : jaune → vert 400ms avant fin
       if (pauseDurMs >= STATIC_RED_THRESHOLD_MS) {
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#ef4444'
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#3b82f6' : '#ef4444'
       } else {
-        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#22c55e' : '#f97316'
+        ballColor = timeLeftMs <= GREEN_PREVIEW_MS ? '#3b82f6' : ACCENT_TEMPO
       }
     }
 
@@ -355,10 +348,10 @@ function TempoGuideModalInner({
       // Mettre à jour label aussi (phase label suit la couleur balle pour cohérence)
       if (phaseLabelRef.current) {
         // Label = action correspondant à ballColor
-        const labelText = ballColor === '#22c55e' ? 'CONTRACTER'
-          : ballColor === '#ef4444' ? (phase === 1 ? 'TENIR' : 'PAUSE')
-          : ballColor === ACCENT_TEMPO ? 'TENIR'
-          : (phase === 2 ? 'FREINER' : PHASE_CONFIG[phase].label)
+        const labelText = ballColor === '#3b82f6' ? 'CONTRACTER'
+          : ballColor === '#ef4444' ? 'PAUSE'
+          : ballColor === ACCENT_TEMPO ? (phase === 1 ? 'TENIR' : phase === 2 ? 'FREINER' : 'FREINER')
+          : PHASE_CONFIG[phase].label
         phaseLabelRef.current.textContent = labelText
         phaseLabelRef.current.style.color  = ballColor
       }
@@ -468,7 +461,7 @@ function TempoGuideModalInner({
         // Couleur du diamant = couleur de la phase qui DÉMARRE à ce point
         // Creux (frac=0 ou 1) = début CON → vert
         // Sommet (frac=0.5)   = début ISO → jaune accent
-        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#22c55e'
+        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
 
         // Distance balle → diamant en unités de repFrac
         const dist = Math.abs(repFrac - frac)
