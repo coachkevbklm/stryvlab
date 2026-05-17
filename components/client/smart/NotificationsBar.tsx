@@ -1,0 +1,73 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { X, ClipboardList, Sparkles, MessageSquare, Clock } from 'lucide-react'
+
+export type Notification = {
+  id: string
+  type: 'coach_note' | 'bilan_pending' | 'program_assigned' | 'system_reminder'
+  title: string
+  body: string | null
+  payload: Record<string, unknown> | null
+  read_at: string | null
+  created_at: string
+}
+
+const TYPE_ICON: Record<Notification['type'], React.ElementType> = {
+  coach_note: MessageSquare,
+  bilan_pending: ClipboardList,
+  program_assigned: Sparkles,
+  system_reminder: Clock,
+}
+
+export default function NotificationsBar({ initial }: { initial: Notification[] }) {
+  const [items, setItems] = useState(initial)
+  const router = useRouter()
+
+  if (items.length === 0) return null
+
+  const dismiss = async (id: string) => {
+    setItems(prev => prev.filter(n => n.id !== id))
+    await fetch(`/api/client/notifications/${id}`, { method: 'PATCH' })
+  }
+
+  const handleClick = (n: Notification) => {
+    if (n.type === 'bilan_pending' && n.payload?.assessment_submission_id) {
+      router.push(`/client/bilans/${n.payload.assessment_submission_id}`)
+    } else if (n.type === 'program_assigned') {
+      router.push('/client/programme')
+    } else {
+      fetch('/api/client/notifications', { method: 'PATCH' })
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map(n => {
+        const Icon = TYPE_ICON[n.type]
+        return (
+          <div
+            key={n.id}
+            className="flex items-start gap-3 bg-[#161616] rounded-2xl border border-white/[0.08] p-3 active:scale-[0.99] transition-transform cursor-pointer"
+            onClick={() => handleClick(n)}
+          >
+            <div className="w-9 h-9 rounded-lg bg-[#ffe01e]/10 flex items-center justify-center shrink-0">
+              <Icon size={18} className="text-[#ffe01e]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold text-white">{n.title}</p>
+              {n.body && <p className="text-[11px] text-white/50 mt-1 leading-relaxed">{n.body}</p>}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); dismiss(n.id) }}
+              className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0"
+            >
+              <X size={14} className="text-white/40" />
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
