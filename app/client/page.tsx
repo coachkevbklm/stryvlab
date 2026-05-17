@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { detectMuscleGroups } from '@/lib/client/muscleDetection'
+import ClientTopBar from '@/components/client/ClientTopBar'
 import NotificationsBar, { type Notification } from '@/components/client/smart/NotificationsBar'
 import SmartNutritionWidget, { type NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 import SmartWorkoutWidget, { type SmartWorkoutWidgetProps } from '@/components/client/smart/SmartWorkoutWidget'
@@ -136,12 +137,17 @@ export default async function ClientHomePage() {
     }
   }
 
+  const todayLabel = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())
+
   return (
-    <main className="min-h-screen bg-[#0d0d0d] p-4 pt-3 pb-24 max-w-[480px] mx-auto space-y-3">
-      <NotificationsBar initial={notifications} />
+    <>
+      <ClientTopBar section="AUJOURD'HUI" title={todayLabel} />
+      <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
+        <NotificationsBar initial={notifications} />
       <SmartNutritionWidget consumed={consumed} target={target} />
       <SmartWorkoutWidget {...workoutProps} />
-      <SmartAgendaTimeline entries={timelineEntries} />
-    </main>
+        <SmartAgendaTimeline entries={timelineEntries} />
+      </main>
+    </>
   )
 }
