@@ -3,6 +3,10 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-19
+
+FEATURE: Recovery correlation alerts — sommeil/stress/énergie → recommandations séance : computeRecoveryAlerts lib + GET /api/client/recovery-status + RecoveryStatusWidget (DS v3.0) sur home avant nutrition/workout grid, alerte sleep_debt (critical), poor_sleep/high_stress/low_energy (warning), optimal (info), couleurs #ef4444/#f59e0b/#10b981, dismissible per session (localStorage), 10 Vitest tests PASS
+
 ## 2026-05-18
 
 FEATURE: Meal favorites + quick-log — save favorite meals + 1-tap quick-log from recents in nutrition composer, client_meal_favorites table with JSONB entries + use_count tracking

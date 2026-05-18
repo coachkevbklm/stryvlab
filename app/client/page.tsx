@@ -18,7 +18,9 @@ import SmartWorkoutWidget, {
   type SmartWorkoutWidgetProps,
 } from "@/components/client/smart/SmartWorkoutWidget";
 import SmartAgendaTimeline from "@/components/client/smart/SmartAgendaTimeline";
+import RecoveryStatusWidget from "@/components/client/smart/RecoveryStatusWidget";
 import type { MuscleGroup } from "@/lib/client/muscleDetection";
+import type { CheckinData } from "@/lib/client/smart/recoveryAlerts";
 
 function getTodayDow() {
   const jsDay = new Date().getDay();
@@ -96,6 +98,7 @@ export default async function ClientHomePage() {
     programResult,
     sessionLogResult,
     activitiesResult,
+    morningCheckinResult,
   ] = await Promise.allSettled([
     // Legacy notifications (system + coach via old table)
     svc()
@@ -188,6 +191,15 @@ export default async function ClientHomePage() {
       .eq("client_id", clientId)
       .gte("started_at", dayStart)
       .lte("started_at", dayEnd),
+
+    // Today's morning check-in
+    svc()
+      .from("client_checkins")
+      .select("responses")
+      .eq("client_id", clientId)
+      .eq("moment", "morning")
+      .eq("date", date)
+      .maybeSingle(),
   ]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
@@ -263,6 +275,13 @@ export default async function ClientHomePage() {
   );
   const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0);
   const consumed: NutritionMacros = { ...consumedBase, water_ml };
+
+  // ── Recovery Status ───────────────────────────────────────────────────────
+  const morningCheckinRow =
+    morningCheckinResult.status === "fulfilled"
+      ? morningCheckinResult.value.data
+      : null;
+  const morningCheckin: CheckinData | null = morningCheckinRow?.responses ?? null;
 
   // ── Timeline ───────────────────────────────────────────────────────────────
   const sessionRow =
@@ -375,6 +394,12 @@ export default async function ClientHomePage() {
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
         {/* Notifications — full width */}
         <NotificationsBar initial={notifications} />
+
+        {/* Recovery Status alerts — full width, only if alerts present */}
+        <RecoveryStatusWidget
+          morningCheckin={morningCheckin}
+          plannedSessionToday={workoutProps.state === "scheduled"}
+        />
 
         {/* Dashboard grid — nutrition + workout côte à côte */}
         <div className="grid grid-cols-2 gap-3 items-stretch">
