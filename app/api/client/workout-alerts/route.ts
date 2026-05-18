@@ -44,11 +44,17 @@ export async function GET(_req: NextRequest) {
 
   const { data: progressionEvents } = await svc()
     .from('progression_events')
-    .select('exercise_id, exercise_name, created_at, trigger_type')
+    .select('exercise_id, created_at, trigger_type')
     .eq('client_id', cc.id)
     .gte('created_at', eightWeeksAgo.toISOString())
 
-  const overloads: OverloadEvent[] = (progressionEvents ?? []) as OverloadEvent[]
+  // progression_events has no exercise_name column — use exercise_id as both fields
+  const overloads: OverloadEvent[] = (progressionEvents ?? []).map(e => ({
+    exercise_id: e.exercise_id,
+    exercise_name: e.exercise_id,
+    created_at: e.created_at,
+    trigger_type: e.trigger_type,
+  }))
 
   const analysis = analyzeExercisePerformance(sessions, overloads, 8)
   const rows: WorkoutAnalysisRow[] = analysis.exercises.map(e => ({

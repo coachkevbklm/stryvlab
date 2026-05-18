@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { getVolumeTargets, VOLUME_GROUP_LABELS, MUSCLE_TO_VOLUME_GROUP } from '@/lib/programs/intelligence/volume-targets'
+import { getBiomechData } from '@/lib/programs/intelligence/catalog-utils'
 
 function svc() {
   return createServiceClient(
@@ -37,27 +38,20 @@ export async function GET(_req: NextRequest) {
     .lte('completed_at', sunday.toISOString())
 
   const setRows = (sessionLogs ?? []).flatMap(s => (s.client_set_logs ?? []) as any[])
-  const exerciseNames = Array.from(new Set(setRows.map((s: any) => s.exercise_name)))
 
-  const { data: catalogRows } = exerciseNames.length > 0 ? await svc()
-    .from('exercises_catalog')
-    .select('name, primary_muscles, secondary_muscles, primary_activation, secondary_activations')
-    .in('name', exerciseNames) : { data: [] }
-
-  const byName = new Map((catalogRows ?? []).map(r => [r.name, r]))
-
+  // Use static catalog JSON via getBiomechData (no DB table needed)
   const volumeByGroup: Record<string, number> = {}
   for (const set of setRows) {
-    const ex = byName.get(set.exercise_name)
-    if (!ex) continue
-    const primary = (ex.primary_muscles ?? []) as string[]
-    const primaryAct = Number(ex.primary_activation ?? 1)
-    const secondary = (ex.secondary_muscles ?? []) as string[]
-    const secondaryAct = (ex.secondary_activations ?? []) as number[]
-    for (const m of primary) {
-      const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[m]
-      if (!g) continue
-      volumeByGroup[g] = (volumeByGroup[g] ?? 0) + primaryAct
+    const biomech = getBiomechData(set.exercise_name)
+    if (!biomech) continue
+    const primaryMuscle = biomech.primaryMuscle
+    const primaryAct = biomech.primaryActivation ?? 1
+    const secondary = biomech.secondaryMuscles ?? []
+    const secondaryAct = biomech.secondaryActivations ?? []
+
+    if (primaryMuscle) {
+      const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[primaryMuscle]
+      if (g) volumeByGroup[g] = (volumeByGroup[g] ?? 0) + primaryAct
     }
     secondary.forEach((m, i) => {
       const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[m]
