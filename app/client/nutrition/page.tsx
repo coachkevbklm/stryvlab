@@ -1,8 +1,8 @@
-import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
 import ClientTopBar from '@/components/client/ClientTopBar'
 import SmartNutritionHero from '@/components/client/smart/SmartNutritionHero'
 import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
@@ -13,59 +13,127 @@ import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWi
 
 type SearchParams = { date?: string }
 
+function svc() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
+
 export default async function ClientNutritionPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const service = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-
-  const client = await resolveClientFromUser(user.id, user.email, service, 'id, gender')
+  const client = await resolveClientFromUser(user.id, user.email, svc(), 'id, gender')
   if (!client) return null
 
   const date = searchParams.date ?? computePhysiologicalDate(new Date())
+  const dayStart = `${date}T00:00:00Z`
+  const dayEnd   = `${date}T23:59:59Z`
+  const clientId = client.id
 
-  const h = headers()
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  const host = h.get('host')
-  const origin = `${proto}://${host}`
-  const cookie = h.get('cookie') ?? ''
+  // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
+  const [protoResult, mealsResult, waterResult, trendResult] = await Promise.allSettled([
+    svc()
+      .from('nutrition_protocols')
+      .select('nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
+      .eq('client_id', clientId)
+      .eq('status', 'shared')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
 
-  const [todayResult, alertsResult, trendResult] = await Promise.allSettled([
-    fetch(`${origin}/api/client/nutrition/today?date=${date}`, { headers: { cookie }, cache: 'no-store' }),
-    fetch(`${origin}/api/client/nutrition-alerts`, { headers: { cookie }, cache: 'no-store' }),
-    fetch(`${origin}/api/client/nutrition/weekly-trend`, { headers: { cookie }, cache: 'no-store' }),
+    svc()
+      .from('nutrition_meals')
+      .select('meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
+      .eq('client_id', clientId)
+      .eq('physiological_date', date)
+      .order('logged_at', { ascending: true }),
+
+    svc()
+      .from('client_water_logs')
+      .select('amount_ml, logged_at')
+      .eq('client_id', clientId)
+      .gte('logged_at', dayStart)
+      .lte('logged_at', dayEnd),
+
+    // Weekly trend: last 7 days
+    (async () => {
+      const today = new Date()
+      const days: string[] = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today)
+        d.setDate(today.getDate() - i)
+        days.push(d.toISOString().slice(0, 10))
+      }
+      return svc()
+        .from('nutrition_meals')
+        .select('physiological_date, calories')
+        .eq('client_id', clientId)
+        .in('physiological_date', days)
+    })(),
   ])
 
-  const empty: NutritionMacros = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, water_ml: 2500 }
-  const todayData = todayResult.status === 'fulfilled' && todayResult.value.ok
-    ? await todayResult.value.json()
-    : null
-  const consumed: NutritionMacros = todayData?.consumed ?? { ...empty, water_ml: 0 }
-  const target: NutritionMacros = todayData?.target ?? empty
+  // ── Protocol day ──────────────────────────────────────────────────────────
+  const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
+  const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
 
-  const alerts: GenericAlert[] = alertsResult.status === 'fulfilled' && alertsResult.value.ok
-    ? (await alertsResult.value.json()).alerts ?? []
-    : []
+  const td = protocolDay
+  const target: NutritionMacros = {
+    kcal:      Number(td?.calories     ?? 0),
+    protein_g: Number(td?.protein_g    ?? 0),
+    carbs_g:   Number(td?.carbs_g      ?? 0),
+    fat_g:     Number(td?.fat_g        ?? 0),
+    water_ml:  Number(td?.hydration_ml ?? 2500),
+  }
 
-  const trend = trendResult.status === 'fulfilled' && trendResult.value.ok
-    ? (await trendResult.value.json()).trend ?? []
-    : []
+  // ── Consumed today ────────────────────────────────────────────────────────
+  const meals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
+  const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
 
-  // Active protocol day
-  const { data: proto2 } = await service
-    .from('nutrition_protocols')
-    .select('nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
-    .eq('client_id', client.id)
-    .eq('status', 'shared')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const consumedBase = meals.reduce(
+    (acc, m) => ({
+      kcal:      acc.kcal      + Number(m.calories  ?? 0),
+      protein_g: acc.protein_g + Number(m.protein_g ?? 0),
+      carbs_g:   acc.carbs_g   + Number(m.carbs_g   ?? 0),
+      fat_g:     acc.fat_g     + Number(m.fat_g     ?? 0),
+    }),
+    { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+  )
+  const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0)
+  const consumed: NutritionMacros = { ...consumedBase, water_ml }
 
-  const protocolDay = (proto2?.nutrition_protocol_days as any)?.[0] ?? null
+  // ── IA alerts (pure fn, no HTTP) ──────────────────────────────────────────
+  const hasLunchLog = meals.some(m => m.meal_type === 'lunch')
+  const rawAlerts = computeNutritionAlerts({
+    consumed: { ...consumedBase, water_ml },
+    target,
+    currentHour: new Date().getHours(),
+    hasLunchLog,
+  })
+  const alerts: GenericAlert[] = rawAlerts.map(a => ({
+    code: a.code,
+    severity: a.severity,
+    title: a.title,
+    body: a.body,
+  }))
+
+  // ── Weekly trend ──────────────────────────────────────────────────────────
+  const today = new Date()
+  const days: string[] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    days.push(d.toISOString().slice(0, 10))
+  }
+  const trendMeals = trendResult.status === 'fulfilled' ? (trendResult.value.data ?? []) : []
+  const trendTotals: Record<string, number> = {}
+  for (const d of days) trendTotals[d] = 0
+  for (const m of trendMeals) {
+    trendTotals[m.physiological_date] = (trendTotals[m.physiological_date] ?? 0) + Number(m.calories ?? 0)
+  }
+  const trend = days.map(d => ({ date: d, consumed: trendTotals[d], target: target.kcal }))
 
   return (
     <>

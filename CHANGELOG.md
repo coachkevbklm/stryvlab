@@ -5,6 +5,9 @@
 
 ## 2026-05-18
 
+FIX(critical): remove loopback HTTP fetches from Server Components — inline direct Supabase queries in app/client/page.tsx, app/client/nutrition/page.tsx, app/client/programme/page.tsx to fix production crash
+FIX: nutrition studio — align client intelligence macro breakdown with actual MacroResult shape (`tdee` from root, not breakdown)
+FIX: client BottomNav central button — use STRYVR logo SVG in yellow action button instead of text placeholder
 FIX: volume-coverage route — remplace exercises_catalog inexistant par getBiomechData (JSON catalog statique)
 FIX: workout-alerts route — supprime exercise_name de progression_events select (colonne absente), map exercise_id
 FIX: notifications route — merge client_notifications + coach_client_notifications avec field mapping + legacy_id prefix
@@ -25,7 +28,7 @@ SCHEMA: client_activity_logs table + RLS (running, cycling, swimming, walking, t
 REFACTOR: suppression routes /client/agenda + /client/progress → redirects 301 vers /client
 REFACTOR: BottomNavPlusMenu remplacé par RadialActionMenu
 REFACTOR: AgendaDayView, AgendaWeekView, AgendaEventCard supprimés
-CHORE: i18n smart.* namespace (FR/EN/ES) — 48 nouvelles clés
+CHORE: i18n smart.\* namespace (FR/EN/ES) — 48 nouvelles clés
 
 FEATURE: Portions scaling main user — `coach_clients.hand_length_cm` + helper `getScaledPortionG` (réf 18cm, fallback taille × 0.108 Pheasant)
 FEATURE: PORTION_SIZES refactor — 15 portions (8 nouvelles : demi-paume, poing sec, bol mains, pince, tbsp bombée, tranche pain, œuf, verre) + tag `scales: 'hand' | 'fixed'`
@@ -61,8 +64,6 @@ CHORE: Branding audit — all client-visible touchpoints now use STRYVR (was STR
 FIX: calcHydrationPlan — formule EFSA daily→session (exercise delta ~700-900ml vs 3000ml+)
 REFACTOR: Hydratation intro modal — design rest-timer (backdrop-blur, plein écran, volume centré large, sans card box)
 REFACTOR: Hydratation reminder modal — même design rest-timer, bouton "Ignorer" discret aligné sur "Passer le repos"
-
-
 
 CHORE: Replace logo.png with SVG logo (Logo STRYVR.svg) across all client-facing pages — login, onboarding, home, acces-suspendu, access/expired, access/invalid
 
