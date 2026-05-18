@@ -106,15 +106,15 @@ export function computeOneRMTrends(
 
   const trends: OneRMTrend[] = []
 
-  for (const [exercise, sets] of byExercise) {
+  for (const [exercise, sets] of Array.from(byExercise.entries())) {
     // Filter recent sets (last 2 weeks)
-    const recentSetsFiltered = sets.filter(s => {
+    const recentSetsFiltered = sets.filter((s: RawSetLogEntry) => {
       const d = new Date(s.completed_at!)
       return d >= recent2w
     })
 
     // Filter older sets (4-6 weeks ago)
-    const olderSets = sets.filter(s => {
+    const olderSets = sets.filter((s: RawSetLogEntry) => {
       const d = new Date(s.completed_at!)
       return d >= recent6w && d < recent4w
     })
@@ -122,13 +122,13 @@ export function computeOneRMTrends(
     if (recentSetsFiltered.length === 0 || olderSets.length === 0) continue
 
     // Compute best 1RM for each period
-    const recentSetsConverted: OneRMSet[] = recentSetsFiltered.map(s => ({
+    const recentSetsConverted: OneRMSet[] = recentSetsFiltered.map((s: RawSetLogEntry) => ({
       weight: Number(s.actual_weight_kg),
       reps: Number(s.actual_reps),
-      rir: Number(s.rir_actual ?? 2), // default to 2 RIR if missing
+      rir: Number(s.rir_actual ?? 2),
     }))
 
-    const olderSetsConverted: OneRMSet[] = olderSets.map(s => ({
+    const olderSetsConverted: OneRMSet[] = olderSets.map((s: RawSetLogEntry) => ({
       weight: Number(s.actual_weight_kg),
       reps: Number(s.actual_reps),
       rir: Number(s.rir_actual ?? 2),
