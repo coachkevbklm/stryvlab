@@ -5,6 +5,10 @@
 
 ## 2026-05-18
 
+FIX: volume-coverage route — remplace exercises_catalog inexistant par getBiomechData (JSON catalog statique)
+FIX: workout-alerts route — supprime exercise_name de progression_events select (colonne absente), map exercise_id
+FIX: notifications route — merge client_notifications + coach_client_notifications avec field mapping + legacy_id prefix
+SCHEMA: migration 20260518 — étend meal_type CHECK constraint avec 'drinks' (requis par route hydration)
 FEATURE: Smart Trio refonte app client — Smart Agenda (accueil) + Smart Workout + Smart Nutrition 3 piliers
 FEATURE: BottomNav 5 slots + logo STRYVR central + RadialActionMenu 4 actions arc (repas/eau/activité/check-in)
 FEATURE: FreeActivitySheet — logger activité libre (running, cycling, etc.) → client_activity_logs
