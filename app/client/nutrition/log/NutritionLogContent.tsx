@@ -58,6 +58,18 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 }
 
+interface FavoriteMeal {
+  id: string
+  name: string
+  entries: any[]
+  total_calories: number | null
+  total_protein_g: number | null
+  total_carbs_g: number | null
+  total_fat_g: number | null
+  use_count: number
+  last_used_at: string
+}
+
 export interface NutritionLogContentProps {
   onSuccess?: () => void
   /** When true, renders without the fixed TopBar (used inside MealLogSheet which has its own header) */
@@ -95,6 +107,12 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
 
   const existingMealId = searchParams.get("meal_id")
 
+  const [favorites, setFavorites] = useState<FavoriteMeal[]>([])
+  const [loadingFavorites, setLoadingFavorites] = useState(false)
+  const [savingFavorite, setSavingFavorite] = useState(false)
+  const [favoriteName, setFavoriteName] = useState("")
+  const [showFavoriteSaveForm, setShowFavoriteSaveForm] = useState(false)
+
   const [layer, setLayer] = useState<Layer>("category")
   const [direction, setDirection] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState<CategoryL1 | null>(null)
@@ -120,6 +138,17 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (!cancelled && d) setScalingProfile(d) })
       .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadingFavorites(true)
+    fetch('/api/client/nutrition/favorites')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!cancelled && d?.data) setFavorites(d.data) })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingFavorites(false) })
     return () => { cancelled = true }
   }, [])
 
@@ -209,6 +238,72 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
     }
   }
 
+  async function quickLogFavorite(fav: FavoriteMeal) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/client/nutrition/favorites/${fav.id}/use`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+      if (res.ok) {
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push("/client/nutrition/journal")
+        }
+      } else {
+        setSaving(false)
+      }
+    } catch {
+      setSaving(false)
+    }
+  }
+
+  async function saveFavorite() {
+    if (!favoriteName.trim() || !drafts.length) return
+    setSavingFavorite(true)
+    try {
+      const totals = sumDraftMacros(drafts)
+      const entries = drafts.map(d => ({
+        food_item_id: d.food_item.id,
+        name_fr: d.food_item.name_fr,
+        quantity_g: d.quantity_g,
+        calories_kcal: calcEntryMacros(d.food_item, d.quantity_g).calories_kcal,
+        protein_g: calcEntryMacros(d.food_item, d.quantity_g).protein_g,
+        carbs_g: calcEntryMacros(d.food_item, d.quantity_g).carbs_g,
+        fat_g: calcEntryMacros(d.food_item, d.quantity_g).fat_g,
+      }))
+
+      const res = await fetch("/api/client/nutrition/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: favoriteName.trim(),
+          entries,
+          total_calories: totals.calories,
+          total_protein_g: totals.protein,
+          total_carbs_g: totals.carbs,
+          total_fat_g: totals.fat,
+        }),
+      })
+
+      if (res.ok) {
+        // Refetch favorites
+        const favRes = await fetch('/api/client/nutrition/favorites')
+        if (favRes.ok) {
+          const favData = await favRes.json()
+          setFavorites(favData.data ?? [])
+        }
+        setFavoriteName("")
+        setShowFavoriteSaveForm(false)
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setSavingFavorite(false)
+    }
+  }
+
   const totals = sumDraftMacros(drafts)
   const selectedMacros = selectedItem ? calcEntryMacros(selectedItem, quantityG) : null
   const layerTitle =
@@ -266,6 +361,29 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {/* Layer 1: Categories */}
             {layer === "category" && (
               <div className="p-4">
+                {/* Repas récents section */}
+                {favorites.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-2">Repas récents</p>
+                    <div className="space-y-1.5">
+                      {favorites.slice(0, 4).map(fav => (
+                        <button
+                          key={fav.id}
+                          onClick={() => quickLogFavorite(fav)}
+                          disabled={saving}
+                          className="w-full flex items-center justify-between bg-[#161616] border border-white/[0.08] rounded-xl px-4 py-2.5 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left disabled:opacity-50"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-semibold text-white truncate">{fav.name}</p>
+                            <p className="text-[10px] text-white/40">{Math.round(fav.total_calories ?? 0)} kcal · P{Math.round(fav.total_protein_g ?? 0)}g</p>
+                          </div>
+                          <span className="text-[10px] text-[#ffe01e] font-bold ml-2">↗ Ajouter</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
@@ -453,6 +571,44 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               {t('log.addToMeal')}
             </button>
           )}
+
+          {/* Save as favorite section */}
+          {!showFavoriteSaveForm && drafts.length > 0 && (
+            <button
+              onClick={() => setShowFavoriteSaveForm(true)}
+              className="text-[10px] text-white/40 hover:text-white/70 transition-colors text-center py-1"
+            >
+              ⭐ Sauvegarder comme favori
+            </button>
+          )}
+
+          {showFavoriteSaveForm && (
+            <div className="space-y-2 pb-2">
+              <input
+                type="text"
+                placeholder="Nom du repas..."
+                value={favoriteName}
+                onChange={e => setFavoriteName(e.target.value)}
+                className="w-full h-9 px-3 bg-white/[0.05] border border-white/[0.08] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowFavoriteSaveForm(false); setFavoriteName("") }}
+                  className="flex-1 h-9 bg-white/[0.04] text-white/60 text-[11px] font-semibold rounded-xl hover:bg-white/[0.08] active:scale-95 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={saveFavorite}
+                  disabled={!favoriteName.trim() || savingFavorite}
+                  className="flex-1 h-9 bg-[#ffe01e] text-black text-[11px] font-bold rounded-xl hover:bg-[#ffe01e]/90 disabled:opacity-40 active:scale-95 transition-all"
+                >
+                  {savingFavorite ? "..." : "Sauvegarder"}
+                </button>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={saveMeal}
             disabled={drafts.length === 0 || saving}
