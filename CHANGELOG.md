@@ -5,6 +5,7 @@
 
 ## 2026-05-18
 
+FEATURE: SessionLogger — PR detection temps réel + coaching cues inline : badges PR jaunes sur sets (solo + superset), flash notification ⚡ Nouveau record, cues coaching RIR-based (Trop facile / Bonne intensité / Maximum atteint)
 FEATURE: Exercise progression chart in Performances tab — interactive SVG line chart with weight trend per exercise, exercise selector pills, stats (max weight, progression delta, session count)
 
 ## 2026-05-18
