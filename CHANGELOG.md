@@ -6,6 +6,9 @@
 ## 2026-05-18
 
 FIX: Hydratation — sync client_water_logs depuis l'API hydration (eau affichait 0ml sur home et nutrition)
+FIX: FAB — logo 2× plus grand (80px), déborde au-dessus nav, remonte -8px au tap
+FIX: FAB — anchor w-0 h-0, boutons centrés depuis centre exact du FAB (fin du décalage droite)
+FIX: Check-in FAB — navigue directement vers morning/evening selon heure (plus d'onboarding en boucle)
 FIX: MealLogSheet — hauteur fixe 88vh + min-h-0 sur wrapper, footer sticky bottom-0, contenu visible
 FIX: QuickWaterModal — router.refresh() après log eau pour mettre à jour widget home
 FIX: FAB boutons — jaunes #ffe01e, icône fill #0d0d0d, transform ancré sur left/top

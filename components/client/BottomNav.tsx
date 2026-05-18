@@ -100,19 +100,25 @@ export default function BottomNav() {
               );
             })}
 
-            {/* Center STRYVR logo button — scale up + remonte quand radial ouvert */}
-            <div className="flex items-center justify-center px-2">
+            {/* Center STRYVR logo button — 2× plus grand, remonte au tap */}
+            <div className="flex items-center justify-center px-1 -mt-5">
               <motion.button
                 onClick={() => setRadialOpen((v) => !v)}
                 aria-label="Logger"
                 animate={radialOpen
-                  ? { scale: 1.18, y: -6, boxShadow: "0 0 28px rgba(255,224,30,0.55)" }
-                  : { scale: 1, y: 0, boxShadow: "0 0 16px rgba(255,224,30,0.25)" }
+                  ? { y: -8, boxShadow: "0 0 32px rgba(255,224,30,0.6)" }
+                  : { y: 0, boxShadow: "0 0 20px rgba(255,224,30,0.3)" }
                 }
                 transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                className="h-10 w-10 rounded-xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d]"
+                className="h-20 w-20 rounded-2xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d]"
               >
-                <StryvrLogo />
+                <Image
+                  src="/logo/Logo STRYVR (grey).svg"
+                  width={48}
+                  height={48}
+                  alt="STRYVR"
+                  className="relative z-10"
+                />
               </motion.button>
             </div>
 

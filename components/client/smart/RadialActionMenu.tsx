@@ -64,9 +64,13 @@ export default function RadialActionMenu({ open, onClose, onOpenWater, onOpenAct
       case 'activity':
         onOpenActivity()
         break
-      case 'checkin':
-        router.push('/client/checkin/onboarding')
+      case 'checkin': {
+        // Matin si avant 14h, soir sinon
+        const hour = new Date().getHours()
+        const moment = hour < 14 ? 'morning' : 'evening'
+        router.push(`/client/checkin/${moment}`)
         break
+      }
     }
   }
 
@@ -81,10 +85,17 @@ export default function RadialActionMenu({ open, onClose, onOpenWater, onOpenAct
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Button anchor: centred horizontally, just above the BottomNav */}
+            {/* Anchor point = centre exact du FAB. w-0 h-0 = point zéro, x/y Framer Motion partent de là */}
             <div
-              className="absolute left-1/2 -translate-x-1/2"
-              style={{ bottom: 'calc(max(20px, env(safe-area-inset-bottom)) + 62px + 16px)' }}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                // FAB h=80px, déborde de 20px au-dessus de la nav (mt-5 négatif).
+                // Centre FAB depuis bas écran = safe-area + nav(62px) - débord(20px) + FAB/2(40px) = safe-area + 82px
+                bottom: 'calc(max(20px, env(safe-area-inset-bottom)) + 82px)',
+                width: 0,
+                height: 0,
+              }}
             >
               {ACTIONS.map((a, i) => {
                 const rad = (a.angleDeg * Math.PI) / 180
@@ -110,7 +121,7 @@ export default function RadialActionMenu({ open, onClose, onOpenWater, onOpenAct
                       transition: { duration: 0.15, ease: 'easeIn' },
                     }}
                     onClick={(e) => { e.stopPropagation(); handleAction(a.id) }}
-                    style={{ position: 'absolute', left: 0, top: 0, transform: 'translate(-50%, -50%)' }}
+                    style={{ position: 'absolute', left: 0, top: 0, x: '-50%', y: '-50%' }}
                     aria-label={String(t(LABEL_KEYS[a.id] as any))}
                   >
                     <div className="w-14 h-14 rounded-full bg-[#ffe01e] flex items-center justify-center active:scale-95 transition-transform shadow-[0_4px_16px_rgba(255,224,30,0.3)]">
