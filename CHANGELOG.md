@@ -6,6 +6,9 @@
 ## 2026-05-18
 
 FIX: Hydratation — sync client_water_logs depuis l'API hydration (eau affichait 0ml sur home et nutrition)
+FEATURE: Home dashboard — grid 2 colonnes (nutrition | workout) visible sans scroll, Timeline en dessous
+REFACTOR: SmartNutritionWidget — prop compact (arc réduit, barres mini, wrapper Link vers /client/nutrition)
+REFACTOR: SmartWorkoutWidget — prop compact (cache BodyMap, textes réduits), h-full pour stretch égal
 FIX: SmartWorkoutWidget — CTA "Démarrer" ouvre /client/programme au lieu de lancer la session directement
 FIX: NotificationsBar — coach_note navigue vers /client/profil (était non-cliquable)
 FEATURE: FAB RadialActionMenu — arc 120° uniforme, boutons cercles premium, spring motion (stiffness 420/damping 26)

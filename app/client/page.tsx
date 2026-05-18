@@ -373,9 +373,16 @@ export default async function ClientHomePage() {
     <>
       <ClientTopBar section="AUJOURD'HUI" title={todayLabel} />
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
+        {/* Notifications — full width */}
         <NotificationsBar initial={notifications} />
-        <SmartNutritionWidget consumed={consumed} target={target} />
-        <SmartWorkoutWidget {...workoutProps} />
+
+        {/* Dashboard grid — nutrition + workout côte à côte */}
+        <div className="grid grid-cols-2 gap-3 items-stretch">
+          <SmartNutritionWidget consumed={consumed} target={target} compact />
+          <SmartWorkoutWidget {...workoutProps} compact />
+        </div>
+
+        {/* Timeline — full width */}
         <SmartAgendaTimeline entries={timelineEntries} />
       </main>
     </>
