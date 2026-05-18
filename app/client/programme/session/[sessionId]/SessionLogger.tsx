@@ -388,14 +388,27 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const allDone = completedCount === totalSets && totalSets > 0
 
   // ── Hydratation timer ──
+  // Ref pour lire tempoGuideTarget dans le callback du setInterval (évite closure stale)
+  const tempoActiveRef = useRef(false)
   useEffect(() => {
-    hydrationTimerRef.current = setInterval(() => setShowHydration(true), HYDRATION_INTERVAL_MS)
+    tempoActiveRef.current = tempoGuideTarget !== null
+  }, [tempoGuideTarget])
+
+  useEffect(() => {
+    hydrationTimerRef.current = setInterval(() => {
+      // Ne pas afficher pendant tempo guide actif — reporter
+      if (tempoActiveRef.current) return
+      setShowHydration(true)
+    }, HYDRATION_INTERVAL_MS)
     return () => { if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current) }
   }, [HYDRATION_INTERVAL_MS])
 
   function resetHydrationTimer(delayMs: number) {
     if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current)
-    hydrationTimerRef.current = setInterval(() => setShowHydration(true), delayMs)
+    hydrationTimerRef.current = setInterval(() => {
+      if (tempoActiveRef.current) return
+      setShowHydration(true)
+    }, delayMs)
   }
 
   // ── Chrono global ──
@@ -1518,7 +1531,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       )}
 
       {/* ── Hydratation reminder modal (toutes les 15min) ── */}
-      {showHydration && !showHydrationIntro && (
+      {showHydration && !showHydrationIntro && !tempoGuideTarget && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex flex-col items-center justify-center p-6 gap-6">
 
           {/* Label */}
