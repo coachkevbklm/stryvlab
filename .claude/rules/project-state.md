@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-05-18 (Smart Trio refonte app client)**
+**Dernière mise à jour : 2026-05-18 (Elite client app — MacroFactor competitive sprint)**
 
 ---
 
@@ -38,6 +38,76 @@
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-18) — Elite Client App Sprint
+
+### Elite Client App — MacroFactor Competitive Sprint (COMPLET)
+
+**Analyse concurrentielle :** MacroFactor (nutrition/workout), WHOOP (recovery), Cronometer (micronutriments), Hoot (AI logging), Atomic Habits (UX)
+
+**Commits :** 12 commits atomiques, 0 nouvelles erreurs TypeScript, 346/353 tests passent (7 failures pré-existantes tempo.test.ts hors scope)
+
+**Sprint 1 — SessionLogger PR + Coaching Cues**
+- ✅ `prSets: Set<string>` — PR detection temps réel à chaque set complété (Epley + historique)
+- ✅ Flash notification "⚡ Nouveau record — Xkg × N reps" (3s auto-dismiss)
+- ✅ Badge PR jaune inline sur set row
+- ✅ `getCoachingCue()` — messages contextuels par RIR (0=échec, ≤2=OK, ≥5=trop facile)
+- Fichier : `app/client/programme/session/[sessionId]/SessionLogger.tsx`
+
+**Sprint 2 — Nutrition Favorites**
+- ✅ Table `client_meal_favorites` (JSONB entries, macros, use_count, last_used_at)
+- ✅ Migration `20260518_meal_favorites.sql` (⚠️ à appliquer manuellement)
+- ✅ API : GET/POST favorites + DELETE + POST /use (quick-log → crée nutrition_meals)
+- ✅ "Repas récents" section au top du Layer 1 composer (4 favoris, 1 tap)
+- ✅ "⭐ Sauvegarder" button dans footer quand drafts > 0
+- Fichiers : `app/api/client/nutrition/favorites/`, `app/client/nutrition/log/NutritionLogContent.tsx`
+
+**Sprint 3 — Exercise Progression Chart**
+- ✅ `ExerciseProgressionChart.tsx` — SVG pur, bezier, sélecteur exercice pills
+- ✅ Intégré dans Performances tab après PRs
+- ✅ Stats : max 1RM, delta progression, session count
+- Fichier : `components/client/smart/ExerciseProgressionChart.tsx`
+
+**Sprint 4 — Recovery Correlation Alerts**
+- ✅ `lib/client/smart/recoveryAlerts.ts` — pure lib, 10 tests Vitest
+- ✅ Alertes : sleep_debt (critical), poor_sleep/high_stress/low_energy (warning), optimal (info)
+- ✅ `RecoveryStatusWidget.tsx` — carte avec left-border colorée, dismissible localStorage
+- ✅ Intégré home page entre NotificationsBar et grid dashboard
+- Fichiers : `lib/client/smart/recoveryAlerts.ts`, `components/client/smart/RecoveryStatusWidget.tsx`
+
+**Sprint 5 — 1RM Auto-Estimation + Deload Detection**
+- ✅ `lib/training/oneRepMax.ts` — Epley + Brzycki hybride, RIR adjustment, trends 2w vs 4-6w
+- ✅ `lib/training/deloadDetection.ts` — 4 signaux (RIR inflation, completion drop, 1RM decline, volume stagnation)
+- ✅ 21 tests Vitest passants
+- ✅ `OneRMWidget.tsx` — top 5 exercices, delta pills vert/rouge
+- ✅ `DeloadAlertBanner.tsx` — alerte déload en tête onglet Séance
+- ✅ APIs : `/api/client/one-rm-trends`, `/api/client/deload-status`
+- Fichiers : `lib/training/`, `components/client/smart/`, `app/api/client/`
+
+**FAB Redesign (session même jour)**
+- ✅ Arc 120°, boutons cercles jaunes, spring premium (stiffness 420/damping 26)
+- ✅ `MealLogSheet` bottom sheet height fixe 88vh
+- ✅ Logo FAB 2× plus grand (80px), remonte au tap (-8px spring)
+- ✅ Anchor w-0 h-0 pour centrage parfait des boutons radial
+- ✅ Check-in → morning/evening selon heure (plus d'onboarding en boucle)
+
+**Bugs critiques résolus**
+- ✅ Eau 0ml : sync `client_water_logs` depuis API hydratation
+- ✅ `router.refresh()` après log eau → widget home mis à jour
+- ✅ Home dashboard grid 2 colonnes (nutrition | workout) visible sans scroll
+
+**⚠️ Actions manuelles requises**
+1. Appliquer migrations dans Supabase Dashboard SQL Editor (ordre) :
+   - `20260516_food_composer.sql`
+   - `20260516_nutrition_meal_editing.sql`
+   - `20260517_client_activity_logs.sql`
+   - `20260517_coach_client_notifications.sql`
+   - `20260518_nutrition_meals_drinks.sql`
+   - `20260518_portion_scaling_and_plantains.sql`
+   - `20260518_meal_favorites.sql` ← nouveau
+2. Lancer seed : `npx tsx scripts/seed-food-items.ts`
 
 ---
 
