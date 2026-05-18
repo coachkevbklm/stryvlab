@@ -5,6 +5,12 @@
 
 ## 2026-05-18
 
+FEATURE: FAB RadialActionMenu — arc 120° uniforme, boutons cercles premium, spring motion (stiffness 420/damping 26)
+FEATURE: MealLogSheet — bottom sheet inline pour logger un repas sans quitter la page courante
+REFACTOR: Extraire NutritionLogContent depuis nutrition/log/page.tsx — réutilisable en embedded mode
+
+## 2026-05-18
+
 FIX(critical): remove loopback HTTP fetches from Server Components — inline direct Supabase queries in app/client/page.tsx, app/client/nutrition/page.tsx, app/client/programme/page.tsx to fix production crash
 FIX: nutrition studio — align client intelligence macro breakdown with actual MacroResult shape (`tdee` from root, not breakdown)
 FIX: client BottomNav central button — use STRYVR logo SVG in yellow action button instead of text placeholder
