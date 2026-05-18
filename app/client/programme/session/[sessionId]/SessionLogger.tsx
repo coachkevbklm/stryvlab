@@ -190,6 +190,16 @@ function calcHydrationPlan(weightKg: number, durationMin: number) {
   return { totalMl, intervalMin, mlPerSip }
 }
 
+function getCoachingCue(rir: number | null, setNumber: number, totalSets: number, isLastSet: boolean): string | null {
+  if (rir === null) return null
+  if (rir === 0) return isLastSet ? 'Maximum atteint — repos complet 3min' : 'Échec musculaire — augmente le repos'
+  if (rir <= 1 && isLastSet) return 'Intensité parfaite sur le dernier set 🎯'
+  if (rir <= 2) return 'Bonne intensité — continue'
+  if (rir >= 5 && setNumber < totalSets) return 'Trop facile — augmente le poids au prochain set'
+  if (rir >= 4 && isLastSet) return 'Zone trop confortable — challenge-toi la prochaine fois'
+  return null
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SessionLogger({ clientId, sessionId, session, exercises, lastPerformance, goal, level, clientWeight }: Props) {
@@ -241,6 +251,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const w = clientWeight ?? 70
     return calcHydrationPlan(w, 60)
   }, [clientWeight])
+
+  // ── PR Detection ──
+  const [prSets, setPrSets] = useState<Set<string>>(new Set())
+  const [prFlash, setPrFlash] = useState<string | null>(null)
 
   // ── Chrono repos ──
   // restElapsed : secondes écoulées depuis le début du chrono (peut dépasser restPrescribed → overtime)
@@ -636,6 +650,26 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       // Trigger recommendation when completing (not uncompleting)
       if (!wasCompleted && current) {
         triggerRecommendation(current)
+
+        // ── PR Detection ──
+        const exHistory = lastPerformance[current.exercise_name] ?? []
+        const historyBest = exHistory.reduce((best, h) => {
+          if (h.weight === null || h.reps === null) return best
+          return h.weight > (best?.weight ?? 0) ? h : best
+        }, null as LastPerf | null)
+        const reps = parseInt(current.actual_reps, 10)
+        const weight = parseFloat(current.actual_weight_kg)
+        if (!isNaN(reps) && !isNaN(weight) && weight > 0 && reps > 0) {
+          const isNewPR = !historyBest ||
+            weight > (historyBest.weight ?? 0) ||
+            (weight === historyBest.weight && reps > (historyBest.reps ?? 0))
+          if (isNewPR) {
+            const key = recKey(current.exercise_id, current.set_number, current.side)
+            setPrSets(prev => new Set(prev).add(key))
+            setPrFlash(`⚡ Nouveau record — ${formatWeight(weight)}kg × ${reps} reps`)
+            setTimeout(() => setPrFlash(null), 3000)
+          }
+        }
       }
 
       return next
@@ -1129,6 +1163,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   {ex.notes && <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>}
                 </div>
                 <div className="border-t border-white/[0.05]">
+                  {prFlash && (
+                    <div className="mx-4 mt-3 mb-2 px-3 py-2 bg-[#ffe01e]/10 border border-[#ffe01e]/30 rounded-xl text-[11px] font-bold text-[#ffe01e]">
+                      {prFlash}
+                    </div>
+                  )}
                   {/* COLS: #+prévu | RÉALISÉ | KG | RIR | ▶ | ✓ */}
                   <div className="grid items-center gap-3 px-5 py-2 text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/20" style={{ gridTemplateColumns: ex.is_unilateral ? '1.2fr 0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1.2fr 1fr 1fr 1fr 0.55fr 0.55fr' }}>
                     <div className="truncate">#</div>
@@ -1149,6 +1188,9 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                           {/* Col 1 : # + prévu */}
                           <div className="flex items-center gap-1.5 min-w-0">
                             {s.completed && (!ex.is_unilateral || s.side === 'left') && <CheckCircle2 size={9} className="text-[#ffe01e]/50 shrink-0" />}
+                            {prSets.has(recKey(ex.id, s.set_number, s.side)) && (
+                              <span className="ml-1 bg-[#ffe01e] text-[#0d0d0d] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">PR</span>
+                            )}
                             {(!ex.is_unilateral || s.side === 'left') && (
                               <span className={`text-[11px] font-mono font-bold shrink-0 ${s.completed ? 'text-[#ffe01e]/40' : 'text-white/30'}`}>{s.set_number}</span>
                             )}
@@ -1216,6 +1258,13 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                             {s.completed ? <CheckCircle2 size={22} className="text-[#ffe01e]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
                           </button>
                         </div>
+                        {s.completed && (() => {
+                          const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
+                          const exSetsForCue = exSetsForEx.filter(x => x.exercise_id === s.exercise_id && x.side === s.side)
+                          const isLast = s.set_number === exSetsForCue.length
+                          const cue = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, exSetsForCue.length, isLast)
+                          return cue ? <p className="px-5 text-[10px] text-white/40 italic mt-0.5">{cue}</p> : null
+                        })()}
                       </div>
                     )
                   })}
@@ -1365,8 +1414,21 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                                   const ssRepCount = ssRecForSet?.reps ?? resolveReps(ex)
                                   const ssCanGuide = ssHasTempo && ssRepCount > 0 && !s.completed
                                   return (
-                                    <div key={`${s.set_number}-${s.side}`} className={`grid items-center gap-3 px-4 py-2.5 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: cols }}>
-                                      {ex.is_unilateral && <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
+                                    <div key={`${s.set_number}-${s.side}`}>
+                                      {!ex.is_unilateral && prSets.has(recKey(ex.id, s.set_number, s.side)) && (
+                                        <div className="px-4 pt-1.5 pb-0.5">
+                                          <span className="bg-[#ffe01e] text-[#0d0d0d] text-[8px] font-black uppercase px-1 py-0.5 rounded-md">PR</span>
+                                        </div>
+                                      )}
+                                      <div className={`grid items-center gap-3 px-4 py-2.5 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: cols }}>
+                                      {ex.is_unilateral && (
+                                        <div className="flex items-center gap-1.5">
+                                          <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>
+                                          {prSets.has(recKey(ex.id, s.set_number, s.side)) && (
+                                            <span className="bg-[#ffe01e] text-[#0d0d0d] text-[8px] font-black uppercase px-1 py-0.5 rounded-md">PR</span>
+                                          )}
+                                        </div>
+                                      )}
                                       <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
                                         onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
                                         onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const n2 = { ...prev }; delete n2[key]; return n2 }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
@@ -1400,6 +1462,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                                       <button onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)} className={`flex justify-center items-center h-10 w-full rounded-lg transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#ffe01e]/20' : 'hover:bg-white/[0.06]'}`}>
                                         {s.completed ? <CheckCircle2 size={20} className="text-[#ffe01e]" /> : <Circle size={20} className="text-white/20 hover:text-white/50 transition-colors" />}
                                       </button>
+                                      </div>
+                                      {s.completed && (() => {
+                                        const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
+                                        const totalSetsForCue = exSetsForRound.length
+                                        const isLast = s.set_number === totalSetsForCue
+                                        const cue = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, totalSetsForCue, isLast)
+                                        return cue ? <p className="px-4 text-[10px] text-white/40 italic mt-0.5">{cue}</p> : null
+                                      })()}
                                     </div>
                                   )
                                 })}
