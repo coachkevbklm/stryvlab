@@ -5,6 +5,10 @@
 
 ## 2026-05-19
 
+FEATURE: 1RM auto-estimation + deload detection — lib/training/oneRepMax.ts (Epley + Brzycki, RIR adjustment, trend computation), lib/training/deloadDetection.ts (4 signals: RIR inflation, completion drop, 1RM decline, volume stagnation), API routes /api/client/one-rm-trends (top 5 exercises) + /api/client/deload-status (4-week analysis), OneRMWidget (top 5 trends with deltas), DeloadAlertBanner (priority signal with recommendation), integrated in ProgrammeClientPage Séance + Performances tabs, 21 Vitest tests PASS, build successful
+
+## 2026-05-19
+
 FEATURE: Recovery correlation alerts — sommeil/stress/énergie → recommandations séance : computeRecoveryAlerts lib + GET /api/client/recovery-status + RecoveryStatusWidget (DS v3.0) sur home avant nutrition/workout grid, alerte sleep_debt (critical), poor_sleep/high_stress/low_energy (warning), optimal (info), couleurs #ef4444/#f59e0b/#10b981, dismissible per session (localStorage), 10 Vitest tests PASS
 
 ## 2026-05-18

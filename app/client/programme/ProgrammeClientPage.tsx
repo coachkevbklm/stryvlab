@@ -22,6 +22,8 @@ import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/Sm
 import VolumeCoverageWidget from '@/components/client/smart/VolumeCoverageWidget'
 import RecentSessionsStrip from '@/components/client/smart/RecentSessionsStrip'
 import ExerciseProgressionChart from '@/components/client/smart/ExerciseProgressionChart'
+import OneRMWidget from '@/components/client/smart/OneRMWidget'
+import DeloadAlertBanner from '@/components/client/smart/DeloadAlertBanner'
 
 type Tab = 'seance' | 'performances' | 'historique'
 
@@ -218,6 +220,9 @@ export default function ProgrammeClientPage({
         ══════════════════════════════════════════════════════════════ */}
         {tab === 'seance' && (
           <>
+            {/* Deload Alert */}
+            <DeloadAlertBanner clientId={program.client_id} />
+
             {/* Sélecteur jours */}
             <div className="flex gap-1">
               {daysShort.map((d, i) => {
@@ -516,6 +521,13 @@ export default function ProgrammeClientPage({
 
             {/* Exercise Progression Chart */}
             {rawLogs.length > 0 && <ExerciseProgressionChart rawLogs={rawLogs} />}
+
+            {/* 1RM Trends Widget */}
+            {sessionList.length > 0 && (
+              <div>
+                <OneRMWidget clientId={program.client_id} />
+              </div>
+            )}
 
             {sessionList.length === 0 && (
               <div className="text-center py-12">
