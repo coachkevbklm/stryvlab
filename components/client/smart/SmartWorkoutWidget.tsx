@@ -60,7 +60,7 @@ export default function SmartWorkoutWidget({ state, session }: SmartWorkoutWidge
             ))}
           </div>
           <Link
-            href={session.sessionLogHref}
+            href="/client/programme"
             className="mt-3 inline-flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[11px] font-black uppercase tracking-[0.1em] active:scale-[0.98]"
             onClick={(e) => e.stopPropagation()}
           >

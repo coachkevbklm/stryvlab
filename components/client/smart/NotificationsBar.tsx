@@ -1,51 +1,57 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { X, ClipboardList, Sparkles, MessageSquare, Clock } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { X, ClipboardList, Sparkles, MessageSquare, Clock } from "lucide-react";
 
 export type Notification = {
-  id: string
-  type: 'coach_note' | 'bilan_pending' | 'program_assigned' | 'system_reminder'
-  title: string
-  body: string | null
-  payload: Record<string, unknown> | null
-  read_at: string | null
-  created_at: string
-}
+  id: string;
+  type: "coach_note" | "bilan_pending" | "program_assigned" | "system_reminder";
+  title: string;
+  body: string | null;
+  payload: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+};
 
-const TYPE_ICON: Record<Notification['type'], React.ElementType> = {
+const TYPE_ICON: Record<Notification["type"], React.ElementType> = {
   coach_note: MessageSquare,
   bilan_pending: ClipboardList,
   program_assigned: Sparkles,
   system_reminder: Clock,
-}
+};
 
-export default function NotificationsBar({ initial }: { initial: Notification[] }) {
-  const [items, setItems] = useState(initial)
-  const router = useRouter()
+export default function NotificationsBar({
+  initial,
+}: {
+  initial: Notification[];
+}) {
+  const [items, setItems] = useState(initial);
+  const router = useRouter();
 
-  if (items.length === 0) return null
+  if (items.length === 0) return null;
 
   const dismiss = async (id: string) => {
-    setItems(prev => prev.filter(n => n.id !== id))
-    await fetch(`/api/client/notifications/${id}`, { method: 'PATCH' })
-  }
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    await fetch(`/api/client/notifications/${id}`, { method: "PATCH" });
+  };
 
   const handleClick = (n: Notification) => {
-    if (n.type === 'bilan_pending' && n.payload?.assessment_submission_id) {
-      router.push(`/client/bilans/${n.payload.assessment_submission_id}`)
-    } else if (n.type === 'program_assigned') {
-      router.push('/client/programme')
+    if (n.type === "bilan_pending" && n.payload?.assessment_submission_id) {
+      router.push(`/client/bilans/${n.payload.assessment_submission_id}`);
+    } else if (n.type === "program_assigned") {
+      router.push("/client/programme");
+    } else if (n.type === "coach_note") {
+      router.push("/client/profil");
     } else {
-      fetch('/api/client/notifications', { method: 'PATCH' })
+      fetch("/api/client/notifications", { method: "PATCH" });
     }
-  }
+  };
 
   return (
     <div className="space-y-2">
-      {items.map(n => {
-        const Icon = TYPE_ICON[n.type]
+      {items.map((n) => {
+        const Icon = TYPE_ICON[n.type] ?? ClipboardList;
         return (
           <div
             key={n.id}
@@ -57,17 +63,24 @@ export default function NotificationsBar({ initial }: { initial: Notification[] 
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-semibold text-white">{n.title}</p>
-              {n.body && <p className="text-[11px] text-white/50 mt-1 leading-relaxed">{n.body}</p>}
+              {n.body && (
+                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+                  {n.body}
+                </p>
+              )}
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); dismiss(n.id) }}
+              onClick={(e) => {
+                e.stopPropagation();
+                dismiss(n.id);
+              }}
               className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0"
             >
               <X size={14} className="text-white/40" />
             </button>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
