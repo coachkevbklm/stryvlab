@@ -24,10 +24,10 @@ export default function MealLogSheet({ open, onClose }: MealLogSheetProps) {
             onClick={onClose}
           />
 
-          {/* Sheet */}
+          {/* Sheet — hauteur fixe 88vh pour que flex-1 des enfants reçoive une hauteur réelle */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-[60] flex flex-col bg-[#161616] rounded-t-2xl border-t border-white/[0.08]"
-            style={{ maxHeight: "88vh" }}
+            className="fixed bottom-0 left-0 right-0 z-[60] bg-[#161616] rounded-t-2xl border-t border-white/[0.08]"
+            style={{ height: "88vh", display: "flex", flexDirection: "column" }}
             initial={{ y: "100%" }}
             animate={{ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }}
             exit={{ y: "100%", transition: { duration: 0.2, ease: "easeIn" } }}
@@ -44,8 +44,8 @@ export default function MealLogSheet({ open, onClose }: MealLogSheetProps) {
               </button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden relative">
+            {/* Content — flex-1 reçoit la hauteur restante du sheet */}
+            <div className="flex-1 overflow-hidden relative min-h-0">
               <Suspense fallback={<div className="h-full bg-[#161616]" />}>
                 <NutritionLogContent embedded onSuccess={onClose} />
               </Suspense>

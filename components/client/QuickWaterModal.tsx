@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Droplets, Plus, Minus } from 'lucide-react'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function QuickWaterModal({ open, onClose, onLogged }: Props) {
+  const router = useRouter()
   const [ml, setMl] = useState(250)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
@@ -47,6 +49,7 @@ export default function QuickWaterModal({ open, onClose, onLogged }: Props) {
         setDone(false)
         setSaving(false)
         onClose()
+        router.refresh()
       }, 900)
     } catch {
       setSaving(false)

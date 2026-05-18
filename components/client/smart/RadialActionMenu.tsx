@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ForkKnife, Drop, PersonSimpleRun, Moon } from '@phosphor-icons/react'
+import { ForkKnife, Drop, PersonSimpleRun, ClipboardText } from '@phosphor-icons/react'
 import { useRouter } from 'next/navigation'
 import { useClientT } from '../ClientI18nProvider'
 import MealLogSheet from './MealLogSheet'
@@ -21,7 +21,7 @@ const ACTIONS: Action[] = [
   { id: 'meal',     Icon: ForkKnife,       angleDeg: -150 },
   { id: 'water',    Icon: Drop,            angleDeg: -110 },
   { id: 'activity', Icon: PersonSimpleRun, angleDeg:  -70 },
-  { id: 'checkin',  Icon: Moon,            angleDeg:  -30 },
+  { id: 'checkin',  Icon: ClipboardText,   angleDeg:  -30 },
 ]
 
 const RADIUS = 96
@@ -110,11 +110,11 @@ export default function RadialActionMenu({ open, onClose, onOpenWater, onOpenAct
                       transition: { duration: 0.15, ease: 'easeIn' },
                     }}
                     onClick={(e) => { e.stopPropagation(); handleAction(a.id) }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ position: 'absolute', left: 0, top: 0, transform: 'translate(-50%, -50%)' }}
                     aria-label={String(t(LABEL_KEYS[a.id] as any))}
                   >
-                    <div className="w-14 h-14 rounded-full bg-[#161616] border border-white/[0.08] flex items-center justify-center active:scale-95 transition-transform">
-                      <a.Icon size={24} weight="regular" className="text-white" />
+                    <div className="w-14 h-14 rounded-full bg-[#ffe01e] flex items-center justify-center active:scale-95 transition-transform shadow-[0_4px_16px_rgba(255,224,30,0.3)]">
+                      <a.Icon size={24} weight="fill" className="text-[#0d0d0d]" />
                     </div>
                   </motion.button>
                 )

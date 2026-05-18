@@ -6,6 +6,12 @@
 ## 2026-05-18
 
 FIX: Hydratation — sync client_water_logs depuis l'API hydration (eau affichait 0ml sur home et nutrition)
+FIX: MealLogSheet — hauteur fixe 88vh + min-h-0 sur wrapper, footer sticky bottom-0, contenu visible
+FIX: QuickWaterModal — router.refresh() après log eau pour mettre à jour widget home
+FIX: FAB boutons — jaunes #ffe01e, icône fill #0d0d0d, transform ancré sur left/top
+FIX: FAB animation — logo scale 1.18 + remonte -6px au tap (spring)
+FIX: Check-in — guard localStorage "checkin_configured" évite boucle onboarding
+FIX: Check-in icône — Moon → ClipboardText (check-in plus explicite)
 FEATURE: Home dashboard — grid 2 colonnes (nutrition | workout) visible sans scroll, Timeline en dessous
 REFACTOR: SmartNutritionWidget — prop compact (arc réduit, barres mini, wrapper Link vers /client/nutrition)
 REFACTOR: SmartWorkoutWidget — prop compact (cache BodyMap, textes réduits), h-full pour stretch égal

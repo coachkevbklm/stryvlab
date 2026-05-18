@@ -249,8 +249,8 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
         </div>
       )}
 
-      {/* Layers content */}
-      <div className="flex-1 overflow-hidden relative" style={{ paddingTop: embedded ? 0 : topBarH }}>
+      {/* Layers content — min-h-0 requis pour que flex-1 ait une hauteur réelle en embedded */}
+      <div className="flex-1 overflow-hidden relative min-h-0" style={{ paddingTop: embedded ? 0 : topBarH }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={layer + (selectedCategory ?? "") + (selectedSubcategory ?? "")}
@@ -417,7 +417,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
       {/* Sticky footer */}
       <div
         ref={footerRef}
-        className={`${embedded ? "relative" : "fixed bottom-0 left-0 right-0"} z-[60] bg-[#0a0a0a] border-t border-white/[0.08]`}
+        className={`${embedded ? "sticky bottom-0" : "fixed bottom-0 left-0 right-0"} z-[60] bg-[#161616] border-t border-white/[0.08] shrink-0`}
       >
         {drafts.length > 0 && (
           <div className="px-4 pt-3 pb-1 max-h-[120px] overflow-y-auto">
