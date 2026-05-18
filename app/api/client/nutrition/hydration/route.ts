@@ -109,5 +109,12 @@ export async function POST(req: NextRequest) {
     confidence_score: 0.85,
   })
 
+  // Sync client_water_logs — source lue par home page et nutrition page
+  await db.from("client_water_logs").insert({
+    client_id: clientId,
+    amount_ml: quantity_g,
+    logged_at: new Date().toISOString(),
+  })
+
   return NextResponse.json({ ok: true, meal_id: mealId, quantity_ml: quantity_g })
 }
