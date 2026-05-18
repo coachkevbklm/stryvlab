@@ -21,6 +21,7 @@ import type {
 import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
 import VolumeCoverageWidget from '@/components/client/smart/VolumeCoverageWidget'
 import RecentSessionsStrip from '@/components/client/smart/RecentSessionsStrip'
+import ExerciseProgressionChart from '@/components/client/smart/ExerciseProgressionChart'
 
 type Tab = 'seance' | 'performances' | 'historique'
 
@@ -512,6 +513,9 @@ export default function ProgrammeClientPage({
                 </div>
               </div>
             )}
+
+            {/* Exercise Progression Chart */}
+            {rawLogs.length > 0 && <ExerciseProgressionChart rawLogs={rawLogs} />}
 
             {sessionList.length === 0 && (
               <div className="text-center py-12">

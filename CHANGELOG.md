@@ -5,6 +5,10 @@
 
 ## 2026-05-18
 
+FEATURE: Exercise progression chart in Performances tab — interactive SVG line chart with weight trend per exercise, exercise selector pills, stats (max weight, progression delta, session count)
+
+## 2026-05-18
+
 FIX: Hydratation — sync client_water_logs depuis l'API hydration (eau affichait 0ml sur home et nutrition)
 FIX: FAB — logo 2× plus grand (80px), déborde au-dessus nav, remonte -8px au tap
 FIX: FAB — anchor w-0 h-0, boutons centrés depuis centre exact du FAB (fin du décalage droite)
