@@ -394,10 +394,24 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     tempoActiveRef.current = tempoGuideTarget !== null
   }, [tempoGuideTarget])
 
+  // Délai de report si tempo actif au moment du tick (≈ durée série max)
+  const TEMPO_BUSY_RETRY_MS = 90 * 1000  // 1m30
+
   useEffect(() => {
     hydrationTimerRef.current = setInterval(() => {
-      // Ne pas afficher pendant tempo guide actif — reporter
-      if (tempoActiveRef.current) return
+      if (tempoActiveRef.current) {
+        // Tempo actif : skip ce tick, replanifier dans 1m30
+        if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current)
+        hydrationTimerRef.current = setTimeout(() => {
+          // Si tempo encore actif après 1m30 → re-check (boucle 1m30)
+          if (tempoActiveRef.current) {
+            resetHydrationTimer(TEMPO_BUSY_RETRY_MS)
+            return
+          }
+          setShowHydration(true)
+        }, TEMPO_BUSY_RETRY_MS) as unknown as ReturnType<typeof setInterval>
+        return
+      }
       setShowHydration(true)
     }, HYDRATION_INTERVAL_MS)
     return () => { if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current) }
@@ -406,7 +420,17 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   function resetHydrationTimer(delayMs: number) {
     if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current)
     hydrationTimerRef.current = setInterval(() => {
-      if (tempoActiveRef.current) return
+      if (tempoActiveRef.current) {
+        if (hydrationTimerRef.current) clearInterval(hydrationTimerRef.current)
+        hydrationTimerRef.current = setTimeout(() => {
+          if (tempoActiveRef.current) {
+            resetHydrationTimer(TEMPO_BUSY_RETRY_MS)
+            return
+          }
+          setShowHydration(true)
+        }, TEMPO_BUSY_RETRY_MS) as unknown as ReturnType<typeof setInterval>
+        return
+      }
       setShowHydration(true)
     }, delayMs)
   }
