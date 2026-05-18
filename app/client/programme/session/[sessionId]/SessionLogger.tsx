@@ -15,6 +15,8 @@ import { recommendNextSet, type SetRecommendation } from '@/lib/training/setReco
 import { getDefaultTempo, parseTempo } from '@/lib/training/tempo'
 import TempoGuideModal from '@/components/client/TempoGuideModal'
 import PrepTimeModal, { getPrepTime, hasPrepTimeConfigured, getHapticsEnabled } from '@/components/client/PrepTimeModal'
+import SetSwipeCard from '@/components/client/smart/SetSwipeCard'
+import SetEditSheet from '@/components/client/smart/SetEditSheet'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -234,6 +236,20 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   const [recommendations, setRecommendations] = useState<Record<string, SetRecommendation>>({})
   const [manuallyEdited, setManuallyEdited] = useState<Set<string>>(new Set())
 
+  // ── Swipe-first edit state ──
+  const [editingSet, setEditingSet] = useState<{
+    exId: string
+    setNum: number
+    side: 'left' | 'right' | 'bilateral'
+    exerciseName: string
+    weightIncrement: number
+  } | null>(null)
+
+  const [swipeHintDismissed, setSwipeHintDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('swipe_hint_seen') === '1'
+  })
+
   // ── Live save ──
   const sessionLogIdRef = useRef<string | null>(null)
   const [draftReady, setDraftReady] = useState(false)
@@ -251,6 +267,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     const w = clientWeight ?? 70
     return calcHydrationPlan(w, 60)
   }, [clientWeight])
+
+  // Key of the very first incomplete set (for swipe hint)
+  const firstIncompleteKey = useMemo(() => {
+    if (swipeHintDismissed) return null
+    const first = sets.find(s => !s.completed)
+    if (!first) return null
+    return recKey(first.exercise_id, first.set_number, first.side)
+  }, [sets, swipeHintDismissed])
 
   // ── PR Detection ──
   const [prSets, setPrSets] = useState<Set<string>>(new Set())
@@ -1162,110 +1186,63 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   {exProgressionHint && <div className="mt-3 px-3 py-2 bg-[#ffe01e]/[0.08] border border-[#ffe01e]/20 rounded-lg"><p className="text-[10px] text-[#ffe01e] font-medium leading-relaxed">{exProgressionHint}</p></div>}
                   {ex.notes && <p className="mt-2 text-[11px] text-white/35 italic leading-relaxed">{ex.notes}</p>}
                 </div>
-                <div className="border-t border-white/[0.05]">
+                <div className="border-t border-white/[0.05] px-4 py-4 flex flex-col gap-3">
                   {prFlash && (
-                    <div className="mx-4 mt-3 mb-2 px-3 py-2 bg-[#ffe01e]/10 border border-[#ffe01e]/30 rounded-xl text-[11px] font-bold text-[#ffe01e]">
+                    <div className="px-3 py-2 bg-[#ffe01e]/10 border border-[#ffe01e]/30 rounded-xl text-[11px] font-bold text-[#ffe01e]">
                       {prFlash}
                     </div>
                   )}
-                  {/* COLS: #+prévu | RÉALISÉ | KG | RIR | ▶ | ✓ */}
-                  <div className="grid items-center gap-3 px-5 py-2 text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/20" style={{ gridTemplateColumns: ex.is_unilateral ? '1.2fr 0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1.2fr 1fr 1fr 1fr 0.55fr 0.55fr' }}>
-                    <div className="truncate">#</div>
-                    {ex.is_unilateral && <div className="text-center truncate">G/D</div>}
-                    <div className="text-center truncate">REP</div>
-                    <div className="text-center truncate">KG</div>
-                    <div className="text-center truncate">RIR</div>
-                    <div className="flex justify-center"><Play size={7} fill="currentColor" className="text-[#FFB800]/50" /></div>
-                    <div className="text-center">✓</div>
-                  </div>
-                  {exSetsForEx.map((s, idx) => {
+                  {exSetsForEx.map((s) => {
                     const lastP = getExLastPerfLabel(s.set_number, s.side)
-                    const isFirstOfSet = !ex.is_unilateral || s.side === 'left'
+                    const key = recKey(ex.id, s.set_number, s.side)
+                    const rec = recommendations[key]
+                    const exSetsForCue = exSetsForEx.filter(x => x.exercise_id === s.exercise_id && x.side === s.side)
+                    const isLastSet = s.set_number === exSetsForCue.length
+                    const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
+                    const cue = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, exSetsForCue.length, isLastSet)
+                    const cardKey = recKey(ex.id, s.set_number, s.side)
+                    const isHintCard = !swipeHintDismissed && firstIncompleteKey === cardKey
+                    const resolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
+                    const canGuide = parseTempo(resolvedTempo) !== null && !s.completed
+
                     return (
-                      <div key={`${s.set_number}-${s.side}`}>
-                        {ex.is_unilateral && isFirstOfSet && idx > 0 && <div className="h-px bg-white/[0.04] mx-5" />}
-                        <div className={`grid items-center gap-3 px-5 py-3 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.08]' : ''} ${!ex.is_unilateral ? 'border-t border-white/[0.04]' : ''}`} style={{ gridTemplateColumns: ex.is_unilateral ? '1.2fr 0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1.2fr 1fr 1fr 1fr 0.55fr 0.55fr' }}>
-                          {/* Col 1 : # + prévu */}
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {s.completed && (!ex.is_unilateral || s.side === 'left') && <CheckCircle2 size={9} className="text-[#ffe01e]/50 shrink-0" />}
-                            {prSets.has(recKey(ex.id, s.set_number, s.side)) && (
-                              <span className="ml-1 bg-[#ffe01e] text-[#0d0d0d] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md">PR</span>
-                            )}
-                            {(!ex.is_unilateral || s.side === 'left') && (
-                              <span className={`text-[11px] font-mono font-bold shrink-0 ${s.completed ? 'text-[#ffe01e]/40' : 'text-white/30'}`}>{s.set_number}</span>
-                            )}
-                            {(() => {
-                              const key = recKey(ex.id, s.set_number, s.side)
-                              const rec = recommendations[key]
-                              const isRec = !!rec && !s.completed
-                              return (
-                                <div className="min-w-0">
-                                  <span className="text-[11px] font-mono text-white/25 truncate block">{s.planned_reps}</span>
-                                  {isRec && <DeltaBadge rec={rec} />}
-                                </div>
-                              )
-                            })()}
-                          </div>
-                          {ex.is_unilateral && <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>}
-                          {(() => {
-                            const key = recKey(ex.id, s.set_number, s.side)
-                            const isRec = !!recommendations[key] && !s.completed
-                            return (
-                              <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
-                                onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
-                                placeholder={lastP?.reps ? String(lastP.reps) : '—'}
-                                className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 focus:border-[#ffe01e]/30 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                            )
-                          })()}
-                          <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
-                            onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                            onChange={e => { const key = recKey(ex.id, s.set_number, s.side); setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const next = { ...prev }; delete next[key]; return next }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
-                            placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                            className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 focus:border-[#ffe01e]/30 ${(() => { const key = recKey(ex.id, s.set_number, s.side); return !!recommendations[key] && !s.completed })() ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                          <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
-                            onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                            onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
-                            placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
-                            className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-violet-400/40 focus:border-violet-400/30 w-full placeholder:text-white/20 transition-colors" />
-                          {/* Tempo guide trigger */}
-                          {(() => {
-                            const resolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
-                            // Sync IA : utiliser rec.reps si disponible, sinon fallback resolveReps
-                            const setKey = recKey(ex.id, s.set_number, s.side)
-                            const recForSet = recommendations[setKey]
-                            const repCount = recForSet?.reps ?? resolveReps(ex)
-                            const canGuide = parseTempo(resolvedTempo) !== null && repCount > 0 && !s.completed
-                            if (!canGuide) return <div />
-                            return (
-                              <button
-                                onClick={() => {
-                                  const exName = swappedNames[ex.id] ?? ex.name
-                                  if (!hasPrepTimeConfigured(exName)) {
-                                    setPrepTimeTarget({ tempo: resolvedTempo, reps: repCount, exerciseName: exName })
-                                  } else {
-                                    setTempoGuideTarget({ tempo: resolvedTempo, reps: repCount, exerciseName: exName, prepSeconds: getPrepTime(exName), hapticsEnabled: getHapticsEnabled() })
-                                  }
-                                }}
-                                title="Guide tempo"
-                                className="flex justify-center items-center h-10 w-10 rounded-lg bg-white/[0.04] text-white/30 hover:text-[#FFB800] hover:bg-[#FFB800]/[0.08] active:scale-95 transition-all"
-                              >
-                                <Play size={11} fill="currentColor" />
-                              </button>
-                            )
-                          })()}
-                          <button onClick={() => toggleSet(ex.id, s.set_number, s.side, ex.rest_sec)} title="Valider" className={`flex justify-center items-center h-10 w-10 rounded-lg transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#ffe01e]/20 shadow-[0_0_12px_rgba(255,224,30,0.3)]' : 'hover:bg-white/[0.06]'}`}>
-                            {s.completed ? <CheckCircle2 size={22} className="text-[#ffe01e]" /> : <Circle size={22} className="text-white/20 hover:text-white/50 transition-colors" />}
-                          </button>
-                        </div>
-                        {s.completed && (() => {
-                          const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
-                          const exSetsForCue = exSetsForEx.filter(x => x.exercise_id === s.exercise_id && x.side === s.side)
-                          const isLast = s.set_number === exSetsForCue.length
-                          const cue = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, exSetsForCue.length, isLast)
-                          return cue ? <p className="px-5 text-[10px] text-white/40 italic mt-0.5">{cue}</p> : null
-                        })()}
-                      </div>
+                      <SetSwipeCard
+                        key={`${s.set_number}-${s.side}`}
+                        set={s}
+                        exercise={ex}
+                        recommendation={rec && !s.completed ? rec : undefined}
+                        lastPerf={lastP ? { weight: lastP.weight, reps: lastP.reps, rir: lastP.rir } : null}
+                        isPR={prSets.has(cardKey)}
+                        showSwipeHint={isHintCard}
+                        coachingCue={cue}
+                        onValidate={() => {
+                          if (!swipeHintDismissed) {
+                            localStorage.setItem('swipe_hint_seen', '1')
+                            setSwipeHintDismissed(true)
+                          }
+                          toggleSet(ex.id, s.set_number, s.side, ex.rest_sec)
+                        }}
+                        onEditRequest={() => {
+                          setEditingSet({
+                            exId: ex.id,
+                            setNum: s.set_number,
+                            side: s.side,
+                            exerciseName: swappedNames[ex.id] ?? ex.name,
+                            weightIncrement: ex.weight_increment_kg ?? 2.5,
+                          })
+                        }}
+                        onTempoGuide={canGuide ? () => {
+                          const exName = swappedNames[ex.id] ?? ex.name
+                          const recForSet = recommendations[key]
+                          const repCount = recForSet?.reps ?? resolveReps(ex)
+                          if (!hasPrepTimeConfigured(exName)) {
+                            setPrepTimeTarget({ tempo: resolvedTempo, reps: repCount, exerciseName: exName })
+                          } else {
+                            setTempoGuideTarget({ tempo: resolvedTempo, reps: repCount, exerciseName: exName, prepSeconds: getPrepTime(exName), hapticsEnabled: getHapticsEnabled() })
+                          }
+                        } : undefined}
+                        hasTempoGuide={canGuide}
+                      />
                     )
                   })}
                 </div>
@@ -1391,89 +1368,63 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                               )}
                             </div>
 
-                            {/* Header colonnes — identique exercice solo */}
+                            {/* SwipeCards — superset sets */}
                             {(() => {
-                              const cols = ex.is_unilateral ? '0.7fr 1fr 1fr 1fr 0.55fr 0.55fr' : '1fr 1fr 1fr 0.55fr 0.55fr'
                               const ssResolvedTempo = ex.tempo ?? getDefaultTempo(ex.movement_pattern ?? null, goal)
                               const ssHasTempo = parseTempo(ssResolvedTempo) !== null
-                              return <>
-                                <div className="grid items-center gap-3 px-4 py-1 text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/20" style={{ gridTemplateColumns: cols }}>
-                                  {ex.is_unilateral && <div className="text-center truncate">G/D</div>}
-                                  <div className="text-center truncate">REP</div>
-                                  <div className="text-center truncate">KG</div>
-                                  <div className="text-center truncate">RIR</div>
-                                  <div className="flex justify-center">{ssHasTempo ? <Play size={7} fill="currentColor" className="text-[#FFB800]/50" /> : <span />}</div>
-                                  <div className="text-center">✓</div>
+                              return (
+                                <div className="px-3 py-3 flex flex-col gap-2">
+                                  {exSetsForRound.map((s) => {
+                                    const lastP = getExLastPerfLabel(s.side)
+                                    const cardKey = recKey(ex.id, s.set_number, s.side)
+                                    const rec = recommendations[cardKey]
+                                    const ssRepCount = rec?.reps ?? resolveReps(ex)
+                                    const ssCanGuide = ssHasTempo && ssRepCount > 0 && !s.completed
+                                    const isHintCard = !swipeHintDismissed && firstIncompleteKey === cardKey
+                                    const lastPerfData = lastP ? { weight: lastP.weight ? Number(lastP.weight) : null, reps: lastP.reps ? Number(lastP.reps) : null, rir: lastP.rir ? Number(lastP.rir) : null } : null
+                                    const totalSets = exSetsForRound.length
+                                    const cue = s.completed ? getCoachingCue(s.rir_actual !== '' ? (isNaN(parseInt(s.rir_actual, 10)) ? null : parseInt(s.rir_actual, 10)) : null, s.set_number, totalSets, s.set_number === totalSets) : null
+                                    return (
+                                      <SetSwipeCard
+                                        key={`${s.set_number}-${s.side}`}
+                                        set={s}
+                                        exercise={ex}
+                                        recommendation={rec && !s.completed ? rec : undefined}
+                                        lastPerf={lastPerfData}
+                                        isPR={prSets.has(cardKey)}
+                                        showSwipeHint={isHintCard}
+                                        coachingCue={cue}
+                                        supersetColor={groupColor}
+                                        onValidate={() => {
+                                          if (isHintCard) {
+                                            setSwipeHintDismissed(true)
+                                            if (typeof window !== 'undefined') localStorage.setItem('swipe_hint_seen', '1')
+                                          }
+                                          toggleSet(ex.id, s.set_number, s.side, restSecForToggle)
+                                        }}
+                                        onEditRequest={() => {
+                                          setEditingSet({
+                                            exId: ex.id,
+                                            setNum: s.set_number,
+                                            side: s.side,
+                                            exerciseName: swappedNames[ex.id] ?? ex.name,
+                                            weightIncrement: ex.weight_increment_kg ?? 2.5,
+                                          })
+                                        }}
+                                        onTempoGuide={ssCanGuide ? () => {
+                                          const exName = swappedNames[ex.id] ?? ex.name
+                                          if (!hasPrepTimeConfigured(exName)) {
+                                            setPrepTimeTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName })
+                                          } else {
+                                            setTempoGuideTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName, prepSeconds: getPrepTime(exName), hapticsEnabled: getHapticsEnabled() })
+                                          }
+                                        } : undefined}
+                                        hasTempoGuide={ssCanGuide}
+                                      />
+                                    )
+                                  })}
                                 </div>
-                                {exSetsForRound.map((s) => {
-                                  const lastP = getExLastPerfLabel(s.side)
-                                  const key = recKey(ex.id, s.set_number, s.side)
-                                  const isRec = !!recommendations[key] && !s.completed
-                                  // Sync IA : utiliser rec.reps si disponible, sinon fallback resolveReps
-                                  const ssRecForSet = recommendations[key]
-                                  const ssRepCount = ssRecForSet?.reps ?? resolveReps(ex)
-                                  const ssCanGuide = ssHasTempo && ssRepCount > 0 && !s.completed
-                                  return (
-                                    <div key={`${s.set_number}-${s.side}`}>
-                                      {!ex.is_unilateral && prSets.has(recKey(ex.id, s.set_number, s.side)) && (
-                                        <div className="px-4 pt-1.5 pb-0.5">
-                                          <span className="bg-[#ffe01e] text-[#0d0d0d] text-[8px] font-black uppercase px-1 py-0.5 rounded-md">PR</span>
-                                        </div>
-                                      )}
-                                      <div className={`grid items-center gap-3 px-4 py-2.5 transition-all duration-200 ${s.completed ? 'bg-[#ffe01e]/[0.06]' : ''}`} style={{ gridTemplateColumns: cols }}>
-                                      {ex.is_unilateral && (
-                                        <div className="flex items-center gap-1.5">
-                                          <div className={`text-[11px] font-bold text-center ${sideColor(s.side)}`}>{sideLabel(s.side)}</div>
-                                          {prSets.has(recKey(ex.id, s.set_number, s.side)) && (
-                                            <span className="bg-[#ffe01e] text-[#0d0d0d] text-[8px] font-black uppercase px-1 py-0.5 rounded-md">PR</span>
-                                          )}
-                                        </div>
-                                      )}
-                                      <input type="number" inputMode="numeric" min={0} value={s.actual_reps}
-                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                        onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const n2 = { ...prev }; delete n2[key]; return n2 }); updateSet(ex.id, s.set_number, s.side, { actual_reps: e.target.value }) }}
-                                        placeholder={lastP?.reps ? String(lastP.reps) : s.planned_reps || '—'}
-                                        className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                                      <input type="number" inputMode="decimal" min={0} step={0.5} value={s.actual_weight_kg}
-                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                        onChange={e => { setManuallyEdited(prev => new Set(prev).add(key)); setRecommendations(prev => { const n2 = { ...prev }; delete n2[key]; return n2 }); updateSet(ex.id, s.set_number, s.side, { actual_weight_kg: e.target.value }) }}
-                                        placeholder={lastP?.weight ? String(lastP.weight) : '—'}
-                                        className={`h-10 rounded-lg px-2 text-[13px] font-mono font-bold text-center outline-none w-full placeholder:text-white/20 transition-colors focus:ring-1 focus:ring-[#ffe01e]/40 ${isRec ? 'bg-[#ffe01e]/[0.06] border border-[#ffe01e]/30 text-[#ffe01e]/70' : 'bg-white/[0.04] border border-white/[0.06] text-white'}`} />
-                                      <input type="number" inputMode="numeric" min={0} max={10} value={s.rir_actual}
-                                        onFocus={() => { activeInputRef.current = true }} onBlur={() => { activeInputRef.current = false }}
-                                        onChange={e => updateSet(ex.id, s.set_number, s.side, { rir_actual: e.target.value })}
-                                        placeholder={exEffectiveRir !== null && exEffectiveRir !== undefined ? String(exEffectiveRir) : '—'}
-                                        className="h-10 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 text-[13px] font-mono font-bold text-white text-center outline-none focus:ring-1 focus:ring-[#FFB800]/30 w-full placeholder:text-white/20 transition-colors" />
-                                      {ssCanGuide ? (
-                                        <button
-                                          onClick={() => {
-                                            const exName = swappedNames[ex.id] ?? ex.name
-                                            if (!hasPrepTimeConfigured(exName)) {
-                                              setPrepTimeTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName })
-                                            } else {
-                                              setTempoGuideTarget({ tempo: ssResolvedTempo, reps: ssRepCount, exerciseName: exName, prepSeconds: getPrepTime(exName), hapticsEnabled: getHapticsEnabled() })
-                                            }
-                                          }}
-                                          className="flex justify-center items-center h-10 w-full rounded-lg bg-white/[0.04] text-white/30 hover:text-[#FFB800] hover:bg-[#FFB800]/[0.08] active:scale-95 transition-all"
-                                        >
-                                          <Play size={11} fill="currentColor" />
-                                        </button>
-                                      ) : <div />}
-                                      <button onClick={() => toggleSet(ex.id, s.set_number, s.side, restSecForToggle)} className={`flex justify-center items-center h-10 w-full rounded-lg transition-all duration-200 active:scale-90 ${s.completed ? 'bg-[#ffe01e]/20' : 'hover:bg-white/[0.06]'}`}>
-                                        {s.completed ? <CheckCircle2 size={20} className="text-[#ffe01e]" /> : <Circle size={20} className="text-white/20 hover:text-white/50 transition-colors" />}
-                                      </button>
-                                      </div>
-                                      {s.completed && (() => {
-                                        const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
-                                        const totalSetsForCue = exSetsForRound.length
-                                        const isLast = s.set_number === totalSetsForCue
-                                        const cue = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, totalSetsForCue, isLast)
-                                        return cue ? <p className="px-4 text-[10px] text-white/40 italic mt-0.5">{cue}</p> : null
-                                      })()}
-                                    </div>
-                                  )
-                                })}
-                              </>
+                              )
                             })()}
                           </div>
                         )
@@ -1521,6 +1472,44 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           onClose={() => setSwapTarget(null)}
         />
       )}
+
+      {/* ── SetEditSheet — post-validation correction ── */}
+      {editingSet && (() => {
+        const s = sets.find(set => set.exercise_id === editingSet.exId && set.set_number === editingSet.setNum && set.side === editingSet.side)
+        return (
+          <SetEditSheet
+            open={!!editingSet}
+            setNumber={editingSet.setNum}
+            exerciseName={editingSet.exerciseName}
+            side={editingSet.side}
+            initialReps={s?.actual_reps ?? ''}
+            initialWeight={s?.actual_weight_kg ?? ''}
+            initialRir={s?.rir_actual ?? ''}
+            weightIncrement={editingSet.weightIncrement}
+            onConfirm={(reps, weight, rir) => {
+              updateSet(editingSet.exId, editingSet.setNum, editingSet.side, {
+                actual_reps: reps,
+                actual_weight_kg: weight,
+                rir_actual: rir,
+              })
+              // Re-evaluate PR after edit
+              const cardKey = recKey(editingSet.exId, editingSet.setNum, editingSet.side)
+              const exHistory = lastPerformance[editingSet.exerciseName] ?? []
+              const bestPrev = exHistory.reduce((best, p) => {
+                const vol = (p.weight ?? 0) * (p.reps ?? 0)
+                return vol > best ? vol : best
+              }, 0)
+              const newVol = parseFloat(weight) * parseInt(reps, 10)
+              if (!isNaN(newVol) && newVol > bestPrev && bestPrev > 0) {
+                setPrSets(prev => new Set(prev).add(cardKey))
+              } else {
+                setPrSets(prev => { const n = new Set(prev); n.delete(cardKey); return n })
+              }
+            }}
+            onClose={() => setEditingSet(null)}
+          />
+        )
+      })()}
 
       {/* ── ClientAlternativesSheet ── */}
       {altSheetTarget !== null && exercises[altSheetTarget]?.clientAlternatives?.length ? (
