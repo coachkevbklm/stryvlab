@@ -98,7 +98,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
               </button>
             </div>
           )}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
             {notifications.map((n) => (
               <button
                 key={n.id}
