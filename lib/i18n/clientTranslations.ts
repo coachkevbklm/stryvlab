@@ -572,6 +572,23 @@ export const clientDict = {
   'smart.topbar.workout':                  { fr: 'Entraînement',              en: 'Workout',                   es: 'Entrenamiento' },
   'smart.topbar.nutrition':                { fr: 'Nutrition',                 en: 'Nutrition',                 es: 'Nutrición' },
   'smart.topbar.profil':                   { fr: 'Profil',                    en: 'Profile',                   es: 'Perfil' },
+
+  // ── Voice logging ──
+  'voice.title':            { fr: 'Saisie vocale',                              en: 'Voice log',                           es: 'Registro por voz' },
+  'voice.tap_to_speak':     { fr: 'Appuyez pour parler',                        en: 'Tap to speak',                        es: 'Toca para hablar' },
+  'voice.listening':        { fr: "J'écoute…",                                  en: 'Listening…',                          es: 'Escuchando…' },
+  'voice.processing':       { fr: 'Analyse en cours…',                          en: 'Processing…',                         es: 'Analizando…' },
+  'voice.review_title':     { fr: 'Aliments détectés',                          en: 'Detected foods',                      es: 'Alimentos detectados' },
+  'voice.new_badge':        { fr: 'Nouveau',                                    en: 'New',                                 es: 'Nuevo' },
+  'voice.new_items_notice': { fr: '{n} aliment(s) ajouté(s) à votre catalogue', en: '{n} food(s) added to your catalog',   es: '{n} alimento(s) añadido(s) a su catálogo' },
+  'voice.log_meal':         { fr: 'Logger ce repas',                            en: 'Log this meal',                       es: 'Registrar esta comida' },
+  'voice.not_supported':    { fr: 'Saisie vocale non disponible sur ce navigateur', en: 'Voice input not available on this browser', es: 'Entrada de voz no disponible en este navegador' },
+  'voice.error_parse':      { fr: "Impossible d'analyser le repas. Réessayez.", en: 'Could not analyze meal. Please try again.', es: 'No se pudo analizar la comida. Inténtalo de nuevo.' },
+  'voice.error_rate_limit': { fr: 'Trop de tentatives. Attendez 1 minute.',    en: 'Too many attempts. Wait 1 minute.',   es: 'Demasiados intentos. Espera 1 minuto.' },
+  'voice.add_item':         { fr: '+ Ajouter un aliment',                      en: '+ Add a food',                        es: '+ Añadir alimento' },
+  'voice.confidence_high':  { fr: 'Précis',                                    en: 'Accurate',                            es: 'Preciso' },
+  'voice.confidence_med':   { fr: 'Estimé',                                    en: 'Estimated',                           es: 'Estimado' },
+  'voice.confidence_low':   { fr: 'Incertain',                                 en: 'Uncertain',                           es: 'Incierto' },
 } satisfies Record<string, { fr: string | string[]; en: string | string[]; es: string | string[] }>
 
 export type ClientDictKey = keyof typeof clientDict
