@@ -6,10 +6,15 @@ import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
 import ClientTopBar from '@/components/client/ClientTopBar'
 import SmartNutritionHero from '@/components/client/smart/SmartNutritionHero'
 import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
-import CoachProtocolCard from '@/components/client/smart/CoachProtocolCard'
 import RemainingBreakdown from '@/components/client/smart/RemainingBreakdown'
-import WeeklyTrendStrip from '@/components/client/smart/WeeklyTrendStrip'
+import MacroWeekGrid from '@/components/client/smart/MacroWeekGrid'
+import ProtocolRationale from '@/components/client/smart/ProtocolRationale'
+import NutritionMealsList from '@/components/client/smart/NutritionMealsList'
+import NutritionStreakCard from '@/components/client/smart/NutritionStreakCard'
+import TdeeChart from '@/components/client/smart/TdeeChart'
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
+import type { NutritionMeal } from '@/lib/nutrition/food-items'
+import VoiceEntryFab from '@/components/client/smart/VoiceEntryFab'
 
 type SearchParams = { date?: string }
 
@@ -34,7 +39,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, trendResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
       .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
@@ -44,11 +49,22 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .limit(1)
       .maybeSingle(),
 
+    // Meals with full entries for the journal list
     svc()
       .from('nutrition_meals')
-      .select('meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
+      .select(`
+        id, meal_type, title, logged_at, physiological_date,
+        total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g,
+        photo_urls, notes,
+        nutrition_entries (
+          id, quantity_g, calories_kcal, protein_g, carbs_g, fat_g, fiber_g,
+          input_mode, confidence_score,
+          food_items (id, name_fr, category_l1, item_key, kcal_per_100g)
+        )
+      `)
       .eq('client_id', clientId)
       .eq('physiological_date', date)
+      .neq('meal_type', 'drinks')
       .order('logged_at', { ascending: true }),
 
     svc()
@@ -58,7 +74,18 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .gte('logged_at', dayStart)
       .lte('logged_at', dayEnd),
 
-    // Weekly trend: last 7 days
+    // Latest body weight from assessments
+    svc()
+      .from('assessment_responses')
+      .select('numeric_value')
+      .eq('client_id', clientId)
+      .eq('field_key', 'weight_kg')
+      .not('numeric_value', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+
+    // Weekly trend: last 7 days — full macros for grid
     (async () => {
       const today = new Date()
       const days: string[] = []
@@ -69,11 +96,30 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       }
       return svc()
         .from('nutrition_meals')
-        .select('physiological_date, calories')
+        .select('physiological_date, total_calories, total_protein_g, total_carbs_g, total_fat_g')
         .eq('client_id', clientId)
+        .neq('meal_type', 'drinks')
         .in('physiological_date', days)
     })(),
+
+    // 90-day logged dates for streak + calendar
+    (async () => {
+      const d90ago = new Date()
+      d90ago.setDate(d90ago.getDate() - 89)
+      const from90 = d90ago.toISOString().slice(0, 10)
+      return svc()
+        .from('nutrition_meals')
+        .select('physiological_date')
+        .eq('client_id', clientId)
+        .neq('meal_type', 'drinks')
+        .gte('physiological_date', from90)
+        .order('physiological_date', { ascending: true })
+    })(),
   ])
+
+  // ── Body weight ───────────────────────────────────────────────────────────
+  const bodyWeightRow = weightResult.status === 'fulfilled' ? weightResult.value.data : null
+  const bodyWeightKg = bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null
 
   // ── Protocol day ──────────────────────────────────────────────────────────
   const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
@@ -91,15 +137,20 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   }
 
   // ── Consumed today ────────────────────────────────────────────────────────
-  const meals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
+  const rawMeals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
+  const meals: NutritionMeal[] = rawMeals.map((m: any) => ({
+    ...m,
+    entries: m.nutrition_entries ?? [],
+    nutrition_entries: undefined,
+  }))
   const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
 
   const consumedBase = meals.reduce(
     (acc, m) => ({
-      kcal:      acc.kcal      + Number(m.calories  ?? 0),
-      protein_g: acc.protein_g + Number(m.protein_g ?? 0),
-      carbs_g:   acc.carbs_g   + Number(m.carbs_g   ?? 0),
-      fat_g:     acc.fat_g     + Number(m.fat_g     ?? 0),
+      kcal:      acc.kcal      + Number(m.total_calories  ?? 0),
+      protein_g: acc.protein_g + Number(m.total_protein_g ?? 0),
+      carbs_g:   acc.carbs_g   + Number(m.total_carbs_g   ?? 0),
+      fat_g:     acc.fat_g     + Number(m.total_fat_g     ?? 0),
     }),
     { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   )
@@ -130,44 +181,64 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
     days.push(d.toISOString().slice(0, 10))
   }
   const trendMeals = trendResult.status === 'fulfilled' ? (trendResult.value.data ?? []) : []
-  const trendTotals: Record<string, number> = {}
-  for (const d of days) trendTotals[d] = 0
+  type DayTotals = { kcal: number; protein_g: number; carbs_g: number; fat_g: number }
+  const trendTotals: Record<string, DayTotals> = {}
+  for (const d of days) trendTotals[d] = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
   for (const m of trendMeals) {
-    trendTotals[m.physiological_date] = (trendTotals[m.physiological_date] ?? 0) + Number(m.calories ?? 0)
+    const key = (m as any).physiological_date as string
+    if (!trendTotals[key]) continue
+    trendTotals[key].kcal      += Number((m as any).total_calories  ?? 0)
+    trendTotals[key].protein_g += Number((m as any).total_protein_g ?? 0)
+    trendTotals[key].carbs_g   += Number((m as any).total_carbs_g   ?? 0)
+    trendTotals[key].fat_g     += Number((m as any).total_fat_g     ?? 0)
   }
-  const trend = days.map(d => ({ date: d, consumed: trendTotals[d], target: target.kcal }))
+  const trend = days.map(d => ({
+    date:      d,
+    consumed:  trendTotals[d].kcal,
+    protein_g: trendTotals[d].protein_g,
+    carbs_g:   trendTotals[d].carbs_g,
+    fat_g:     trendTotals[d].fat_g,
+    target:    target.kcal,
+    targetProtein: target.protein_g,
+    targetCarbs:   target.carbs_g,
+    targetFat:     target.fat_g,
+  }))
+
+  // ── Streak / logged dates ─────────────────────────────────────────────────
+  const streakMeals = streakResult.status === 'fulfilled' ? (streakResult.value.data ?? []) : []
+  const loggedDatesSet = new Set<string>(
+    streakMeals.map((m: any) => m.physiological_date as string)
+  )
+
+  // Day type badge for TopBar
+  const dayTypeBadge = protocolDay?.name ? (
+    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#ffe01e]/10 text-[#ffe01e] border border-[#ffe01e]/20">
+      {protocolDay.name}
+    </span>
+  ) : null
 
   return (
     <>
-      <ClientTopBar section="NUTRITION" title={date} />
+      <ClientTopBar section="NUTRITION" title={date} right={dayTypeBadge} />
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
+        <MacroWeekGrid trend={trend} />
         <SmartNutritionHero date={date} consumed={consumed} target={target} />
 
-        {/* Adaptive TDEE — only shown when protocol has been calibrated */}
-        {tdeeAdaptive != null && (
-          <div className="bg-[#161616] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/30 mb-0.5">
-                Dépense énergétique
-              </p>
-              <p className="text-[20px] font-black text-white leading-none tabular-nums">
-                {tdeeDataSource === 'formula_proxy'
-                  ? 'Estimation'
-                  : `${(tdeeAdaptive as number).toLocaleString('fr-FR')} kcal/jour`}
-              </p>
-            </div>
-            <p className="text-[10px] text-white/30 text-right max-w-[120px] leading-snug">
-              {tdeeDataSource === 'formula_proxy'
-                ? 'Basé sur ton programme'
-                : 'Basé sur tes pesées des 14 derniers jours'}
-            </p>
-          </div>
-        )}
+        {/* TDEE trend chart — self-hides when no history data */}
+        <TdeeChart />
 
         <SmartAlertsFeed alerts={alerts} />
-        <CoachProtocolCard day={protocolDay} />
         <RemainingBreakdown consumed={consumed} target={target} />
-        <WeeklyTrendStrip trend={trend} />
+        <NutritionStreakCard loggedDates={loggedDatesSet} today={date} />
+        <ProtocolRationale
+          tdee={tdeeAdaptive}
+          tdeeSource={tdeeDataSource}
+          target={target}
+          bodyWeightKg={bodyWeightKg}
+          dayName={protocolDay?.name ?? null}
+        />
+        <NutritionMealsList initialMeals={meals} date={date} target={target} />
+        <VoiceEntryFab lang="fr" />
       </main>
     </>
   )
