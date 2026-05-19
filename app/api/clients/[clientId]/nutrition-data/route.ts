@@ -430,9 +430,22 @@ export async function GET(
       : null,
   };
 
+  // Fetch adaptive TDEE from active shared protocol
+  const { data: activeProtocol } = await db
+    .from("nutrition_protocols")
+    .select("tdee_adaptive, tdee_adaptive_at, tdee_data_source")
+    .eq("client_id", clientId)
+    .eq("status", "shared")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   return NextResponse.json({
     client: result,
     dataSource,
+    tdeeAdaptive: (activeProtocol as any)?.tdee_adaptive ?? null,
+    tdeeAdaptiveAt: (activeProtocol as any)?.tdee_adaptive_at ?? null,
+    tdeeDataSource: (activeProtocol as any)?.tdee_data_source ?? null,
     allSubmissions: (allSubmissions || []).map((s: any) => ({
       id: s.id,
       date: new Date(s.submitted_at).toLocaleDateString("fr-FR", {
