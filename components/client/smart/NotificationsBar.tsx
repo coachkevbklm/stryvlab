@@ -6,7 +6,7 @@ import { X, ClipboardList, Sparkles, MessageSquare, Clock, TrendingUp } from "lu
 
 export type Notification = {
   id: string;
-  type: "coach_note" | "bilan_pending" | "program_assigned" | "system_reminder" | "tdee_updated";
+  type: "coach_note" | "bilan_pending" | "program_assigned" | "system_reminder" | "tdee_updated" | "coach_feedback";
   title: string;
   body: string | null;
   payload: Record<string, unknown> | null;
@@ -20,6 +20,7 @@ const TYPE_ICON: Record<Notification["type"], React.ElementType> = {
   program_assigned: Sparkles,
   system_reminder: Clock,
   tdee_updated: TrendingUp,
+  coach_feedback: MessageSquare,
 };
 
 export default function NotificationsBar({
@@ -46,6 +47,28 @@ export default function NotificationsBar({
       router.push("/client/profil");
     } else if (n.type === "tdee_updated") {
       router.push("/client/nutrition");
+    } else if (n.type === "coach_feedback") {
+      const payload = n.payload as any
+      if (!payload?.entity_type || !payload?.entity_id) {
+        router.push("/client")
+        return
+      }
+      switch (payload.entity_type) {
+        case 'session':
+          router.push(`/client/programme/recap/${payload.entity_id}`)
+          break
+        case 'bilan':
+          router.push(`/client/bilans/${payload.entity_id}`)
+          break
+        case 'checkin':
+          router.push('/client/checkin')
+          break
+        case 'morpho':
+          router.push('/client/profil')
+          break
+        default:
+          router.push('/client')
+      }
     } else {
       fetch("/api/client/notifications", { method: "PATCH" });
     }

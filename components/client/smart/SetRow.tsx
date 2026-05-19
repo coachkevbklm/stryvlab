@@ -396,17 +396,21 @@ export default function SetRow({
               </div>
             )}
 
-            {/* Tempo guide button — inline on active set */}
-            {hasTempoGuide && onTempoPress && (
-              <button
-                onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); onTempoPress() }}
-                className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#FFB800]/10 text-[#FFB800]/60 hover:text-[#FFB800] hover:bg-[#FFB800]/20 active:scale-95 transition-all"
-              >
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor">
-                  <polygon points="2,1 9,5 2,9" />
-                </svg>
-              </button>
+            {/* Tempo guide slot — always rendered when hasTempo is set, keeps columns aligned */}
+            {onTempoPress !== undefined && (
+              hasTempoGuide ? (
+                <button
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); onTempoPress() }}
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#FFB800]/10 text-[#FFB800]/70 active:scale-95 transition-all"
+                >
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor">
+                    <polygon points="2,1 9,5 2,9" />
+                  </svg>
+                </button>
+              ) : (
+                <span className="shrink-0 w-7" />
+              )
             )}
 
             {/* Validate button */}

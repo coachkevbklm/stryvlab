@@ -10,18 +10,15 @@ import {
 import { calculateStreaks } from "@/lib/client/progressTypes";
 import ClientTopBar from "@/components/client/ClientTopBar";
 import { type Notification } from "@/components/client/smart/NotificationsBar";
-import SmartNutritionWidget, {
-  type NutritionMacros,
-} from "@/components/client/smart/SmartNutritionWidget";
-import SmartWorkoutWidget, {
-  type SmartWorkoutWidgetProps,
-} from "@/components/client/smart/SmartWorkoutWidget";
+import { type NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
+import { type SmartWorkoutWidgetProps } from "@/components/client/smart/SmartWorkoutWidget";
 import SmartAgendaTimeline from "@/components/client/smart/SmartAgendaTimeline";
-import DashboardHeroSnapshot from "@/components/client/smart/DashboardHeroSnapshot";
-import DashboardAlertsFeed from "@/components/client/smart/DashboardAlertsFeed";
+import AdherenceScoreCard from "@/components/client/smart/AdherenceScoreCard";
+import PriorityActionCard, { computePriorityAction } from "@/components/client/smart/PriorityActionCard";
+import DayChecklist from "@/components/client/smart/DayChecklist";
+import { computeAdherenceScore } from "@/lib/client/smart/adherenceScore";
 import type { MuscleGroup } from "@/lib/client/muscleDetection";
 import type { CheckinData } from "@/lib/client/smart/recoveryAlerts";
-import type { GenericAlert } from "@/components/client/smart/SmartAlertsFeed";
 
 function getTodayDow() {
   const jsDay = new Date().getDay();
@@ -102,6 +99,8 @@ export default async function ClientHomePage() {
     morningCheckinResult,
     nutritionWeekResult,
     streakResult,
+    checkinsWeekResult,
+    waterWeekResult,
   ] = await Promise.allSettled([
     // Legacy notifications (system + coach via old table)
     svc()
@@ -222,6 +221,24 @@ export default async function ClientHomePage() {
       .eq("client_id", clientId)
       .not("completed_at", "is", null)
       .order("logged_at", { ascending: true }),
+
+    // Check-ins 7 derniers jours (score adhérence)
+    svc()
+      .from("client_checkins")
+      .select("date, moment")
+      .eq("client_id", clientId)
+      .gte("date", (() => {
+        const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split("T")[0];
+      })()),
+
+    // Water 7 derniers jours (score adhérence)
+    svc()
+      .from("client_water_logs")
+      .select("logged_at, amount_ml")
+      .eq("client_id", clientId)
+      .gte("logged_at", (() => {
+        const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split("T")[0] + "T00:00:00Z";
+      })()),
   ]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
@@ -415,23 +432,44 @@ export default async function ClientHomePage() {
   ).sort() as string[];
   const { streak } = calculateStreaks(sessionDates);
 
-  // ── Protein regularity streak ─────────────────────────────────────────────
+  // ── Adherence score ───────────────────────────────────────────────────────
   const nutritionWeekRows = nutritionWeekResult.status === "fulfilled"
-    ? (nutritionWeekResult.value.data ?? [])
-    : [];
+    ? (nutritionWeekResult.value.data ?? []) : []
 
-  const proteinByDate: Record<string, number> = {};
-  for (const row of nutritionWeekRows as any[]) {
-    const d = row.physiological_date as string;
-    proteinByDate[d] = (proteinByDate[d] ?? 0) + Number(row.total_protein_g ?? 0);
+  const checkinsWeekRows = checkinsWeekResult.status === "fulfilled"
+    ? (checkinsWeekResult.value.data ?? []) : []
+  const checkinDates = Array.from(
+    new Set((checkinsWeekRows as any[]).map((r) => r.date as string))
+  )
+
+  const waterWeekRows = waterWeekResult.status === "fulfilled"
+    ? (waterWeekResult.value.data ?? []) : []
+  const waterByDate: Record<string, number> = {}
+  for (const row of waterWeekRows as any[]) {
+    const d = (row.logged_at as string).split("T")[0]
+    waterByDate[d] = (waterByDate[d] ?? 0) + Number(row.amount_ml ?? 0)
   }
-  const proteinStreakDays = target.protein_g > 0
-    ? Object.values(proteinByDate).filter(p => p >= target.protein_g * 0.8).length
-    : undefined;
+
+  const mealDates7j = Array.from(
+    new Set((nutritionWeekRows as any[]).map((r) => r.physiological_date as string))
+  )
+
+  const plannedDaysOfWeek = ((programData as any)?.programs ?? [])
+    .filter((p: any) => p.status === "active")
+    .flatMap((p: any) => (p.program_sessions ?? []).map((s: any) => s.day_of_week as number))
+    .filter((d: number) => d >= 1 && d <= 7)
+
+  const adherence = computeAdherenceScore({
+    sessionDates,
+    plannedDaysOfWeek,
+    mealDates: mealDates7j,
+    waterByDate,
+    waterTargetMl: target.water_ml,
+    checkinDates,
+    referenceDate: date,
+  })
 
   // ── Hero snapshot data ────────────────────────────────────────────────────
-  const kcalRemaining = target.kcal > 0 ? target.kcal - consumed.kcal : null;
-
   type SessionState = "scheduled" | "completed" | "rest" | "no_program";
   const sessionState: SessionState = (() => {
     if (workoutProps.state === "no_program") return "no_program";
@@ -445,52 +483,60 @@ export default async function ClientHomePage() {
       ? (workoutProps.session?.name ?? null)
       : null;
 
-  const heroDate = new Intl.DateTimeFormat("fr-FR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date());
+  // ── Priority action ───────────────────────────────────────────────────────
+  const hour = new Date().getHours()
+  const morningCheckinDone = morningCheckin !== null
+  const eveningCheckinDone = (checkinsWeekRows as any[]).some(
+    (r: any) => r.date === date && r.moment === "evening"
+  )
 
-  // ── Workout alerts placeholder (no HTTP loop) ─────────────────────────────
-  const workoutAlerts: GenericAlert[] = [];
+  const priorityAction = computePriorityAction({
+    hour,
+    morningCheckinDone,
+    sessionScheduledToday: workoutProps.state === "scheduled",
+    sessionCompletedToday: sessionState === "completed",
+    sessionName: workoutProps.session?.name ?? null,
+    mealsLoggedToday: meals.length,
+    waterMl: consumed.water_ml,
+    waterTargetMl: target.water_ml,
+    protein_g: consumed.protein_g,
+    proteinTargetG: target.protein_g,
+  })
+
+  const todayLabel = (() => {
+    const s = new Intl.DateTimeFormat("fr-FR", {
+      weekday: "long", day: "numeric", month: "long",
+    }).format(new Date())
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  })()
 
   return (
     <>
-      <ClientTopBar section="AUJOURD'HUI" title={heroDate} />
+      <ClientTopBar section="AUJOURD'HUI" title={todayLabel} />
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
 
-        {/* Bloc 1 — Hero Snapshot */}
-        <DashboardHeroSnapshot
-          kcalRemaining={kcalRemaining}
-          sessionState={sessionState}
-          sessionName={sessionNameForHero}
+        {/* Bloc 1 — Score adhérence */}
+        <AdherenceScoreCard
+          score={adherence.score}
+          scoreDelta={adherence.scoreDelta}
+          dimensions={adherence.dimensions}
+        />
+
+        {/* Bloc 2 — Action prioritaire */}
+        {priorityAction && <PriorityActionCard {...priorityAction} />}
+
+        {/* Bloc 3 — Checklist du jour */}
+        <DayChecklist
+          morningCheckin={morningCheckinDone}
+          eveningCheckin={eveningCheckinDone}
+          sessionCompleted={sessionState === "completed"}
+          sessionName={workoutProps.session?.name ?? null}
+          mealsLogged={meals.length}
           waterMl={consumed.water_ml}
           waterTargetMl={target.water_ml}
-          streak={streak}
-          date={heroDate}
         />
 
-        {/* Bloc 2 — Alertes prioritaires */}
-        <DashboardAlertsFeed
-          coachNotifications={notifications}
-          morningCheckin={morningCheckin}
-          workoutAlerts={workoutAlerts}
-          consumed={consumed}
-          target={target}
-          plannedSessionToday={workoutProps.state === "scheduled"}
-        />
-
-        {/* Bloc 3 — Séance du jour */}
-        <SmartWorkoutWidget {...workoutProps} />
-
-        {/* Bloc 4 — Nutrition */}
-        <SmartNutritionWidget
-          consumed={consumed}
-          target={target}
-          proteinStreakDays={proteinStreakDays}
-        />
-
-        {/* Bloc 5 — Timeline */}
+        {/* Bloc 4 — Timeline */}
         <SmartAgendaTimeline entries={timelineEntries} />
 
       </main>

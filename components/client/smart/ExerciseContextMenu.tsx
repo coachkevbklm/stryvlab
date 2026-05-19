@@ -46,7 +46,7 @@ export default function ExerciseContextMenu({
           >
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.12]" />
             <div className="pt-4 divide-y divide-white/[0.05]">
-              {item(<RefreshCw size={16} />, "Exercice d'échange", onSwap)}
+              {item(<RefreshCw size={16} />, "Changer l'exercice", onSwap)}
               {item(<Clock size={16} />, 'Temps de repos', onRest)}
               {item(<MessageSquare size={16} />, 'Ajouter une note', onNote)}
               {hasTempo && item(<Play size={16} />, 'Tempo guide', onTempo)}

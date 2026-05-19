@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { MoreHorizontal, Plus, BarChart2 } from 'lucide-react'
+import { MoreHorizontal, Plus, BarChart2, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import SetRow, { type SetRowData, type SetType } from './SetRow'
 import SetTypeSelector from './SetTypeSelector'
 import ExerciseContextMenu from './ExerciseContextMenu'
@@ -65,6 +66,7 @@ export default function ExerciseBlock({
 }: ExerciseBlockProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [typeSelectorFor, setTypeSelectorFor] = useState<{ setNum: number; side: string } | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const activeSetRef = useRef<HTMLDivElement>(null)
 
   const firstActiveSet = sets.find(s => !s.completed)
@@ -88,14 +90,19 @@ export default function ExerciseBlock({
       {/* Header */}
       <div className="flex items-center gap-3 p-3 pb-2">
         {exercise.image_url ? (
-          <Image
-            src={exercise.image_url}
-            alt={exercise.name}
-            width={56}
-            height={56}
-            unoptimized={exercise.image_url.endsWith('.gif')}
-            className="w-14 h-14 rounded-xl object-cover shrink-0"
-          />
+          <button
+            onClick={() => setLightboxOpen(true)}
+            className="shrink-0 w-14 h-14 rounded-xl overflow-hidden active:scale-[0.96] transition-transform"
+          >
+            <Image
+              src={exercise.image_url}
+              alt={exercise.name}
+              width={56}
+              height={56}
+              unoptimized={exercise.image_url.endsWith('.gif')}
+              className="w-full h-full object-cover"
+            />
+          </button>
         ) : (
           <div className="w-14 h-14 rounded-xl bg-white/[0.04] shrink-0 flex items-center justify-center">
             <span className="text-white/10 text-[22px]">💪</span>
@@ -179,6 +186,41 @@ export default function ExerciseBlock({
           <BarChart2 size={13} />
         </button>
       </div>
+
+      {/* Image lightbox */}
+      <AnimatePresence>
+        {lightboxOpen && exercise.image_url && (
+          <motion.div
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-5 right-5 h-9 w-9 flex items-center justify-center rounded-xl bg-white/[0.08] text-white/60"
+            >
+              <X size={16} />
+            </button>
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 320, damping: 26 } }}
+              exit={{ scale: 0.88, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="max-w-[90vw] max-h-[80vh] rounded-2xl overflow-hidden"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={exercise.image_url}
+                alt={exercise.name}
+                className="max-w-[90vw] max-h-[80vh] object-contain"
+              />
+            </motion.div>
+            <p className="absolute bottom-8 left-0 right-0 text-center text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/30">{exercise.name}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Context menu */}
       <ExerciseContextMenu

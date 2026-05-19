@@ -8,9 +8,10 @@ import { NutritionLogContent } from "@/app/client/nutrition/log/NutritionLogCont
 interface MealLogSheetProps {
   open: boolean
   onClose: () => void
+  onSuccess?: () => void
 }
 
-export default function MealLogSheet({ open, onClose }: MealLogSheetProps) {
+export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -47,7 +48,7 @@ export default function MealLogSheet({ open, onClose }: MealLogSheetProps) {
             {/* Content — flex-1 reçoit la hauteur restante du sheet */}
             <div className="flex-1 overflow-hidden relative min-h-0">
               <Suspense fallback={<div className="h-full bg-[#161616]" />}>
-                <NutritionLogContent embedded onSuccess={onClose} />
+                <NutritionLogContent embedded onSuccess={onSuccess ?? onClose} />
               </Suspense>
             </div>
           </motion.div>

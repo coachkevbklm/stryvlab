@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { AlertTriangle, AlertCircle, Zap, X } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import type { DeloadSignal } from '@/lib/training/deloadDetection'
 
 interface DeloadAlertBannerProps {
@@ -33,9 +32,7 @@ export default function DeloadAlertBanner({ clientId }: DeloadAlertBannerProps) 
     fetchDeloadStatus()
   }, [])
 
-  if (loading) {
-    return <Skeleton className="h-20 w-full rounded-xl" />
-  }
+  if (loading) return null
 
   if (dismissed || signals.length === 0) {
     return null

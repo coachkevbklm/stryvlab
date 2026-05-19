@@ -5,6 +5,9 @@
 
 ## 2026-05-20
 
+FEATURE: Dashboard v2 — AdherenceScoreCard score 0-100 style Technogym (jaune plein ≥75, no border), PriorityActionCard contextuelle, DayChecklist 5 items, header jour complet
+CHORE: Supprimer DashboardHeroSnapshot + DashboardAlertsFeed
+FIX: BottomNav — action buttons icon-only (remove label text, fix overflow out of navbar)
 FEATURE: Dashboard client redesign — layout full-width vertical, DashboardHeroSnapshot (4 stats), DashboardAlertsFeed (alertes unifiées), SmartWorkoutWidget+SmartNutritionWidget full-width, régularité protéines 7j
 FIX: DeloadAlertBanner — return null while loading instead of Skeleton (grey zone on workout page)
 FIX: TempoGuideModal — background unified dark, phaseColor as subtle radial glow (no 3-zone color split)
