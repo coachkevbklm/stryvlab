@@ -71,9 +71,9 @@ const WAVE_PATH_D = buildWavePath()
 
 const PHASE_CONFIG = [
   { label: 'CONTRACTER', color: '#3b82f6' },  // 0 CON — bleu
-  { label: 'TENIR',      color: '#FFB800' },  // 1 ISO — jaune accent
+  { label: 'TENIR',      color: '#ef4444' },  // 1 ISO — rouge (tenue statique)
   { label: 'FREINER',    color: '#FFB800' },  // 2 ECC — jaune accent
-  { label: 'PAUSE',      color: '#FFB800' },  // 3 PAUSE — jaune (même que ECC)
+  { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE — rouge (tenue statique)
 ] as const
 
 const ACCENT_TEMPO = '#FFB800'
@@ -337,14 +337,14 @@ function TempoGuideModalInner({
       // CON — bleu toute la montée
       ballColor = '#3b82f6'
     } else if (phase === 1) {
-      // ISO (sommet) — bleu pendant stop, jaune 300ms avant fin (annonce ECC)
-      ballColor = timeLeftMs <= PREVIEW_MS ? ACCENT_TEMPO : '#3b82f6'
+      // ISO (tenue sommet) — rouge, annonce ECC (jaune) 300ms avant fin
+      ballColor = timeLeftMs <= PREVIEW_MS ? ACCENT_TEMPO : '#ef4444'
     } else if (phase === 2) {
       // ECC — jaune toute la descente
       ballColor = ACCENT_TEMPO
     } else {
-      // PAUSE (creux) — jaune pendant stop, bleu 300ms avant fin (annonce CON)
-      ballColor = timeLeftMs <= PREVIEW_MS ? '#3b82f6' : ACCENT_TEMPO
+      // PAUSE (tenue creux) — rouge, annonce CON (bleu) 300ms avant fin
+      ballColor = timeLeftMs <= PREVIEW_MS ? '#3b82f6' : '#ef4444'
     }
 
     // Appliquer couleur balle si changée
@@ -462,7 +462,7 @@ function TempoGuideModalInner({
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
-        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
+        const dColor = frac === 0.5 ? '#ef4444' : '#3b82f6'
         el.setAttribute('fill', dColor)
         el.setAttribute('opacity', '0.6')
         el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y})`)
@@ -650,15 +650,15 @@ function TempoGuideModalInner({
             style={{
               position: 'absolute',
               inset: 0,
-              background: `radial-gradient(circle at center, ${phaseColor}22 0%, transparent 70%)`,
-              transition: 'background 200ms ease-out',
+              background: `radial-gradient(circle at center, ${phaseColor}BB 0%, ${phaseColor}44 45%, transparent 85%)`,
+              transition: 'background 150ms ease-out',
               pointerEvents: 'none',
-              animation: (currentPhase === 1 || currentPhase === 3) ? 'tempoBgPulse 1.2s ease-in-out infinite' : 'none',
+              animation: (currentPhase === 1 || currentPhase === 3) ? 'tempoBgPulse 0.9s ease-in-out infinite' : 'none',
             }}
           />
           <style>{`
             @keyframes tempoBgPulse {
-              0%, 100% { opacity: 0.7; }
+              0%, 100% { opacity: 0.45; }
               50%      { opacity: 1.0; }
             }
           `}</style>

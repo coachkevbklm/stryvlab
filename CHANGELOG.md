@@ -3,6 +3,14 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-20
+
+REFACTOR: TempoGuideModal — ISO+PAUSE rouge #ef4444, fond radial BB→44 (80%→27%), pulse 0.45→1.0 agressif sur phases statiques
+FIX: water logging — new POST /api/client/water — single insert client_water_logs, no food_items lookup → sub-200ms
+FIX: QuickWaterModal — direct /api/client/water call, optimistic onLogged fires before server response
+FIX: SmartNutritionWidget — optimistic waterDelta, hydration bar updates instantly
+FIX: SmartNutritionHero — same optimistic pattern, waterDelta accumulates across logs
+
 ## 2026-05-19
 
 REFACTOR: BottomNav — "Accueil"→"Dashboard" (SquaresFour), "Programme"→"Work out", logo rotate 180°, labels sur boutons action
