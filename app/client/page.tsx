@@ -7,6 +7,7 @@ import {
   buildTimeline,
   type TimelineSource,
 } from "@/lib/client/smart/timelineBuilder";
+import { calculateStreaks } from "@/lib/client/progressTypes";
 import ClientTopBar from "@/components/client/ClientTopBar";
 import { type Notification } from "@/components/client/smart/NotificationsBar";
 import SmartNutritionWidget, {
@@ -100,6 +101,7 @@ export default async function ClientHomePage() {
     activitiesResult,
     morningCheckinResult,
     nutritionWeekResult,
+    streakResult,
   ] = await Promise.allSettled([
     // Legacy notifications (system + coach via old table)
     svc()
@@ -212,6 +214,14 @@ export default async function ClientHomePage() {
         const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split("T")[0];
       })())
       .order("physiological_date", { ascending: true }),
+
+    // Session dates pour streak (logged_at uniquement — léger)
+    svc()
+      .from("client_session_logs")
+      .select("logged_at")
+      .eq("client_id", clientId)
+      .not("completed_at", "is", null)
+      .order("logged_at", { ascending: true }),
   ]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
@@ -396,6 +406,15 @@ export default async function ClientHomePage() {
     };
   }
 
+  // ── Session streak ────────────────────────────────────────────────────────
+  const streakRows = streakResult.status === "fulfilled"
+    ? (streakResult.value.data ?? [])
+    : [];
+  const sessionDates = Array.from(
+    new Set((streakRows as any[]).map((r) => (r.logged_at as string).split("T")[0]))
+  ).sort() as string[];
+  const { streak } = calculateStreaks(sessionDates);
+
   // ── Protein regularity streak ─────────────────────────────────────────────
   const nutritionWeekRows = nutritionWeekResult.status === "fulfilled"
     ? (nutritionWeekResult.value.data ?? [])
@@ -447,7 +466,7 @@ export default async function ClientHomePage() {
           sessionName={sessionNameForHero}
           waterMl={consumed.water_ml}
           waterTargetMl={target.water_ml}
-          streak={0}
+          streak={streak}
           date={heroDate}
         />
 
