@@ -5,6 +5,12 @@
 
 ## 2026-05-19
 
+REFACTOR: BottomNav — "Accueil"→"Dashboard" (SquaresFour), "Programme"→"Work out", logo rotate 180°, labels sur boutons action
+FIX: SetRow tempo slot toujours rendu (spacer invisible quand inactif) — colonnes alignées avec headers ExerciseBlock
+FIX: handleTempoForExercise — utilise movement_pattern fallback via getDefaultTempo (tempo s'ouvre maintenant pour tous les exercices)
+FIX: Bouton Fin header devient jaune quand allDone, long press conservé sinon — bouton fixe bas de page supprimé
+FEATURE: ExerciseBlock image cliquable → lightbox plein écran Framer Motion (photo ou GIF à taille naturelle)
+FIX: Solo exercises onValidateSet transmet reps/weight/rir confirmés depuis ConfirmModal
 FEATURE: BottomNav inline action bar — logo pivote 45°, onglets slidés remplacés par 4 boutons jaunes sans alignement flottant
 CHORE: Suppression RadialActionMenu.tsx (remplacé par logique inline dans BottomNav)
 FEATURE: Smart Workout redesign — SessionLogger liste scrollable style Motra (remplace vue focalisée 1 exercice)

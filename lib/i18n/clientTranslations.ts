@@ -4,8 +4,8 @@ export type ClientLang = 'fr' | 'en' | 'es'
 
 export const clientDict = {
   // ── BottomNav ──
-  'nav.home':       { fr: 'Accueil',   en: 'Home',        es: 'Inicio' },
-  'nav.programme':  { fr: 'Programme', en: 'Program',      es: 'Programa' },
+  'nav.home':       { fr: 'Dashboard',  en: 'Dashboard',   es: 'Dashboard' },
+  'nav.programme':  { fr: 'Work out',  en: 'Work out',    es: 'Work out' },
   'nav.progress':   { fr: 'Progrès',   en: 'Progress',     es: 'Progreso' },
   'nav.bilans':     { fr: 'Bilans',    en: 'Assessments',  es: 'Evaluaciones' },
   'nav.nutrition':  { fr: 'Nutrition', en: 'Nutrition',    es: 'Nutrición' },
@@ -551,8 +551,8 @@ export const clientDict = {
   'smart.timeline.afternoon':              { fr: 'Hydratation après-midi',    en: 'Afternoon hydration',       es: 'Hidratación tarde' },
   'smart.timeline.evening':               { fr: 'Hydratation soir',           en: 'Evening hydration',         es: 'Hidratación noche' },
   'smart.radial.meal':                     { fr: 'Repas',                     en: 'Meal',                      es: 'Comida' },
-  'smart.radial.water':                    { fr: 'Eau',                       en: 'Water',                     es: 'Agua' },
-  'smart.radial.activity':                 { fr: 'Activité',                  en: 'Activity',                  es: 'Actividad' },
+  'smart.radial.water':                    { fr: 'Hydratation',               en: 'Hydration',                 es: 'Hidratación' },
+  'smart.radial.activity':                 { fr: 'Activités',                 en: 'Activities',                es: 'Actividades' },
   'smart.radial.checkin':                  { fr: 'Check-in',                  en: 'Check-in',                  es: 'Check-in' },
   'smart.activity.type.running':           { fr: 'Course',                    en: 'Running',                   es: 'Carrera' },
   'smart.activity.type.cycling':           { fr: 'Vélo',                      en: 'Cycling',                   es: 'Ciclismo' },

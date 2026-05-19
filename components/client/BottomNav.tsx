@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { House, Barbell, ForkKnife, UserCircle, Drop, PersonSimpleRun, ClipboardText } from "@phosphor-icons/react";
+import { SquaresFour, Barbell, ForkKnife, UserCircle, Drop, PersonSimpleRun, ClipboardText } from "@phosphor-icons/react";
 import { useClientT } from "./ClientI18nProvider";
 import { useTour } from "./TourContext";
 import QuickWaterModal from "./QuickWaterModal";
@@ -18,7 +18,7 @@ const NAV: {
   labelKey: ClientDictKey;
   Icon: React.ElementType;
 }[] = [
-  { href: "/client", labelKey: "nav.home", Icon: House },
+  { href: "/client", labelKey: "nav.home", Icon: SquaresFour },
   { href: "/client/programme", labelKey: "nav.programme", Icon: Barbell },
   { href: "/client/nutrition", labelKey: "nav.nutrition", Icon: ForkKnife },
   { href: "/client/profil", labelKey: "nav.profil", Icon: UserCircle },
@@ -148,9 +148,14 @@ export default function BottomNav() {
                       transition={{ delay: i * 0.03, type: "spring", stiffness: 420, damping: 26 }}
                       onClick={() => handleAction(id)}
                       aria-label={String(t(labelKey as any))}
-                      className="w-12 h-12 rounded-2xl bg-[#ffe01e] flex items-center justify-center active:scale-[0.92] transition-transform"
+                      className="flex flex-col items-center justify-center gap-[3px] flex-1 h-[62px] active:scale-[0.92] transition-transform"
                     >
-                      <Icon size={22} weight="fill" className="text-[#0d0d0d]" />
+                      <div className="w-11 h-11 rounded-2xl bg-[#ffe01e] flex items-center justify-center">
+                        <Icon size={22} weight="fill" className="text-[#0d0d0d]" />
+                      </div>
+                      <span className="text-[9px] font-semibold leading-none tracking-wide text-[#ffe01e]">
+                        {String(t(labelKey as any))}
+                      </span>
                     </motion.button>
                   ))}
                 </motion.div>
@@ -163,8 +168,8 @@ export default function BottomNav() {
                 onClick={() => setRadialOpen((v) => !v)}
                 aria-label="Logger"
                 animate={radialOpen
-                  ? { rotate: 45, scale: 0.94, boxShadow: "0 0 24px rgba(255,224,30,0.6)" }
-                  : { rotate: 0, scale: 1,    boxShadow: "0 0 14px rgba(255,224,30,0.3)" }
+                  ? { rotate: 180, scale: 0.94, boxShadow: "0 0 24px rgba(255,224,30,0.6)" }
+                  : { rotate: 0,   scale: 1,   boxShadow: "0 0 14px rgba(255,224,30,0.3)" }
                 }
                 transition={{ type: "spring", stiffness: 400, damping: 28 }}
                 className="h-12 w-12 rounded-2xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d]"
