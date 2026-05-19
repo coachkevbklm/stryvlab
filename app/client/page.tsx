@@ -8,9 +8,7 @@ import {
   type TimelineSource,
 } from "@/lib/client/smart/timelineBuilder";
 import ClientTopBar from "@/components/client/ClientTopBar";
-import NotificationsBar, {
-  type Notification,
-} from "@/components/client/smart/NotificationsBar";
+import { type Notification } from "@/components/client/smart/NotificationsBar";
 import SmartNutritionWidget, {
   type NutritionMacros,
 } from "@/components/client/smart/SmartNutritionWidget";
@@ -18,9 +16,11 @@ import SmartWorkoutWidget, {
   type SmartWorkoutWidgetProps,
 } from "@/components/client/smart/SmartWorkoutWidget";
 import SmartAgendaTimeline from "@/components/client/smart/SmartAgendaTimeline";
-import RecoveryStatusWidget from "@/components/client/smart/RecoveryStatusWidget";
+import DashboardHeroSnapshot from "@/components/client/smart/DashboardHeroSnapshot";
+import DashboardAlertsFeed from "@/components/client/smart/DashboardAlertsFeed";
 import type { MuscleGroup } from "@/lib/client/muscleDetection";
 import type { CheckinData } from "@/lib/client/smart/recoveryAlerts";
+import type { GenericAlert } from "@/components/client/smart/SmartAlertsFeed";
 
 function getTodayDow() {
   const jsDay = new Date().getDay();
@@ -99,6 +99,7 @@ export default async function ClientHomePage() {
     sessionLogResult,
     activitiesResult,
     morningCheckinResult,
+    nutritionWeekResult,
   ] = await Promise.allSettled([
     // Legacy notifications (system + coach via old table)
     svc()
@@ -131,14 +132,15 @@ export default async function ClientHomePage() {
       .limit(1)
       .maybeSingle(),
 
-    // Today's meals
+    // Today's meals (exclude drinks — tracked separately in water logs)
     svc()
       .from("nutrition_meals")
       .select(
-        "id, meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g",
+        "id, meal_type, title, logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g",
       )
       .eq("client_id", clientId)
       .eq("physiological_date", date)
+      .neq("meal_type", "drinks")
       .order("logged_at", { ascending: true }),
 
     // Today's water
@@ -200,6 +202,16 @@ export default async function ClientHomePage() {
       .eq("moment", "morning")
       .eq("date", date)
       .maybeSingle(),
+
+    // Nutrition 7 derniers jours (régularité protéines)
+    svc()
+      .from("nutrition_meals")
+      .select("physiological_date, total_protein_g")
+      .eq("client_id", clientId)
+      .gte("physiological_date", (() => {
+        const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split("T")[0];
+      })())
+      .order("physiological_date", { ascending: true }),
   ]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
@@ -217,7 +229,9 @@ export default async function ClientHomePage() {
       value === "coach_note" ||
       value === "bilan_pending" ||
       value === "program_assigned" ||
-      value === "system_reminder"
+      value === "system_reminder" ||
+      value === "tdee_updated" ||
+      value === "coach_feedback"
     ) {
       return value;
     }
@@ -266,10 +280,10 @@ export default async function ClientHomePage() {
 
   const consumedBase = meals.reduce(
     (acc, m) => ({
-      kcal: acc.kcal + Number(m.calories ?? 0),
-      protein_g: acc.protein_g + Number(m.protein_g ?? 0),
-      carbs_g: acc.carbs_g + Number(m.carbs_g ?? 0),
-      fat_g: acc.fat_g + Number(m.fat_g ?? 0),
+      kcal: acc.kcal + Number((m as any).total_calories ?? 0),
+      protein_g: acc.protein_g + Number((m as any).total_protein_g ?? 0),
+      carbs_g: acc.carbs_g + Number((m as any).total_carbs_g ?? 0),
+      fat_g: acc.fat_g + Number((m as any).total_fat_g ?? 0),
     }),
     { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   );
@@ -312,12 +326,12 @@ export default async function ClientHomePage() {
     meals: meals.map((m) => ({
       id: m.id,
       logged_at: m.logged_at,
-      title: m.title ?? mealTypeLabel(m.meal_type),
+      title: (m as any).title ?? mealTypeLabel(m.meal_type),
       meal_type: m.meal_type as any,
-      kcal: Number(m.calories ?? 0),
-      protein_g: Number(m.protein_g ?? 0),
-      carbs_g: Number(m.carbs_g ?? 0),
-      fat_g: Number(m.fat_g ?? 0),
+      kcal: Number((m as any).total_calories ?? 0),
+      protein_g: Number((m as any).total_protein_g ?? 0),
+      carbs_g: Number((m as any).total_carbs_g ?? 0),
+      fat_g: Number((m as any).total_fat_g ?? 0),
     })),
     waterLogs: water.map((w) => ({
       logged_at: w.logged_at,
@@ -382,33 +396,84 @@ export default async function ClientHomePage() {
     };
   }
 
-  const todayLabel = new Intl.DateTimeFormat("fr-FR", {
+  // ── Protein regularity streak ─────────────────────────────────────────────
+  const nutritionWeekRows = nutritionWeekResult.status === "fulfilled"
+    ? (nutritionWeekResult.value.data ?? [])
+    : [];
+
+  const proteinByDate: Record<string, number> = {};
+  for (const row of nutritionWeekRows as any[]) {
+    const d = row.physiological_date as string;
+    proteinByDate[d] = (proteinByDate[d] ?? 0) + Number(row.total_protein_g ?? 0);
+  }
+  const proteinStreakDays = target.protein_g > 0
+    ? Object.values(proteinByDate).filter(p => p >= target.protein_g * 0.8).length
+    : undefined;
+
+  // ── Hero snapshot data ────────────────────────────────────────────────────
+  const kcalRemaining = target.kcal > 0 ? target.kcal - consumed.kcal : null;
+
+  type SessionState = "scheduled" | "completed" | "rest" | "no_program";
+  const sessionState: SessionState = (() => {
+    if (workoutProps.state === "no_program") return "no_program";
+    if (workoutProps.state === "rest") return "rest";
+    if (sessionRow) return "completed";
+    return "scheduled";
+  })();
+
+  const sessionNameForHero =
+    sessionState === "scheduled" || sessionState === "completed"
+      ? (workoutProps.session?.name ?? null)
+      : null;
+
+  const heroDate = new Intl.DateTimeFormat("fr-FR", {
     weekday: "short",
     day: "numeric",
     month: "short",
   }).format(new Date());
 
+  // ── Workout alerts placeholder (no HTTP loop) ─────────────────────────────
+  const workoutAlerts: GenericAlert[] = [];
+
   return (
     <>
-      <ClientTopBar section="AUJOURD'HUI" title={todayLabel} />
+      <ClientTopBar section="AUJOURD'HUI" title={heroDate} />
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
-        {/* Notifications — full width */}
-        <NotificationsBar initial={notifications} />
 
-        {/* Recovery Status alerts — full width, only if alerts present */}
-        <RecoveryStatusWidget
+        {/* Bloc 1 — Hero Snapshot */}
+        <DashboardHeroSnapshot
+          kcalRemaining={kcalRemaining}
+          sessionState={sessionState}
+          sessionName={sessionNameForHero}
+          waterMl={consumed.water_ml}
+          waterTargetMl={target.water_ml}
+          streak={0}
+          date={heroDate}
+        />
+
+        {/* Bloc 2 — Alertes prioritaires */}
+        <DashboardAlertsFeed
+          coachNotifications={notifications}
           morningCheckin={morningCheckin}
+          workoutAlerts={workoutAlerts}
+          consumed={consumed}
+          target={target}
           plannedSessionToday={workoutProps.state === "scheduled"}
         />
 
-        {/* Dashboard grid — nutrition + workout côte à côte */}
-        <div className="grid grid-cols-2 gap-3 items-stretch">
-          <SmartNutritionWidget consumed={consumed} target={target} compact />
-          <SmartWorkoutWidget {...workoutProps} compact />
-        </div>
+        {/* Bloc 3 — Séance du jour */}
+        <SmartWorkoutWidget {...workoutProps} />
 
-        {/* Timeline — full width */}
+        {/* Bloc 4 — Nutrition */}
+        <SmartNutritionWidget
+          consumed={consumed}
+          target={target}
+          proteinStreakDays={proteinStreakDays}
+        />
+
+        {/* Bloc 5 — Timeline */}
         <SmartAgendaTimeline entries={timelineEntries} />
+
       </main>
     </>
   );

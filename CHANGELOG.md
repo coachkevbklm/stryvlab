@@ -5,6 +5,12 @@
 
 ## 2026-05-20
 
+FEATURE: Dashboard client redesign — layout full-width vertical, DashboardHeroSnapshot (4 stats), DashboardAlertsFeed (alertes unifiées), SmartWorkoutWidget+SmartNutritionWidget full-width, régularité protéines 7j
+FIX: DeloadAlertBanner — return null while loading instead of Skeleton (grey zone on workout page)
+FIX: TempoGuideModal — background unified dark, phaseColor as subtle radial glow (no 3-zone color split)
+FIX: SmartAgendaTimeline — water time display correct (use actual log ISO, not fake UTC slot suffix)
+REFACTOR: SmartAgendaTimeline — label "Journée" → "Smart Agenda"
+REFACTOR: BottomNav — action buttons restyled to match DÉMARRER pattern (dark bg #1c1a00, yellow border/text, label)
 FIX: Volume hebdo bug — window 7j glissants au lieu de semaine calendaire fixe
 REFACTOR: Page Workout — suppr "Programme de la semaine", VolumeCoverageWidget en bas onglet Séance
 REFACTOR: SmartWorkoutWidget — titre font-semibold 15px, bouton Démarrer outline jaune discret
