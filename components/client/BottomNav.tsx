@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { House, Barbell, ForkKnife, UserCircle } from "@phosphor-icons/react";
 import { useClientT } from "./ClientI18nProvider";
 import { useTour } from "./TourContext";
-import RadialActionMenu from "./smart/RadialActionMenu";
 import QuickWaterModal from "./QuickWaterModal";
 import FreeActivitySheet from "./smart/FreeActivitySheet";
 import type { ClientDictKey } from "@/lib/i18n/clientTranslations";
@@ -46,12 +45,6 @@ export default function BottomNav() {
 
   return (
     <>
-      <RadialActionMenu
-        open={radialOpen}
-        onClose={() => setRadialOpen(false)}
-        onOpenWater={() => setWaterOpen(true)}
-        onOpenActivity={() => setActivityOpen(true)}
-      />
       <QuickWaterModal open={waterOpen} onClose={() => setWaterOpen(false)} />
       <FreeActivitySheet
         open={activityOpen}
@@ -100,22 +93,22 @@ export default function BottomNav() {
               );
             })}
 
-            {/* Center STRYVR logo button — 2× plus grand, remonte au tap */}
-            <div className="flex items-center justify-center px-1 -mt-5">
+            {/* Center STRYVR logo button — contained within nav */}
+            <div className="flex items-center justify-center px-2">
               <motion.button
                 onClick={() => setRadialOpen((v) => !v)}
                 aria-label="Logger"
                 animate={radialOpen
-                  ? { y: -8, boxShadow: "0 0 32px rgba(255,224,30,0.6)" }
-                  : { y: 0, boxShadow: "0 0 20px rgba(255,224,30,0.3)" }
+                  ? { scale: 0.94, boxShadow: "0 0 24px rgba(255,224,30,0.6)" }
+                  : { scale: 1, boxShadow: "0 0 14px rgba(255,224,30,0.3)" }
                 }
                 transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                className="h-20 w-20 rounded-2xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d]"
+                className="h-12 w-12 rounded-2xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d]"
               >
                 <Image
                   src="/logo/Logo STRYVR (grey).svg"
-                  width={48}
-                  height={48}
+                  width={28}
+                  height={28}
                   alt="STRYVR"
                   className="relative z-10"
                 />
