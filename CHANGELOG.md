@@ -5,6 +5,7 @@
 
 ## 2026-05-19
 
+FEATURE: Nutrition Studio — adaptive TDEE block in CalculationEngine (TDEE réel, delta vs formule, badge proxy, Appliquer button, historique 5 runs collapsible), useNutritionStudio hook updated with tdeeAdaptive state + applyAdaptiveTdee callback
 FEATURE: POST /api/clients/[clientId]/nutrition-protocols/[protocolId]/apply-adaptive-tdee — on-demand coach recalc
 FEATURE: GET /api/clients/[clientId]/nutrition-tdee-history — last 5 TDEE history entries
 FIX: nutrition-data route returns tdee_adaptive, tdee_adaptive_at, tdee_data_source from active protocol

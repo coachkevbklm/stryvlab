@@ -123,6 +123,19 @@ function getActivityLevel(clientData: NutritionClientData): ActivityLevel {
   return "veryActive";
 }
 
+export interface TdeeHistoryEntry {
+  id: string
+  calculated_at: string
+  tdee_formula: number
+  tdee_adaptive: number
+  delta_kcal: number
+  weight_samples: number
+  calories_source: 'logs' | 'protocol'
+  avg_intake_kcal: number
+  weight_delta_kg: number
+  protocol_updated: boolean
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useNutritionStudio(
@@ -196,6 +209,11 @@ export function useNutritionStudio(
   const [savedProtocolId, setSavedProtocolId] = useState<string | null>(
     existingProtocol?.id ?? null,
   );
+  const [tdeeAdaptive, setTdeeAdaptive] = useState<number | null>(null);
+  const [tdeeAdaptiveAt, setTdeeAdaptiveAt] = useState<Date | null>(null);
+  const [tdeeDataSource, setTdeeDataSource] = useState<'weight_delta' | 'formula_proxy' | null>(null);
+  const [tdeeHistory, setTdeeHistory] = useState<TdeeHistoryEntry[]>([]);
+  const [applyingAdaptive, setApplyingAdaptive] = useState(false);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null);
@@ -230,6 +248,9 @@ export function useNutritionStudio(
         if (d.dataSource) {
           setDataSource(d.dataSource);
         }
+        if (d.tdeeAdaptive != null) setTdeeAdaptive(d.tdeeAdaptive);
+        if (d.tdeeAdaptiveAt) setTdeeAdaptiveAt(new Date(d.tdeeAdaptiveAt));
+        if (d.tdeeDataSource) setTdeeDataSource(d.tdeeDataSource);
         if (cd.training_goal) {
           const mapped =
             CLIENT_GOAL_MAP[cd.training_goal.toLowerCase()] ?? "maintenance";
@@ -266,6 +287,13 @@ export function useNutritionStudio(
           bmr_source: cd.bmr_kcal_measured ? "measured" : "estimated",
         });
       })
+      .then(() => {
+        // Load TDEE history for current client
+        fetch(`/api/clients/${clientId}/nutrition-tdee-history`)
+          .then(r => r.ok ? r.json() : [])
+          .then(setTdeeHistory)
+          .catch(() => {})
+      })
       .catch(() => {})
       .finally(() => setClientLoading(false));
   }, [clientId, selectedSubmissionId]);
@@ -289,13 +317,18 @@ export function useNutritionStudio(
       return;
 
     const cd = clientData;
+    const weight = cd.weight_kg;
+    const height = cd.height_cm;
+    const age = cd.age;
+    if (weight == null || height == null || age == null) return;
+
     const gender: MacroGender = cd.gender === "female" ? "female" : "male";
 
     const recalculate = () => {
       const input = {
-        weight: cd.weight_kg,
-        height: cd.height_cm,
-        age: cd.age,
+        weight,
+        height,
+        age,
         gender,
         goal,
         bodyFat: cd.body_fat_pct ?? undefined,
@@ -346,9 +379,9 @@ export function useNutritionStudio(
       if (carbCycling.enabled) {
         const ccInput = {
           gender: gender as "male" | "female",
-          age: cd.age,
-          weight: cd.weight_kg,
-          height: cd.height_cm,
+          age,
+          weight,
+          height,
           bodyFat: cd.body_fat_pct ?? undefined,
           occupation: "sedentaire" as const,
           sessionsPerWeek: trainingConfig.weeklyFrequency,
@@ -366,7 +399,7 @@ export function useNutritionStudio(
 
       const actLevel = getActivityLevel(cd);
       const hydInput = {
-        weight: cd.weight_kg,
+        weight,
         gender: gender as "male" | "female",
         activity: HYDRATION_ACTIVITY_MAP[actLevel],
         climate: hydrationClimate,
@@ -667,6 +700,28 @@ export function useNutritionStudio(
     }
   }, [save, clientId]);
 
+  const applyAdaptiveTdee = useCallback(async () => {
+    const currentId = savedProtocolId ?? existingProtocol?.id;
+    if (!currentId) return;
+    setApplyingAdaptive(true);
+    try {
+      const res = await fetch(
+        `/api/clients/${clientId}/nutrition-protocols/${currentId}/apply-adaptive-tdee`,
+        { method: 'POST' }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setTdeeAdaptive(data.tdeeAdaptive);
+      setTdeeAdaptiveAt(new Date());
+      fetch(`/api/clients/${clientId}/nutrition-tdee-history`)
+        .then(r => r.ok ? r.json() : [])
+        .then(setTdeeHistory)
+        .catch(() => {});
+    } finally {
+      setApplyingAdaptive(false);
+    }
+  }, [clientId, savedProtocolId, existingProtocol]);
+
   return {
     clientData,
     clientLoading,
@@ -717,5 +772,11 @@ export function useNutritionStudio(
     allSubmissions,
     missingDataAlerts,
     dataSource,
+    tdeeAdaptive,
+    tdeeAdaptiveAt,
+    tdeeDataSource,
+    tdeeHistory,
+    applyAdaptiveTdee,
+    applyingAdaptive,
   };
 }

@@ -23,6 +23,16 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
   const clientName = studio.clientData?.name ?? "Client";
   const leanMass =
     studio.clientData?.lean_mass_kg ?? studio.macroResult?.leanMass ?? null;
+  const clientIntelligenceMacroResult = studio.macroResult
+    ? {
+        leanMass: studio.macroResult.leanMass,
+        estimatedBF: studio.macroResult.estimatedBF,
+        breakdown: {
+          bmr: studio.macroResult.breakdown.bmr,
+          tdee: studio.macroResult.tdee,
+        },
+      }
+    : null;
 
   // Refs so TopBar closures always call the latest save/share even after memoization
   const saveRef = useRef(studio.save);
@@ -88,7 +98,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             onBiometricsChange={(patch) =>
               studio.setBiometricsConfig((prev) => ({ ...prev, ...patch }))
             }
-            macroResult={studio.macroResult}
+            macroResult={clientIntelligenceMacroResult}
             submissions={studio.allSubmissions}
             selectedSubmissionId={studio.selectedSubmissionId}
             onSubmissionChange={studio.setSelectedSubmissionId}
@@ -118,6 +128,12 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             onHydrationPhaseChange={studio.setHydrationPhase}
             hydrationLiters={studio.hydrationLiters}
             leanMass={leanMass}
+            tdeeAdaptive={studio.tdeeAdaptive}
+            tdeeAdaptiveAt={studio.tdeeAdaptiveAt}
+            tdeeDataSource={studio.tdeeDataSource}
+            tdeeHistory={studio.tdeeHistory}
+            applyAdaptiveTdee={studio.applyAdaptiveTdee}
+            applyingAdaptive={studio.applyingAdaptive}
           />
         </div>
 

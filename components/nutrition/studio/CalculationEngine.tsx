@@ -37,6 +37,12 @@ interface Props {
   onHydrationPhaseChange: (v: number) => void;
   hydrationLiters: number | null;
   leanMass: number | null;
+  tdeeAdaptive: number | null;
+  tdeeAdaptiveAt: Date | null;
+  tdeeDataSource: 'weight_delta' | 'formula_proxy' | null;
+  tdeeHistory: import('./useNutritionStudio').TdeeHistoryEntry[];
+  applyAdaptiveTdee: () => Promise<void>;
+  applyingAdaptive: boolean;
 }
 
 const GOAL_OPTIONS: { value: MacroGoal; label: string }[] = [
@@ -166,6 +172,12 @@ export default function CalculationEngine({
   onHydrationPhaseChange,
   hydrationLiters,
   leanMass,
+  tdeeAdaptive,
+  tdeeAdaptiveAt,
+  tdeeDataSource,
+  tdeeHistory,
+  applyAdaptiveTdee,
+  applyingAdaptive,
 }: Props) {
   const [openInfoModal, setOpenInfoModal] = useState<string | null>(null);
 
@@ -211,6 +223,69 @@ export default function CalculationEngine({
             </div>
           )}
         </div>
+
+        {/* ── TDEE ADAPTATIF ───────────────────────────────────────────── */}
+        {tdeeAdaptive != null && (
+          <div className="bg-white/[0.03] border-[0.3px] border-white/[0.06] rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/40">
+                TDEE Adaptatif
+                {tdeeDataSource === 'formula_proxy' && (
+                  <span className="ml-2 text-amber-400">⚠ Proxy</span>
+                )}
+              </p>
+              <button
+                onClick={applyAdaptiveTdee}
+                disabled={applyingAdaptive}
+                className="text-[11px] font-bold text-[#1f8a65] hover:text-[#217356] disabled:opacity-50 transition-colors"
+              >
+                {applyingAdaptive ? 'Application…' : 'Appliquer'}
+              </button>
+            </div>
+
+            <div className="flex items-baseline gap-2">
+              <p className="text-[28px] font-black text-white leading-none tabular-nums">
+                {tdeeAdaptive.toLocaleString('fr-FR')}
+              </p>
+              <p className="text-[13px] text-white/40">kcal/jour</p>
+              {macroResult?.tdee != null && (
+                <p className={`text-[12px] font-semibold ml-auto ${
+                  tdeeAdaptive - macroResult.tdee > 0 ? 'text-[#1f8a65]' : 'text-amber-400'
+                }`}>
+                  {tdeeAdaptive - macroResult.tdee > 0 ? '↑' : '↓'}{' '}
+                  {tdeeAdaptive - macroResult.tdee > 0 ? '+' : ''}
+                  {tdeeAdaptive - macroResult.tdee} vs formule
+                </p>
+              )}
+            </div>
+
+            {tdeeAdaptiveAt && (
+              <p className="text-[10px] text-white/30">
+                Mis à jour le {tdeeAdaptiveAt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+              </p>
+            )}
+
+            {tdeeHistory.length > 0 && (
+              <details>
+                <summary className="text-[10px] text-white/40 cursor-pointer hover:text-white/60 transition-colors list-none">
+                  Historique ▾ ({tdeeHistory.length} entrée{tdeeHistory.length > 1 ? 's' : ''})
+                </summary>
+                <div className="mt-2 space-y-1.5">
+                  {tdeeHistory.map(h => (
+                    <div key={h.id} className="flex items-center justify-between text-[10px] text-white/40">
+                      <span>{new Date(h.calculated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                      <span className="tabular-nums">{h.tdee_formula} → {h.tdee_adaptive} kcal</span>
+                      <span className={h.delta_kcal > 0 ? 'text-[#1f8a65]' : 'text-amber-400'}>
+                        {h.delta_kcal > 0 ? '+' : ''}{h.delta_kcal}
+                      </span>
+                      <span className="text-white/20">{h.protocol_updated ? '✓' : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
 
         {/* ── OBJECTIF ─────────────────────────────────────────────────── */}
         <div>
