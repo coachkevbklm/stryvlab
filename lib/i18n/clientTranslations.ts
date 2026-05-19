@@ -235,6 +235,26 @@ export const clientDict = {
   'profil.days.singular':        { fr: 'jour', en: 'day', es: 'día' },
   'profil.days.plural':          { fr: 'jours', en: 'days', es: 'días' },
 
+  // Body data section
+  'profil.section.bodyData':     { fr: 'Données corporelles', en: 'Body data', es: 'Datos corporales' },
+  'profil.body.weight':          { fr: 'Poids actuel', en: 'Current weight', es: 'Peso actual' },
+  'profil.body.bodyFat':         { fr: '% Masse grasse', en: 'Body fat %', es: '% Grasa' },
+  'profil.body.leanMass':        { fr: 'Masse maigre', en: 'Lean mass', es: 'Masa magra' },
+  'profil.body.waist':           { fr: 'Tour de taille', en: 'Waist', es: 'Cintura' },
+  'profil.body.hips':            { fr: 'Tour de hanches', en: 'Hips', es: 'Caderas' },
+  'profil.body.arm':             { fr: 'Tour de bras', en: 'Arm', es: 'Brazo' },
+  'profil.body.chest':           { fr: 'Tour de poitrine', en: 'Chest', es: 'Pecho' },
+  'profil.body.noData':          { fr: 'Complète un bilan pour voir tes données corporelles.', en: 'Complete an assessment to see your body data.', es: 'Completa una evaluación para ver tus datos corporales.' },
+  'profil.body.evolution':       { fr: 'Évolution du poids', en: 'Weight evolution', es: 'Evolución del peso' },
+  'profil.body.composition':     { fr: 'Composition corporelle', en: 'Body composition', es: 'Composición corporal' },
+  'profil.body.measures':        { fr: 'Mensurations', en: 'Measurements', es: 'Medidas' },
+  'profil.body.photos':          { fr: 'Photos de transformation', en: 'Transformation photos', es: 'Fotos de transformación' },
+  'profil.body.noPhotos':        { fr: 'Aucune photo enregistrée.', en: 'No photos recorded.', es: 'No hay fotos registradas.' },
+  // Accordion sections
+  'profil.section.restrictions': { fr: 'Restrictions physiques', en: 'Physical restrictions', es: 'Restricciones físicas' },
+  'profil.section.portions':     { fr: 'Portions visuelles', en: 'Visual portions', es: 'Porciones visuales' },
+  'profil.section.progress':     { fr: 'Ma progression', en: 'My progress', es: 'Mi progreso' },
+
   // ── Login page ──
   'login.title':       { fr: 'Connexion', en: 'Sign in', es: 'Iniciar sesión' },
   'login.subtitle':    { fr: "Utilise l'email et le mot de passe créés lors de ton invitation.", en: 'Use the email and password created when you were invited.', es: 'Usa el correo y la contraseña creados en tu invitación.' },
