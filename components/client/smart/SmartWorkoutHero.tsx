@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
+import BodyMap from '../BodyMap'
+import type { MuscleGroup } from '@/lib/client/muscleDetection'
 
 type Props = {
   date: string
@@ -12,12 +14,9 @@ type Props = {
   exerciseCount?: number
   estimatedMinutes?: number
   performanceSummary?: string
-}
-
-function shiftDate(iso: string, delta: number): string {
-  const d = new Date(iso + 'T00:00:00')
-  d.setDate(d.getDate() + delta)
-  return d.toISOString().slice(0, 10)
+  primaryMuscles?: MuscleGroup[]
+  secondaryMuscles?: MuscleGroup[]
+  musclePills?: string[]
 }
 
 function fmt(iso: string): string {
@@ -29,23 +28,38 @@ export default function SmartWorkoutHero(p: Props) {
   return (
     <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
       <div className="flex items-center justify-between mb-3">
-        <Link href={`/client/programme?date=${shiftDate(p.date, -1)}`} className="flex items-center gap-1 text-white/60 text-[11px]">
-          <ChevronLeft size={14} /> {fmt(shiftDate(p.date, -1))}
-        </Link>
-        <span className="text-[18px] font-black tracking-[-0.02em] text-white">{fmt(p.date)}</span>
-        <Link href={`/client/programme?date=${shiftDate(p.date, 1)}`} className="flex items-center gap-1 text-white/60 text-[11px]">
-          {fmt(shiftDate(p.date, 1))} <ChevronRight size={14} />
-        </Link>
+        <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[10px] text-white/40">Séance du jour</span>
+        <span className="text-[11px] text-white/40">{fmt(p.date)}</span>
       </div>
 
       {p.state === 'scheduled' && p.sessionName && (
         <>
-          <div className="text-[20px] font-black tracking-[-0.02em] text-white">{p.sessionName}</div>
-          <div className="text-[11px] text-white/50 mt-1">{p.exerciseCount} exercices · ~{p.estimatedMinutes} min</div>
+          <div className="flex gap-3 items-start">
+            <div className="flex-1 min-w-0">
+              <div className="text-[22px] font-black tracking-[-0.02em] text-white leading-tight">{p.sessionName}</div>
+              <div className="text-[11px] text-white/50 mt-1">{p.exerciseCount} exercices · ~{p.estimatedMinutes} min</div>
+              {p.musclePills && p.musclePills.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {p.musclePills.slice(0, 3).map(pill => (
+                    <span key={pill} className="bg-[#ffe01e]/10 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{pill}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            {p.primaryMuscles && p.primaryMuscles.length > 0 && (
+              <div className="shrink-0">
+                <BodyMap
+                  primaryGroups={new Set(p.primaryMuscles)}
+                  secondaryGroups={new Set(p.secondaryMuscles ?? [])}
+                  className="w-16 h-[96px]"
+                />
+              </div>
+            )}
+          </div>
           {p.sessionLogHref && (
             <Link
               href={p.sessionLogHref}
-              className="mt-3 flex w-full items-center justify-center h-11 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[11px] font-black uppercase tracking-[0.1em]"
+              className="mt-4 flex w-full items-center justify-center h-11 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[11px] font-black uppercase tracking-[0.1em] active:scale-[0.98] transition-transform"
             >
               Démarrer →
             </Link>
@@ -67,7 +81,7 @@ export default function SmartWorkoutHero(p: Props) {
       )}
 
       {p.state === 'rest' && (
-        <p className="text-[12px] text-white/55">Jour de repos.</p>
+        <p className="text-[12px] text-white/55">Jour de repos 💤</p>
       )}
     </div>
   )
