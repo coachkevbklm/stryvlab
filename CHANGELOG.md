@@ -5,6 +5,7 @@
 
 ## 2026-05-19
 
+FEATURE: lib/inngest/functions/adaptive-tdee.ts — weekly cron Monday 06:00 UTC, fan-out per shared protocol, weight-delta TDEE, proportional macro rescale, coach + client notifications
 FEATURE: lib/nutrition/adaptiveTdee.ts — pure calcAdaptiveTdee + linearRegression (MacroFactor weight-delta method), 14 Vitest tests PASS
 FIX(pwa): deep review — 15 issues fixed: sw.js push icons path corrected (/icon-192.png), removed SSR routes from precache (were caching login redirects), networkFirst API routes now network-only (no cache write — session data privacy), AbortController in networkFirstWithTimeout, notificationclick navigate await fixed, Service-Worker-Allowed + Cache-Control headers added to next.config.js, worker-src CSP directive added, manifest orientation→any + id + categories + split any/maskable icon entries, client layout removed broken startupImage + removed userScalable:false (WCAG 1.4.4), root layout themeColor→#121212 (DS v2.0) + manifest removed from root (coaches should not install client PWA), ServiceWorkerRegistrar deferred reload flag (sw_update_pending) survives active sessions, offline fallback page app/client/offline/page.tsx, CACHE_NAME bumped to v4
 FIX: muscle slug "deltoid_posterior" (EN) crashes /client page — added to LEGACY_TO_CANONICAL map + validateMuscleArray now skips unknown slugs instead of throwing + detectMuscleGroups wraps per-exercise errors

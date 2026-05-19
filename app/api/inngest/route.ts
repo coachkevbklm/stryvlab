@@ -5,6 +5,7 @@ import { pointsLevelUpdateFunction } from '@/lib/inngest/functions/points-level-
 import { checkinStreakExpireFunction } from '@/lib/inngest/functions/checkin-streak-expire'
 import { checkinReminderSendFunction } from '@/lib/inngest/functions/checkin-reminder-send'
 import { mealAnalyzeFunction } from '@/lib/inngest/functions/meal-analyze'
+import { adaptiveTdeeFunction } from '@/lib/inngest/functions/adaptive-tdee'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -14,5 +15,6 @@ export const { GET, POST, PUT } = serve({
     checkinStreakExpireFunction,
     checkinReminderSendFunction,
     mealAnalyzeFunction,
+    adaptiveTdeeFunction,
   ],
 })
