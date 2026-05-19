@@ -43,7 +43,7 @@ describe('Muscle Data Consistency', () => {
     expect(activation.secondary.size).toBeGreaterThan(0)
   })
 
-  it('invalid muscles rejected at resolver boundary', () => {
+  it('invalid muscle slugs are silently ignored, valid ones kept', () => {
     const invalidExercise = {
       id: 'test-3',
       name: 'Bad Exercise',
@@ -51,9 +51,8 @@ describe('Muscle Data Consistency', () => {
       secondary_muscles: [],
     }
 
-    expect(() => resolveExerciseMuscleCoverage(invalidExercise)).toThrow(
-      'Unknown muscle slug'
-    )
+    const resolved = resolveExerciseMuscleCoverage(invalidExercise)
+    expect(resolved.primary_muscles).toEqual(['grand_pectoral'])
   })
 
   it('empty primary muscles caught at resolver', () => {

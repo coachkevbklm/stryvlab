@@ -39,7 +39,7 @@ describe('Exercise Resolver', () => {
     ).toThrow('has no primary_muscles')
   })
 
-  it('throws if primary_muscles contains invalid slug', () => {
+  it('throws if all primary_muscles are invalid (none survive normalization)', () => {
     expect(() =>
       resolveExerciseMuscleCoverage({
         id: '4',
@@ -47,7 +47,7 @@ describe('Exercise Resolver', () => {
         primary_muscles: ['fake_muscle'],
         secondary_muscles: [],
       })
-    ).toThrow('invalid primary_muscles')
+    ).toThrow('has no recognized primary_muscles after normalization')
   })
 
   it('dedupes secondary_muscles', () => {

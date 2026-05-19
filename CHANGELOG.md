@@ -3,8 +3,16 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-20
+
+FIX: tempo tests — align 7 expected values with code (hypertrophy map uses 1s isometric pause at top, not 0)
+FIX: muscle-normalization test — validateMuscleArray silently ignores non-string entries (no throw)
+FIX: exercise-resolver test — update error message substring to match actual throw text
+FIX: muscle-consistency integration test — invalid slug mixed with valid slug → valid slug kept, no throw
+
 ## 2026-05-19
 
+FIX: rename [feedbackId] route segment to [entityType] under /api/client/feedback/ — resolve Next.js conflicting dynamic slug build error
 SCHEMA: coach_feedback + coach_feedback_reactions tables, RLS, extend coach_client_notifications CHECK (coach_feedback, client_reaction) — ⚠️ apply 20260519_coach_feedback.sql manually
 FEATURE: lib/feedback/types.ts — CoachFeedback, FeedbackReaction, FEEDBACK_EMOJIS shared types
 FEATURE: GET/POST /api/clients/[clientId]/feedback — coach feedback list + create with client notification
