@@ -29,7 +29,7 @@ interface ExerciseBlockProps {
   prSets: Set<string>
   coachingCues: Record<string, string | null>
   inSuperset?: boolean
-  onValidateSet: (exId: string, setNum: number, side: string) => void
+  onValidateSet: (exId: string, setNum: number, side: string, reps: string, weight: string, rir: string) => void
   onDeleteSet: (exId: string, setNum: number, side: string) => void
   onChangeSet: (exId: string, setNum: number, side: string, patch: Partial<SetRowData>) => void
   onAddSet: (exId: string) => void
@@ -80,7 +80,8 @@ export default function ExerciseBlock({
   }
 
   const effectiveRir = exercise.target_rir ?? exercise.rir
-  const hasTempo = !!exercise.tempo
+  // Tempo available if coach set it OR auto-default exists (movement_pattern present)
+  const hasTempo = !!(exercise.tempo || exercise.movement_pattern)
 
   const inner = (
     <>
@@ -116,10 +117,14 @@ export default function ExerciseBlock({
 
       {/* Column headers */}
       <div className="flex items-center gap-2 px-3 pb-1">
-        <span className="shrink-0 min-w-[32px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Série</span>
-        <span className="shrink-0 w-[52px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Repos</span>
+        <span className="shrink-0 min-w-[28px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Série</span>
+        <span className="shrink-0 w-[46px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Repos</span>
         <span className="flex-1 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Reps</span>
         <span className="flex-1 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">kg</span>
+        {effectiveRir !== null && effectiveRir !== undefined && (
+          <span className="shrink-0 min-w-[22px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">RIR</span>
+        )}
+        {hasTempo && <span className="shrink-0 w-7" />}
         <span className="shrink-0 w-8" />
       </div>
 
@@ -142,12 +147,16 @@ export default function ExerciseBlock({
                 workingIndex={wi}
                 recReps={rec ? String(rec.reps) : undefined}
                 recWeight={rec ? String(rec.weight_kg) : undefined}
+                targetRir={effectiveRir}
+                recRir={rec ? null : null}
                 isPR={prSets.has(key)}
                 coachingCue={coachingCues[key] ?? null}
-                onValidate={() => onValidateSet(s.exercise_id, s.set_number, s.side)}
+                hasTempoGuide={isActive && hasTempo}
+                onValidate={(reps, weight, rir) => onValidateSet(s.exercise_id, s.set_number, s.side, reps, weight, rir)}
                 onDelete={() => onDeleteSet(s.exercise_id, s.set_number, s.side)}
                 onChange={patch => onChangeSet(s.exercise_id, s.set_number, s.side, patch)}
                 onTypePress={() => setTypeSelectorFor({ setNum: s.set_number, side: s.side })}
+                onTempoPress={() => onTempo(exercise.id)}
               />
             </div>
           )

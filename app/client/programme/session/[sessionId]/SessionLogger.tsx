@@ -564,7 +564,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
     }
   }
 
-  function toggleSet(exId: string, setNum: number, side: string, restSec: number | null) {
+  function toggleSet(exId: string, setNum: number, side: string, restSec: number | null, reps?: string, weight?: string, rir?: string) {
     setSets(prev => {
       const current = prev.find(s => s.exercise_id === exId && s.set_number === setNum && s.side === side)
       const wasCompleted = current?.completed ?? false
@@ -576,30 +576,39 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           const alreadyTracking = pendingRestSet?.exId === exId && pendingRestSet?.setNum === setNum && pendingRestSet?.side === side
           if (!alreadyTracking) startRest(exId, setNum, side, restSec)
         }
-        return { ...s, completed: nowCompleted }
+        return {
+          ...s,
+          completed: nowCompleted,
+          // Apply confirmed values from the modal
+          ...(nowCompleted && reps !== undefined ? { actual_reps: reps } : {}),
+          ...(nowCompleted && weight !== undefined ? { actual_weight_kg: weight } : {}),
+          ...(nowCompleted && rir !== undefined ? { rir_actual: rir } : {}),
+        }
       })
 
       const exSetsUpdated = next.filter(s => s.exercise_id === exId)
       patchSets(exSetsUpdated)
 
-      if (!wasCompleted && current) {
-        triggerRecommendation(current)
+      // Use confirmed values for PR detection and recommendation
+      const confirmedCurrent = next.find(s => s.exercise_id === exId && s.set_number === setNum && s.side === side)
+      if (!wasCompleted && confirmedCurrent) {
+        triggerRecommendation(confirmedCurrent)
         // PR detection
-        const exHistory = lastPerformance[current.exercise_name] ?? []
+        const exHistory = lastPerformance[confirmedCurrent.exercise_name] ?? []
         const historyBest = exHistory.reduce((best, h) => {
           if (h.weight === null || h.reps === null) return best
           return h.weight > (best?.weight ?? 0) ? h : best
         }, null as LastPerf | null)
-        const reps = parseInt(current.actual_reps, 10)
-        const weight = parseFloat(current.actual_weight_kg)
-        if (!isNaN(reps) && !isNaN(weight) && weight > 0 && reps > 0) {
+        const confirmedReps = parseInt(confirmedCurrent.actual_reps, 10)
+        const confirmedWeight = parseFloat(confirmedCurrent.actual_weight_kg)
+        if (!isNaN(confirmedReps) && !isNaN(confirmedWeight) && confirmedWeight > 0 && confirmedReps > 0) {
           const isNewPR = !historyBest ||
-            weight > (historyBest.weight ?? 0) ||
-            (weight === historyBest.weight && reps > (historyBest.reps ?? 0))
+            confirmedWeight > (historyBest.weight ?? 0) ||
+            (confirmedWeight === historyBest.weight && confirmedReps > (historyBest.reps ?? 0))
           if (isNewPR) {
-            const key = recKey(current.exercise_id, current.set_number, current.side)
+            const key = recKey(confirmedCurrent.exercise_id, confirmedCurrent.set_number, confirmedCurrent.side)
             setPrSets(prev => new Set(prev).add(key))
-            setPrFlash(`⚡ Nouveau record — ${formatWeight(weight)}kg × ${reps} reps`)
+            setPrFlash(`⚡ Nouveau record — ${formatWeight(confirmedWeight)}kg × ${confirmedReps} reps`)
             setTimeout(() => setPrFlash(null), 3000)
           }
         }
@@ -875,15 +884,16 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             // Superset (non-dissolved)
             if (isSuperset && !isDissolved && groupId) {
               return (
-                <div key={groupId} className="bg-[#161616] rounded-2xl border border-white/[0.08] overflow-hidden">
-                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.05]">
+                <div key={groupId} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,224,30,0.30)', backgroundColor: 'rgba(255,224,30,0.03)' }}>
+                  <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,224,30,0.12)', backgroundColor: 'rgba(255,224,30,0.06)' }}>
                     <div className="flex items-center gap-2">
-                      <Rotate size={12} className="text-white/40" />
-                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/50">Surensemble</span>
+                      <Rotate size={12} className="text-[#ffe01e]/70" />
+                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[#ffe01e]/80">Surensemble</span>
                     </div>
                     <button
                       onClick={() => setSupersetMenuFor(groupId)}
-                      className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.04] text-white/30 hover:text-white/50"
+                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#ffe01e]/40 hover:text-[#ffe01e]/70"
+                      style={{ backgroundColor: 'rgba(255,224,30,0.08)' }}
                     >
                       <MoreHorizontal size={13} />
                     </button>
@@ -899,7 +909,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                           prSets={prSets}
                           coachingCues={coachingCuesMap}
                           inSuperset
-                          onValidateSet={(exId, setNum, side) => toggleSet(exId, setNum, side, ex.rest_sec)}
+                          onValidateSet={(exId, setNum, side, reps, weight, rir) => toggleSet(exId, setNum, side, ex.rest_sec, reps, weight, rir)}
                           onDeleteSet={deleteSet}
                           onChangeSet={(exId, setNum, side, patch) => updateSet(exId, setNum, side, patch as Partial<SetLog>)}
                           onAddSet={addSet}
