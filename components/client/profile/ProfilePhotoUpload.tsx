@@ -7,9 +7,10 @@ import { Camera, Loader2, Trash2 } from "lucide-react";
 interface Props {
   currentUrl: string | null;
   initials: string;
+  compact?: boolean;
 }
 
-export default function ProfilePhotoUpload({ currentUrl, initials }: Props) {
+export default function ProfilePhotoUpload({ currentUrl, initials, compact = false }: Props) {
   const [url, setUrl] = useState<string | null>(currentUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,38 @@ export default function ProfilePhotoUpload({ currentUrl, initials }: Props) {
     if (res.ok) setUrl(null);
     else setError("Erreur lors de la suppression");
     setLoading(false);
+  }
+
+  if (compact) {
+    return (
+      <div className="relative shrink-0">
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-[#ffe01e]/10 flex items-center justify-center">
+          {url ? (
+            <Image src={url} alt="Photo de profil" fill className="object-cover" />
+          ) : (
+            <span className="text-[16px] font-bold text-[#ffe01e]">{initials}</span>
+          )}
+        </div>
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={loading}
+          className="absolute bottom-0 right-0 w-5 h-5 bg-[#ffe01e] text-[#0d0d0d] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={9} className="animate-spin" /> : <Camera size={9} />}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+    );
   }
 
   return (
