@@ -6,7 +6,7 @@
 >
 > **Historique détaillé** → voir `project-state-archive.md` (toutes les sessions antérieures à 2026-04-27)
 
-**Dernière mise à jour : 2026-05-18 (Elite client app — MacroFactor competitive sprint)**
+**Dernière mise à jour : 2026-05-19 (Client profil — accordion redesign)**
 
 ---
 
@@ -28,7 +28,7 @@
 | Module | Statut | Dernière Update |
 |--------|--------|-----------------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Smart Trio refonte (Smart Agenda + Smart Workout + Smart Nutrition + RadialActionMenu + alertes IA) | 2026-05-18 |
+| **Client App** | ✅ Smart Trio refonte + Profil accordion (hero compact, 8 sections, données corporelles) | 2026-05-19 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable DA v3.0, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,35 @@
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
 | **Daily Check-ins** | 📋 Spec documentée, Phase 2 | 2026-04-27 |
+
+---
+
+## 🚀 Dernières Avancées (2026-05-19) — Client Profil Accordion Redesign (COMPLET)
+
+**Fichiers créés :**
+- `app/api/client/body-data/route.ts` — GET agrège bilans (poids série, composition, mensurations)
+- `components/client/profile/AccordionSection.tsx` — section collapsible Framer Motion (header cliquable + AnimatePresence)
+- `components/client/profile/BodyDataSection.tsx` — poids sparkline SVG + composition + mensurations
+- `components/client/profile/ProfilAccordion.tsx` — orchestrateur 8 sections, une seule ouverte à la fois
+
+**Fichiers modifiés :**
+- `app/client/profil/page.tsx` — refactorisé en Server Component pur (−254 lignes), délègue à ProfilAccordion
+- `components/client/profile/ProfilePhotoUpload.tsx` — prop `compact` ajoutée (avatar 56px pour hero)
+- `components/client/profile/NotificationsPanel.tsx` — liste capped `max-h-64 overflow-y-auto`
+- `lib/i18n/clientTranslations.ts` — 18 nouvelles clés (`profil.body.*`, `profil.section.*`)
+
+**Architecture :**
+- Hero compact : avatar 56px + nom + email + badge statut + streak pill jaune
+- 8 sections accordion DS v3.0 : `bg-[#161616] rounded-2xl`, chevron animé, badge notifs jaune
+- BodyDataSection : fetch `/api/client/body-data` au mount, sparkline SVG bézier, grid comp, rows mesures
+- Données corporelles depuis `assessment_submissions + assessment_responses` (field_keys: weight_kg, body_fat_pct, lean_mass_kg, waist_cm, hips_cm, arm_cm, chest_cm)
+- Photos morpho : non affichées côté client (RLS morpho_photos = coach uniquement)
+
+**Points de vigilance :**
+- `ProfilePhotoUpload` avec `compact=true` : bouton caméra 20px, avatar 56px, pas de liens "Changer/Supprimer" (hero only)
+- `ProfilAccordion` est `'use client'` — tous les imports doivent être compatibles client
+- `body-data` route : retourne `{ weightSeries: [], composition: null, measures: null, latestWeight: null }` si aucun bilan complété
+- Section Ma Progression visible uniquement si `streakData` non null
 
 ---
 

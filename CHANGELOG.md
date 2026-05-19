@@ -5,6 +5,34 @@
 
 ## 2026-05-19
 
+SCHEMA: coach_feedback + coach_feedback_reactions tables, RLS, extend coach_client_notifications CHECK (coach_feedback, client_reaction) — ⚠️ apply 20260519_coach_feedback.sql manually
+FEATURE: lib/feedback/types.ts — CoachFeedback, FeedbackReaction, FEEDBACK_EMOJIS shared types
+FEATURE: GET/POST /api/clients/[clientId]/feedback — coach feedback list + create with client notification
+FEATURE: POST /api/clients/[clientId]/feedback/[feedbackId]/reactions — coach reaction on feedback
+FEATURE: GET /api/client/feedback/[entityType]/[entityId] — client reads coach annotations for entity
+FEATURE: POST /api/client/feedback/[feedbackId]/reactions — client reacts + notifies coach
+FEATURE: components/coach/FeedbackComposer.tsx — bottom sheet composer DS v2.0
+FEATURE: app/coach/clients/[clientId]/feedback/page.tsx — coach hub page with entity filter pills
+FEATURE: components/client/smart/FeedbackThread.tsx — coach annotations + emoji reactions + reply, DS v3.0
+FEATURE: session recap page — FeedbackThread embedded (entity_type=session)
+FEATURE: bilans detail page — FeedbackThread embedded (entity_type=bilan)
+FEATURE: MorphoAnalysisSection — MessageSquare button + FeedbackComposer per morpho analysis
+FEATURE: NotificationsBar — coach_feedback type + entity navigation (session/bilan/checkin/morpho)
+FIX: client page normalizeNotificationType — added tdee_updated + coach_feedback
+FEATURE: Client profil — refonte accordion (8 sections, une seule ouverte à la fois, Framer Motion AnimatePresence)
+FEATURE: Client profil — nouvelle section "Données corporelles" (poids sparkline, composition corporelle, mensurations)
+FEATURE: Client profil — hero compact avec avatar 56px + streak pill jaune
+FEATURE: Client profil — nouvelle API GET /api/client/body-data (série poids, composition, mensurations depuis bilans)
+FIX: Client profil — liste notifications limitée à max-h-64 avec scroll interne
+REFACTOR: nutrition UX — merged /client/nutrition/journal into /client/nutrition (single page), journal now redirects 301, NutritionMealsList client component created
+FIX: timelineBuilder — meal href changed from /client/nutrition/journal#id to /client/nutrition
+FIX: NutritionLogContent + checkin/meals — all journal hrefs updated to /client/nutrition
+FIX: BottomNav FAB — no longer overflows nav bar, contained within h-62px nav, animation changed to scale, anchor recalculated (51px from bottom)
+FIX: nutrition/page.tsx — same column name bug (calories→total_calories, trend select also fixed)
+FIX: NutritionWidget NoTargetSummary — macro labels no longer truncated (PROT/GLUC/LIPI → Protéines/Glucides/Lipides)
+FIX: client home — nutrition widget always showed 0 (wrong column names: calories→total_calories, protein_g→total_protein_g, carbs_g→total_carbs_g, fat_g→total_fat_g)
+FIX: MealLogSheet — nutrition data now refreshes after save (router.refresh() via onSuccess callback chain)
+FIX: BottomNav FAB — oversized button (80px→56px, logo 48→32px, anchor recalculated in RadialActionMenu)
 CHORE: adaptive TDEE — final TS check (0 new errors) + 14 Vitest tests PASS
 FEATURE: client nutrition page — adaptive TDEE display block (kcal/jour ou "Estimation" si proxy)
 FEATURE: NotificationsBar — tdee_updated type with TrendingUp icon, routes to /client/nutrition
