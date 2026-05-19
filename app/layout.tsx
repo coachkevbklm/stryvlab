@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { Barlow, Barlow_Condensed } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { cn } from "@/lib/utils";
@@ -41,11 +42,26 @@ const unbounded = localFont({
   display: 'swap',
 });
 
+// 5. BARLOW + BARLOW CONDENSED (DS v3.0 — app client STRYVR)
+const barlow = Barlow({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-barlow',
+  display: 'swap',
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-barlow-condensed',
+  display: 'swap',
+});
+
 /* =====================================================
    VIEWPORT
    ===================================================== */
 export const viewport: Viewport = {
-  themeColor: '#0e0e0e',
+  themeColor: '#121212',
   width: 'device-width',
   initialScale: 1,
 };
@@ -56,7 +72,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
 
-  manifest: '/manifest.json',
+  // manifest declared only in app/client/layout.tsx — not here (coach routes should not install client PWA)
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -200,7 +216,7 @@ export default function RootLayout({
 }) {
   return (
     // Injection des 3 variables de police pour utilisation CSS globale
-    <html lang="fr" className={cn(lufga.variable, azonix.variable, onest.variable, unbounded.variable, "font-sans")}>
+    <html lang="fr" className={cn(lufga.variable, azonix.variable, onest.variable, unbounded.variable, barlow.variable, barlowCondensed.variable, "font-sans")}>
       <body className="antialiased min-h-screen bg-background text-primary">
         <TooltipProvider delay={300}>{children}</TooltipProvider>
 

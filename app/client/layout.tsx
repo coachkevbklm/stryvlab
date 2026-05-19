@@ -9,15 +9,19 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'STRYVR',
+    // startupImage omitted — proper splash screen assets not yet generated
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
+    icon: '/icon-192.png',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#121212',
+  themeColor: '#0d0d0d',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // userScalable not disabled — WCAG 1.4.4 compliance
 }
 
 // NOTE: Auth protection for client routes is handled entirely by the middleware
@@ -30,7 +34,7 @@ export const viewport: Viewport = {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClientI18nProvider>
-      <div className="min-h-screen bg-[#121212]">
+      <div className="min-h-screen bg-[#0d0d0d] font-barlow">
         <ServiceWorkerRegistrar />
         <ConditionalClientShell>{children}</ConditionalClientShell>
       </div>

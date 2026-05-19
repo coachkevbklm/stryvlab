@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 
-// Clé localStorage utilisée par SessionLogger pour détecter une séance active
 const DRAFT_KEY_PREFIX = 'draft_session_log_id_'
+const UPDATE_PENDING_KEY = 'sw_update_pending'
 
 function hasActiveDraft(): boolean {
   for (let i = 0; i < localStorage.length; i++) {
@@ -17,16 +17,25 @@ export default function ServiceWorkerRegistrar() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
+    // If a deferred update is pending (session was active during previous SW takeover),
+    // reload now that we're back on a non-session page
+    if (localStorage.getItem(UPDATE_PENDING_KEY) === '1' && !hasActiveDraft()) {
+      localStorage.removeItem(UPDATE_PENDING_KEY)
+      window.location.reload()
+      return
+    }
+
     navigator.serviceWorker
       .register('/sw.js', { scope: '/client' })
       .catch(() => {
         // SW registration failed silently — app still works without it
       })
 
-    // Recharger automatiquement quand un nouveau SW prend le contrôle
-    // Sauf si une séance est en cours (draft présent en localStorage)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hasActiveDraft()) {
+      if (hasActiveDraft()) {
+        // Defer reload until the session is complete
+        localStorage.setItem(UPDATE_PENDING_KEY, '1')
+      } else {
         window.location.reload()
       }
     })

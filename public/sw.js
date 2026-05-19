@@ -1,26 +1,19 @@
-const CACHE_NAME = 'stryv-client-v3'
+const CACHE_NAME = 'stryv-client-v4'
+const STATIC_CACHE = 'stryv-static-v1'
 
-// Assets statiques à pré-cacher
-const STATIC_ASSETS = [
-  '/client',
-  '/client/programme',
-  '/client/bilans',
-  '/client/profil',
+// Only precache the offline fallback — never SSR routes (they need auth context)
+const PRECACHE_ASSETS = [
   '/manifest.json',
-]
-
-// Patterns d'URL qui ne doivent PAS être mis en cache (hors API — gérée par networkFirst ci-dessous)
-const NO_CACHE_PATTERNS = [
-  /supabase/,
-  /\.hot-update\./,
+  '/client/offline',
 ]
 
 // ─── Install ───────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting())
   )
-  self.skipWaiting()
 })
 
 // ─── Activate ──────────────────────────────────────────────────────────────
@@ -28,11 +21,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== CACHE_NAME && key !== STATIC_CACHE)
+          .map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
 // ─── Fetch ─────────────────────────────────────────────────────────────────
@@ -41,20 +35,24 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   if (request.method !== 'GET') return
-  if (NO_CACHE_PATTERNS.some((p) => p.test(url.pathname + url.hostname))) return
 
+  // Never intercept Supabase or hot-reload requests
+  if (url.hostname.includes('supabase.co')) return
+  if (url.pathname.includes('.hot-update.')) return
+
+  // API routes — network only, no caching (session data must not persist across logout)
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(request))
+    event.respondWith(networkOnly(request))
     return
   }
 
-  // Assets statiques versionnés → cache-first (hash dans le nom = jamais stale)
+  // Next.js static assets — content-hashed filenames, safe to cache forever
   if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(cacheFirst(request))
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
     return
   }
 
-  // Pages client → network-first avec timeout 3s
+  // Client pages — network-first with 3s timeout, fall back to offline page
   if (url.pathname.startsWith('/client')) {
     event.respondWith(networkFirstWithTimeout(request, 3000))
     return
@@ -74,11 +72,9 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'STRYVR'
   const options = {
     body: payload.body || '',
-    data: {
-      url: payload.url || '/client',
-    },
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    data: { url: payload.url || '/client' },
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
   }
 
   event.waitUntil(self.registration.showNotification(title, options))
@@ -91,65 +87,61 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if ('focus' in client) {
-          client.navigate(targetUrl)
-          return client.focus()
+        if ('navigate' in client) {
+          return client.navigate(targetUrl).then((c) => c && c.focus())
         }
       }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl)
-      }
-      return undefined
+      return self.clients.openWindow(targetUrl)
     })
   )
 })
 
 // ─── Stratégies ────────────────────────────────────────────────────────────
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request)
-  if (cached) return cached
-  const response = await fetch(request)
-  if (response.ok) {
-    const cache = await caches.open(CACHE_NAME)
-    cache.put(request, response.clone())
-  }
-  return response
-}
-
-async function networkFirst(request) {
+// Network only — for API routes (no cache write)
+async function networkOnly(request) {
   try {
-    const response = await fetch(request)
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME)
-      cache.put(request, response.clone())
-    }
-    return response
+    return await fetch(request)
   } catch {
-    const cached = await caches.match(request)
-    return cached ?? new Response(JSON.stringify({ error: 'offline' }), {
+    return new Response(JSON.stringify({ error: 'offline' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 }
 
-async function networkFirstWithTimeout(request, timeoutMs) {
-  const cache = await caches.open(CACHE_NAME)
+// Cache first — for versioned static assets
+async function cacheFirst(request, cacheName) {
+  const cached = await caches.match(request)
+  if (cached) return cached
+  const response = await fetch(request)
+  if (response.ok) {
+    const cache = await caches.open(cacheName)
+    cache.put(request, response.clone())
+  }
+  return response
+}
 
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), timeoutMs)
-  )
+// Network first with timeout + AbortController — for client pages
+async function networkFirstWithTimeout(request, timeoutMs) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await Promise.race([fetch(request), timeoutPromise])
+    const response = await fetch(request, { signal: controller.signal })
+    clearTimeout(timer)
     if (response.ok) {
+      const cache = await caches.open(CACHE_NAME)
       cache.put(request, response.clone())
     }
     return response
   } catch {
-    // Timeout ou offline → servir le cache
+    clearTimeout(timer)
+    const cache = await caches.open(CACHE_NAME)
     const cached = await cache.match(request)
-    return cached ?? new Response('Offline', { status: 503 })
+    if (cached) return cached
+    // Fall back to offline page
+    const offline = await cache.match('/client/offline')
+    return offline ?? new Response('Offline', { status: 503 })
   }
 }

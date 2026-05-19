@@ -49,8 +49,19 @@ const nextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'none'",
+              "worker-src 'self'",
             ].join("; "),
           },
+        ],
+      },
+
+      // ─── Service Worker — no-cache + allow scope override ───────────────
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          // Allows sw.js at root path to control /client scope (overrides same-origin scope restriction)
+          { key: "Service-Worker-Allowed", value: "/client" },
         ],
       },
 
