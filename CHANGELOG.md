@@ -5,6 +5,20 @@
 
 ## 2026-05-20
 
+FEATURE: Voice nutrition logger — SpeechRecognition + GPT-4o mini parse + review flow
+FEATURE: VoiceLogSheet — bottom sheet 3 couches (recording/processing/review), waveform, silence auto-stop
+FEATURE: /api/client/nutrition/voice-parse — nettoyage transcript + GPT-4o mini + match food_items + rate limit
+FEATURE: VoiceEntryFab — bouton micro flottant sur la page nutrition
+FEATURE: Bouton micro dans MealLogSheet et NutritionLogContent (embedded)
+SCHEMA: nutrition_entries.input_mode — ajout 'voice' à la contrainte CHECK (migration 20260520_voice_input_mode.sql)
+
+## 2026-05-19
+
+REFACTOR: BottomNav v2 — Technogym flat (full-width, no radius, top stripe jaune 4px onglet actif, Barlow Condensed uppercase labels, action buttons squared)
+REFACTOR: ClientTopBar v2 — bande accent jaune 3px gauche, titre 15px Barlow Condensed uppercase, subtle jaune box-shadow séparateur
+
+## 2026-05-20
+
 FEATURE: Dashboard v2 — AdherenceScoreCard score 0-100 style Technogym (jaune plein ≥75, no border), PriorityActionCard contextuelle, DayChecklist 5 items, header jour complet
 CHORE: Supprimer DashboardHeroSnapshot + DashboardAlertsFeed
 FIX: BottomNav — action buttons icon-only (remove label text, fix overflow out of navbar)

@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-19**
+> **Dernière mise à jour : 2026-05-20**
 
 ---
 
@@ -24,7 +24,7 @@
 | Module | Statut | Update |
 |--------|--------|--------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Smart Trio + Profil accordion + Smart Workout Motra-style | 2026-05-19 |
+| **Client App** | ✅ Smart Trio + Profil accordion + Smart Workout Motra-style + Voice Nutrition Logger | 2026-05-20 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,16 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-20 — Voice Nutrition Logger
+
+- `lib/nutrition/voice.ts` — `cleanTranscript()` (filler words FR/EN/ES, numbers, units), types `VoiceItem` + `VoiceParseResult`
+- `app/api/client/nutrition/voice-parse/route.ts` — POST, GPT-4o mini JSON strict, top-20 food_items hint, food_item_id ILIKE matching, rate limit 10/min in-memory
+- `components/client/smart/VoiceLogSheet.tsx` — 3-layer sheet DS v3.0 : recording (SpeechRecognition + waveform AnalyserNode), processing (spinner), review (items éditables, quantité avec recalcul macro proportionnel, swipe delete, log)
+- `components/client/smart/VoiceEntryFab.tsx` — FAB micro fixe `bottom-[88px] right-4` sur `/client/nutrition`
+- `supabase/migrations/20260520_voice_input_mode.sql` — `'voice'` ajouté à l'enum `input_mode` sur `nutrition_entries`, confidence_score 0.70
+- Bouton micro dans `MealLogSheet` header et `NutritionLogContent` (embedded, layers category + sub-header)
+- Points de vigilance : migration à appliquer manuellement via Supabase Dashboard, `OPENAI_API_KEY` requis, SpeechRecognition non supporté iOS Safari < 16.4 (fallback message affiché)
 
 ### 2026-05-19 — Smart Workout Redesign (Motra-style)
 - `supabase/migrations/20260519_set_type.sql` — colonne `set_type` sur `client_set_logs` (warmup/working/cooldown/dropset) — **appliquer manuellement**
@@ -98,6 +108,7 @@
 
 | Problème | Impact | Mitigation |
 |----------|--------|-----------|
+| `20260520_voice_input_mode` migration non appliquée | input_mode 'voice' rejeté en DB | `20260520_voice_input_mode.sql` via Supabase Dashboard |
 | `20260519_set_type` migration non appliquée | set_type non persisté (default 'working' OK) | `20260519_set_type.sql` via Supabase Dashboard |
 | `beta_waitlist` migration non appliquée | Waitlist non fonctionnelle | `20260514_beta_waitlist.sql` via Supabase Dashboard |
 | `tempo` migration non appliquée | Tempo non persisté | `20260516_tempo.sql` via Supabase Dashboard |
