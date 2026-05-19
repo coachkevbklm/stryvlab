@@ -5,6 +5,8 @@
 
 ## 2026-05-19
 
+FEATURE: BottomNav inline action bar — logo pivote 45°, onglets slidés remplacés par 4 boutons jaunes sans alignement flottant
+CHORE: Suppression RadialActionMenu.tsx (remplacé par logique inline dans BottomNav)
 FEATURE: Smart Workout redesign — SessionLogger liste scrollable style Motra (remplace vue focalisée 1 exercice)
 FEATURE: SetRow — row inline-editable avec swipe droite=valider + swipe gauche=supprimer
 FEATURE: SetTypeSelector — sheet EC / Série principale / RC / Dégressive par set
