@@ -5,6 +5,8 @@
 
 ## 2026-05-19
 
+FEATURE: client nutrition page — adaptive TDEE display block (kcal/jour ou "Estimation" si proxy)
+FEATURE: NotificationsBar — tdee_updated type with TrendingUp icon, routes to /client/nutrition
 FEATURE: Nutrition Studio — adaptive TDEE block in CalculationEngine (TDEE réel, delta vs formule, badge proxy, Appliquer button, historique 5 runs collapsible), useNutritionStudio hook updated with tdeeAdaptive state + applyAdaptiveTdee callback
 FEATURE: POST /api/clients/[clientId]/nutrition-protocols/[protocolId]/apply-adaptive-tdee — on-demand coach recalc
 FEATURE: GET /api/clients/[clientId]/nutrition-tdee-history — last 5 TDEE history entries

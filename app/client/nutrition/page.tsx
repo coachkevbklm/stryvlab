@@ -37,7 +37,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const [protoResult, mealsResult, waterResult, trendResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
-      .select('nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
+      .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
       .eq('client_id', clientId)
       .eq('status', 'shared')
       .order('created_at', { ascending: false })
@@ -78,6 +78,8 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   // ── Protocol day ──────────────────────────────────────────────────────────
   const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
   const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
+  const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
+  const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
 
   const td = protocolDay
   const target: NutritionMacros = {
@@ -140,6 +142,28 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       <ClientTopBar section="NUTRITION" title={date} />
       <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
         <SmartNutritionHero date={date} consumed={consumed} target={target} />
+
+        {/* Adaptive TDEE — only shown when protocol has been calibrated */}
+        {tdeeAdaptive != null && (
+          <div className="bg-[#161616] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/30 mb-0.5">
+                Dépense énergétique
+              </p>
+              <p className="text-[20px] font-black text-white leading-none tabular-nums">
+                {tdeeDataSource === 'formula_proxy'
+                  ? 'Estimation'
+                  : `${(tdeeAdaptive as number).toLocaleString('fr-FR')} kcal/jour`}
+              </p>
+            </div>
+            <p className="text-[10px] text-white/30 text-right max-w-[120px] leading-snug">
+              {tdeeDataSource === 'formula_proxy'
+                ? 'Basé sur ton programme'
+                : 'Basé sur tes pesées des 14 derniers jours'}
+            </p>
+          </div>
+        )}
+
         <SmartAlertsFeed alerts={alerts} />
         <CoachProtocolCard day={protocolDay} />
         <RemainingBreakdown consumed={consumed} target={target} />

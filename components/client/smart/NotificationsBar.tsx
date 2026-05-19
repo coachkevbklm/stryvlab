@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, ClipboardList, Sparkles, MessageSquare, Clock } from "lucide-react";
+import { X, ClipboardList, Sparkles, MessageSquare, Clock, TrendingUp } from "lucide-react";
 
 export type Notification = {
   id: string;
-  type: "coach_note" | "bilan_pending" | "program_assigned" | "system_reminder";
+  type: "coach_note" | "bilan_pending" | "program_assigned" | "system_reminder" | "tdee_updated";
   title: string;
   body: string | null;
   payload: Record<string, unknown> | null;
@@ -19,6 +19,7 @@ const TYPE_ICON: Record<Notification["type"], React.ElementType> = {
   bilan_pending: ClipboardList,
   program_assigned: Sparkles,
   system_reminder: Clock,
+  tdee_updated: TrendingUp,
 };
 
 export default function NotificationsBar({
@@ -43,6 +44,8 @@ export default function NotificationsBar({
       router.push("/client/programme");
     } else if (n.type === "coach_note") {
       router.push("/client/profil");
+    } else if (n.type === "tdee_updated") {
+      router.push("/client/nutrition");
     } else {
       fetch("/api/client/notifications", { method: "PATCH" });
     }
