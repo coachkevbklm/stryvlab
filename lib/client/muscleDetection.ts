@@ -182,11 +182,15 @@ export function detectMuscleGroups(
   const stabilizers = new Set<MuscleGroup>();
 
   for (const ex of exercises) {
-    const activation = getMuscleActivation(ex);
-    activation.primary.forEach((m) => primary.add(m));
-    activation.secondary.forEach((m) => {
-      if (!primary.has(m)) secondary.add(m);
-    });
+    try {
+      const activation = getMuscleActivation(ex);
+      activation.primary.forEach((m) => primary.add(m));
+      activation.secondary.forEach((m) => {
+        if (!primary.has(m)) secondary.add(m);
+      });
+    } catch {
+      // Unknown/unrecognized muscles — skip this exercise silently
+    }
   }
 
   return { primary, secondary, stabilizers };

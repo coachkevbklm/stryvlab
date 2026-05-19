@@ -32,25 +32,17 @@ export function resolveExerciseMuscleCoverage(
     )
   }
 
-  // Normalize + validate both arrays
-  let primary: CanonicalMuscle[]
-  let secondary: CanonicalMuscle[]
+  // Normalize both arrays — unknown slugs are filtered out, not thrown
+  const primary = validateMuscleArray(exercise.primary_muscles)
+  const secondary = exercise.secondary_muscles
+    ? validateMuscleArray(exercise.secondary_muscles)
+    : []
 
-  try {
-    primary = validateMuscleArray(exercise.primary_muscles)
-  } catch (e) {
+  // After normalization, primary could be empty if all slugs were unknown
+  if (primary.length === 0) {
     throw new Error(
-      `Exercise "${exercise.name}" has invalid primary_muscles: ${e instanceof Error ? e.message : String(e)}`
-    )
-  }
-
-  try {
-    secondary = exercise.secondary_muscles
-      ? validateMuscleArray(exercise.secondary_muscles)
-      : []
-  } catch (e) {
-    throw new Error(
-      `Exercise "${exercise.name}" has invalid secondary_muscles: ${e instanceof Error ? e.message : String(e)}`
+      `Exercise "${exercise.name}" has no recognized primary_muscles after normalization. ` +
+      `Raw: ${JSON.stringify(exercise.primary_muscles)}`
     )
   }
 

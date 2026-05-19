@@ -5,6 +5,7 @@
 
 ## 2026-05-19
 
+FIX: muscle slug "deltoid_posterior" (EN) crashes /client page — added to LEGACY_TO_CANONICAL map + validateMuscleArray now skips unknown slugs instead of throwing + detectMuscleGroups wraps per-exercise errors
 FEATURE: SessionLogger swipe-first keyboard-less redesign — SetSwipeCard (Framer Motion drag, useMotionValue/useTransform, haptic, swipe hint, completed compact row), SetEditSheet (bottom sheet steppers reps/poids/RIR, spring motion z-70), SessionLogger solo + superset grid replaced with SwipeCards, SetEditSheet integrated with PR re-detection on confirm, editingSet state, swipeHintDismissed localStorage gate, 0 TypeScript errors
 FEATURE: 1RM auto-estimation + deload detection — lib/training/oneRepMax.ts (Epley + Brzycki, RIR adjustment, trend computation), lib/training/deloadDetection.ts (4 signals: RIR inflation, completion drop, 1RM decline, volume stagnation), API routes /api/client/one-rm-trends (top 5 exercises) + /api/client/deload-status (4-week analysis), OneRMWidget (top 5 trends with deltas), DeloadAlertBanner (priority signal with recommendation), integrated in ProgrammeClientPage Séance + Performances tabs, 21 Vitest tests PASS, build successful
 
