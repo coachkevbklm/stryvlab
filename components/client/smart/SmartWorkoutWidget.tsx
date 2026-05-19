@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronRight, Dumbbell } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import BodyMap from '../BodyMap'
 import type { MuscleGroup } from '@/lib/client/muscleDetection'
 
@@ -54,17 +54,16 @@ export default function SmartWorkoutWidget({ state, session, compact = false }: 
 
       <div className="flex gap-2">
         <div className="flex-1 min-w-0">
-          <div className={`font-black tracking-[-0.02em] text-white ${compact ? 'text-[14px]' : 'text-[18px]'}`}>{session.name}</div>
-          <div className="text-[10px] text-white/50 mt-1">{session.exerciseCount} ex · ~{session.estimatedMinutes}min</div>
+          <div className={`font-semibold tracking-[-0.01em] text-white ${compact ? 'text-[13px]' : 'text-[15px]'}`}>{session.name}</div>
+          <div className="text-[10px] text-white/40 mt-0.5">{session.exerciseCount} ex · ~{session.estimatedMinutes}min</div>
           <div className="flex flex-wrap gap-1 mt-2">
             {session.musclePills.slice(0, compact ? 2 : 3).map(p => (
               <span key={p} className="bg-[#ffe01e]/10 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{p}</span>
             ))}
           </div>
-          <div
-            className="mt-3 flex items-center justify-center gap-1.5 w-full h-9 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[10px] font-black uppercase tracking-[0.1em]"
-          >
-            <Dumbbell size={12} strokeWidth={2.5} /> Démarrer →
+          <div className="mt-3 flex items-center justify-between w-full h-9 rounded-xl bg-[#ffe01e]/10 border border-[#ffe01e]/20 px-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#ffe01e]">Démarrer</span>
+            <ChevronRight size={13} className="text-[#ffe01e]" />
           </div>
         </div>
         {!compact && (

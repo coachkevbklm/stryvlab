@@ -61,14 +61,12 @@ export default async function ClientProgrammePage({
   const eightWeeksAgo = new Date();
   eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
 
-  // Week bounds for volume coverage
+  // Volume coverage — rolling 7-day window (not calendar week)
   const now = new Date();
-  const dow = now.getDay() === 0 ? 7 : now.getDay();
   const monday = new Date(now);
-  monday.setDate(now.getDate() - (dow - 1));
+  monday.setDate(now.getDate() - 6);
   monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  const sunday = new Date(now);
   sunday.setHours(23, 59, 59, 999);
 
   const [

@@ -187,15 +187,8 @@ export default function ProgrammeClientPage({
 
       <main className="max-w-lg mx-auto px-5 pt-[88px] flex flex-col gap-4">
 
-        {/* ── Smart Workout sections ── */}
+        {/* ── Smart alerts + recent sessions ── */}
         {workoutAlerts.length > 0 && <SmartAlertsFeed alerts={workoutAlerts} />}
-        {volumeCoverage.groups.length > 0 && (
-          <VolumeCoverageWidget
-            weekStart={volumeCoverage.week_start}
-            sessionsCount={volumeCoverage.sessions_count}
-            groups={volumeCoverage.groups}
-          />
-        )}
         {smartRecentSessions.length > 0 && <RecentSessionsStrip sessions={smartRecentSessions} />}
 
         {/* ── Tab bar ── */}
@@ -349,45 +342,13 @@ export default function ProgrammeClientPage({
               </div>
             )}
 
-            {/* Autres séances */}
-            {sessions.filter((s: any) => !(s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(selectedDow)).length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                  {ct(lang, 'programme.week.label')}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {sessions
-                    .filter((s: any) => !(s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(selectedDow))
-                    .map((session: any) => {
-                      const exs = ((session.program_exercises ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
-                      const sessionDays: number[] = session.days_of_week?.length ? session.days_of_week : (session.day_of_week ? [session.day_of_week] : [])
-                      const isSessionToday = sessionDays.includes(todayDow)
-                      const firstDow = sessionDays[0] ?? 1
-                      return (
-                        <button
-                          key={session.id}
-                          onClick={() => setSelectedDow(firstDow)}
-                          className="flex items-center justify-between bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3 hover:bg-white/[0.04] transition-colors text-left w-full"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex flex-col items-center w-8">
-                              <span className={`text-[9px] font-bold uppercase ${isSessionToday ? 'text-[#ffe01e]' : 'text-white/30'}`}>
-                                {sessionDays.map((d: number) => daysShort[d - 1]).join('/')}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-[12px] font-semibold text-white/80">{session.name}</p>
-                              <p className="text-[10px] text-white/30 mt-0.5">
-                                {exs.length} ex. · {exs.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)} sets
-                              </p>
-                            </div>
-                          </div>
-                          <ChevronRight size={14} className="text-white/20 shrink-0" />
-                        </button>
-                      )
-                    })}
-                </div>
-              </div>
+            {/* Volume hebdomadaire — 7 derniers jours */}
+            {volumeCoverage.groups.length > 0 && (
+              <VolumeCoverageWidget
+                weekStart={volumeCoverage.week_start}
+                sessionsCount={volumeCoverage.sessions_count}
+                groups={volumeCoverage.groups}
+              />
             )}
           </>
         )}

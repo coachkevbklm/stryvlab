@@ -5,6 +5,12 @@
 
 ## 2026-05-20
 
+FIX: Volume hebdo bug — window 7j glissants au lieu de semaine calendaire fixe
+REFACTOR: Page Workout — suppr "Programme de la semaine", VolumeCoverageWidget en bas onglet Séance
+REFACTOR: SmartWorkoutWidget — titre font-semibold 15px, bouton Démarrer outline jaune discret
+FIX: SessionLogger — bouton "J'ai bu" appelle POST /api/client/water (mlPerSip) → hydratation séance loguée en DB et visible partout
+SCHEMA: 20260520_client_water_logs.sql — CREATE TABLE client_water_logs (id, client_id, amount_ml, logged_at) + RLS + index
+FIX: /api/client/water — await createClient() (missing await caused auth failure in App Router)
 FIX: BottomNav — boutons action droite manquaient label+style, tous boutons action rectangulaires (rounded-xl, label intégré dans bouton)
 FIX: TempoGuideModal — fond linear-gradient (haut→bas) remplace radial (cercle trop visible en paysage)
 FEATURE: POST /api/clients/[clientId]/ai-checkin-feedback — GPT-4o reads 7d check-ins + last session + weight trend → draft coach message (2-4 sentences FR) saved as coach_feedback is_ai_draft=true
