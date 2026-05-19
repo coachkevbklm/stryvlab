@@ -462,7 +462,7 @@ function TempoGuideModalInner({
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
-        const dColor = frac === 0.5 ? '#ef4444' : '#3b82f6'
+        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
         el.setAttribute('fill', dColor)
         el.setAttribute('opacity', '0.6')
         el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y})`)
