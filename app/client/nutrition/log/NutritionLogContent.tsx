@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronLeft, Search, Plus, Minus, Check, X, Pencil } from "lucide-react"
+import { ChevronLeft, Search, Plus, Minus, Check, X, Pencil, Mic } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const VoiceLogSheet = dynamic(() => import("@/components/client/smart/VoiceLogSheet"), { ssr: false })
 import type { CategoryL1, EntryDraft, FoodItem } from "@/lib/nutrition/food-items"
 import {
   PORTION_SIZES,
@@ -78,6 +81,7 @@ export interface NutritionLogContentProps {
 
 export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLogContentProps) {
   const { t } = useClientT()
+  const [voiceOpen, setVoiceOpen] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -228,7 +232,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
         if (onSuccess) {
           onSuccess()
         } else {
-          router.push("/client/nutrition/journal")
+          router.push("/client/nutrition")
         }
       } else {
         setSaving(false)
@@ -249,7 +253,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
         if (onSuccess) {
           onSuccess()
         } else {
-          router.push("/client/nutrition/journal")
+          router.push("/client/nutrition")
         }
       } else {
         setSaving(false)
@@ -331,16 +335,36 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
         </div>
       )}
 
-      {/* Embedded sub-header (layer title + back) */}
+      {/* Embedded sub-header (layer title + back + mic) */}
       {embedded && layer !== "category" && (
         <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] shrink-0">
           <button onClick={goBack} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/50 active:scale-95 transition-all">
             <ChevronLeft size={14} />
           </button>
           <p className="text-[12px] font-semibold text-white truncate flex-1">{layerTitle}</p>
-          <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold mr-1">
             {layer === "subcategory" ? "1/3" : layer === "item" ? "2/3" : "3/3"}
           </p>
+          <button
+            onClick={() => setVoiceOpen(true)}
+            className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
+            title="Saisie vocale"
+          >
+            <Mic size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* Mic button in category layer (embedded) */}
+      {embedded && layer === "category" && (
+        <div className="flex justify-end px-4 pt-2 shrink-0">
+          <button
+            onClick={() => setVoiceOpen(true)}
+            className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
+            title="Saisie vocale"
+          >
+            <Mic size={15} />
+          </button>
         </div>
       )}
 
@@ -623,6 +647,13 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
           </button>
         </div>
       </div>
+
+      <VoiceLogSheet
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onSuccess={() => { setVoiceOpen(false); onSuccess?.() }}
+        mealId={existingMealId ?? undefined}
+      />
     </div>
   )
 }

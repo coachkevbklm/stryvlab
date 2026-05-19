@@ -1,9 +1,12 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X } from "lucide-react"
+import { X, Mic } from "lucide-react"
 import { NutritionLogContent } from "@/app/client/nutrition/log/NutritionLogContent"
+import dynamic from "next/dynamic"
+
+const VoiceLogSheet = dynamic(() => import("@/components/client/smart/VoiceLogSheet"), { ssr: false })
 
 interface MealLogSheetProps {
   open: boolean
@@ -12,6 +15,8 @@ interface MealLogSheetProps {
 }
 
 export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetProps) {
+  const [voiceOpen, setVoiceOpen] = useState(false)
+
   return (
     <AnimatePresence>
       {open && (
@@ -37,12 +42,21 @@ export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetP
             <div className="relative flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.12]" />
               <p className="text-[13px] font-bold text-white">Ajouter un repas</p>
-              <button
-                onClick={onClose}
-                className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors"
-              >
-                <X size={13} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setVoiceOpen(true)}
+                  className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
+                  title="Saisie vocale"
+                >
+                  <Mic size={13} />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              </div>
             </div>
 
             {/* Content — flex-1 reçoit la hauteur restante du sheet */}
@@ -52,6 +66,13 @@ export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetP
               </Suspense>
             </div>
           </motion.div>
+
+          {/* Voice sheet — z higher than MealLogSheet */}
+          <VoiceLogSheet
+            open={voiceOpen}
+            onClose={() => setVoiceOpen(false)}
+            onSuccess={() => { setVoiceOpen(false); onSuccess?.() }}
+          />
         </>
       )}
     </AnimatePresence>
