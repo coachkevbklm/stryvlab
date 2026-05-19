@@ -24,7 +24,7 @@ async function resolveClientId(userId: string): Promise<string | null> {
 const entrySchema = z.object({
   food_item_id: z.string().uuid(),
   quantity_g: z.number().positive().max(5000),
-  input_mode: z.enum(["composer", "portion", "photo_ai"]).default("composer"),
+  input_mode: z.enum(["composer", "portion", "photo_ai", "voice"]).default("composer"),
 })
 
 const createMealSchema = z.object({
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     fat_g: e.fat_g,
     fiber_g: e.fiber_g,
     input_mode: e.input_mode,
-    confidence_score: e.input_mode === "composer" ? 0.85 : e.input_mode === "portion" ? 0.65 : 0.55,
+    confidence_score: e.input_mode === "composer" ? 0.85 : e.input_mode === "voice" ? 0.70 : e.input_mode === "portion" ? 0.65 : 0.55,
   }))
 
   const { error: entriesError } = await db.from("nutrition_entries").insert(entriesPayload)
