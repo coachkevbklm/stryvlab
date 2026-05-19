@@ -5,6 +5,19 @@
 
 ## 2026-05-20
 
+FIX: BottomNav — boutons action droite manquaient label+style, tous boutons action rectangulaires (rounded-xl, label intégré dans bouton)
+FIX: TempoGuideModal — fond linear-gradient (haut→bas) remplace radial (cercle trop visible en paysage)
+FEATURE: POST /api/clients/[clientId]/ai-checkin-feedback — GPT-4o reads 7d check-ins + last session + weight trend → draft coach message (2-4 sentences FR) saved as coach_feedback is_ai_draft=true
+FEATURE: POST /api/clients/[clientId]/ai-bilan-analysis — GPT-4o reads completed assessment + previous for delta → structured report (observations/évolutions/alertes/recommandations) saved as metric_annotation ai_analysis
+FEATURE: Coach check-ins page — "Générer message coach" IA button + inline preview panel
+FEATURE: Coach bilan detail page — "Analyse IA" button in TopBar + inline report panel with 4-section layout
+SCHEMA: 20260520_coach_feedback_ai_draft.sql — ADD COLUMN is_ai_draft boolean to coach_feedback
+SCHEMA: 20260520_metric_annotations_ai.sql — ADD COLUMN is_ai_draft + extend event_type CHECK to include ai_analysis
+FIX: ExerciseSwapSheet — movement_pattern + primary_muscles passés au scoring → alternatives pertinentes par pattern musculaire
+FIX: ExerciseSwapSheet — nom complet line-clamp-2, vignette GIF/image, badges colorés, rounded-t-2xl DS v3.0
+FIX: ExerciseContextMenu — "Exercice d'échange" → "Changer l'exercice"
+FEATURE: POST /api/clients/[clientId]/nutrition-protocols/generate — auto-generates draft protocol from assessment data (calculateMacros + hydration + carb cycling); no coach input required
+FEATURE: NutritionProtocolDashboard — "Générer (IA)" button + meta feedback (TDEE, calories, bmrSource) + error display
 REFACTOR: TempoGuideModal — ISO+PAUSE rouge #ef4444, fond radial BB→44 (80%→27%), pulse 0.45→1.0 agressif sur phases statiques
 FIX: water logging — new POST /api/client/water — single insert client_water_logs, no food_items lookup → sub-200ms
 FIX: QuickWaterModal — direct /api/client/water call, optimistic onLogged fires before server response

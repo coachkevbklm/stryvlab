@@ -650,7 +650,7 @@ function TempoGuideModalInner({
             style={{
               position: 'absolute',
               inset: 0,
-              background: `radial-gradient(circle at center, ${phaseColor}BB 0%, ${phaseColor}44 45%, transparent 85%)`,
+              background: `linear-gradient(to bottom, ${phaseColor}99 0%, ${phaseColor}55 40%, ${phaseColor}11 100%)`,
               transition: 'background 150ms ease-out',
               pointerEvents: 'none',
               animation: (currentPhase === 1 || currentPhase === 3) ? 'tempoBgPulse 0.9s ease-in-out infinite' : 'none',

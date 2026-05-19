@@ -148,12 +148,10 @@ export default function BottomNav() {
                       transition={{ delay: i * 0.03, type: "spring", stiffness: 420, damping: 26 }}
                       onClick={() => handleAction(id)}
                       aria-label={String(t(labelKey as any))}
-                      className="flex flex-col items-center justify-center gap-[3px] flex-1 h-[62px] active:scale-[0.92] transition-transform"
+                      className="flex flex-col items-center justify-center gap-[4px] flex-1 mx-1 h-[50px] rounded-xl bg-[#ffe01e] active:scale-[0.92] transition-transform"
                     >
-                      <div className="w-11 h-11 rounded-2xl bg-[#ffe01e] flex items-center justify-center">
-                        <Icon size={22} weight="fill" className="text-[#0d0d0d]" />
-                      </div>
-                      <span className="text-[9px] font-semibold leading-none tracking-wide text-[#ffe01e]">
+                      <Icon size={20} weight="fill" className="text-[#0d0d0d]" />
+                      <span className="text-[9px] font-bold leading-none tracking-wide text-[#0d0d0d] uppercase">
                         {String(t(labelKey as any))}
                       </span>
                     </motion.button>
@@ -233,9 +231,12 @@ export default function BottomNav() {
                       transition={{ delay: i * 0.03, type: "spring", stiffness: 420, damping: 26 }}
                       onClick={() => handleAction(id)}
                       aria-label={String(t(labelKey as any))}
-                      className="w-12 h-12 rounded-2xl bg-[#ffe01e] flex items-center justify-center active:scale-[0.92] transition-transform"
+                      className="flex flex-col items-center justify-center gap-[4px] flex-1 mx-1 h-[50px] rounded-xl bg-[#ffe01e] active:scale-[0.92] transition-transform"
                     >
-                      <Icon size={22} weight="fill" className="text-[#0d0d0d]" />
+                      <Icon size={20} weight="fill" className="text-[#0d0d0d]" />
+                      <span className="text-[9px] font-bold leading-none tracking-wide text-[#0d0d0d] uppercase">
+                        {String(t(labelKey as any))}
+                      </span>
                     </motion.button>
                   ))}
                 </motion.div>
