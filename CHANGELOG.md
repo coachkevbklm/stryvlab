@@ -3,7 +3,40 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-19
+
+FEATURE: Smart Workout redesign — SessionLogger liste scrollable style Motra (remplace vue focalisée 1 exercice)
+FEATURE: SetRow — row inline-editable avec swipe droite=valider + swipe gauche=supprimer
+FEATURE: SetTypeSelector — sheet EC / Série principale / RC / Dégressive par set
+FEATURE: ExerciseBlock — card exercice avec sets inline + Add Set + context menu •••
+FEATURE: ExerciseContextMenu — échange, repos, note, tempo, supprimer exercice
+FEATURE: SupersetContextMenu — dissocier, repos, supprimer superset
+FEATURE: SmartWorkoutHero — titre 22px, suppression navigation date, muscle pills
+SCHEMA: add set_type column to client_set_logs (warmup/working/cooldown/dropset)
+CHORE: remove SetSwipeCard.tsx and SetEditSheet.tsx (replaced by SetRow inline)
+
 ## 2026-05-20
+
+FEATURE: TdeeChart — pure SVG adaptive TDEE trend line with formula baseline (dashed), flux range band, range pills (1M/3M/ALL), insights strip
+FEATURE: GET /api/client/nutrition/tdee-history — client-side TDEE history route (reads nutrition_tdee_history, RLS-protected)
+REFACTOR: nutrition/page.tsx — replace inline TDEE card with TdeeChart component (self-hides when no history)
+FEATURE: MacroWeekGrid — add Consommé/Restant toggle; remaining mode shows uncompleted macro budget per day with inverted color logic
+FEATURE: NutritionStreakCard — 5-week calendar heatmap + current/longest streak counter (90-day fetch from nutrition_meals)
+FEATURE: streak computed client-side from physiological_date distinct days — no new DB table needed
+
+FEATURE: MacroWeekGrid — replace WeeklyTrendStrip with MacroFactor-style stacked P/F/C blocks per day (7-day grid)
+FEATURE: ProtocolRationale — collapsible accordion explaining TDEE → calorie target → protein → fat/carb split with contextual body
+REFACTOR: nutrition/page.tsx — trend fetch now includes total_protein_g/carbs_g/fat_g + body weight fetch for g/kg ratio
+REFACTOR: nutrition/page.tsx — remove unused CoachProtocolCard import
+
+FIX: RadialActionMenu — buttons now render at z-[60] above nav (z-50), no longer clipped behind nav bar
+FIX: timeline/today — filter out meal_type='drinks' so water logs don't appear as meals in SmartAgendaTimeline
+FIX: home page meals query — exclude meal_type='drinks' from consumed totals on home page
+FIX: SmartNutritionHero date navigation — parse ISO dates as UTC to avoid TZ-offset day-2 shift
+FEATURE: SmartNutritionHero — add hydration bar + quick water button directly in the hero card
+REFACTOR: nutrition/page.tsx — remove CoachProtocolCard (JOUR ENTRAÎNEMENT), add day type badge to TopBar right slot
+REFACTOR: nutrition/page.tsx — move WeeklyTrendStrip above hero (now first section)
+FIX: CoachProtocolCard removed from nutrition page layout to avoid data redundancy
 
 FIX: tempo tests — align 7 expected values with code (hypertrophy map uses 1s isometric pause at top, not 0)
 FIX: muscle-normalization test — validateMuscleArray silently ignores non-string entries (no throw)
