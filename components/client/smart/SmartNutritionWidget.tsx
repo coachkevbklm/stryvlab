@@ -16,55 +16,56 @@ export type NutritionMacros = {
 export type SmartNutritionWidgetProps = {
   consumed: NutritionMacros
   target: NutritionMacros
-  /** compact=true: arc réduit, barres compressées — pour la grille 2 colonnes home */
-  compact?: boolean
+  proteinStreakDays?: number
 }
 
 const MACROS = [
-  { key: 'protein_g',  label: 'P', color: '#4a90e2' },
-  { key: 'carbs_g',    label: 'G', color: '#22c55e' },
-  { key: 'fat_g',      label: 'L', color: '#f59e0b' },
+  { key: 'protein_g', label: 'Protéines', color: '#4a90e2' },
+  { key: 'carbs_g',   label: 'Glucides',  color: '#22c55e' },
+  { key: 'fat_g',     label: 'Lipides',   color: '#f59e0b' },
 ] as const
 
-export default function SmartNutritionWidget({ consumed, target, compact = false }: SmartNutritionWidgetProps) {
+export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
   const [waterOpen, setWaterOpen] = useState(false)
+  const [waterDelta, setWaterDelta] = useState(0)
+  const effectiveWaterMl = consumed.water_ml + waterDelta
+
   const kcalPct = target.kcal > 0 ? Math.min(1, consumed.kcal / target.kcal) : 0
-  // semicircle arc length ≈ π × r
-  const r = compact ? 52 : 80
+  const r = 80
   const arcTotal = Math.PI * r
   const arcOffset = arcTotal * (1 - kcalPct)
-  const cx = compact ? 70 : 100
-  const cy = compact ? 68 : 100
-  const vw = compact ? 140 : 200
-  const vh = compact ? 75 : 110
 
   return (
     <>
-      <QuickWaterModal open={waterOpen} onClose={() => setWaterOpen(false)} />
+      <QuickWaterModal
+        open={waterOpen}
+        onClose={() => setWaterOpen(false)}
+        onLogged={ml => setWaterDelta(d => d + ml)}
+      />
       <Link
         href="/client/nutrition"
-        className="block bg-[#161616] rounded-2xl border border-white/[0.08] p-[14px] active:scale-[0.99] transition-transform"
+        className="block bg-[#161616] rounded-2xl border border-white/[0.08] p-5 active:scale-[0.99] transition-transform"
       >
-        <div className="flex items-baseline justify-between mb-1">
-          <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white">Nutrition</span>
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30">Nutrition</span>
           <span className="text-[10px] font-semibold text-[#ffe01e]">→</span>
         </div>
 
         {/* Arc demi-cercle */}
-        <div className="relative" style={{ height: compact ? 72 : 120 }}>
-          <svg viewBox={`0 0 ${vw} ${vh}`} className="w-full h-full">
+        <div className="relative" style={{ height: 110 }}>
+          <svg viewBox="0 0 200 110" className="w-full h-full">
             <path
-              d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+              d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
               stroke="rgba(255,255,255,0.08)"
-              strokeWidth={compact ? 9 : 12}
+              strokeWidth={12}
               strokeLinecap="round"
             />
             <path
-              d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+              d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
               stroke="#ffe01e"
-              strokeWidth={compact ? 9 : 12}
+              strokeWidth={12}
               strokeLinecap="round"
               strokeDasharray={arcTotal}
               strokeDashoffset={arcOffset}
@@ -72,91 +73,75 @@ export default function SmartNutritionWidget({ consumed, target, compact = false
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-            <div className={`font-black leading-none text-white tabular-nums ${compact ? 'text-[18px]' : 'text-[24px]'}`}>
+            <div className="font-black leading-none text-white tabular-nums text-[28px]">
               {Math.round(consumed.kcal)}
             </div>
-            <div className="text-[9px] text-white/40 tabular-nums">/ {target.kcal}</div>
+            <div className="text-[10px] text-white/40 tabular-nums">/ {target.kcal} kcal</div>
           </div>
         </div>
 
         {/* Barres macros */}
-        <div className={`flex flex-col ${compact ? 'gap-1.5 mt-1' : 'gap-2 mt-2'}`}>
+        <div className="flex flex-col gap-2 mt-3">
           {MACROS.map(m => {
             const c = (consumed[m.key] as number) ?? 0
             const tg = (target[m.key] as number) ?? 0
             const pct = tg > 0 ? Math.min(100, (c / tg) * 100) : 0
             return (
               <div key={m.key}>
-                {!compact && (
-                  <div className="flex justify-between text-[10px] mb-1">
-                    <span className="text-white/55 uppercase tracking-[0.1em] font-bold">{m.label === 'P' ? 'Protéines' : m.label === 'G' ? 'Glucides' : 'Lipides'}</span>
-                    <span className="text-white font-bold tabular-nums">{Math.round(c)}/{tg}g</span>
-                  </div>
-                )}
-                {compact && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold text-white/40 w-3 shrink-0">{m.label}</span>
-                    <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: m.color, transition: 'width 0.4s ease' }} />
-                    </div>
-                    <span className="text-[9px] text-white/40 tabular-nums w-6 text-right shrink-0">{Math.round(c)}g</span>
-                  </div>
-                )}
-                {!compact && (
-                  <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div className="h-full" style={{ width: `${pct}%`, background: m.color, transition: 'width 0.4s ease' }} />
-                  </div>
-                )}
+                <div className="flex justify-between text-[10px] mb-1">
+                  <span className="text-white/50 uppercase tracking-[0.1em] font-bold">{m.label}</span>
+                  <span className="text-white font-bold tabular-nums">{Math.round(c)}/{tg}g</span>
+                </div>
+                <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: m.color, transition: 'width 0.4s ease' }} />
+                </div>
               </div>
             )
           })}
         </div>
 
         {/* Eau */}
-        <div className={`flex items-center gap-2 ${compact ? 'mt-2 pt-2' : 'mt-3 pt-3'} border-t border-white/[0.06]`}>
+        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.06]">
           <div className="flex-1">
-            {!compact && (
-              <div className="flex justify-between text-[10px] mb-1">
-                <span className="text-white/55 uppercase tracking-[0.1em] font-bold">Hydratation</span>
-                <span className="text-white font-bold tabular-nums">
-                  {(consumed.water_ml / 1000).toFixed(1)} / {(target.water_ml / 1000).toFixed(1)} L
-                </span>
-              </div>
-            )}
-            {compact && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-bold text-white/40 shrink-0">💧</span>
-                <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-cyan-400"
-                    style={{
-                      width: `${target.water_ml > 0 ? Math.min(100, (consumed.water_ml / target.water_ml) * 100) : 0}%`,
-                      transition: 'width 0.4s ease',
-                    }}
-                  />
-                </div>
-                <span className="text-[9px] text-white/40 tabular-nums shrink-0">{(consumed.water_ml / 1000).toFixed(1)}L</span>
-              </div>
-            )}
-            {!compact && (
-              <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-cyan-400"
-                  style={{
-                    width: `${target.water_ml > 0 ? Math.min(100, (consumed.water_ml / target.water_ml) * 100) : 0}%`,
-                    transition: 'width 0.4s ease',
-                  }}
-                />
-              </div>
-            )}
+            <div className="flex justify-between text-[10px] mb-1">
+              <span className="text-white/50 uppercase tracking-[0.1em] font-bold">Hydratation</span>
+              <span className="text-white font-bold tabular-nums">
+                {(effectiveWaterMl / 1000).toFixed(1)} / {(target.water_ml / 1000).toFixed(1)} L
+              </span>
+            </div>
+            <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-cyan-400 rounded-full"
+                style={{
+                  width: `${target.water_ml > 0 ? Math.min(100, (effectiveWaterMl / target.water_ml) * 100) : 0}%`,
+                  transition: 'width 0.4s ease',
+                }}
+              />
+            </div>
           </div>
           <button
-            onClick={(e) => { e.preventDefault(); setWaterOpen(true) }}
-            className={`rounded-xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d] active:scale-95 transition-transform ${compact ? 'w-7 h-7' : 'w-8 h-8'}`}
+            onClick={e => { e.preventDefault(); setWaterOpen(true) }}
+            className="w-9 h-9 rounded-xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d] active:scale-95 transition-transform shrink-0"
           >
-            <Plus size={compact ? 13 : 16} strokeWidth={2.5} />
+            <Plus size={16} strokeWidth={2.5} />
           </button>
         </div>
+
+        {/* Régularité protéines */}
+        {proteinStreakDays !== undefined && target.protein_g > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/[0.06]">
+            <div className="flex justify-between text-[10px] mb-1.5">
+              <span className="text-white/40 uppercase tracking-[0.1em] font-bold">Régularité protéines</span>
+              <span className="text-white/60 tabular-nums font-bold">{proteinStreakDays}/7j</span>
+            </div>
+            <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#ffe01e]"
+                style={{ width: `${(proteinStreakDays / 7) * 100}%`, transition: 'width 0.6s ease' }}
+              />
+            </div>
+          </div>
+        )}
       </Link>
     </>
   )
