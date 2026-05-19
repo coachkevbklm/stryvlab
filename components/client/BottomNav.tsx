@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { SquaresFour, Barbell, ForkKnife, UserCircle, Drop, PersonSimpleRun, ClipboardText } from "@phosphor-icons/react";
+import { SquaresFour, Barbell, ForkKnife, UserCircle, Drop, PersonSimpleRun, CheckCircle } from "@phosphor-icons/react";
 import { useClientT } from "./ClientI18nProvider";
 import { useTour } from "./TourContext";
 import QuickWaterModal from "./QuickWaterModal";
@@ -30,7 +30,7 @@ const ACTIONS: { id: ActionId; Icon: React.ElementType; labelKey: string }[] = [
   { id: "meal",     Icon: ForkKnife,       labelKey: "smart.radial.meal" },
   { id: "water",    Icon: Drop,            labelKey: "smart.radial.water" },
   { id: "activity", Icon: PersonSimpleRun, labelKey: "smart.radial.activity" },
-  { id: "checkin",  Icon: ClipboardText,   labelKey: "smart.radial.checkin" },
+  { id: "checkin",  Icon: CheckCircle,     labelKey: "smart.radial.checkin" },
 ];
 
 export default function BottomNav() {
@@ -148,12 +148,9 @@ export default function BottomNav() {
                       transition={{ delay: i * 0.03, type: "spring", stiffness: 420, damping: 26 }}
                       onClick={() => handleAction(id)}
                       aria-label={String(t(labelKey as any))}
-                      className="flex flex-col items-center justify-center gap-[4px] flex-1 mx-1 h-[50px] rounded-xl bg-[#ffe01e] active:scale-[0.92] transition-transform"
+                      className="w-11 h-11 rounded-2xl bg-[#ffe01e] flex items-center justify-center active:scale-[0.92] transition-transform"
                     >
-                      <Icon size={20} weight="fill" className="text-[#0d0d0d]" />
-                      <span className="text-[9px] font-bold leading-none tracking-wide text-[#0d0d0d] uppercase">
-                        {String(t(labelKey as any))}
-                      </span>
+                      <Icon size={24} weight="fill" className="text-[#0d0d0d]" />
                     </motion.button>
                   ))}
                 </motion.div>
@@ -231,12 +228,9 @@ export default function BottomNav() {
                       transition={{ delay: i * 0.03, type: "spring", stiffness: 420, damping: 26 }}
                       onClick={() => handleAction(id)}
                       aria-label={String(t(labelKey as any))}
-                      className="flex flex-col items-center justify-center gap-[4px] flex-1 mx-1 h-[50px] rounded-xl bg-[#ffe01e] active:scale-[0.92] transition-transform"
+                      className="w-11 h-11 rounded-2xl bg-[#ffe01e] flex items-center justify-center active:scale-[0.92] transition-transform"
                     >
-                      <Icon size={20} weight="fill" className="text-[#0d0d0d]" />
-                      <span className="text-[9px] font-bold leading-none tracking-wide text-[#0d0d0d] uppercase">
-                        {String(t(labelKey as any))}
-                      </span>
+                      <Icon size={24} weight="fill" className="text-[#0d0d0d]" />
                     </motion.button>
                   ))}
                 </motion.div>
