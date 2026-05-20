@@ -7,93 +7,87 @@ import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
 
-const MAX_MESSAGES = 20
-const MAX_HISTORY  = 20
+const DAILY_LIMIT = 20
+const MAX_HISTORY = 20  // 10 exchanges × 2 messages each
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const bodySchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().max(500),
+  })).max(MAX_HISTORY),
+})
 
 function svc() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
 
-const messageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
-  content: z.string().min(1).max(2000),
-})
-
-const bodySchema = z.object({
-  messages: z.array(messageSchema).min(1).max(MAX_HISTORY),
-})
-
 export async function POST(req: NextRequest) {
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const client = await resolveClientFromUser(
-    user.id,
-    user.email,
-    svc(),
-    'id, first_name',
-  )
-  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  const client = await resolveClientFromUser(user.id, user.email, svc(), 'id, first_name')
+  if (!client) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = bodySchema.safeParse(await req.json())
-  if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
+  // ── Validate body ─────────────────────────────────────────────────────────
+  const parsed = bodySchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+  const { messages } = parsed.data
 
+  // ── Rate limit ────────────────────────────────────────────────────────────
   const today = computePhysiologicalDate(new Date())
-  const db = svc()
-
-  // ── Rate limit check ────────────────────────────────────────────────────────
-  const { data: usage } = await db
+  const { data: usage } = await svc()
     .from('ai_coach_daily_usage')
     .select('message_count')
     .eq('client_id', client.id)
     .eq('date', today)
     .maybeSingle()
 
-  const used = usage?.message_count ?? 0
-  if (used >= MAX_MESSAGES) {
-    return NextResponse.json(
-      { error: 'limit_reached', remaining: 0 },
-      { status: 429 },
-    )
+  const currentCount = usage?.message_count ?? 0
+  if (currentCount >= DAILY_LIMIT) {
+    return NextResponse.json({ error: 'limit_reached', remaining: 0 }, { status: 429 })
   }
 
-  // ── Build system prompt (server-side only, never sent to client) ────────────
-  const systemPrompt = await buildSystemPrompt(client.id)
+  // ── Build system prompt (server-side only, never returned to client) ───────
+  let systemPrompt: string
+  try {
+    systemPrompt = await buildSystemPrompt(client.id as string)
+  } catch {
+    return NextResponse.json({ error: 'Context unavailable' }, { status: 500 })
+  }
 
-  // ── OpenAI call ─────────────────────────────────────────────────────────────
+  // ── Call OpenAI ───────────────────────────────────────────────────────────
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
   let reply: string
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 300,
-      temperature: 0.7,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...body.data.messages,
+        ...messages,
       ],
     })
-    reply = completion.choices[0]?.message?.content?.trim() ?? "Désolé, je n'ai pas pu répondre."
-  } catch (err) {
-    console.error('[ai-coach/chat] OpenAI error:', err)
-    return NextResponse.json({ error: 'openai_error' }, { status: 500 })
+    reply = completion.choices[0]?.message?.content ?? "Désolé, je n'ai pas pu générer une réponse."
+  } catch {
+    return NextResponse.json({ error: 'OpenAI error' }, { status: 500 })
   }
 
-  // ── Increment counter (upsert) ──────────────────────────────────────────────
-  await db
+  // ── Upsert usage ──────────────────────────────────────────────────────────
+  await svc()
     .from('ai_coach_daily_usage')
     .upsert(
-      { client_id: client.id, date: today, message_count: used + 1 },
-      { onConflict: 'client_id,date' },
+      { client_id: client.id, date: today, message_count: currentCount + 1 },
+      { onConflict: 'client_id,date' }
     )
 
-  return NextResponse.json({
-    reply,
-    remaining: MAX_MESSAGES - (used + 1),
-  })
+  const remaining = Math.max(0, DAILY_LIMIT - (currentCount + 1))
+  return NextResponse.json({ reply, remaining })
 }
