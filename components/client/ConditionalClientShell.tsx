@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import BottomNav from './BottomNav'
 import OnboardingTour from './OnboardingTour'
 import { TourProvider } from './TourContext'
+import CoachAIButton from './CoachAIButton'
 
 // Routes that are NOT part of the authenticated client shell
 // (login, set-password, auth callbacks, error pages).
@@ -35,6 +36,11 @@ export default function ConditionalClientShell({ children }: Props) {
 
   return (
     <TourProvider>
+      {/* Coach IA button — fixed top-right, above TopBar (z-50 > z-40), all shell pages */}
+      <div className="fixed top-3 right-4 z-50">
+        <CoachAIButton />
+      </div>
+
       {/* pb = BottomNav h-16 (64) + safe-area min 24px + 16px breathing room = ~104px */}
       <div className="pb-24" style={{ paddingBottom: 'max(104px, calc(64px + env(safe-area-inset-bottom) + 16px))' }}>
         {children}
