@@ -65,13 +65,13 @@ export default function CheckinOnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0d0d0d] px-6 py-10">
-      <section className="max-w-sm mx-auto bg-white/[0.02] border border-white/[0.06] rounded-xl p-5">
+    <main className="min-h-screen bg-[#080808] px-6 py-10">
+      <section className="max-w-sm mx-auto bg-white/[0.02] rounded-xl p-5">
         <div className="flex gap-1.5 mb-5">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full ${i === step ? "w-5 bg-[#ffe01e]" : "w-1.5 bg-white/20"}`}
+              className={`h-1.5 rounded-full ${i === step ? "w-5 bg-[#f2f2f2]" : "w-1.5 bg-white/20"}`}
             />
           ))}
         </div>
@@ -84,7 +84,7 @@ export default function CheckinOnboardingPage() {
             </p>
             <button
               onClick={() => setStep(1)}
-              className="w-full h-11 rounded-xl bg-[#ffe01e] text-white text-[12px] font-bold"
+              className="w-full h-11 rounded-xl bg-[#f2f2f2] text-white text-[12px] font-bold"
             >
               Suivant
             </button>
@@ -100,7 +100,7 @@ export default function CheckinOnboardingPage() {
             </div>
             <button
               onClick={() => setStep(2)}
-              className="w-full h-11 rounded-xl bg-[#ffe01e] text-white text-[12px] font-bold"
+              className="w-full h-11 rounded-xl bg-[#f2f2f2] text-white text-[12px] font-bold"
             >
               C'est fait, continuer
             </button>
@@ -117,7 +117,7 @@ export default function CheckinOnboardingPage() {
                   type="time"
                   value={times[m.moment]}
                   onChange={(e) => setTimes((prev) => ({ ...prev, [m.moment]: e.target.value }))}
-                  className="h-10 px-3 rounded-xl bg-[#0a0a0a] border border-white/[0.08] text-white text-[12px]"
+                  className="h-10 px-3 rounded-xl bg-[#0a0a0a] text-white text-[12px]"
                 />
               </div>
             ))}
@@ -131,7 +131,7 @@ export default function CheckinOnboardingPage() {
             <button
               onClick={finishSetup}
               disabled={saving}
-              className="w-full h-11 rounded-xl bg-[#ffe01e] text-white text-[12px] font-bold disabled:opacity-50"
+              className="w-full h-11 rounded-xl bg-[#f2f2f2] text-white text-[12px] font-bold disabled:opacity-50"
             >
               {saving ? "Activation..." : "Activer mes rappels"}
             </button>

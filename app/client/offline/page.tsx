@@ -2,7 +2,7 @@
 
 export default function OfflinePage() {
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center px-6 text-center">
+    <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center px-6 text-center">
       <div className="mb-8">
         <div className="w-16 h-16 rounded-2xl bg-white/[0.06] flex items-center justify-center mx-auto mb-6">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30">
@@ -22,7 +22,7 @@ export default function OfflinePage() {
 
       <button
         onClick={() => window.location.reload()}
-        className="h-12 px-8 bg-[#ffe01e] text-[#0d0d0d] text-[12px] font-black uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-transform"
+        className="h-12 px-8 bg-[#f2f2f2] text-[#080808] text-[12px] font-black uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-transform"
       >
         Réessayer
       </button>

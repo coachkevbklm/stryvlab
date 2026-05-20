@@ -23,7 +23,7 @@ export default function ClientLogoutButton() {
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] text-[13px] font-medium text-red-400 hover:bg-red-500/[0.06] hover:text-red-400 transition-colors"
+        className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-[#111111] text-[13px] font-medium text-red-400 hover:bg-red-500/[0.06] hover:text-red-400 transition-colors"
       >
         <LogOut size={15} />
         {t('profil.logout')}
@@ -31,7 +31,7 @@ export default function ClientLogoutButton() {
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#181818] rounded-2xl border-[0.3px] border-white/[0.06] p-6 w-full max-w-sm">
+          <div className="bg-[#111111] rounded-xl p-6 w-full max-w-sm">
             <h3 className="font-bold text-white mb-2">{t('profil.logout.confirm.title')}</h3>
             <p className="text-[13px] text-white/55 mb-5">
               {t('profil.logout.confirm.desc')}

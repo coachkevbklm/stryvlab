@@ -2,12 +2,13 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { clientLogin } from './actions'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export default function ClientLoginPage() {
   const router = useRouter()
+  const { t } = useClientT()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -26,7 +27,7 @@ export default function ClientLoginPage() {
 
     const queryParams = new URLSearchParams(window.location.search)
     if (queryParams.get('error') === 'link_expired') {
-      setHashError("Ce lien d'invitation a expiré ou est invalide. Demande à ton coach de t'en envoyer un nouveau.")
+      setHashError(t('login.error.expired'))
       return
     }
 
@@ -34,11 +35,11 @@ export default function ClientLoginPage() {
     const errorCode = hashParams.get('error_code')
     if (!errorCode) return
     if (errorCode === 'otp_expired') {
-      setHashError("Ce lien d'invitation a expiré. Demande à ton coach de t'en envoyer un nouveau.")
+      setHashError(t('login.error.otpExpired'))
     } else {
-      setHashError("Ce lien est invalide ou a déjà été utilisé. Demande à ton coach de t'envoyer une nouvelle invitation.")
+      setHashError(t('login.error.invalid'))
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -55,24 +56,13 @@ export default function ClientLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-6">
 
       {/* Logo */}
       <div className="mb-10 flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border-[0.3px] border-white/[0.06] flex items-center justify-center">
-          <Image
-            src="/images/logo.png"
-            alt="STRYVR"
-            width={32}
-            height={32}
-            className="w-8 h-8 object-contain"
-          />
-        </div>
+        <img src="/images/logo-stryvr.svg" alt="STRYVR" className="w-12 h-12 object-contain" />
         <div className="text-center">
-          <p className="font-unbounded font-semibold text-[15px] text-white tracking-tight leading-none">
-            STRYVR<span className="font-light text-white/30"> lab</span>
-          </p>
-          <p className="text-[11px] text-white/30 mt-1.5">Ton espace client</p>
+          <p className="text-[11px] text-white/30 mt-1.5">{t('login.mySpace')}</p>
         </div>
       </div>
 
@@ -84,31 +74,31 @@ export default function ClientLoginPage() {
       )}
 
       {/* Card connexion */}
-      <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-6 w-full max-w-sm">
+      <div className="bg-white/[0.02] rounded-xl p-6 w-full max-w-sm">
         <div className="mb-5">
-          <h2 className="text-[15px] font-bold text-white">Connexion</h2>
+          <h2 className="text-[15px] font-bold text-white">{t('login.title')}</h2>
           <p className="text-[12px] text-white/40 mt-1">
-            Utilise l'email et le mot de passe créés lors de ton invitation.
+            {t('login.subtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">
-              Email
+              {t('login.email')}
             </label>
             <input
               name="email"
               type="email"
-              placeholder="toi@exemple.com"
+              placeholder={t('login.placeholder.email')}
               required
-              className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 text-[14px] font-medium text-white placeholder:text-white/20 outline-none border-[0.3px] border-white/[0.06] focus:border-[#1f8a65]/40 transition-colors"
+              className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 text-[14px] font-medium text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">
-              Mot de passe
+              {t('login.password')}
             </label>
             <div className="relative">
               <input
@@ -116,7 +106,7 @@ export default function ClientLoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 required
-                className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 pr-11 text-[14px] font-medium text-white placeholder:text-white/20 outline-none border-[0.3px] border-white/[0.06] focus:border-[#1f8a65]/40 transition-colors"
+                className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 pr-11 text-[14px] font-medium text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
               />
               <button
                 type="button"
@@ -137,15 +127,15 @@ export default function ClientLoginPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="mt-1 flex h-[48px] items-center justify-between rounded-xl bg-[#1f8a65] pl-5 pr-2 transition-all hover:bg-[#217356] active:scale-[0.99] disabled:opacity-50"
+            className="mt-1 flex h-[48px] items-center justify-between rounded-xl bg-[#f2f2f2] pl-5 pr-2 transition-all hover:bg-[#ffd000] active:scale-[0.99] disabled:opacity-50"
           >
-            <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white">
-              {isPending ? 'Connexion…' : 'Se connecter'}
+            <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#080808]">
+              {isPending ? t('login.pending') : t('login.submit')}
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/[0.12]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/[0.12]">
               {isPending
-                ? <Loader2 size={15} className="animate-spin text-white" />
-                : <ArrowRight size={15} className="text-white" />
+                ? <Loader2 size={15} className="animate-spin text-[#080808]" />
+                : <ArrowRight size={15} className="text-[#080808]" />
               }
             </div>
           </button>
@@ -153,7 +143,7 @@ export default function ClientLoginPage() {
       </div>
 
       <p className="mt-6 text-[11px] text-white/20 text-center">
-        Accès réservé aux clients invités par leur coach.
+        {t('login.footer')}
       </p>
     </div>
   )

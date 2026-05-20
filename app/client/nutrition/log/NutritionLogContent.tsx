@@ -322,7 +322,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
     <div className={embedded ? "flex flex-col h-full" : "min-h-screen bg-[#0a0a0a] flex flex-col"}>
       {/* TopBar — hidden in embedded mode */}
       {!embedded && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 bg-[#0a0a0a] border-b border-white/[0.08]">
+        <div className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 bg-[#080808]">
           <button onClick={goBack} className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:text-white active:scale-95 transition-all mr-3">
             <ChevronLeft size={16} />
           </button>
@@ -401,7 +401,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 </div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mt-6 mb-3">{t('log.quickSearch')}</p>
                 <QuickSearch onSelect={selectItem} />
-                <button onClick={() => setShowCustomForm(v => !v)} className="mt-4 w-full flex items-center justify-center gap-2 h-10 bg-white/[0.04] border border-white/[0.07] rounded-xl text-[12px] text-white/50 hover:text-white/80 hover:bg-white/[0.07] active:scale-[0.98] transition-all">
+                <button onClick={() => setShowCustomForm(v => !v)} className="mt-4 w-full flex items-center justify-center gap-2 h-10 bg-[#1a1a1a] rounded-xl text-[12px] text-[#5a5a5a] hover:text-[#808080] hover:bg-[#222222] active:scale-[0.98] transition-all">
                   <Pencil size={13} />
                   {t('log.createCustom')}
                 </button>
@@ -429,7 +429,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               <div className="p-4">
                 <div className="relative mb-3">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
                 </div>
                 {loadingItems ? (
                   <div className="space-y-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-white/[0.04] rounded-xl animate-pulse" />)}</div>
@@ -480,12 +480,12 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#111111] rounded-xl text-[18px] font-bold text-white outline-none focus:border-[#ffe01e]/40 min-w-0" />
+                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#111111] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
                       <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
                     </div>
                     <div className="flex gap-2">
                       {[50, 100, 150, 200].map(g => (
-                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all border ${quantityG === g ? "bg-[#f2f2f2]/10 border-[#ffe01e]/40 text-[#f2f2f2]" : "bg-white/[0.03] border-white/[0.06] text-white/50"}`}>{g}g</button>
+                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${quantityG === g ? "bg-[#2e2e2e] text-[#f2f2f2]" : "bg-[#111111] text-[#5a5a5a]"}`}>{g}g</button>
                       ))}
                     </div>
                   </div>
@@ -497,7 +497,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     </div>
                     <div className="flex gap-1 overflow-x-auto pb-1">
                       {PORTION_MULTIPLIERS.map(m => (
-                        <button key={m} onClick={() => applyMultiplier(m)} className={`shrink-0 h-8 px-3 rounded-xl text-[11px] font-bold transition-all border ${portionMult === m ? "bg-[#f2f2f2] text-[#0d0d0d] border-[#ffe01e]" : "bg-white/[0.03] border-white/[0.06] text-white/50"}`}>×{m}</button>
+                        <button key={m} onClick={() => applyMultiplier(m)} className={`shrink-0 h-8 px-3 rounded-xl text-[11px] font-bold transition-all ${portionMult === m ? "bg-[#f2f2f2] text-[#080808]" : "bg-[#111111] text-[#5a5a5a]"}`}>×{m}</button>
                       ))}
                     </div>
                     <div className="space-y-2">
@@ -505,7 +505,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                         const scaledG = getScaledPortionG(p, scalingProfile, portionMult)
                         const isActive = selectedPortion === i && qMode === "portion"
                         return (
-                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${isActive ? "bg-[#f2f2f2]/[0.06] border-[#ffe01e]/30" : "bg-[#111111] border-white/[0.08]"}`}>
+                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-[#222222]" : "bg-[#111111]"}`}>
                             <span className="text-xl shrink-0">{PORTION_ICON_BY_KEY[p.key] ?? "📏"}</span>
                             <div className="text-left flex-1 min-w-0">
                               <p className="text-[13px] font-medium text-white">{p.label}</p>
@@ -595,7 +595,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 placeholder="Nom du repas..."
                 value={favoriteName}
                 onChange={e => setFavoriteName(e.target.value)}
-                className="w-full h-9 px-3 bg-white/[0.05] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40"
+                className="w-full h-9 px-3 bg-white/[0.05] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none "
               />
               <div className="flex gap-2">
                 <button
@@ -663,7 +663,7 @@ function QuickSearch({ onSelect }: { onSelect: (item: FoodItem) => void }) {
     <div>
       <div className="relative mb-2">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
       </div>
       {loading && <div className="h-10 bg-white/[0.04] rounded-xl animate-pulse" />}
       {results.map(item => (
@@ -717,7 +717,7 @@ function CustomFoodForm({ onCreated, onClose }: { onCreated: (item: FoodItem) =>
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">{t('log.custom.title')}</p>
         <button onClick={onClose} className="text-white/20 hover:text-white/60 transition-colors"><X size={14} /></button>
       </div>
-      <input type="text" placeholder={t('log.custom.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} className="w-full h-10 px-3 bg-white/[0.05] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+      <input type="text" placeholder={t('log.custom.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} className="w-full h-10 px-3 bg-white/[0.05] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
       <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">{t('log.custom.per100')}</p>
       <div className="grid grid-cols-2 gap-2">
         {[
@@ -728,12 +728,12 @@ function CustomFoodForm({ onCreated, onClose }: { onCreated: (item: FoodItem) =>
         ].map(({ label, value, set, required }) => (
           <div key={label} className="space-y-1">
             <p className="text-[10px] text-white/30">{label}{required && " *"}</p>
-            <input type="text" inputMode="decimal" value={value} onChange={e => set(e.target.value)} onFocus={e => e.target.select()} className="w-full h-9 px-3 min-w-0 bg-white/[0.05] rounded-xl text-[13px] text-white outline-none focus:border-[#ffe01e]/40" />
+            <input type="text" inputMode="decimal" value={value} onChange={e => set(e.target.value)} onFocus={e => e.target.select()} className="w-full h-9 px-3 min-w-0 bg-white/[0.05] rounded-xl text-[13px] text-white outline-none " />
           </div>
         ))}
       </div>
       {error && <p className="text-[11px] text-red-400">{error}</p>}
-      <button onClick={submit} disabled={saving || !name.trim() || !kcal} className="w-full h-10 flex items-center justify-center gap-2 bg-[#f2f2f2] disabled:opacity-40 text-[#0d0d0d] text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
+      <button onClick={submit} disabled={saving || !name.trim() || !kcal} className="w-full h-10 flex items-center justify-center gap-2 bg-[#f2f2f2] disabled:opacity-40 text-[#080808] text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
         <Check size={14} />
         {saving ? t('log.custom.creating') : t('log.custom.createCta')}
       </button>

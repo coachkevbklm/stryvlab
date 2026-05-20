@@ -302,22 +302,25 @@ export default async function ClientProgrammePage({
   const volumeByGroup: Record<string, number> = {};
   for (const set of weekSetRows) {
     const biomech = getBiomechData(set.exercise_name);
-    if (!biomech) continue;
-    if (biomech.primaryMuscle) {
-      const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[
-        biomech.primaryMuscle
-      ];
-      if (g)
-        volumeByGroup[g] =
-          (volumeByGroup[g] ?? 0) + (biomech.primaryActivation ?? 1);
+    if (biomech) {
+      // Enriched exercise: use biomech activation coefficients
+      if (biomech.primaryMuscle) {
+        const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[biomech.primaryMuscle];
+        if (g) volumeByGroup[g] = (volumeByGroup[g] ?? 0) + (biomech.primaryActivation ?? 1);
+      }
+      (biomech.secondaryMuscles ?? []).forEach((m: string, i: number) => {
+        const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[m];
+        if (!g) return;
+        volumeByGroup[g] = (volumeByGroup[g] ?? 0) + ((biomech.secondaryActivations ?? [])[i] ?? 0.5);
+      });
+    } else {
+      // Non-enriched exercise: fallback to catalog primary muscle, count 1 set
+      const primaryMuscle = getPrimaryMuscleFromCatalog(set.exercise_name);
+      if (primaryMuscle) {
+        const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[primaryMuscle];
+        if (g) volumeByGroup[g] = (volumeByGroup[g] ?? 0) + 1;
+      }
     }
-    (biomech.secondaryMuscles ?? []).forEach((m: string, i: number) => {
-      const g = (MUSCLE_TO_VOLUME_GROUP as Record<string, string>)[m];
-      if (!g) return;
-      volumeByGroup[g] =
-        (volumeByGroup[g] ?? 0) +
-        ((biomech.secondaryActivations ?? [])[i] ?? 0.5);
-    });
   }
   const volumeCoverage = {
     week_start: monday.toISOString().slice(0, 10),

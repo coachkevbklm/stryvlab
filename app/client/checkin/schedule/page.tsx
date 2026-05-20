@@ -46,8 +46,8 @@ export default function CheckinSchedulePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#121212] px-4 pt-[88px] pb-24">
-      <section className="max-w-lg mx-auto bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-4">
+    <main className="min-h-screen bg-[#080808] px-4 pt-[88px] pb-24">
+      <section className="max-w-lg mx-auto bg-white/[0.02] rounded-xl p-4 space-y-4">
         <p className="text-[10px] uppercase tracking-[0.16em] text-white/40 font-semibold">
           Check-ins
         </p>
@@ -60,7 +60,7 @@ export default function CheckinSchedulePage() {
               type="time"
               value={entry.scheduled_time}
               onChange={(e) => update(entry.moment, e.target.value)}
-              className="h-10 px-3 rounded-xl bg-[#0a0a0a] border border-white/[0.08] text-white text-[12px]"
+              className="h-10 px-3 rounded-xl bg-[#0a0a0a] text-white text-[12px]"
             />
           </div>
         ))}
@@ -68,7 +68,7 @@ export default function CheckinSchedulePage() {
         <button
           onClick={save}
           disabled={saving}
-          className="h-11 px-4 rounded-xl bg-[#1f8a65] text-white text-[12px] font-bold disabled:opacity-50"
+          className="h-11 px-4 rounded-xl bg-[#f2f2f2] text-white text-[12px] font-bold disabled:opacity-50"
         >
           {saving ? "Sauvegarde..." : "Sauvegarder mes horaires"}
         </button>

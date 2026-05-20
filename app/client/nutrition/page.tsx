@@ -212,7 +212,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   // Day type badge for TopBar
   const dayTypeBadge = protocolDay?.name ? (
-    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#f2f2f2]/10 text-[#f2f2f2] border border-[#ffe01e]/20">
+    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#222222] text-[#b0b0b0]">
       {protocolDay.name}
     </span>
   ) : null

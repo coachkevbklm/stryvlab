@@ -23,7 +23,7 @@ function StatusBadge({ status, lang }: { status: string; lang: ClientLang }) {
   const classMap: Record<string, string> = {
     pending:     'bg-amber-500/15 text-amber-400',
     in_progress: 'bg-blue-500/15 text-blue-400',
-    completed:   'bg-[#1f8a65]/15 text-[#1f8a65]',
+    completed:   'bg-[#f2f2f2]/15 text-[#f2f2f2]',
     expired:     'bg-white/[0.06] text-white/30',
   }
   const label = labelMap[status] ?? labelMap.pending
@@ -82,7 +82,7 @@ export default async function ClientBilansPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans">
+    <div className="min-h-screen bg-[#080808] font-sans">
       <ClientTopBar
         section={ct(lang, 'bilans.section')}
         title={ct(lang, 'bilans.title')}
@@ -98,7 +98,7 @@ export default async function ClientBilansPage() {
         {/* ── État vide ── */}
         {submissions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.03] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-white/[0.03] flex items-center justify-center">
               <ClipboardList size={22} className="text-white/20" />
             </div>
             <p className="text-[13px] font-medium text-white/40">
@@ -154,7 +154,7 @@ export default async function ClientBilansPage() {
                       <span className="text-[12px] font-bold uppercase tracking-[0.10em] text-white">
                         {ct(lang, 'bilans.todo.cta')}
                       </span>
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/[0.12]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-black/[0.12]">
                         <PenLine size={13} className="text-white" />
                       </div>
                     </Link>
@@ -171,7 +171,7 @@ export default async function ClientBilansPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 px-1">
               {ct(lang, 'bilans.history.section')}
             </p>
-            <div className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] overflow-hidden divide-y-[0.3px] divide-white/[0.06]">
+            <div className="bg-[#111111] rounded-xl overflow-hidden">
               {history.map((sub) => {
                 const name = sub.template_snapshot?.name ?? "Bilan";
                 const isExpired =
@@ -192,9 +192,9 @@ export default async function ClientBilansPage() {
                     key={sub.id}
                     className="flex items-center gap-3 px-4 py-3"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0">
                       {effectiveStatus === "completed" ? (
-                        <CheckCircle2 size={15} className="text-[#1f8a65]" />
+                        <CheckCircle2 size={15} className="text-[#f2f2f2]" />
                       ) : (
                         <AlertCircle size={15} className="text-white/20" />
                       )}

@@ -22,7 +22,7 @@ export default async function MetricsRoute() {
     user.id,
     user.email,
     db,
-    'id, first_name, last_name, email'
+    'id, first_name, last_name, email, profile_photo_url'
   )
 
   if (!cc) return null
@@ -43,6 +43,7 @@ export default async function MetricsRoute() {
       clientName={`${firstName} ${lastName}`.trim()}
       clientEmail={(cc as any).email ?? user.email ?? ""}
       avatarInitials={initials}
+      avatarUrl={(cc as any).profile_photo_url ?? null}
       streak={(streakRow as any)?.current_streak ?? 0}
     />
   )

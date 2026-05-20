@@ -892,16 +892,15 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             // Superset (non-dissolved)
             if (isSuperset && !isDissolved && groupId) {
               return (
-                <div key={groupId} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,224,30,0.30)', backgroundColor: 'rgba(255,224,30,0.03)' }}>
-                  <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,224,30,0.12)', backgroundColor: 'rgba(255,224,30,0.06)' }}>
+                <div key={groupId} className="rounded-2xl overflow-hidden bg-[#111111]">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-[#1a1a1a]">
                     <div className="flex items-center gap-2">
-                      <Rotate size={12} className="text-[#f2f2f2]/70" />
-                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[#f2f2f2]/80">Surensemble</span>
+                      <Rotate size={12} className="text-[#808080]" />
+                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[#808080]">Surensemble</span>
                     </div>
                     <button
                       onClick={() => setSupersetMenuFor(groupId)}
-                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#f2f2f2]/40 hover:text-[#f2f2f2]/70"
-                      style={{ backgroundColor: 'rgba(255,224,30,0.08)' }}
+                      className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#222222] text-[#5a5a5a] hover:text-[#808080]"
                     >
                       <MoreHorizontal size={13} />
                     </button>

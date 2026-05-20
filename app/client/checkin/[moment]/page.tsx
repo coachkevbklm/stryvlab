@@ -108,7 +108,7 @@ export default function ClientCheckinMomentPage() {
 
   return (
     <main className="min-h-screen bg-[#121212] px-4 pt-[88px] pb-24">
-      <section className="max-w-lg mx-auto bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-4">
+      <section className="max-w-lg mx-auto bg-white/[0.02] rounded-2xl p-4 space-y-4">
         <p className="text-[10px] uppercase tracking-[0.16em] text-white/40 font-semibold">
           {new Date().toLocaleDateString("fr-FR")}
         </p>
