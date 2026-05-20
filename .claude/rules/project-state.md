@@ -29,7 +29,7 @@
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
-| **Design System v3.0** | ✅ DA Technogym — `#F5D800` jaune, `#0a0a0a` fond | 2026-05-16 |
+| **Design System v4.0** | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2 | 2026-05-21 |
 | **Landing STRYVR** | ✅ `/stryvr` — DA Technogym, waitlist Supabase | 2026-05-16 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
@@ -57,6 +57,20 @@
 - `components/client/smart/VoiceLogSheet.tsx` — ajout prop `onTranscriptOnly`
 - Supprimés : `CoachAIButton.tsx`, `CoachAIChatSheet.tsx`
 - Points de vigilance : migration `20260520_chat_messages` à appliquer manuellement via Supabase Dashboard ; sous-projets suivants : SP2 (scripted flows + interactive messages), SP3 (push notifications), SP4 (metrics avancées)
+
+### 2026-05-21 — Design System v4.0 — Dark Gray Minimal Client PWA
+
+- `app/globals.css` — tokens `--c-*` (gray scale #080808→#f2f2f2) + `--data-copper/gold/petrol` (charts)
+- `tailwind.config.ts` — gray scale + data color Tailwind tokens
+- `components/client/ClientTopBar.tsx` — fond `#080808`, texte `#e0e0e0` (plus de jaune)
+- `components/client/BottomNav.tsx` — actif `#f2f2f2`, inactif `#5a5a5a`, pas de border-t
+- 60+ composants `/client` et `app/client` — suppression totale `#ffe01e`, borders, surfaces gray scale
+- Data colors `--data-copper/gold/petrol` — uniquement dans charts/SVG
+- Boutons primary : `bg-[#f2f2f2] text-[#080808]`
+- Chat : user bubbles `bg-[#f2f2f2] text-[#080808]`, bot `bg-[#111111]`
+- TempoGuideModal : phases → neutral gray, accent `#FFB800` → `#e0e0e0`
+- AdherenceScoreCard : thèmes recalibrés gray scale
+- Points de vigilance : charts Recharts utilisent `var(--data-*)` via `style={{ stroke }}` — pas via className ; BodyMap primary muscle = `#e0e0e0` (was green `#1f8a65`)
 
 ### 2026-05-21 — i18n ES/EN App Client — Couverture Complète
 
@@ -164,22 +178,17 @@
 
 | Problème | Impact | Mitigation |
 |----------|--------|-----------|
-| `20260520_chat_messages` migration non appliquée | ChatPage non fonctionnel (tables absentes) | `20260520_chat_messages.sql` via Supabase Dashboard |
-| `20260520_ai_coach_daily_usage` migration non appliquée | Rate limit non fonctionnel, upsert échoue | `20260520_ai_coach_daily_usage.sql` via Supabase Dashboard |
-| `20260520_voice_input_mode` migration non appliquée | input_mode 'voice' rejeté en DB | `20260520_voice_input_mode.sql` via Supabase Dashboard |
-| `20260519_set_type` migration non appliquée | set_type non persisté (default 'working' OK) | `20260519_set_type.sql` via Supabase Dashboard |
-| `beta_waitlist` migration non appliquée | Waitlist non fonctionnelle | `20260514_beta_waitlist.sql` via Supabase Dashboard |
-| `tempo` migration non appliquée | Tempo non persisté | `20260516_tempo.sql` via Supabase Dashboard |
-| `20260518_meal_favorites.sql` non appliquée | Favorites non fonctionnel | Appliquer manuellement |
 | Supabase Redirect URLs | Onboarding brisé | Whitelist `/client/onboarding` |
 | `three@0.170` requis | Build error si downgrade | Ne pas downgrader — `three-mesh-bvh` peer dep |
+
+> ✅ **Migrations vérifiées le 2026-05-21** via `scripts/verify-migrations.sql` — toutes appliquées.
+> Script de vérification réutilisable : `scripts/verify-migrations.sql` → Supabase SQL Editor.
 
 ---
 
 ## 📅 Next Steps — Phase 2
 
-- [ ] Appliquer migration `20260520_chat_messages.sql` via Supabase Dashboard
-- [ ] Appliquer migrations : `20260514_beta_waitlist.sql` + `20260516_tempo.sql` + `20260518_meal_favorites.sql`
+- [x] Toutes migrations appliquées (vérifié 2026-05-21)
 - [ ] Chat SP2 : Scripted Flow Engine — banque questions hardcodée, config coach, interactive message types (chips, sliders)
 - [ ] Chat SP3 : Push Notifications + Inngest scheduling — VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans

@@ -5,6 +5,33 @@
 
 ## 2026-05-21
 
+REFACTOR: Client PWA — Design System v4.0 dark gray minimal (DS v4.0) — 60+ fichiers
+REFACTOR: Suppression totale #ffe01e (accent jaune) de toute l'app client
+REFACTOR: Suppression totale border-white/* dans composants client (zéro bordures)
+REFACTOR: Gray scale #080808→#f2f2f2 comme unique système couleur UI /client
+REFACTOR: Boutons primary → bg-[#f2f2f2] text-[#080808] (monochrome max contraste)
+REFACTOR: Nav active → text-[#f2f2f2], inactive → text-[#5a5a5a]
+REFACTOR: Chat — user bubbles bg-[#f2f2f2] text-[#080808], bot bg-[#111111]
+REFACTOR: Nutrition charts — data colors var(--data-copper/gold/petrol) uniquement
+REFACTOR: TempoGuideModal — accent #FFB800 → #e0e0e0, phases PHASE_CONFIG neutres
+REFACTOR: AdherenceScoreCard — thèmes recalibrés sur gray scale
+CHORE: globals.css — ajout tokens --c-* (gray scale) + --data-copper/gold/petrol
+CHORE: tailwind.config.ts — gray scale + data colors ajoutés
+CHORE: manifest.json + viewport themeColor → #080808
+
+## 2026-05-22
+
+FIX: MetricsPage — fetch and display client profile_photo_url in hero avatar
+FIX: MetricsPage — settings gear button now navigates to /client/profil (full page with all settings) instead of empty bottom sheet
+FIX: app/client/page.tsx — fetch coach_profiles.logo_url from coach_id and pass as coachAvatarUrl to ChatPage
+REFACTOR: MetricsPage — remove unused settings bottom sheet, supabase client, settingsOpen state
+FEATURE: MetricsPage — add "DONNÉES CORPORELLES" section label above body data
+
+FIX: buildSystemPrompt — expand LLM scope to body composition, phases, periodization (removed hardcoded out-of-scope reply)
+FIX: buildSystemPrompt — inject latest body comp data (weight, BF%, LBM, weight delta vs prev bilan) into system prompt
+
+## 2026-05-21
+
 FIX: ChatPage — fixed layout, input bar anchored to bottom (was at top due to h-full in pb-24 shell)
 FIX: ChatPage — empty state with personalized greeting, STRYVR avatar, quick suggestion chips
 FIX: ChatTodayStrip — water query uses gte/lte logged_at instead of .eq('date') — was always 0L
