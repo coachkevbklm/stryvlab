@@ -101,8 +101,8 @@ export default function NutritionStreakCard({ loggedDates, today }: Props) {
             <p className="text-[8px] text-white/25 uppercase tracking-[0.1em]">record</p>
           </div>
           {/* Current streak */}
-          <div className="flex items-center gap-1.5 bg-[#f2f2f2]/10 border border-[#ffe01e]/20 rounded-xl px-3 py-1.5">
-            <Flame size={13} className="text-[#f2f2f2] shrink-0" fill="#ffe01e" />
+          <div className="flex items-center gap-1.5 bg-[#222222] rounded-xl px-3 py-1.5">
+            <Flame size={13} className="text-[#f2f2f2] shrink-0" fill="#f2f2f2" />
             <p className="text-[16px] font-black text-[#f2f2f2] tabular-nums leading-none">{current}</p>
             <p className="text-[9px] text-[#f2f2f2]/60 font-bold uppercase leading-none">jours</p>
           </div>
@@ -131,7 +131,7 @@ export default function NutritionStreakCard({ loggedDates, today }: Props) {
             bg = 'bg-white/[0.03]'
           } else if (isToday) {
             bg = logged ? 'bg-[#f2f2f2]' : 'bg-white/[0.08]'
-            ring = 'ring-1 ring-[#ffe01e]/60 ring-offset-1 ring-offset-[#161616]'
+            ring = 'ring-1 ring-[#f2f2f2]/60 ring-offset-1 ring-offset-[#111111]'
           } else if (logged) {
             bg = 'bg-[#f2f2f2]/70'
           } else {

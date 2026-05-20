@@ -134,7 +134,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           </p>
 
           {/* How to calculate tip */}
-          <div className="bg-white/[0.03] rounded-xl px-3 py-2.5 mb-5 border border-white/[0.04]">
+          <div className="bg-[#111111] rounded-xl px-3 py-2.5 mb-5">
             <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/25 mb-1">
               Comment estimer ?
             </p>
@@ -172,7 +172,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
 
           {/* Haptics toggle — masqué sur iOS (API non supportée) */}
           {iosDevice ? (
-            <div className="w-full flex items-center gap-2.5 px-4 h-11 rounded-xl mb-4 bg-white/[0.02] border border-white/[0.04]">
+            <div className="w-full flex items-center gap-2.5 px-4 h-11 rounded-xl mb-4 bg-[#111111]">
               <VibrateOff size={14} className="text-white/20 shrink-0" />
               <span className="text-[11px] text-white/25">
                 Vibrations non disponibles sur iOS
@@ -181,10 +181,8 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           ) : (
             <button
               onClick={toggleHaptics}
-              className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] border ${
-                haptics
-                  ? 'bg-[#FFB800]/[0.08] border-[#FFB800]/20'
-                  : 'bg-white/[0.03] border-white/[0.05]'
+              className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] ${
+                haptics ? 'bg-[#222222]' : 'bg-[#111111]'
               }`}
             >
               <div className="flex items-center gap-2.5">

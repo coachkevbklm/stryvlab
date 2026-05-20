@@ -79,7 +79,7 @@ export default function ChatPage({ coachAvatarUrl, clientFirstName }: ChatPagePr
 
   return (
     <div
-      className="fixed inset-x-0 top-0 flex flex-col bg-[#0d0d0d]"
+      className="fixed inset-x-0 top-0 flex flex-col bg-[#080808]"
       style={{ bottom: "calc(62px + env(safe-area-inset-bottom, 0px))" }}
     >
       {/* Today strip */}

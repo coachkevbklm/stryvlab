@@ -69,7 +69,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           />
           <motion.div
-            className="fixed left-0 right-0 bottom-0 z-50 rounded-t-2xl bg-[#111111] border-t-[0.3px] border-white/[0.08] flex flex-col"
+            className="fixed left-0 right-0 bottom-0 z-50 rounded-t-2xl bg-[#111111] flex flex-col"
             style={{ maxHeight: '88vh' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
@@ -151,7 +151,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
                   onChange={e => setIntensity(parseInt(e.target.value))}
                   className="w-full h-2 appearance-none rounded-full cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #ffe01e 0%, #ffe01e ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`,
+                    background: `linear-gradient(to right, #f2f2f2 0%, #f2f2f2 ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`,
                   }}
                 />
               </div>

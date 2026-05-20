@@ -30,7 +30,7 @@ export default function BodyMap({ intensityMap, primaryGroups, secondaryGroups, 
     }
     // Fallback binaire
     const _stab = stabilizerGroups ?? new Set<MuscleGroup>()
-    if (primaryGroups?.has(group))   return '#ffe01e'
+    if (primaryGroups?.has(group))   return '#f2f2f2'
     if (secondaryGroups?.has(group)) return 'rgba(255,224,30,0.42)'
     if (_stab.has(group))            return 'rgba(255,224,30,0.14)'
     return 'rgba(255,255,255,0.08)'

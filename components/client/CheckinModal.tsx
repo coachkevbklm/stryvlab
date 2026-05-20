@@ -227,7 +227,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
                         onChange={e => setValues(v => ({ ...v, [currentField]: parseFloat(e.target.value) }))}
                         className="w-full h-2 appearance-none rounded-full cursor-pointer"
                         style={{
-                          background: `linear-gradient(to right, #ffe01e 0%, #ffe01e ${pct}%, rgba(255,255,255,0.10) ${pct}%, rgba(255,255,255,0.10) 100%)`,
+                          background: `linear-gradient(to right, #f2f2f2 0%, #f2f2f2 ${pct}%, rgba(255,255,255,0.10) ${pct}%, rgba(255,255,255,0.10) 100%)`,
                         }}
                       />
                       <div className="flex justify-between">

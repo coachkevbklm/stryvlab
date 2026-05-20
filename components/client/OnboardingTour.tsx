@@ -108,7 +108,7 @@ export default function OnboardingTour() {
               width: targetRect.width + 12,
               height: targetRect.height + 12,
               background: 'transparent',
-              boxShadow: '0 0 0 9999px rgba(0,0,0,0.75), 0 0 0 2px #ffe01e, 0 0 16px 3px rgba(255,224,30,0.5)',
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.80), 0 0 0 2px #f2f2f2',
             }}
           />
         )}
@@ -126,7 +126,7 @@ export default function OnboardingTour() {
         }}
       >
         <div
-          className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#161616] rotate-45 border-r border-b border-white/[0.06]"
+          className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#111111] rotate-45 border-r"
           style={{
             left: targetRect
               ? `calc(50% + ${(targetRect.left + targetRect.width / 2) - tooltipLeft}px)`
@@ -134,16 +134,16 @@ export default function OnboardingTour() {
           }}
         />
 
-        <div className="bg-[#161616] border-[0.3px] border-white/[0.06] rounded-xl p-4">
+        <div className="bg-[#111111] rounded-xl p-4">
           <div className="flex items-center gap-1.5 mb-2">
             {TOUR_STEPS.map((_, i) => (
               <div
                 key={i}
                 className={`rounded-full transition-all duration-300 ${
                   i === stepIndex
-                    ? 'w-4 h-1 bg-[#ffe01e]'
+                    ? 'w-4 h-1 bg-[#f2f2f2]'
                     : i < stepIndex
-                    ? 'w-1 h-1 bg-[#ffe01e]/40'
+                    ? 'w-1 h-1 bg-[#f2f2f2]/40'
                     : 'w-1 h-1 bg-white/15'
                 }`}
               />
@@ -155,13 +155,13 @@ export default function OnboardingTour() {
 
           <button
             onClick={advance}
-            className="w-full h-9 flex items-center justify-between bg-[#ffe01e] hover:bg-[#ffd000] active:scale-[0.98] rounded-xl transition-all pl-4 pr-1.5"
+            className="w-full h-9 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] rounded-xl transition-all pl-4 pr-1.5"
           >
-            <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.10em] text-[#0d0d0d]">
+            <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.10em] text-[#080808]">
               {isLast ? t('tour.cta.ready') : t('tour.cta.understood')}
             </span>
             <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-black/[0.12]">
-              <ArrowRight size={13} className="text-[#0d0d0d]" />
+              <ArrowRight size={13} className="text-[#080808]" />
             </div>
           </button>
         </div>

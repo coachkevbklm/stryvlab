@@ -50,7 +50,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
             <path
               d="M 20 100 A 80 80 0 0 1 180 100"
               fill="none"
-              stroke="#ffe01e"
+              stroke="#f2f2f2"
               strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={total}

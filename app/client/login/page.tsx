@@ -92,7 +92,7 @@ export default function ClientLoginPage() {
               type="email"
               placeholder={t('login.placeholder.email')}
               required
-              className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 text-[14px] font-medium text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
+              className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 text-[14px] font-medium text-white placeholder:text-white/20 outline-none  transition-colors"
             />
           </div>
 
@@ -106,7 +106,7 @@ export default function ClientLoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 required
-                className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 pr-11 text-[14px] font-medium text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
+                className="w-full h-[48px] rounded-xl bg-[#0a0a0a] px-4 pr-11 text-[14px] font-medium text-white placeholder:text-white/20 outline-none  transition-colors"
               />
               <button
                 type="button"

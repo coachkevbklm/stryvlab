@@ -28,7 +28,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
   const suggestions = suggest(remaining)
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+    <div className="bg-[#111111] rounded-2xl p-4">
       <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-2">
         Reste à consommer
       </div>

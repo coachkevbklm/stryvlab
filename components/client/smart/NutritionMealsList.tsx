@@ -150,7 +150,7 @@ function MealCard({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="border-t border-white/[0.05] px-4 pb-2">
+            <div className="px-4 pb-2">
               <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/20 pt-3 pb-2">
                 {t('journal.ingredients')}
               </p>
@@ -248,7 +248,7 @@ export default function NutritionMealsList({ initialMeals, date }: Props) {
         <p className="text-[13px] text-white/25">{t('journal.noMeals')}</p>
         <button
           onClick={() => router.push("/client/nutrition/log")}
-          className="h-10 px-5 bg-[#f2f2f2] text-[#0d0d0d] text-[11px] font-bold uppercase tracking-[0.12em] rounded-xl active:scale-95 transition-all"
+          className="h-10 px-5 bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.12em] rounded-xl active:scale-95 transition-all"
         >
           {t('journal.addMeal')}
         </button>

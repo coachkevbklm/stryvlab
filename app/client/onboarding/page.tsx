@@ -243,7 +243,7 @@ function OnboardingFlow() {
                   required
                   minLength={8}
                   autoFocus
-                  className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
+                  className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
                 />
                 <button
                   type="button"
@@ -265,7 +265,7 @@ function OnboardingFlow() {
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder={t('onboarding.password.placeholder.confirm')}
                 required
-                className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40 transition-colors"
+                className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
               />
             </div>
 

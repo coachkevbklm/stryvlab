@@ -65,7 +65,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <path
               d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
-              stroke="#ffe01e"
+              stroke="#f2f2f2"
               strokeWidth={12}
               strokeLinecap="round"
               strokeDasharray={arcTotal}
@@ -122,7 +122,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
           </div>
           <button
             onClick={e => { e.preventDefault(); setWaterOpen(true) }}
-            className="w-9 h-9 rounded-xl bg-[#f2f2f2] flex items-center justify-center text-[#0d0d0d] active:scale-95 transition-transform shrink-0"
+            className="w-9 h-9 rounded-xl bg-[#f2f2f2] flex items-center justify-center text-[#080808] active:scale-95 transition-transform shrink-0"
           >
             <Plus size={16} strokeWidth={2.5} />
           </button>
