@@ -93,13 +93,13 @@ export default function ChatPage({ coachAvatarUrl, clientFirstName }: ChatPagePr
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="w-[72px] h-[72px] rounded-full bg-[#161616] border border-white/[0.08] flex items-center justify-center"
+            className="w-[72px] h-[72px] rounded-full bg-[#111111] flex items-center justify-center"
           >
             {coachAvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={coachAvatarUrl} alt="Coach" className="w-full h-full object-cover rounded-full" />
             ) : (
-              <span className="text-[26px] font-barlow-condensed font-bold text-[#ffe01e]">S</span>
+              <span className="text-[26px] font-barlow-condensed font-bold text-[#b0b0b0]">S</span>
             )}
           </motion.div>
 
@@ -113,7 +113,7 @@ export default function ChatPage({ coachAvatarUrl, clientFirstName }: ChatPagePr
             <p className="text-[17px] font-barlow font-semibold text-white leading-snug">
               {clientFirstName ? `Bonjour ${clientFirstName} 👋` : "Bonjour 👋"}
             </p>
-            <p className="text-[13px] text-white/40 font-barlow mt-1">
+            <p className="text-[13px] text-[#5a5a5a] font-barlow mt-1">
               Pose-moi une question ou dis-moi comment tu vas.
             </p>
           </motion.div>
@@ -129,7 +129,7 @@ export default function ChatPage({ coachAvatarUrl, clientFirstName }: ChatPagePr
               <button
                 key={s}
                 onClick={() => handleSend(s)}
-                className="px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-[12px] font-barlow text-white/60 active:bg-white/[0.10] active:text-white transition-all"
+                className="px-3 py-2 bg-[#1a1a1a] rounded-xl text-[12px] font-barlow text-[#808080] active:bg-[#222222] active:text-[#e0e0e0] transition-all"
               >
                 {s}
               </button>
@@ -153,7 +153,7 @@ export default function ChatPage({ coachAvatarUrl, clientFirstName }: ChatPagePr
             exit={{ height: 0, opacity: 0 }}
             className="shrink-0 overflow-hidden"
           >
-            <div className="px-4 py-2 text-center text-[11px] text-white/30 font-barlow bg-white/[0.02] border-t border-white/[0.04]">
+            <div className="px-4 py-2 text-center text-[11px] text-[#5a5a5a] font-barlow bg-[#111111]">
               Limite journalière atteinte · Reviens demain
             </div>
           </motion.div>

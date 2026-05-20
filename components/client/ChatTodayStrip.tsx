@@ -30,15 +30,13 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
       .catch(() => {})
   }
 
-  useEffect(() => {
-    refresh()
-  }, [])
+  useEffect(() => { refresh() }, [])
 
   if (!data) {
     return (
-      <div className="shrink-0 h-[44px] border-b border-white/[0.06] bg-[#0d0d0d] flex items-center px-4 gap-2">
+      <div className="shrink-0 h-[44px] bg-[#080808] flex items-center px-4 gap-2">
         {[80, 120, 100].map(w => (
-          <div key={w} className={`h-[26px] w-[${w}px] bg-white/[0.04] rounded-xl animate-pulse`} />
+          <div key={w} className="h-[26px] bg-[#111111] rounded-xl animate-pulse" style={{ width: w }} />
         ))}
       </div>
     )
@@ -50,23 +48,21 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
 
   return (
     <>
-      <div className="shrink-0 border-b border-white/[0.06] bg-[#0d0d0d]">
+      <div className="shrink-0 bg-[#080808]">
         <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-none">
 
           {/* Check-in */}
           <button
             onClick={onCheckinClick}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shrink-0 active:opacity-70 transition-all ${
-              checkinDone
-                ? "bg-[#ffe01e]/10 border-[#ffe01e]/20"
-                : "bg-[#ff8c00]/10 border-[#ff8c00]/20"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl shrink-0 active:opacity-70 transition-all ${
+              checkinDone ? "bg-[#222222]" : "bg-[#1a1a1a]"
             }`}
           >
             {checkinDone
-              ? <CheckCircle size={13} weight="fill" className="text-[#ffe01e]" />
-              : <Circle size={13} className="text-[#ff8c00]" />
+              ? <CheckCircle size={13} weight="fill" className="text-[#f2f2f2]" />
+              : <Circle size={13} className="text-[#808080]" />
             }
-            <span className={`text-[11px] font-barlow font-semibold whitespace-nowrap ${checkinDone ? "text-[#ffe01e]" : "text-[#ff8c00]"}`}>
+            <span className={`text-[11px] font-barlow font-semibold whitespace-nowrap ${checkinDone ? "text-[#f2f2f2]" : "text-[#808080]"}`}>
               {checkinDone ? "Check-in ✓" : "Check-in"}
             </span>
           </button>
@@ -76,10 +72,10 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
             <button
               key={s.id}
               onClick={() => router.push("/client/programme")}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111111] shrink-0 active:opacity-70"
             >
-              <Barbell size={13} className="text-white/50" />
-              <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap max-w-[100px] truncate">
+              <Barbell size={13} className="text-[#5a5a5a]" />
+              <span className="text-[11px] font-barlow font-medium text-[#808080] whitespace-nowrap max-w-[100px] truncate">
                 {s.name}
               </span>
             </button>
@@ -88,29 +84,28 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
           {/* Calories */}
           <button
             onClick={() => router.push("/client/nutrition")}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111111] shrink-0 active:opacity-70"
           >
-            <ForkKnife size={13} className="text-white/50" />
-            <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap">
-              {data.calories.logged} <span className="text-white/30">/ {data.calories.target}</span>
+            <ForkKnife size={13} className="text-[#5a5a5a]" />
+            <span className="text-[11px] font-barlow font-medium text-[#808080] whitespace-nowrap">
+              {data.calories.logged} <span className="text-[#5a5a5a]">/ {data.calories.target}</span>
             </span>
-            {/* Mini progress */}
-            <div className="w-10 h-1 bg-white/[0.08] rounded-full overflow-hidden">
-              <div className="h-full bg-[#ffe01e] rounded-full transition-all" style={{ width: `${calPct * 100}%` }} />
+            <div className="w-10 h-1 bg-[#2e2e2e] rounded-full overflow-hidden">
+              <div className="h-full bg-[#b0b0b0] rounded-full transition-all" style={{ width: `${calPct * 100}%` }} />
             </div>
           </button>
 
           {/* Eau */}
           <button
             onClick={() => setWaterOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111111] shrink-0 active:opacity-70"
           >
-            <Drop size={13} className="text-white/50" />
-            <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap">
-              {(data.water.logged / 1000).toFixed(1)}<span className="text-white/30">L / {data.water.target / 1000}L</span>
+            <Drop size={13} className="text-[#5a5a5a]" />
+            <span className="text-[11px] font-barlow font-medium text-[#808080] whitespace-nowrap">
+              {(data.water.logged / 1000).toFixed(1)}<span className="text-[#5a5a5a]">L / {data.water.target / 1000}L</span>
             </span>
-            <div className="w-8 h-1 bg-white/[0.08] rounded-full overflow-hidden">
-              <div className="h-full bg-[#4da6ff] rounded-full transition-all" style={{ width: `${waterPct * 100}%` }} />
+            <div className="w-8 h-1 bg-[#2e2e2e] rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all" style={{ width: `${waterPct * 100}%`, backgroundColor: 'var(--data-petrol)' }} />
             </div>
           </button>
 
