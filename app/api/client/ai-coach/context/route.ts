@@ -4,12 +4,12 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 
-const MAX_MESSAGES = 20
+const DAILY_LIMIT = 20
 
 function svc() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
 
@@ -22,12 +22,11 @@ export async function GET(_req: NextRequest) {
     user.id,
     user.email,
     svc(),
-    'id, first_name',
+    'id, first_name'
   )
-  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  if (!client) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const today = computePhysiologicalDate(new Date())
-
   const { data: usage } = await svc()
     .from('ai_coach_daily_usage')
     .select('message_count')
@@ -36,7 +35,7 @@ export async function GET(_req: NextRequest) {
     .maybeSingle()
 
   const used = usage?.message_count ?? 0
-  const remaining = Math.max(0, MAX_MESSAGES - used)
+  const remaining = Math.max(0, DAILY_LIMIT - used)
 
   return NextResponse.json({
     remainingMessages: remaining,

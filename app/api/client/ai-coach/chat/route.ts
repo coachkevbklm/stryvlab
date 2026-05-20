@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Build system prompt (server-side only, never sent to client) ────────────
-  const systemPrompt = await buildSystemPrompt(client.id, db)
+  const systemPrompt = await buildSystemPrompt(client.id)
 
   // ── OpenAI call ─────────────────────────────────────────────────────────────
   let reply: string

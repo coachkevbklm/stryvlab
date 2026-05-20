@@ -1,66 +1,63 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 
-function fmt(n: number) {
-  return Math.round(n).toString()
+function svc() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 }
 
-function formatDate(dateStr: string): string {
-  const [, m, d] = dateStr.split('-')
-  const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc']
+function pct(val: number, total: number): string {
+  if (!total) return '0%'
+  return `${Math.round((val / total) * 100)}%`
+}
+
+function fmtDate(date: string): string {
+  const [, m, d] = date.split('-')
+  const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
   return `${parseInt(d)} ${months[parseInt(m) - 1]}`
 }
 
-export async function buildSystemPrompt(
-  clientId: string,
-  svc: SupabaseClient
-): Promise<string> {
+export async function buildSystemPrompt(clientId: string): Promise<string> {
+  const db = svc()
   const today = computePhysiologicalDate(new Date())
   const dayStart = `${today}T00:00:00Z`
-  const dayEnd   = `${today}T23:59:59Z`
+  const dayEnd = `${today}T23:59:59Z`
+  const nowTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
   const [
     clientRow,
-    protocolRow,
+    nutritionProtocol,
     mealsResult,
     waterResult,
     sessionResult,
-    checkinResult,
+    activitiesResult,
     restrictionsResult,
   ] = await Promise.allSettled([
-    // Profil client
-    svc
-      .from('coach_clients')
-      .select('first_name, goal, fitness_level')
+    db.from('coach_clients')
+      .select('first_name, goal, tdee, fitness_level')
       .eq('id', clientId)
       .single(),
-    // Protocole nutritionnel actif (contient les macros cibles)
-    svc
-      .from('nutrition_protocols')
-      .select('id, nutrition_protocol_days(*)')
+    db.from('nutrition_protocols')
+      .select('name, nutrition_protocol_days(calories, protein_g, fat_g, carbs_g)')
       .eq('client_id', clientId)
       .eq('status', 'shared')
-      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // Repas du jour
-    svc
-      .from('nutrition_meals')
-      .select('meal_type, title, logged_at, total_calories, total_protein_g, total_fat_g, total_carbs_g')
+    db.from('nutrition_meals')
+      .select('meal_type, title, logged_at, calories, protein_g, fat_g, carbs_g')
       .eq('client_id', clientId)
       .eq('physiological_date', today)
       .neq('meal_type', 'drinks')
       .order('logged_at', { ascending: true }),
-    // Eau du jour
-    svc
-      .from('client_water_logs')
+    db.from('client_water_logs')
       .select('amount_ml')
       .eq('client_id', clientId)
       .gte('logged_at', dayStart)
       .lte('logged_at', dayEnd),
-    // Séance du jour
-    svc
-      .from('client_session_logs')
+    db.from('client_session_logs')
       .select('id, completed_at')
       .eq('client_id', clientId)
       .not('completed_at', 'is', null)
@@ -69,120 +66,101 @@ export async function buildSystemPrompt(
       .order('completed_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // Check-in matin
-    svc
-      .from('client_checkins')
-      .select('responses')
+    db.from('client_activity_logs')
+      .select('activity_type, custom_label, duration_min')
       .eq('client_id', clientId)
-      .eq('moment', 'morning')
-      .eq('date', today)
-      .maybeSingle(),
-    // Restrictions physiques
-    svc
-      .from('metric_annotations')
-      .select('body_part, severity, label')
+      .gte('started_at', dayStart)
+      .lte('started_at', dayEnd),
+    db.from('metric_annotations')
+      .select('label, body_part, severity')
       .eq('client_id', clientId)
       .eq('event_type', 'injury')
       .not('body_part', 'is', null),
   ])
 
-  const client       = clientRow.status === 'fulfilled'        ? clientRow.value.data         : null
-  const protocol     = protocolRow.status === 'fulfilled'      ? protocolRow.value.data        : null
-  const meals        = mealsResult.status === 'fulfilled'      ? (mealsResult.value.data ?? []) : []
-  const water        = waterResult.status === 'fulfilled'      ? (waterResult.value.data ?? []) : []
-  const session      = sessionResult.status === 'fulfilled'    ? sessionResult.value.data       : null
-  const checkin      = checkinResult.status === 'fulfilled'    ? checkinResult.value.data       : null
-  const restrictions = restrictionsResult.status === 'fulfilled' ? (restrictionsResult.value.data ?? []) : []
+  // ── Profile ───────────────────────────────────────────────────────────────
+  const profile = clientRow.status === 'fulfilled' ? clientRow.value.data : null
+  const firstName = profile?.first_name ?? 'le client'
+  const goal = profile?.goal ?? 'non renseigné'
+  const tdee = profile?.tdee ?? 0
+  const fitnessLevel = profile?.fitness_level ?? 'intermédiaire'
 
-  const firstName = client?.first_name ?? 'le client'
-  const goal      = client?.goal ?? 'non défini'
+  // ── Macros targets ────────────────────────────────────────────────────────
+  const protocol = nutritionProtocol.status === 'fulfilled' ? nutritionProtocol.value.data : null
+  const protocolDay = (protocol as any)?.nutrition_protocol_days?.[0]
+  const targetKcal: number = protocolDay?.calories ?? tdee
+  const targetProtein: number = protocolDay?.protein_g ?? 0
+  const targetFat: number = protocolDay?.fat_g ?? 0
+  const targetCarbs: number = protocolDay?.carbs_g ?? 0
 
-  // Macros cibles depuis le protocole nutritionnel partagé (premier jour = jour de référence)
-  const protocolDays = (protocol as any)?.nutrition_protocol_days ?? []
-  const refDay    = [...protocolDays].sort((a: any, b: any) => a.position - b.position)[0] ?? null
-  const targetKcal = refDay?.calories  ? fmt(Number(refDay.calories))  : '?'
-  const targetP    = refDay?.protein_g ? fmt(Number(refDay.protein_g)) : '?'
-  const targetL    = refDay?.fat_g     ? fmt(Number(refDay.fat_g))     : '?'
-  const targetG    = refDay?.carbs_g   ? fmt(Number(refDay.carbs_g))   : '?'
+  // ── Today nutrition ───────────────────────────────────────────────────────
+  const meals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
+  const totalKcal = meals.reduce((s, m) => s + Number(m.calories ?? 0), 0)
+  const totalProtein = meals.reduce((s, m) => s + Number(m.protein_g ?? 0), 0)
+  const totalFat = meals.reduce((s, m) => s + Number(m.fat_g ?? 0), 0)
+  const totalCarbs = meals.reduce((s, m) => s + Number(m.carbs_g ?? 0), 0)
 
-  // Totaux nutrition du jour
-  const consumedKcal = meals.reduce((s: number, m: any) => s + Number(m.total_calories ?? 0), 0)
-  const consumedP    = meals.reduce((s: number, m: any) => s + Number(m.total_protein_g ?? 0), 0)
-  const consumedL    = meals.reduce((s: number, m: any) => s + Number(m.total_fat_g ?? 0), 0)
-  const consumedG    = meals.reduce((s: number, m: any) => s + Number(m.total_carbs_g ?? 0), 0)
-  const totalWaterMl = water.reduce((s: number, w: any) => s + Number(w.amount_ml ?? 0), 0)
+  const MEAL_LABELS: Record<string, string> = {
+    breakfast: 'Petit-déjeuner', lunch: 'Déjeuner',
+    dinner: 'Dîner', snack: 'Collation',
+  }
+  const mealsLines = meals.length > 0
+    ? meals.map(m => {
+        const time = new Date(m.logged_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        const label = m.title ?? MEAL_LABELS[m.meal_type as string] ?? 'Repas'
+        return `  - ${time} ${label}: ${Math.round(Number(m.calories ?? 0))} kcal`
+      }).join('\n')
+    : '  - Aucun repas loggé'
+
+  // ── Water ─────────────────────────────────────────────────────────────────
+  const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
+  const totalWaterMl = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0)
   const targetWaterMl = 2500
 
-  const mealTypeLabel = (t: string) => {
-    const map: Record<string, string> = {
-      breakfast: 'Petit-déjeuner',
-      lunch: 'Déjeuner',
-      dinner: 'Dîner',
-      snack: 'Collation',
-    }
-    return map[t] ?? 'Repas'
-  }
-
-  const mealsLines = meals.length > 0
-    ? meals.map((m: any) => {
-        const time = new Date(m.logged_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-        const label = m.title ?? mealTypeLabel(m.meal_type)
-        return `  ${time} — ${label} (${fmt(Number(m.total_calories ?? 0))} kcal)`
-      }).join('\n')
-    : '  Aucun repas enregistré'
-
-  const restrictionsLines = restrictions.length > 0
-    ? (restrictions as any[]).map((r: any) =>
-        `  ${r.body_part} — ${r.severity}${r.label ? ` (${r.label})` : ''}`
-      ).join('\n')
-    : '  Aucune'
-
-  const protocolLine = protocol
-    ? 'Protocole nutritionnel actif'
-    : 'Aucun protocole nutritionnel partagé'
-
+  // ── Session ───────────────────────────────────────────────────────────────
+  const session = sessionResult.status === 'fulfilled' ? sessionResult.value.data : null
   const sessionLine = session
-    ? `Séance complétée à ${new Date((session as any).completed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+    ? `Séance complétée à ${new Date(session.completed_at as string).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
     : "Aucune séance aujourd'hui"
 
-  let checkinLine = 'Non renseignés'
-  if (checkin?.responses) {
-    const r = checkin.responses as Record<string, unknown>
-    const parts: string[] = []
-    if (r.energy  != null) parts.push(`énergie ${r.energy}/5`)
-    if (r.stress  != null) parts.push(`stress ${r.stress}/5`)
-    if (r.sleep_h != null) parts.push(`sommeil ${r.sleep_h}h`)
-    if (parts.length > 0) checkinLine = parts.join(', ')
-  }
+  // ── Activities ────────────────────────────────────────────────────────────
+  const activities = activitiesResult.status === 'fulfilled' ? (activitiesResult.value.data ?? []) : []
+  const activitiesLine = activities.length > 0
+    ? activities.map(a => `  - ${a.custom_label ?? a.activity_type} ${a.duration_min}min`).join('\n')
+    : '  Aucune'
 
-  const currentTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  // ── Restrictions ──────────────────────────────────────────────────────────
+  const restrictions = restrictionsResult.status === 'fulfilled' ? (restrictionsResult.value.data ?? []) : []
+  const restrictionsLine = restrictions.length > 0
+    ? restrictions.map(r => `${r.label ?? r.body_part} (${r.severity})`).join(', ')
+    : 'aucune'
 
   return `Tu es le Coach IA de ${firstName}. Tu connais sa journée en détail.
-Réponds en 3 à 5 lignes maximum. Sois direct, factuel, bienveillant.
-Reste strictement dans le périmètre : nutrition, récupération, entraînement du jour.
-Si la question est hors périmètre, réponds exactement : "Je suis ton coach du quotidien — pose-moi une question sur ta journée, ta nutrition ou ta récupération."
-Langue : français.
+Réponds en 3 à 5 lignes maximum. Uniquement nutrition, récupération, entraînement du jour.
+Si la question est hors scope, réponds : "Je suis ton coach du quotidien — pose-moi une question sur ta journée, ta nutrition ou ta récupération."
+Langue : français. Ton : direct, bienveillant, factuel. Ne donne jamais de conseils médicaux.
 
 [PROFIL]
-Prénom : ${firstName}
-Objectif : ${goal}
-Cible : ${targetKcal} kcal | P ${targetP}g / L ${targetL}g / G ${targetG}g
-Protocole : ${protocolLine}
-Restrictions physiques :
-${restrictionsLines}
+Prénom: ${firstName}
+Objectif: ${goal} | TDEE: ${tdee} kcal | Cible: ${targetKcal} kcal
+Macros cibles: P ${targetProtein}g / L ${targetFat}g / G ${targetCarbs}g
+Niveau: ${fitnessLevel}
+Restrictions physiques: ${restrictionsLine}
 
-[JOURNÉE DU ${formatDate(today)} — ${currentTime}]
+[JOURNÉE DU ${fmtDate(today)}]
+Heure actuelle: ${nowTime}
 
-Nutrition : ${fmt(consumedKcal)} kcal / ${targetKcal} cible
-  Protéines : ${fmt(consumedP)}g / ${targetP}g
-  Lipides   : ${fmt(consumedL)}g / ${targetL}g
-  Glucides  : ${fmt(consumedG)}g / ${targetG}g
-Repas :
+Nutrition: ${Math.round(totalKcal)} kcal / ${targetKcal} cible (${pct(totalKcal, targetKcal)})
+  Protéines: ${Math.round(totalProtein)}g / ${targetProtein}g
+  Lipides: ${Math.round(totalFat)}g / ${targetFat}g
+  Glucides: ${Math.round(totalCarbs)}g / ${targetCarbs}g
+Repas:
 ${mealsLines}
 
-Eau : ${Math.round(totalWaterMl / 100) / 10}L / ${Math.round(targetWaterMl / 100) / 10}L cible
+Eau: ${totalWaterMl}ml / ${targetWaterMl}ml (${pct(totalWaterMl, targetWaterMl)})
 
-Séance : ${sessionLine}
+Séance: ${sessionLine}
 
-Check-ins : ${checkinLine}`
+Activités libres:
+${activitiesLine}`
 }
