@@ -12,13 +12,16 @@ export default function VolumeCoverageWidget({
   if (groups.length === 0) return null
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+    <div className="bg-[#111111] rounded-2xl p-4">
       <div className="flex items-baseline justify-between mb-3">
-        <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white">Volume hebdo</span>
+        <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white">Volume hebdomadaire</span>
         <span className="text-[10px] text-white/40 tabular-nums">{sessionsCount} séances</span>
       </div>
       <div className="space-y-2.5">
-        {groups.filter(g => g.actual > 0 || g.mev > 0).slice(0, 12).map(g => {
+        {groups
+          .filter(g => g.actual > 0 || g.mev > 0)
+          .sort((a, b) => b.actual - a.actual)
+          .map(g => {
           const span = (g.mrv || g.mev) * 1.2
           let color = 'rgba(255,255,255,0.08)'
           if (g.actual > (g.mrv || Infinity)) color = '#ef4444'

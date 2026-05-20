@@ -46,7 +46,7 @@ export default function OneRMWidget({ clientId }: OneRMWidgetProps) {
 
   if (error || trends.length === 0) {
     return (
-      <div className="text-center py-4 px-4 bg-[#161616] rounded-xl border border-white/[0.08]">
+      <div className="text-center py-4 px-4 bg-[#111111] rounded-xl">
         <p className="text-[13px] text-white/50">
           {error || 'Pas assez de données pour calculer les tendances'}
         </p>
@@ -67,7 +67,7 @@ export default function OneRMWidget({ clientId }: OneRMWidgetProps) {
         return (
           <div
             key={idx}
-            className="bg-[#161616] rounded-xl border border-white/[0.08] px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+            className="bg-[#111111] rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
           >
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold text-white/80 truncate">
