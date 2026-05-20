@@ -24,7 +24,7 @@
 | Module | Statut | Update |
 |--------|--------|--------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Chat-first — ChatPage home, 4-tab nav, MetricsPage, voix dans chat, archivage 3j | 2026-05-20 |
+| **Client App** | ✅ Chat SP2 — interactive check-ins (chips/sliders), system prompt données réelles, 3j trends | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -56,7 +56,20 @@
 - `lib/inngest/functions/chat-archive.ts` — cron 03:00 UTC archive messages > 3 jours
 - `components/client/smart/VoiceLogSheet.tsx` — ajout prop `onTranscriptOnly`
 - Supprimés : `CoachAIButton.tsx`, `CoachAIChatSheet.tsx`
-- Points de vigilance : migration `20260520_chat_messages` à appliquer manuellement via Supabase Dashboard ; sous-projets suivants : SP2 (scripted flows + interactive messages), SP3 (push notifications), SP4 (metrics avancées)
+- Points de vigilance : migration `20260520_chat_messages` à appliquer manuellement via Supabase Dashboard ; sous-projets suivants : SP3 (push notifications), SP4 (metrics avancées)
+
+### 2026-05-21 — Chat SP2 — Scripted Flow Engine + Interactive Messages
+
+- `supabase/migrations/20260521_daily_checkins.sql` — table `client_daily_checkins` (sleep, energy, stress, weight, hunger, soreness) + RLS — **à appliquer manuellement**
+- `lib/client/checkin/flows.ts` — définitions flows morning (4 steps) + evening (4 steps)
+- `lib/client/checkin/checkinEngine.ts` — `determineFlow(hour, sessions)` — 10 tests Vitest PASS
+- `app/api/client/checkin/route.ts` — POST save check-in → DB + `chat_sessions.completed_at` + LLM closing message
+- `lib/client/ai-coach/buildSystemPrompt.ts` — fix colonnes `nutrition_meals` (`total_calories`/`total_protein_g`/`total_fat_g`/`total_carbs_g`) + source `meal_logs` legacy + bloc tendances 3j + bloc check-ins du jour
+- `components/client/ChatBubble.tsx` — types `InteractiveMetadata` + `metadata` sur `ChatMessage` + render composants chips/slider/number
+- `components/client/checkin/CheckinFlow.tsx` — `ActiveCheckinFlow` (null-render) orchestre steps, expose `CheckinFlowHandle`
+- `components/client/ChatPage.tsx` — bouton Check-in → `determineFlow` → `ActiveCheckinFlow` monté dynamiquement, input désactivé pendant flow
+- `components/client/ChatConversation.tsx` — forward `onInteract`/`onSkip` vers `ChatBubble`
+- Points de vigilance : migration `20260521_daily_checkins` à appliquer manuellement ; `muscle_soreness` conditionnel (`__has_session_today`) ; flow messages ephémères (seul le closing message LLM est persisté en DB)
 
 ### 2026-05-21 — Design System v4.0 — Dark Gray Minimal Client PWA
 
@@ -189,7 +202,7 @@
 ## 📅 Next Steps — Phase 2
 
 - [x] Toutes migrations appliquées (vérifié 2026-05-21)
-- [ ] Chat SP2 : Scripted Flow Engine — banque questions hardcodée, config coach, interactive message types (chips, sliders)
+- [x] Chat SP2 : Scripted Flow Engine — flows morning/evening, chips/sliders interactifs, données réelles system prompt
 - [ ] Chat SP3 : Push Notifications + Inngest scheduling — VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard

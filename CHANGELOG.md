@@ -5,6 +5,46 @@
 
 ## 2026-05-21
 
+FEATURE: Chat SP2 — interactive check-in flows (chips, sliders, number input) morning/evening with smart time detection
+FEATURE: Chat SP2 — ChatBubble supports interactive message types (chips, slider, number) via metadata JSONB
+FEATURE: Chat SP2 — POST /api/client/checkin saves check-in data to client_daily_checkins + LLM closing message
+FEATURE: Chat SP2 — buildSystemPrompt enriched with 3-day nutrition trends and daily check-in context
+FIX: buildSystemPrompt — correct nutrition_meals columns (total_calories/total_protein_g/total_fat_g/total_carbs_g) + include meal_logs legacy source
+SCHEMA: Add client_daily_checkins table (sleep, energy, stress, weight, hunger, muscle_soreness) with RLS
+
+## 2026-05-22
+
+FIX: NutritionMealsList — cartes collapsées par défaut (était expanded par défaut)
+FIX: MealTypeChooser — stopPropagation sur bouton + overlay pour éviter toggle de la carte; retrait overflow-hidden sur racine MealCard pour que le dropdown ne soit pas tronqué
+FIX: NutritionLogContent standalone — paddingTop déplacé du parent vers la motion.div (absolute inset-0 ignorait le paddingTop du parent, contenu masqué sous la TopBar fixe)
+FIX: ChatBubble — coach avatar shows real photo (logo_url from coach_profiles) with first-letter initial fallback instead of hardcoded "S"
+FIX: ChatConversation — typing indicator uses coach avatar/initial (consistent with message bubbles)
+FIX: ChatPage — empty state coach avatar uses dynamic initial fallback
+
+FEATURE: Nutrition — heure et nom personnalisé sur création repas (NutritionLogContent footer + VoiceLogSheet review layer)
+FEATURE: NutritionMealsList — édition inline heure repas existant (tap heure → input[type=time] → PATCH)
+FEATURE: POST /api/client/nutrition/meals — champ title accepté
+FEATURE: PATCH /api/client/nutrition/meals/[id] — logged_at accepté, physiological_date recomputé
+FIX: TempoGuideModal — ECC phase → vivid gold #d4920f (was gray #e0e0e0); background gradient 18→55 opacity, ellipse 70%x40%→90%x65% for striking phase immersion; diamond colors CON_COLOR/ECC_COLOR
+FIX: BodyMap — muscle colors migrated from yellow rgba(255,224,30) to copper rgba(157,112,82) with opacity tiers (primary 0.90, secondary 0.42, stabilizer 0.16)
+FIX: SetRow — completed set border/bg migrated from yellow to copper (rgba(157,112,82,0.07/0.24))
+FIX: ExerciseBlock — active set glow migrated from yellow to copper ring (rgba(157,112,82,0.28))
+FIX: TdeeChart — band fill + dot fills migrated from yellow to copper
+FIX: PrepTimeModal — all #FFB800 accents replaced with copper #9d7052, CTA → DS v4.0 bg-[#f2f2f2]
+FIX: ProgrammeClientPage/login/onboarding/ClientRestrictionsSection/OnboardingTour/PreferencesForm/ProfileForm — hover:bg-[#ffd000] → hover:bg-[#e8e8e8]
+FIX: NutritionMealsList — MC constant old hex → data-copper/petrol/steel
+FIX: MacroWeekGrid (Régularité 7j) — carb data-gold→data-petrol, fat data-gold→data-steel
+REFACTOR: G/Glucides redéfini globalement data-petrol (#3d7070) — NutritionWidget/SmartNutritionWidget/SmartNutritionHero/NutritionLogContent; kcal arc libéré → data-gold
+FIX: NutritionLogContent — cartes catégories/subcatégories/items/inputs (#111111 sur #111111) → bg-[#1a1a1a] pour profondeur visuelle
+FIX: NutritionLogContent — macros P/G/L → data-copper/petrol/steel (mini-bars, macro card, footer)
+FIX: NutritionWidget — lipides utilisait data-gold comme glucides, remplacé par data-steel (#607a80)
+FEATURE: VoiceLogSheet — ajout item manuel déclenche AI lookup (voice-parse) sur name blur pour auto-remplir les nutriments
+REFACTOR: SmartNutritionWidget + SmartNutritionHero — couleurs macros migrées de hex vivants vers data-copper/gold/steel, eau → data-petrol
+REFACTOR: VoiceLogSheet — badges confiance migrés vers data-petrol/gold (suppression #22c55e/#f59e0b)
+CHORE: globals.css + tailwind.config.ts — ajout token --data-steel: #607a80
+
+## 2026-05-21
+
 REFACTOR: Client PWA — Design System v4.0 dark gray minimal (DS v4.0) — 60+ fichiers
 REFACTOR: Suppression totale #ffe01e (accent jaune) de toute l'app client
 REFACTOR: Suppression totale border-white/* dans composants client (zéro bordures)
