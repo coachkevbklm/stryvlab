@@ -18,7 +18,7 @@ export default function ClientAlternativesSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full bg-[#161616] rounded-t-[2px] p-5 pb-8 flex flex-col gap-4">
+      <div className="relative w-full bg-[#111111] rounded-t-[2px] p-5 pb-8 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/30 mb-0.5">
@@ -49,7 +49,7 @@ export default function ClientAlternativesSheet({
               className="flex items-center justify-between w-full bg-white/[0.04] hover:bg-white/[0.08] rounded-xl px-4 py-3.5 text-left transition-colors active:scale-[0.98]"
             >
               <span className="text-[13px] font-semibold text-white">{alt}</span>
-              <span className="text-[11px] text-[#ffe01e] font-bold">Choisir →</span>
+              <span className="text-[11px] text-[#f2f2f2] font-bold">Choisir →</span>
             </button>
           ))}
         </div>

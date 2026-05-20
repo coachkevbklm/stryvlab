@@ -100,7 +100,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="w-full max-w-xs bg-[#161616] rounded-2xl p-6"
+          className="w-full max-w-xs bg-[#111111] rounded-2xl p-6"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
