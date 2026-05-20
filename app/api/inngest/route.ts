@@ -6,6 +6,7 @@ import { checkinStreakExpireFunction } from '@/lib/inngest/functions/checkin-str
 import { checkinReminderSendFunction } from '@/lib/inngest/functions/checkin-reminder-send'
 import { mealAnalyzeFunction } from '@/lib/inngest/functions/meal-analyze'
 import { adaptiveTdeeFunction } from '@/lib/inngest/functions/adaptive-tdee'
+import { chatArchiveFunction } from '@/lib/inngest/functions/chat-archive'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -16,5 +17,6 @@ export const { GET, POST, PUT } = serve({
     checkinReminderSendFunction,
     mealAnalyzeFunction,
     adaptiveTdeeFunction,
+    chatArchiveFunction,
   ],
 })
