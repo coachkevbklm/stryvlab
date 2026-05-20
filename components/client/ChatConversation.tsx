@@ -6,7 +6,10 @@ import ChatBubble, { type ChatMessage } from "./ChatBubble"
 interface ChatConversationProps {
   messages: ChatMessage[]
   coachAvatarUrl?: string | null
+  coachInitial?: string | null
   isLoading?: boolean
+  onInteract?: (messageId: string, key: string, value: number) => void
+  onSkip?: (messageId: string, key: string) => void
 }
 
 function formatDateSeparator(dateStr: string): string {
@@ -25,7 +28,7 @@ function formatDateSeparator(dateStr: string): string {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
 }
 
-export default function ChatConversation({ messages, coachAvatarUrl, isLoading }: ChatConversationProps) {
+export default function ChatConversation({ messages, coachAvatarUrl, coachInitial, isLoading, onInteract, onSkip }: ChatConversationProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -57,13 +60,22 @@ export default function ChatConversation({ messages, coachAvatarUrl, isLoading }
             </span>
           </div>
         ) : (
-          <ChatBubble key={item.msg.id} message={item.msg} coachAvatarUrl={coachAvatarUrl} />
+          <ChatBubble key={item.msg.id} message={item.msg} coachAvatarUrl={coachAvatarUrl} coachInitial={coachInitial} onInteract={onInteract} onSkip={onSkip} />
         )
       )}
 
       {isLoading && (
         <div className="flex items-end gap-2">
-          <div className="w-7 h-7 rounded-full bg-[#1a1a1a] shrink-0" />
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#1a1a1a] flex items-center justify-center">
+            {coachAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coachAvatarUrl} alt="Coach" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-barlow-condensed font-bold text-[#808080] uppercase tracking-wider">
+                {coachInitial ?? "C"}
+              </span>
+            )}
+          </div>
           <div className="bg-[#111111] rounded-2xl rounded-tl-sm px-3.5 py-3 flex gap-1.5">
             {[0, 1, 2].map(i => (
               <span
