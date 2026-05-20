@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-20**
+> **Dernière mise à jour : 2026-05-21**
 
 ---
 
@@ -24,7 +24,7 @@
 | Module | Statut | Update |
 |--------|--------|--------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Smart Trio + Profil accordion + Smart Workout Motra-style + Voice Nutrition Logger + Coach IA Chat | 2026-05-20 |
+| **Client App** | ✅ Chat-first — ChatPage home, 4-tab nav, MetricsPage, voix dans chat, archivage 3j | 2026-05-20 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,51 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-20 — Chat-First Client App — Sub-projet #1
+
+- `supabase/migrations/20260520_chat_messages.sql` — tables `chat_messages` + `chat_sessions` + RLS
+- `app/api/client/chat/messages/route.ts` — GET actifs + POST (LLM GPT-4o mini, rate limit ai_coach_daily_usage)
+- `app/api/client/chat/archives/route.ts` — GET messages archivés par date
+- `app/api/client/chat/today-strip/route.ts` — GET sessions/calories/eau/checkin du jour
+- `components/client/ChatBubble.tsx` — bulle bot (avatar coach/logo) + user (jaune)
+- `components/client/ChatConversation.tsx` — liste scrollable avec séparateurs date + typing indicator
+- `components/client/ChatTodayStrip.tsx` — pills compactes : séances, calories, eau, check-in
+- `components/client/ChatInputBar.tsx` — texte + mic (VoiceLogSheet.onTranscriptOnly)
+- `components/client/ChatPage.tsx` — orchestrateur, optimistic messages, rate limit UI
+- `app/client/page.tsx` — remplace Smart Agenda par ChatPage
+- `app/client/metrics/page.tsx` + `components/client/MetricsPage.tsx` — remplace /client/profil
+- `components/client/BottomNav.tsx` — 4 tabs : Chat/Programme/Nutrition/Métriques, FAB supprimé
+- `lib/inngest/functions/chat-archive.ts` — cron 03:00 UTC archive messages > 3 jours
+- `components/client/smart/VoiceLogSheet.tsx` — ajout prop `onTranscriptOnly`
+- Supprimés : `CoachAIButton.tsx`, `CoachAIChatSheet.tsx`
+- Points de vigilance : migration `20260520_chat_messages` à appliquer manuellement via Supabase Dashboard ; sous-projets suivants : SP2 (scripted flows + interactive messages), SP3 (push notifications), SP4 (metrics avancées)
+
+### 2026-05-21 — i18n ES/EN App Client — Couverture Complète
+
+- `lib/i18n/clientTranslations.ts` — +~150 nouvelles clés (tempo, settype, activity, nutrition widget, ai chat, restrictions, water, checkin, logger, smart, programme tabs, portion, access pages)
+- `components/client/TempoGuideModal.tsx` — phases CON/ISO/ECC/PAUSE, tap-resume, PRÊT/READY/LISTO
+- `app/client/programme/session/[sessionId]/SessionLogger.tsx` — coaching cues, PR flash, erreurs réseau, compteur séries, UI repos
+- `app/client/programme/ProgrammeClientPage.tsx` — tabs, streak, périodes heatmap, KPIs
+- `components/client/CoachAIChatSheet.tsx` — greeting, suggestions, erreurs, placeholder, compteur
+- `components/client/smart/SmartWorkoutWidget.tsx` — session/repos/démarrer
+- `components/client/smart/SetTypeSelector.tsx` — types séries (échauffement/principale/retour/dégressive)
+- `components/client/smart/SetRow.tsx` — répétitions, valider la série
+- `components/client/smart/ExerciseBlock.tsx` — résumé sets·reps·RIR
+- `components/client/NutritionWidget.tsx` — toggle Consommé/Restant, Cible
+- `components/client/smart/SmartNutritionWidget.tsx` — macros labels, régularité protéines
+- `components/client/smart/FreeActivitySheet.tsx` — titre, précise, quand, durée, intensité
+- `components/client/smart/DayChecklist.tsx` — items check-in matin/soir, séance, nutrition, hydratation
+- `components/client/QuickWaterModal.tsx` — titre, loguer, erreur réseau
+- `components/client/ClientRestrictionsSection.tsx` — zones anatomiques, sévérités (FR/EN/ES), form
+- `components/client/smart/SmartAlertsFeed.tsx` — voir plus, réduire
+- `components/client/smart/DeloadAlertBanner.tsx` — signaux supplémentaires
+- `components/client/smart/AdherenceScoreCard.tsx` — labels Élite/En forme/Bon rythme/À améliorer
+- `components/client/profile/PortionScalingForm.tsx` — description + instructions mesure main
+- `app/client/acces-suspendu/page.tsx` — converti en Client Component (useClientT)
+- `app/client/access/expired/page.tsx` — converti en Client Component (useClientT)
+- `app/client/access/invalid/page.tsx` — converti en Client Component (useClientT)
+- Points de vigilance : `getCoachingCue` reçoit `t as (k: string) => string` (cast nécessaire pour TS strict) ; `BODY_PART_KEYS` remplace `BODY_PART_LABELS` statique dans ClientRestrictionsSection ; pages accès ne sont plus Server Components (pas de données server-side needed)
 
 ### 2026-05-20 — Coach IA Chat
 
@@ -119,6 +164,7 @@
 
 | Problème | Impact | Mitigation |
 |----------|--------|-----------|
+| `20260520_chat_messages` migration non appliquée | ChatPage non fonctionnel (tables absentes) | `20260520_chat_messages.sql` via Supabase Dashboard |
 | `20260520_ai_coach_daily_usage` migration non appliquée | Rate limit non fonctionnel, upsert échoue | `20260520_ai_coach_daily_usage.sql` via Supabase Dashboard |
 | `20260520_voice_input_mode` migration non appliquée | input_mode 'voice' rejeté en DB | `20260520_voice_input_mode.sql` via Supabase Dashboard |
 | `20260519_set_type` migration non appliquée | set_type non persisté (default 'working' OK) | `20260519_set_type.sql` via Supabase Dashboard |
@@ -132,9 +178,12 @@
 
 ## 📅 Next Steps — Phase 2
 
+- [ ] Appliquer migration `20260520_chat_messages.sql` via Supabase Dashboard
 - [ ] Appliquer migrations : `20260514_beta_waitlist.sql` + `20260516_tempo.sql` + `20260518_meal_favorites.sql`
+- [ ] Chat SP2 : Scripted Flow Engine — banque questions hardcodée, config coach, interactive message types (chips, sliders)
+- [ ] Chat SP3 : Push Notifications + Inngest scheduling — VAPID, cron par client
+- [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard
-- [ ] Daily Check-ins Phase 2 : DB schema, coach config UI, Inngest cron, Web Push
 - [ ] Gamification : points check-ins / séances / bilans
 - [ ] Mobile : TopBar buttons responsive, SessionLogger < 480px
 - [ ] Wearables : Apple Health, Oura (~6 weeks)

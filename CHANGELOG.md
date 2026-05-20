@@ -5,6 +5,52 @@
 
 ## 2026-05-20
 
+FEATURE: Chat-first client app SP1 — conversational home page replaces Smart Agenda
+FEATURE: /client now renders ChatPage with today-strip, conversation, voice input
+FEATURE: /client/metrics — new body metrics page replacing /client/profil
+REFACTOR: BottomNav 4 tabs (Chat/Programme/Nutrition/Métriques) — radial FAB removed
+SCHEMA: Add chat_messages table — 3-day rolling window, archived_at archiving
+SCHEMA: Add chat_sessions table — morning/evening/freeform flow tracking
+FEATURE: API GET /api/client/chat/messages — active messages (archived_at IS NULL)
+FEATURE: API POST /api/client/chat/messages — send + LLM response + save both
+FEATURE: API GET /api/client/chat/archives — messages by date
+FEATURE: API GET /api/client/chat/today-strip — sessions, calories, water, checkin status
+FEATURE: Inngest cron chat-archive — archives messages older than 3 days at 03:00 UTC
+REFACTOR: Remove CoachAIButton, CoachAIChatSheet — replaced by dedicated ChatPage
+FIX: VoiceLogSheet — add onTranscriptOnly prop for chat voice input without meal logging
+FIX: ClientTopBar — remove CoachAIButton reference
+FIX: NotificationsBar — update /client/profil links to /client/metrics
+
+## 2026-05-21
+
+CHORE: seed-food-items — +47 aliments : coupes bœuf (entrecôte, faux-filet, bavette, côte, rôti), charcuterie (jambon blanc/sec, lardons), viandes (veau, canard, foie), poissons frais (truite, bar, dorade, tilapia, sole, lieu noir, moules, saumon fumé, thon frais), conserves (thon huile, maquereau tomate, anchois), beurres (baratte, demi-sel, ghee, cacahuète), fromages (emmental, comté, gruyère, camembert, brie, cheddar), glucides (couscous, riz basmati/jasmin, pâtes fraîches, galettes riz, muesli), laits végétaux
+FEATURE: i18n ES/EN — traduction complète app client PWA (+~150 nouvelles clés dans clientTranslations.ts)
+FEATURE: i18n — TempoGuideModal phases (contraction/maintien/descente/pause), tap-resume, PRÊT/READY/LISTO
+FEATURE: i18n — SessionLogger coaching cues, PR flash, erreurs réseau, compteur séries, UI repos
+FEATURE: i18n — ProgrammeClientPage tabs (Séance/Performances/Historique), streak, périodes heatmap, KPIs
+FEATURE: i18n — CoachAIChatSheet greeting, suggestions rapides, erreurs, placeholder, compteur messages
+FEATURE: i18n — SmartWorkoutWidget, SetTypeSelector (types séries), SetRow (valider), ExerciseBlock (résumé)
+FEATURE: i18n — NutritionWidget toggle Consommé/Restant + SmartNutritionWidget régularité protéines
+FEATURE: i18n — FreeActivitySheet (titres, labels), DayChecklist (items), QuickWaterModal (loguer eau)
+FEATURE: i18n — ClientRestrictionsSection zones anatomiques + sévérités + form complet
+FEATURE: i18n — SmartAlertsFeed (voir plus/réduire), DeloadAlertBanner, AdherenceScoreCard labels
+FEATURE: i18n — PortionScalingForm instructions de mesure main
+FEATURE: i18n — pages erreur accès (suspendu, expiré, invalide) converties en Client Components i18n
+
+## 2026-05-20
+
+FIX: VoiceLogSheet — quantité éditable via draft local + commit onBlur, macros calculées depuis bases par gramme (plus de reset à zéro en cours de frappe)
+FIX: voice-parse prompt — règle absolue nom transcript verbatim, catalogHint isolé à résolution ID uniquement (évite substitution par aliments du catalogue), temperature 0.1, préfixe "Transcript vocal :"
+FIX: VoiceLogSheet — setModeSync("recording") déplacé dans startRecording (après le guard) — évite que le guard modeRef==="recording" court-circuite startRecording avant le démarrage
+FIX: CheckinModal — handle 409 "already responded" as success, show error message on failed submit
+FIX: DayChecklist hydratation item — ouvre QuickWaterModal au lieu de naviguer vers /client/nutrition
+FIX: CoachAIButton — déplacé de div fixed global vers ClientTopBar right slot (évite superposition avec photo profil, badges, etc.)
+FIX: CoachAIChatSheet — height 88vh fixe (au lieu de maxHeight) pour éviter le tronquage
+FIX: Remove duplicate mic button from NutritionLogContent embedded sub-header (MealLogSheet already has one in its header)
+
+## 2026-05-20
+
+FIX: SetRow ConfirmModal CTA — h-14 (56px), text-[15px], tracking-[0.14em], safe-area-inset-bottom padding
 FEATURE: Add Coach IA Chat — GPT-4o mini daily contextual chat in client PWA, 20 msg/day rate limit, zero message persistence
 SCHEMA: Add ai_coach_daily_usage table for Coach IA daily rate limiting (client_id, date, message_count PK)
 
