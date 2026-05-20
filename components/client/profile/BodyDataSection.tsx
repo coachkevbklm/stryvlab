@@ -42,7 +42,7 @@ function WeightSparkline({ series }: { series: WeightPoint[] }) {
   const first = values[0]
   const last = values[values.length - 1]
   const delta = last - first
-  const color = delta <= 0 ? '#ffe01e' : '#ef4444'
+  const color = delta <= 0 ? '#f2f2f2' : '#ef4444'
 
   const lastPoint = series[series.length - 1]
   const lastX = W
@@ -54,7 +54,7 @@ function WeightSparkline({ series }: { series: WeightPoint[] }) {
         <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-white/30">
           {series.length} bilans
         </span>
-        <span className={`text-[11px] font-bold ${delta <= 0 ? 'text-[#ffe01e]' : 'text-red-400'}`}>
+        <span className={`text-[11px] font-bold ${delta <= 0 ? 'text-[#f2f2f2]' : 'text-red-400'}`}>
           {delta > 0 ? '+' : ''}{delta.toFixed(1)} kg
         </span>
       </div>
@@ -154,7 +154,7 @@ export default function BodyDataSection() {
           <div className="grid grid-cols-2 gap-2">
             {data!.composition.body_fat_pct != null && (
               <div className="bg-white/[0.03] rounded-xl p-3 text-center">
-                <p className="text-[16px] font-black text-[#ffe01e] leading-none mb-1">
+                <p className="text-[16px] font-black text-[#f2f2f2] leading-none mb-1">
                   {data!.composition.body_fat_pct.toFixed(1)}%
                 </p>
                 <p className="text-[9px] font-medium text-white/40">{t('profil.body.bodyFat')}</p>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface Restriction {
   id: string
@@ -12,37 +13,35 @@ interface Restriction {
   body?: string | null
 }
 
-const BODY_PART_LABELS: Record<string, string> = {
-  shoulder_right: 'Épaule droite',
-  shoulder_left:  'Épaule gauche',
-  elbow_right:    'Coude droit',
-  elbow_left:     'Coude gauche',
-  wrist_right:    'Poignet droit',
-  wrist_left:     'Poignet gauche',
-  knee_right:     'Genou droit',
-  knee_left:      'Genou gauche',
-  hip_right:      'Hanche droite',
-  hip_left:       'Hanche gauche',
-  lower_back:     'Bas du dos',
-  upper_back:     'Haut du dos',
-  neck:           'Nuque / cou',
-  ankle_right:    'Cheville droite',
-  ankle_left:     'Cheville gauche',
-}
+const BODY_PART_KEYS = [
+  'shoulder_right', 'shoulder_left', 'elbow_right', 'elbow_left',
+  'wrist_right', 'wrist_left', 'knee_right', 'knee_left',
+  'hip_right', 'hip_left', 'lower_back', 'upper_back',
+  'neck', 'ankle_right', 'ankle_left',
+] as const
 
-const SEVERITY_PROMPTS = [
-  { value: 'avoid'   as const, label: 'Je ne peux pas faire…',  desc: 'Exercice à éviter complètement' },
-  { value: 'limit'   as const, label: "J'ai des douleurs à…",   desc: 'À surveiller, charge réduite' },
-  { value: 'monitor' as const, label: 'Je surveille…',           desc: 'Pas de douleur mais attention' },
-]
-
-const SEVERITY_CONFIG = {
-  avoid:   { label: 'À éviter',     bg: 'bg-red-500/10',   text: 'text-red-400',   border: 'border-red-500/20' },
-  limit:   { label: 'Douleurs',     bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
-  monitor: { label: 'Surveillance', bg: 'bg-white/[0.04]', text: 'text-white/50',  border: 'border-white/[0.06]' },
+const SEVERITY_BG: Record<string, { bg: string; text: string; border: string }> = {
+  avoid:   { bg: 'bg-red-500/10',   text: 'text-red-400',   border: 'border-red-500/20' },
+  limit:   { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+  monitor: { bg: 'bg-[#1a1a1a]', text: 'text-[#808080]', border: '' },
 }
 
 export default function ClientRestrictionsSection() {
+  const { t } = useClientT()
+
+  const bodyPartLabel = (slug: string) => t((`restrict.body.${slug}`) as Parameters<typeof t>[0]) || slug
+
+  const SEVERITY_PROMPTS = [
+    { value: 'avoid'   as const, label: t('restrict.sev.avoid.label'),   desc: t('restrict.sev.avoid.desc') },
+    { value: 'limit'   as const, label: t('restrict.sev.limit.label'),   desc: t('restrict.sev.limit.desc') },
+    { value: 'monitor' as const, label: t('restrict.sev.monitor.label'), desc: t('restrict.sev.monitor.desc') },
+  ]
+
+  const SEVERITY_CONFIG = {
+    avoid:   { label: t('restrict.cfg.avoid'),   ...SEVERITY_BG.avoid },
+    limit:   { label: t('restrict.cfg.limit'),   ...SEVERITY_BG.limit },
+    monitor: { label: t('restrict.cfg.monitor'), ...SEVERITY_BG.monitor },
+  }
   const [restrictions, setRestrictions] = useState<Restriction[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -62,7 +61,7 @@ export default function ClientRestrictionsSection() {
 
   async function handleAdd() {
     if (!formBodyPart) return
-    const autoLabel = `${BODY_PART_LABELS[formBodyPart] ?? formBodyPart} — ${SEVERITY_PROMPTS.find(s => s.value === formSeverity)?.label ?? ''}`
+    const autoLabel = `${bodyPartLabel(formBodyPart)} — ${SEVERITY_PROMPTS.find(s => s.value === formSeverity)?.label ?? ''}`
     setSaving(true)
     const res = await fetch('/api/client/restrictions', {
       method: 'POST',
@@ -102,8 +101,8 @@ export default function ClientRestrictionsSection() {
 
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Restrictions physiques</p>
-          <p className="text-[12px] text-white/40 mt-0.5">Zones à éviter ou surveiller lors des entraînements</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">{t('restrict.title')}</p>
+          <p className="text-[12px] text-white/40 mt-0.5">{t('restrict.desc')}</p>
         </div>
         <button
           type="button"
@@ -111,7 +110,7 @@ export default function ClientRestrictionsSection() {
           className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-white/[0.04] text-[11px] font-semibold text-white/60 hover:bg-white/[0.07] hover:text-white transition-colors"
         >
           <Plus size={12} />
-          Ajouter
+          {t('restrict.add')}
         </button>
       </div>
 
@@ -122,7 +121,7 @@ export default function ClientRestrictionsSection() {
       )}
 
       {!loading && restrictions.length === 0 && !showForm && (
-        <p className="text-[12px] text-white/30 py-1">Aucune restriction enregistrée.</p>
+        <p className="text-[12px] text-white/30 py-1">{t('restrict.empty')}</p>
       )}
 
       {!loading && (
@@ -133,7 +132,7 @@ export default function ClientRestrictionsSection() {
               <div key={r.id} className={`flex items-start gap-3 rounded-xl border ${cfg.border} ${cfg.bg} px-3 py-2.5`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-semibold text-white">{BODY_PART_LABELS[r.body_part] ?? r.body_part}</span>
+                    <span className="text-[12px] font-semibold text-white">{bodyPartLabel(r.body_part)}</span>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
                   </div>
                   {r.body && <p className="text-[10px] text-white/30 mt-0.5 italic">{r.body}</p>}
@@ -152,23 +151,23 @@ export default function ClientRestrictionsSection() {
       )}
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 flex flex-col gap-3">
+        <div className="rounded-xl bg-white/[0.02] p-3 flex flex-col gap-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">Zone concernée</label>
+            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">{t('restrict.zone')}</label>
             <select
               value={formBodyPart}
               onChange={e => setFormBodyPart(e.target.value)}
               className="w-full rounded-xl bg-[#0a0a0a] px-3 h-10 text-[13px] text-white outline-none border-none"
             >
-              <option value="">Sélectionner…</option>
-              {Object.entries(BODY_PART_LABELS).map(([slug, label]) => (
-                <option key={slug} value={slug}>{label}</option>
+              <option value="">{t('restrict.select')}</option>
+              {BODY_PART_KEYS.map(slug => (
+                <option key={slug} value={slug}>{bodyPartLabel(slug)}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">Situation</label>
+            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">{t('restrict.situation')}</label>
             <div className="flex flex-col gap-1.5">
               {SEVERITY_PROMPTS.map(s => (
                 <button
@@ -177,15 +176,15 @@ export default function ClientRestrictionsSection() {
                   onClick={() => setFormSeverity(s.value)}
                   className={`flex items-start gap-2 rounded-xl px-3 py-2 text-left transition-colors ${
                     formSeverity === s.value
-                      ? 'bg-[#ffe01e]/10 border border-[#ffe01e]/20'
-                      : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.04]'
+                      ? 'bg-[#2e2e2e]'
+                      : 'bg-[#111111] hover:bg-[#1a1a1a]'
                   }`}
                 >
-                  <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 border ${
-                    formSeverity === s.value ? 'bg-[#ffe01e] border-[#ffe01e]' : 'border-white/20'
+                  <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 ${
+                    formSeverity === s.value ? 'bg-[#f2f2f2]' : 'bg-[#404040]'
                   }`} />
                   <div>
-                    <p className={`text-[12px] font-semibold ${formSeverity === s.value ? 'text-[#ffe01e]' : 'text-white/70'}`}>{s.label}</p>
+                    <p className={`text-[12px] font-semibold ${formSeverity === s.value ? 'text-[#f2f2f2]' : 'text-white/70'}`}>{s.label}</p>
                     <p className="text-[10px] text-white/30">{s.desc}</p>
                   </div>
                 </button>
@@ -194,11 +193,11 @@ export default function ClientRestrictionsSection() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">Précision (optionnel)</label>
+            <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-1.5">{t('restrict.note')}</label>
             <textarea
               value={formNote}
               onChange={e => setFormNote(e.target.value)}
-              placeholder="ex: douleur en rotation externe, pas de charge lourde…"
+              placeholder={t('restrict.notePlaceholder')}
               rows={2}
               className="w-full rounded-xl bg-[#0a0a0a] px-3 py-2 text-[13px] text-white placeholder:text-white/20 outline-none resize-none"
             />
@@ -210,15 +209,15 @@ export default function ClientRestrictionsSection() {
               onClick={() => setShowForm(false)}
               className="flex-1 h-9 rounded-xl bg-white/[0.04] text-[12px] text-white/50 hover:text-white/70 font-medium transition-colors"
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button
               type="button"
               onClick={handleAdd}
               disabled={!formBodyPart || saving}
-              className="flex-1 h-9 rounded-xl bg-[#ffe01e] text-[12px] font-barlow-condensed font-bold uppercase text-[#0d0d0d] hover:bg-[#ffd000] disabled:opacity-50 transition-colors"
+              className="flex-1 h-9 rounded-xl bg-[#f2f2f2] text-[12px] font-barlow-condensed font-bold uppercase text-[#080808] hover:bg-[#ffd000] disabled:opacity-50 transition-colors"
             >
-              {saving ? '…' : 'Enregistrer'}
+              {saving ? '…' : t('common.save')}
             </button>
           </div>
         </div>

@@ -103,7 +103,7 @@ export default function ProfilAccordion({
     <div className="flex flex-col gap-2">
 
       {/* ── Hero compact ── */}
-      <div className="bg-[#161616] rounded-2xl border-[0.3px] border-white/[0.08] p-4 flex items-center gap-4">
+      <div className="bg-[#111111] rounded-2xl p-4 flex items-center gap-4">
         <ProfilePhotoUpload
           currentUrl={profilePhotoUrl}
           initials={initials}
@@ -115,7 +115,7 @@ export default function ProfilAccordion({
           {status && (
             <span className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
               status === 'active'
-                ? 'bg-[#ffe01e]/15 text-[#ffe01e]'
+                ? 'bg-[#f2f2f2]/15 text-[#f2f2f2]'
                 : 'bg-white/[0.06] text-white/40'
             }`}>
               {status === 'active' ? t('profil.status.active') : status}
@@ -124,7 +124,7 @@ export default function ProfilAccordion({
         </div>
         {streak && (
           <div className="text-right shrink-0">
-            <p className="text-[22px] font-black text-[#ffe01e] leading-none">{streak.current_streak}</p>
+            <p className="text-[22px] font-black text-[#f2f2f2] leading-none">{streak.current_streak}</p>
             <p className="text-[9px] text-white/30 mt-0.5">streak</p>
           </div>
         )}
@@ -251,7 +251,7 @@ function ProgressionContent({
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-white/[0.03] rounded-xl p-3 text-center">
-          <p className="text-[20px] font-black text-[#ffe01e] leading-none mb-1">{streak.current_streak}</p>
+          <p className="text-[20px] font-black text-[#f2f2f2] leading-none mb-1">{streak.current_streak}</p>
           <p className="text-[9.5px] font-medium text-white/40">{t('profil.streakCurrent')}</p>
         </div>
         <div className="bg-white/[0.03] rounded-xl p-3 text-center">
