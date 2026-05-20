@@ -44,7 +44,7 @@ export default function NotificationsBar({
     } else if (n.type === "program_assigned") {
       router.push("/client/programme");
     } else if (n.type === "coach_note") {
-      router.push("/client/profil");
+      router.push("/client/metrics");
     } else if (n.type === "tdee_updated") {
       router.push("/client/nutrition");
     } else if (n.type === "coach_feedback") {
@@ -64,7 +64,7 @@ export default function NotificationsBar({
           router.push('/client/checkin')
           break
         case 'morpho':
-          router.push('/client/profil')
+          router.push('/client/metrics')
           break
         default:
           router.push('/client')
