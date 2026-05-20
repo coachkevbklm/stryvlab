@@ -107,6 +107,32 @@
   --chart-5: #1f8a65;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   DS v4.0 — Client PWA : Dark Gray Minimal
+   Pure neutral gray scale. No borders. No colored accent.
+   Data colors used in charts ONLY — never in UI.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Gray scale ─────────────────────────────────────────── */
+  --c-bg:         #080808;   /* App background */
+  --c-surface-1:  #111111;   /* Cards, sheets — L1 */
+  --c-surface-2:  #1a1a1a;   /* Elevated cards — L2 */
+  --c-surface-3:  #222222;   /* Inputs, interactive — L3 */
+  --c-hover:      #2e2e2e;   /* Hover state */
+  --c-active:     #404040;   /* Active / pressed */
+  --c-icon-off:   #5a5a5a;   /* Icons disabled / inactive nav */
+  --c-text-muted: #808080;   /* Text muted */
+  --c-text-body:  #b0b0b0;   /* Text body */
+  --c-text-head:  #e0e0e0;   /* Headings */
+  --c-text-emph:  #f2f2f2;   /* Emphasis / primary btn bg */
+
+  /* ── Data colors (charts/SVG only — never in UI) ─────────── */
+  --data-copper:  #9d7052;
+  --data-gold:    #a89060;
+  --data-petrol:  #3d7070;
+}
+
 @layer base {
   html {
     color-scheme: dark;

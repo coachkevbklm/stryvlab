@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0d0d0d',
+  themeColor: '#080808',
   width: 'device-width',
   initialScale: 1,
   // userScalable not disabled — WCAG 1.4.4 compliance
@@ -34,7 +34,7 @@ export const viewport: Viewport = {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClientI18nProvider>
-      <div className="min-h-screen bg-[#0d0d0d] font-barlow">
+      <div className="min-h-screen bg-[#080808] font-barlow">
         <ServiceWorkerRegistrar />
         <ConditionalClientShell>{children}</ConditionalClientShell>
       </div>
