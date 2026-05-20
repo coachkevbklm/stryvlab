@@ -3,6 +3,21 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-21
+
+FIX: ChatPage — fixed layout, input bar anchored to bottom (was at top due to h-full in pb-24 shell)
+FIX: ChatPage — empty state with personalized greeting, STRYVR avatar, quick suggestion chips
+FIX: ChatTodayStrip — water query uses gte/lte logged_at instead of .eq('date') — was always 0L
+FIX: ChatTodayStrip — check-in pill sends check-in message to chat, water pill opens QuickWaterModal
+FIX: ChatTodayStrip — calories + water mini progress bars inline
+FIX: MetricsPage — remove streak_days column (doesn't exist), fetch current_streak from client_streaks
+FIX: client/page.tsx — pass clientFirstName for personalized greeting in ChatPage empty state
+
+## 2026-05-21
+
+CHORE: food_items — refonte catégories : migration 20260521 (CHECK + reclassifications), category `drinks` séparée, parmesan/mozzarella → proteins/laitiers, miel/confiture → extras/sucres, frites/purée/gnocchis → carbs/fecules, snacks salés/sucrés + boissons restructurés, labels nettoyés (suppression fast-food)
+CHORE: seed-food-items — 171 items total, +ajouts (coupes bœuf, poissons frais, fromages, beurre de baratte, couscous, riz basmati, snacks), zéro doublon
+
 ## 2026-05-20
 
 FEATURE: Chat-first client app SP1 — conversational home page replaces Smart Agenda

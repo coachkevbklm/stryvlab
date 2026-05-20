@@ -17,11 +17,12 @@ export default async function MetricsRoute() {
   if (!user) return null
 
   const db = service()
+
   const cc = await resolveClientFromUser(
     user.id,
     user.email,
     db,
-    'id, first_name, last_name, email, streak_days'
+    'id, first_name, last_name, email'
   )
 
   if (!cc) return null
@@ -30,12 +31,19 @@ export default async function MetricsRoute() {
   const lastName  = (cc as any).last_name  ?? ""
   const initials  = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "?"
 
+  // Fetch streak from client_streaks table
+  const { data: streakRow } = await db
+    .from('client_streaks')
+    .select('current_streak')
+    .eq('client_id', cc.id)
+    .maybeSingle()
+
   return (
     <MetricsPage
       clientName={`${firstName} ${lastName}`.trim()}
       clientEmail={(cc as any).email ?? user.email ?? ""}
       avatarInitials={initials}
-      streak={(cc as any).streak_days ?? 0}
+      streak={(streakRow as any)?.current_streak ?? 0}
     />
   )
 }

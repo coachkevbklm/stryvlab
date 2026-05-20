@@ -56,7 +56,8 @@ export async function GET() {
     db.from('client_water_logs')
       .select('amount_ml')
       .eq('client_id', cc.id)
-      .eq('date', today),
+      .gte('logged_at', `${today}T00:00:00Z`)
+      .lte('logged_at', `${today}T23:59:59Z`),
 
     db.from('chat_sessions')
       .select('flow_type, completed_at')

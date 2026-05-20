@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Barbell, ForkKnife, Drop, CheckCircle, Circle } from "@phosphor-icons/react"
+import dynamic from "next/dynamic"
+
+const QuickWaterModal = dynamic(() => import("@/components/client/QuickWaterModal"), { ssr: false })
 
 interface TodayStrip {
   sessions: { id: string; name: string }[]
@@ -11,65 +14,113 @@ interface TodayStrip {
   checkin: { morning: boolean; evening: boolean }
 }
 
-export default function ChatTodayStrip() {
+interface ChatTodayStripProps {
+  onCheckinClick?: () => void
+}
+
+export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) {
   const router = useRouter()
   const [data, setData] = useState<TodayStrip | null>(null)
+  const [waterOpen, setWaterOpen] = useState(false)
 
-  useEffect(() => {
+  function refresh() {
     fetch("/api/client/chat/today-strip")
       .then(r => r.json())
       .then(setData)
       .catch(() => {})
+  }
+
+  useEffect(() => {
+    refresh()
   }, [])
 
-  if (!data) return <div className="h-[44px] shrink-0 bg-[#0d0d0d] border-b border-white/[0.06]" />
-
-  const pills: { label: string; icon: React.ReactNode; active?: boolean; onClick: () => void }[] = [
-    {
-      label: data.checkin.morning ? "Check-in ✓" : "Check-in",
-      icon: data.checkin.morning
-        ? <CheckCircle size={13} weight="fill" className="text-[#ffe01e]" />
-        : <Circle size={13} className="text-white/40" />,
-      active: data.checkin.morning,
-      onClick: () => {},
-    },
-    ...data.sessions.map(s => ({
-      label: s.name,
-      icon: <Barbell size={13} className="text-white/60" />,
-      onClick: () => router.push("/client/programme"),
-    })),
-    {
-      label: `${data.calories.logged} / ${data.calories.target} kcal`,
-      icon: <ForkKnife size={13} className="text-white/60" />,
-      onClick: () => router.push("/client/nutrition"),
-    },
-    {
-      label: `${(data.water.logged / 1000).toFixed(1)}L / ${data.water.target / 1000}L`,
-      icon: <Drop size={13} className="text-white/60" />,
-      onClick: () => router.push("/client/nutrition"),
-    },
-  ]
-
-  return (
-    <div className="shrink-0 border-b border-white/[0.06] bg-[#0d0d0d]">
-      <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-none">
-        {pills.map((pill, i) => (
-          <button
-            key={i}
-            onClick={pill.onClick}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shrink-0 active:opacity-70 transition-opacity ${
-              pill.active
-                ? "bg-[#ffe01e]/10 border-[#ffe01e]/20"
-                : "bg-white/[0.04] border-white/[0.06]"
-            }`}
-          >
-            {pill.icon}
-            <span className={`text-[11px] font-barlow font-medium whitespace-nowrap ${pill.active ? "text-[#ffe01e]" : "text-white/60"}`}>
-              {pill.label}
-            </span>
-          </button>
+  if (!data) {
+    return (
+      <div className="shrink-0 h-[44px] border-b border-white/[0.06] bg-[#0d0d0d] flex items-center px-4 gap-2">
+        {[80, 120, 100].map(w => (
+          <div key={w} className={`h-[26px] w-[${w}px] bg-white/[0.04] rounded-xl animate-pulse`} />
         ))}
       </div>
-    </div>
+    )
+  }
+
+  const checkinDone = data.checkin.morning
+  const calPct = data.calories.target > 0 ? Math.min(data.calories.logged / data.calories.target, 1) : 0
+  const waterPct = data.water.target > 0 ? Math.min(data.water.logged / data.water.target, 1) : 0
+
+  return (
+    <>
+      <div className="shrink-0 border-b border-white/[0.06] bg-[#0d0d0d]">
+        <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-none">
+
+          {/* Check-in */}
+          <button
+            onClick={onCheckinClick}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shrink-0 active:opacity-70 transition-all ${
+              checkinDone
+                ? "bg-[#ffe01e]/10 border-[#ffe01e]/20"
+                : "bg-[#ff8c00]/10 border-[#ff8c00]/20"
+            }`}
+          >
+            {checkinDone
+              ? <CheckCircle size={13} weight="fill" className="text-[#ffe01e]" />
+              : <Circle size={13} className="text-[#ff8c00]" />
+            }
+            <span className={`text-[11px] font-barlow font-semibold whitespace-nowrap ${checkinDone ? "text-[#ffe01e]" : "text-[#ff8c00]"}`}>
+              {checkinDone ? "Check-in ✓" : "Check-in"}
+            </span>
+          </button>
+
+          {/* Sessions du jour */}
+          {data.sessions.map(s => (
+            <button
+              key={s.id}
+              onClick={() => router.push("/client/programme")}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+            >
+              <Barbell size={13} className="text-white/50" />
+              <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap max-w-[100px] truncate">
+                {s.name}
+              </span>
+            </button>
+          ))}
+
+          {/* Calories */}
+          <button
+            onClick={() => router.push("/client/nutrition")}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+          >
+            <ForkKnife size={13} className="text-white/50" />
+            <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap">
+              {data.calories.logged} <span className="text-white/30">/ {data.calories.target}</span>
+            </span>
+            {/* Mini progress */}
+            <div className="w-10 h-1 bg-white/[0.08] rounded-full overflow-hidden">
+              <div className="h-full bg-[#ffe01e] rounded-full transition-all" style={{ width: `${calPct * 100}%` }} />
+            </div>
+          </button>
+
+          {/* Eau */}
+          <button
+            onClick={() => setWaterOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] shrink-0 active:opacity-70"
+          >
+            <Drop size={13} className="text-white/50" />
+            <span className="text-[11px] font-barlow font-medium text-white/60 whitespace-nowrap">
+              {(data.water.logged / 1000).toFixed(1)}<span className="text-white/30">L / {data.water.target / 1000}L</span>
+            </span>
+            <div className="w-8 h-1 bg-white/[0.08] rounded-full overflow-hidden">
+              <div className="h-full bg-[#4da6ff] rounded-full transition-all" style={{ width: `${waterPct * 100}%` }} />
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <QuickWaterModal
+        open={waterOpen}
+        onClose={() => { setWaterOpen(false); refresh() }}
+      />
+    </>
   )
 }
