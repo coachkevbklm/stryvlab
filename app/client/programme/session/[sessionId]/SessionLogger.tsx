@@ -145,7 +145,9 @@ function formatTime(sec: number) {
 }
 
 function formatWeight(kg: number): string {
-  return parseFloat(kg.toFixed(2)).toString()
+  // Round to nearest 0.25 then display without trailing zeros
+  const snapped = Math.round(kg * 4) / 4
+  return parseFloat(snapped.toFixed(2)).toString()
 }
 
 function recKey(exerciseId: string, setNumber: number, side: string): string {
@@ -159,13 +161,13 @@ function resolveReps(ex: Exercise): number {
   return 8
 }
 
-function getCoachingCue(rir: number | null, setNumber: number, totalSets: number, isLastSet: boolean): string | null {
+function getCoachingCue(rir: number | null, setNumber: number, totalSets: number, isLastSet: boolean, t: (k: string) => string): string | null {
   if (rir === null) return null
-  if (rir === 0) return isLastSet ? 'Maximum atteint — repos complet 3min' : 'Échec musculaire — augmente le repos'
-  if (rir <= 1 && isLastSet) return 'Intensité parfaite sur le dernier set 🎯'
-  if (rir <= 2) return 'Bonne intensité — continue'
-  if (rir >= 5 && setNumber < totalSets) return 'Trop facile — augmente le poids au prochain set'
-  if (rir >= 4 && isLastSet) return 'Zone trop confortable — challenge-toi la prochaine fois'
+  if (rir === 0) return isLastSet ? t('logger.coaching.maxLast') : t('logger.coaching.failure')
+  if (rir <= 1 && isLastSet) return t('logger.coaching.perfect')
+  if (rir <= 2) return t('logger.coaching.good')
+  if (rir >= 5 && setNumber < totalSets) return t('logger.coaching.tooEasy')
+  if (rir >= 4 && isLastSet) return t('logger.coaching.comfortable')
   return null
 }
 
@@ -301,7 +303,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         const totalS = exSets.length
         const isLastSet = s.set_number === Math.max(...exSets.map(st => st.set_number))
         const rir = s.rir_actual !== '' ? parseInt(s.rir_actual, 10) : null
-        map[key] = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, totalS, isLastSet)
+        map[key] = getCoachingCue(isNaN(rir!) ? null : rir, s.set_number, totalS, isLastSet, t as (k: string) => string)
       }
     }
     return map
@@ -574,7 +576,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         const nowCompleted = !s.completed
         if (nowCompleted) {
           const alreadyTracking = pendingRestSet?.exId === exId && pendingRestSet?.setNum === setNum && pendingRestSet?.side === side
-          if (!alreadyTracking) startRest(exId, setNum, side, restSec)
+          if (!alreadyTracking) {
+            // RIR = 0 (muscle failure) → force 3min rest regardless of prescription
+            const confirmedRir = rir !== undefined ? parseInt(rir, 10) : null
+            const effectiveRest = confirmedRir === 0 ? 180 : restSec
+            startRest(exId, setNum, side, effectiveRest)
+          }
         }
         return {
           ...s,
@@ -608,7 +615,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           if (isNewPR) {
             const key = recKey(confirmedCurrent.exercise_id, confirmedCurrent.set_number, confirmedCurrent.side)
             setPrSets(prev => new Set(prev).add(key))
-            setPrFlash(`⚡ Nouveau record — ${formatWeight(confirmedWeight)}kg × ${confirmedReps} reps`)
+            setPrFlash(t('logger.pr.new', { weight: formatWeight(confirmedWeight), reps: String(confirmedReps) }))
             setTimeout(() => setPrFlash(null), 3000)
           }
         }
@@ -693,14 +700,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         }
       } catch (err) {
         setSaveState('error')
-        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau')
+        setErrorMsg(err instanceof Error ? err.message : t('logger.error.network'))
         return
       }
       try {
         const completeRes = await fetch(`/api/session-logs/${logId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: true, duration_min: durationMin, notes: JSON.stringify(exerciseNotes) }),
+          body: JSON.stringify({ completed: true, duration_min: durationMin, exercise_notes: exerciseNotes }),
         })
         if (!completeRes.ok) {
           const body = await completeRes.json().catch(() => ({}))
@@ -710,7 +717,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         }
       } catch (err) {
         setSaveState('error')
-        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau')
+        setErrorMsg(err instanceof Error ? err.message : t('logger.error.network'))
         return
       }
       setSaveState('idle')
@@ -747,7 +754,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         router.push(`/client/programme/recap/${newLogId}`)
       } catch (err) {
         setSaveState('error')
-        setErrorMsg(err instanceof Error ? err.message : 'Erreur réseau')
+        setErrorMsg(err instanceof Error ? err.message : t('logger.error.network'))
       }
     }
   }
@@ -760,8 +767,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   // ── Tempo handler ──
   function handleTempoForExercise(exId: string) {
     const ex = exercises.find(e => e.id === exId)
-    if (!ex?.tempo) return
-    const resolvedTempo = ex.tempo
+    const resolvedTempo = ex?.tempo ?? getDefaultTempo(ex?.movement_pattern ?? null, goal)
+    if (!resolvedTempo || !ex) return
     const repCount = resolveReps(ex)
     const exName = swappedNames[exId] ?? ex.name
     if (!hasPrepTimeConfigured(exName)) {
@@ -773,8 +780,8 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
 
   if (exercises.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
-        <p className="text-white/40 text-sm">Aucun exercice dans cette séance.</p>
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+        <p className="text-white/40 text-sm">{t('logger.noExercises')}</p>
       </div>
     )
   }
@@ -782,10 +789,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] font-sans">
+    <div className="min-h-screen bg-[#080808] font-sans">
 
       {/* ── Header fixe ── */}
-      <header className="sticky top-0 z-40 bg-[#0d0d0d] border-b border-white/[0.06]">
+      <header className="sticky top-0 z-40 bg-[#080808]">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => setSessionMenuOpen(true)}
@@ -811,18 +818,19 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             <div className="relative overflow-hidden rounded-xl">
               {longPressProgress > 0 && (
                 <div
-                  className="absolute inset-0 bg-[#ffe01e]/20 origin-left"
+                  className="absolute inset-0 bg-[#f2f2f2]/40 origin-left"
                   style={{ transform: `scaleX(${longPressProgress})` }}
                 />
               )}
               <button
-                onMouseDown={onFinishPressStart}
-                onMouseUp={onFinishPressEnd}
-                onMouseLeave={onFinishPressEnd}
-                onTouchStart={onFinishPressStart}
-                onTouchEnd={onFinishPressEnd}
+                onMouseDown={allDone ? undefined : onFinishPressStart}
+                onMouseUp={allDone ? undefined : onFinishPressEnd}
+                onMouseLeave={allDone ? undefined : onFinishPressEnd}
+                onTouchStart={allDone ? undefined : onFinishPressStart}
+                onTouchEnd={allDone ? undefined : onFinishPressEnd}
+                onClick={allDone ? submitSession : undefined}
                 disabled={saveState === 'saving' || !draftReady}
-                className="relative h-9 px-3 flex items-center gap-1.5 rounded-xl bg-white/[0.06] text-white/50 text-[10px] font-bold uppercase tracking-[0.08em] disabled:opacity-50 select-none"
+                className={`relative h-9 px-3 flex items-center gap-1.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.08em] disabled:opacity-50 select-none transition-colors ${allDone ? 'bg-[#f2f2f2] text-[#080808]' : 'bg-[#1a1a1a] text-[#5a5a5a]'}`}
               >
                 {saveState === 'saving' ? <Loader2 size={12} className="animate-spin" /> : <Flag size={12} />}
                 {allDone ? 'Terminer' : 'Fin'}
@@ -833,12 +841,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         {/* Progress bar */}
         <div className="h-[2px] bg-white/[0.06] mx-4 mb-2 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#ffe01e] rounded-full transition-all duration-300"
+            className="h-full bg-[#f2f2f2] rounded-full transition-all duration-300"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
         <p className="text-center text-[10px] text-white/25 font-barlow-condensed uppercase tracking-[0.1em] pb-2">
-          {completedCount}/{totalSets} séries
+          {t('logger.sets.count', { done: String(completedCount), total: String(totalSets) })}
         </p>
       </header>
 
@@ -848,11 +856,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           <div className="flex items-start gap-3">
             <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-[11px] font-semibold text-red-400">Sauvegarde échouée</p>
+              <p className="text-[11px] font-semibold text-red-400">{t('logger.save.failed')}</p>
               <p className="text-[10px] text-red-400/70 mt-0.5 break-all">{errorMsg}</p>
             </div>
             <button onClick={submitSession} className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-1.5 rounded-lg shrink-0">
-              <RefreshCw size={10} /> Réessayer
+              <RefreshCw size={10} /> {t('logger.retry')}
             </button>
           </div>
         </div>
@@ -865,7 +873,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="fixed top-24 left-4 right-4 z-50 px-4 py-2.5 bg-[#ffe01e]/10 border border-[#ffe01e]/30 rounded-xl text-[12px] font-bold text-[#ffe01e] text-center"
+            className="fixed top-24 left-4 right-4 z-50 px-4 py-2.5 bg-[#222222] rounded-xl text-[12px] font-bold text-[#f2f2f2] text-center"
           >
             {prFlash}
           </motion.div>
@@ -873,7 +881,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       </AnimatePresence>
 
       {/* ── Exercise list ── */}
-      <main className="flex flex-col gap-3 px-4 py-4 pb-32">
+      <main className="flex flex-col gap-3 px-4 py-4 pb-10">
         {exerciseGroups
           .filter(group => !group.every(ex => deletedExerciseIds.has(ex.id)))
           .map((group) => {
@@ -887,12 +895,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                 <div key={groupId} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,224,30,0.30)', backgroundColor: 'rgba(255,224,30,0.03)' }}>
                   <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,224,30,0.12)', backgroundColor: 'rgba(255,224,30,0.06)' }}>
                     <div className="flex items-center gap-2">
-                      <Rotate size={12} className="text-[#ffe01e]/70" />
-                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[#ffe01e]/80">Surensemble</span>
+                      <Rotate size={12} className="text-[#f2f2f2]/70" />
+                      <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[#f2f2f2]/80">Surensemble</span>
                     </div>
                     <button
                       onClick={() => setSupersetMenuFor(groupId)}
-                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#ffe01e]/40 hover:text-[#ffe01e]/70"
+                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#f2f2f2]/40 hover:text-[#f2f2f2]/70"
                       style={{ backgroundColor: 'rgba(255,224,30,0.08)' }}
                     >
                       <MoreHorizontal size={13} />
@@ -901,7 +909,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                   {group
                     .filter(ex => !deletedExerciseIds.has(ex.id))
                     .map((ex, ei) => (
-                      <div key={ex.id} className={ei > 0 ? 'border-t border-white/[0.05]' : ''}>
+                      <div key={ex.id}>
                         <ExerciseBlock
                           exercise={ex as ExerciseBlockExercise}
                           sets={sets.filter(s => s.exercise_id === ex.id) as SetRowData[]}
@@ -934,7 +942,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                               onBlur={() => { activeInputRef.current = false }}
                               onChange={e => setExerciseNotes(prev => ({ ...prev, [ex.id]: e.target.value }))}
                               placeholder={t('logger.note.placeholder')}
-                              className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 text-[12px] text-white/80 placeholder:text-white/20 outline-none resize-none"
+                              className="w-full bg-white/[0.03] rounded-xl px-3 py-2 text-[12px] text-white/80 placeholder:text-white/20 outline-none resize-none"
                             />
                           </div>
                         )}
@@ -955,7 +963,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                     recommendations={recommendations}
                     prSets={prSets}
                     coachingCues={coachingCuesMap}
-                    onValidateSet={(exId, setNum, side) => toggleSet(exId, setNum, side, ex.rest_sec)}
+                    onValidateSet={(exId, setNum, side, reps, weight, rir) => toggleSet(exId, setNum, side, ex.rest_sec, reps, weight, rir)}
                     onDeleteSet={deleteSet}
                     onChangeSet={(exId, setNum, side, patch) => updateSet(exId, setNum, side, patch as Partial<SetLog>)}
                     onAddSet={addSet}
@@ -980,7 +988,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                         onBlur={() => { activeInputRef.current = false }}
                         onChange={e => setExerciseNotes(prev => ({ ...prev, [ex.id]: e.target.value }))}
                         placeholder={t('logger.note.placeholder')}
-                        className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 text-[12px] text-white/80 placeholder:text-white/20 outline-none resize-none"
+                        className="w-full bg-white/[0.03] rounded-xl px-3 py-2 text-[12px] text-white/80 placeholder:text-white/20 outline-none resize-none"
                       />
                     </div>
                   )}
@@ -989,45 +997,6 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           })}
       </main>
 
-      {/* ── Fixed finish button ── */}
-      <div className="fixed bottom-6 left-0 right-0 px-4 z-40">
-        {allDone ? (
-          <button
-            onClick={submitSession}
-            disabled={saveState === 'saving' || !draftReady}
-            className="w-full flex items-center justify-between bg-[#ffe01e] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#ffd000] active:scale-[0.99] disabled:opacity-50 transition-all"
-          >
-            <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#0d0d0d]">
-              {!draftReady ? 'Initialisation…' : saveState === 'saving' ? 'Enregistrement…' : t('logger.finish')}
-            </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/[0.15]">
-              {(!draftReady || saveState === 'saving') ? <Loader2 size={15} className="text-white animate-spin" /> : <Flag size={15} className="text-white" />}
-            </div>
-          </button>
-        ) : (
-          <div className="relative overflow-hidden rounded-xl">
-            {longPressProgress > 0 && (
-              <div className="absolute inset-0 bg-[#ffe01e] rounded-xl transition-none origin-left" style={{ transform: `scaleX(${longPressProgress})` }} />
-            )}
-            <button
-              onMouseDown={onFinishPressStart}
-              onMouseUp={onFinishPressEnd}
-              onMouseLeave={onFinishPressEnd}
-              onTouchStart={onFinishPressStart}
-              onTouchEnd={onFinishPressEnd}
-              disabled={saveState === 'saving' || !draftReady}
-              className="relative w-full flex items-center justify-between bg-white/[0.06] pl-5 pr-1.5 py-1.5 rounded-xl disabled:opacity-50 select-none"
-            >
-              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/40">
-                {!draftReady ? 'Initialisation…' : saveState === 'saving' ? 'Enregistrement…' : 'Terminer · Maintenir 3s'}
-              </span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04]">
-                {saveState === 'saving' ? <Loader2 size={15} className="text-white/40 animate-spin" /> : <Flag size={15} className="text-white/30" />}
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* ── Session context menu ── */}
       <AnimatePresence>
@@ -1035,7 +1004,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           <>
             <motion.div className="fixed inset-0 z-[65] bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSessionMenuOpen(false)} />
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-[70] bg-[#161616] rounded-t-2xl border-t border-white/[0.08] pb-8"
+              className="fixed bottom-0 left-0 right-0 z-[70] bg-[#111111] rounded-t-2xl pb-8"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 350, damping: 30 } }}
               exit={{ y: '100%', transition: { duration: 0.18, ease: 'easeIn' } }}
@@ -1043,14 +1012,14 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.12]" />
               <div className="pt-4 divide-y divide-white/[0.05]">
                 <button onClick={() => { startRest('', 0, 'bilateral', 120); setSessionMenuOpen(false) }} className="w-full flex items-center gap-4 px-6 py-4 text-white active:bg-white/[0.04]">
-                  <Clock size={16} className="opacity-70" /><span className="text-[15px] font-medium">Démarrer un repos manuel</span>
+                  <Clock size={16} className="opacity-70" /><span className="text-[15px] font-medium">{t('logger.manual.rest')}</span>
                 </button>
                 <button onClick={() => { setShowHydration(true); setSessionMenuOpen(false) }} className="w-full flex items-center gap-4 px-6 py-4 text-white active:bg-white/[0.04]">
                   <span className="w-4 text-center text-[16px]">💧</span><span className="text-[15px] font-medium">Hydratation</span>
                 </button>
                 <div className="pt-1">
                   <button onClick={() => { setSessionMenuOpen(false); setShowFinishConfirm(true) }} className="w-full flex items-center gap-4 px-6 py-4 text-red-400 active:bg-white/[0.04]">
-                    <Flag size={16} className="opacity-70" /><span className="text-[15px] font-medium">Terminer la séance</span>
+                    <Flag size={16} className="opacity-70" /><span className="text-[15px] font-medium">{t('logger.finish')}</span>
                   </button>
                 </div>
               </div>
@@ -1098,12 +1067,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       {progressionTarget && (
         <div className="fixed inset-0 z-[80] bg-black/70" onClick={() => setProgressionTarget(null)}>
           <div
-            className="absolute bottom-0 left-0 right-0 bg-[#161616] rounded-t-2xl border-t border-white/[0.08] p-4"
+            className="absolute bottom-0 left-0 right-0 bg-[#111111] rounded-t-2xl p-4"
             onClick={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full bg-white/[0.12] mx-auto mb-4" />
             <p className="text-[12px] font-bold text-white mb-1">{progressionTarget.name}</p>
-            <p className="text-[11px] text-white/40">Historique visible dans le récap après la séance.</p>
+            <p className="text-[11px] text-white/40">{t('logger.history.note')}</p>
             <button onClick={() => setProgressionTarget(null)} className="mt-4 w-full py-3 rounded-xl bg-white/[0.04] text-[12px] text-white/40">Fermer</button>
           </div>
         </div>
@@ -1115,11 +1084,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
         const nextSetNum = pendingRestSet?.setNum ?? null
         const progressPct = restPrescribed !== null ? Math.min(restElapsed / restPrescribed, 1) : 0
         const timeDisplay = restPrescribed !== null ? formatTime(restPrescribed - restElapsed) : formatTime(restElapsed)
-        const accentColor = isOvertime ? (restElapsed > (restPrescribed ?? 0) + 30 ? '#ef4444' : '#f97316') : '#ffe01e'
+        const accentColor = isOvertime ? (restElapsed > (restPrescribed ?? 0) + 30 ? '#ef4444' : '#f97316') : '#f2f2f2'
         return (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 gap-6">
             <p className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.22em] ${isOvertime ? 'text-red-400/70' : 'text-white/30'}`}>
-              {isOvertime ? 'Temps dépassé' : 'Temps de repos'}
+              {isOvertime ? t('logger.rest.overtime.label') : t('logger.rest.time')}
             </p>
             <div className="relative flex items-center justify-center">
               <svg className="w-52 h-52 -rotate-90" viewBox="0 0 100 100">
@@ -1143,11 +1112,11 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
               <button onClick={() => setRestPrescribed(p => p !== null ? p + 30 : p)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:bg-white/[0.10] hover:text-white/80 transition-colors text-[18px] font-bold">+</button>
             </div>
             {nextEx && (
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-3 w-full max-w-xs text-center">
-                <p className="text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.20em] text-white/25 mb-1">Série suivante</p>
-                <p className="text-[13px] font-semibold text-white/80 truncate">{swappedNames[nextEx.id] ?? nextEx.name}</p>
+              <div className="bg-white/[0.03] rounded-xl px-5 py-3 w-full max-w-xs text-center">
+                <p className="text-[8px] font-barlow-condensed font-bold uppercase tracking-[0.20em] text-white/25 mb-1">{t('logger.next.set')}</p>
+                <p className="text-[13px] font-semibold text-white/80 leading-snug">{swappedNames[nextEx.id] ?? nextEx.name}</p>
                 {nextSetNum !== null && (
-                  <p className="text-[11px] text-white/35 mt-0.5">Série <span className="font-bold text-white/55">{nextSetNum}</span> · <span className="font-barlow-condensed font-bold text-[#ffe01e]/70">{nextEx.sets} × {nextEx.reps}</span></p>
+                  <p className="text-[11px] text-white/35 mt-0.5">Série <span className="font-bold text-white/55">{nextSetNum}</span> · <span className="font-barlow-condensed font-bold text-[#f2f2f2]/70">{nextEx.sets} × {nextEx.reps}</span></p>
                 )}
               </div>
             )}
@@ -1164,10 +1133,10 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
       {/* ── Finish confirm modal ── */}
       {showFinishConfirm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-[#161616] border border-white/[0.06] rounded-2xl p-6 w-full max-w-sm">
+          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-sm">
             <h3 className="font-bold text-white mb-2">{t('logger.finish.confirm')}</h3>
             <p className="text-[13px] text-white/55 mb-5">
-              Il te reste encore <span className="text-white font-semibold">{remainingSets} série{remainingSets > 1 ? 's' : ''}</span> {t('logger.finish.incomplete')}. Tu es sûr de vouloir terminer ?
+              {t('logger.finish.desc', { n: String(remainingSets) })}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowFinishConfirm(false)} className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-[13px] text-white/55 hover:text-white/80 transition-colors font-medium">
@@ -1176,7 +1145,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
               <button
                 onClick={() => { setShowFinishConfirm(false); submitSession() }}
                 disabled={saveState === 'saving'}
-                className="flex-1 py-2.5 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[13px] font-bold uppercase hover:bg-[#ffd000] disabled:opacity-50 transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-[#f2f2f2] text-[#080808] text-[13px] font-bold uppercase hover:bg-[#e0e0e0] disabled:opacity-50 transition-colors"
               >
                 {saveState === 'saving' ? '…' : t('logger.finish.action')}
               </button>
@@ -1237,12 +1206,12 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           </svg>
           <div className="text-center">
             <p className="text-[3.2rem] font-barlow-condensed font-black leading-none tabular-nums text-white">{hydrationPlan.totalMl} ml</p>
-            <p className="text-[11px] font-barlow-condensed uppercase tracking-[0.18em] text-white/30 mt-1">objectif pour cette séance</p>
+            <p className="text-[11px] font-barlow-condensed uppercase tracking-[0.18em] text-white/30 mt-1">{t('logger.session.goal')}</p>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-3 w-full max-w-xs text-center">
+          <div className="bg-white/[0.03] rounded-xl px-5 py-3 w-full max-w-xs text-center">
             <p className="text-[13px] text-white/55 leading-snug">~<span className="text-white font-semibold">{hydrationPlan.mlPerSip} ml</span> toutes les 15 min, pendant les repos</p>
           </div>
-          <button onClick={() => setShowHydrationIntro(false)} className="w-full max-w-xs h-12 rounded-xl font-barlow-condensed font-bold text-[13px] uppercase tracking-[0.14em] active:scale-[0.98]" style={{ backgroundColor: '#ffe01e', color: '#0d0d0d' }}>
+          <button onClick={() => setShowHydrationIntro(false)} className="w-full max-w-xs h-12 rounded-xl font-barlow-condensed font-bold text-[13px] uppercase tracking-[0.14em] active:scale-[0.98]" style={{ backgroundColor: '#f2f2f2', color: '#080808' }}>
             C&apos;est parti
           </button>
         </div>
@@ -1258,9 +1227,18 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
           </svg>
           <div className="text-center">
             <p className="text-[3.2rem] font-barlow-condensed font-black leading-none tabular-nums text-white">{hydrationPlan.mlPerSip} ml</p>
-            <p className="text-[11px] font-barlow-condensed uppercase tracking-[0.18em] text-white/30 mt-1">quelques gorgées maintenant</p>
+            <p className="text-[11px] font-barlow-condensed uppercase tracking-[0.18em] text-white/30 mt-1">{t('logger.hydration.sips')}</p>
           </div>
-          <button onClick={() => { setSipsConsumed(prev => prev + 1); setShowHydration(false); resetHydrationTimer(HYDRATION_INTERVAL_MS) }} className="w-full max-w-xs h-12 rounded-xl font-barlow-condensed font-bold text-[13px] uppercase tracking-[0.14em] active:scale-[0.98]" style={{ backgroundColor: '#ffe01e', color: '#0d0d0d' }}>
+          <button onClick={() => {
+            setSipsConsumed(prev => prev + 1)
+            setShowHydration(false)
+            resetHydrationTimer(HYDRATION_INTERVAL_MS)
+            fetch('/api/client/water', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amount_ml: hydrationPlan.mlPerSip }),
+            }).catch(() => {})
+          }} className="w-full max-w-xs h-12 rounded-xl font-barlow-condensed font-bold text-[13px] uppercase tracking-[0.14em] active:scale-[0.98]" style={{ backgroundColor: '#f2f2f2', color: '#080808' }}>
             J&apos;ai bu
           </button>
           <button onClick={() => { setShowHydration(false); resetHydrationTimer(HYDRATION_INTERVAL_MS) }} className="w-full max-w-xs py-3 rounded-xl bg-white/[0.04] text-[12px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/40">
