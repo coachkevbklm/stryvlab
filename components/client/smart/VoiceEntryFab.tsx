@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Mic } from "lucide-react"
+import { Mic, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 
 const VoiceLogSheet = dynamic(() => import("@/components/client/smart/VoiceLogSheet"), { ssr: false })
+const MealLogSheet = dynamic(() => import("@/components/client/smart/MealLogSheet"), { ssr: false })
 
 interface VoiceEntryFabProps {
   lang?: string
@@ -12,24 +14,55 @@ interface VoiceEntryFabProps {
 }
 
 export default function VoiceEntryFab({ lang = "fr", onSuccess }: VoiceEntryFabProps) {
-  const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const [voiceOpen, setVoiceOpen] = useState(false)
+  const [mealOpen, setMealOpen] = useState(false)
+
+  function handleSuccess() {
+    onSuccess?.()
+    // Delay refresh so AnimatePresence exit animation completes first
+    setTimeout(() => router.refresh(), 350)
+  }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed z-50 flex items-center justify-center h-11 w-11 rounded-full bg-white/[0.08] border border-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white transition-all active:scale-[0.95]"
+      {/* FAB cluster — stacked vertically above bottom nav */}
+      <div
+        className="fixed z-50 flex flex-col items-center gap-3"
         style={{ bottom: "88px", right: "16px" }}
-        aria-label="Saisie vocale"
       >
-        <Mic size={18} />
-      </button>
+        {/* + Repas */}
+        <button
+          onClick={() => setMealOpen(true)}
+          className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all active:scale-[0.93]"
+          style={{ background: '#f2f2f2', color: '#080808' }}
+          aria-label="Ajouter un repas"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+        </button>
+
+        {/* Mic vocal */}
+        <button
+          onClick={() => setVoiceOpen(true)}
+          className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all active:scale-[0.93]"
+          style={{ background: '#1a1a1a', color: '#808080' }}
+          aria-label="Saisie vocale"
+        >
+          <Mic size={20} />
+        </button>
+      </div>
 
       <VoiceLogSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        onSuccess={() => { setOpen(false); onSuccess?.() }}
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onSuccess={() => { setVoiceOpen(false); handleSuccess() }}
         lang={lang}
+      />
+
+      <MealLogSheet
+        open={mealOpen}
+        onClose={() => setMealOpen(false)}
+        onSuccess={() => { setMealOpen(false); handleSuccess() }}
       />
     </>
   )

@@ -212,7 +212,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   // Day type badge for TopBar
   const dayTypeBadge = protocolDay?.name ? (
-    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#ffe01e]/10 text-[#ffe01e] border border-[#ffe01e]/20">
+    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#f2f2f2]/10 text-[#f2f2f2] border border-[#ffe01e]/20">
       {protocolDay.name}
     </span>
   ) : null
@@ -220,7 +220,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   return (
     <>
       <ClientTopBar section="NUTRITION" title={date} right={dayTypeBadge} />
-      <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
+      <main className="min-h-screen bg-[#080808] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
         <MacroWeekGrid trend={trend} />
         <SmartNutritionHero date={date} consumed={consumed} target={target} />
 

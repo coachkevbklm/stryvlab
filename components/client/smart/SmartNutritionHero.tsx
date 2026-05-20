@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import QuickWaterModal from '../QuickWaterModal'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { NutritionMacros } from './SmartNutritionWidget'
 
 type Props = {
@@ -13,7 +11,6 @@ type Props = {
 }
 
 function shiftDate(iso: string, delta: number): string {
-  // Parse as UTC noon to avoid DST/TZ boundary issues when shifting
   const [y, m, d] = iso.split('-').map(Number)
   const date = new Date(Date.UTC(y, m - 1, d + delta))
   return date.toISOString().slice(0, 10)
@@ -26,9 +23,7 @@ function formatNav(iso: string): string {
 }
 
 export default function SmartNutritionHero({ date, consumed, target }: Props) {
-  const [waterOpen, setWaterOpen] = useState(false)
-  const [waterDelta, setWaterDelta] = useState(0)
-  const effectiveWaterMl = consumed.water_ml + waterDelta
+  const effectiveWaterMl = consumed.water_ml
   const pct = target.kcal > 0 ? Math.min(1, consumed.kcal / target.kcal) : 0
   const total = 251.2
   const offset = total * (1 - pct)
@@ -38,12 +33,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
   return (
     <>
-      <QuickWaterModal
-        open={waterOpen}
-        onClose={() => setWaterOpen(false)}
-        onLogged={ml => setWaterDelta(d => d + ml)}
-      />
-      <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-[18px]">
+      <div className="bg-[#111111] rounded-2xl p-[18px]">
         <div className="flex items-center justify-between mb-3">
           <Link href={`/client/nutrition?date=${prev}`} className="flex items-center gap-1 text-white/60 text-[11px]">
             <ChevronLeft size={14} /> {formatNav(prev)}
@@ -75,7 +65,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="grid grid-cols-3 gap-3 mt-3">
           {([
-            { key: 'protein_g', label: 'P', color: '#4a90e2' },
+            { key: 'protein_g', label: 'P', color: '#e85d04' },
             { key: 'carbs_g',   label: 'G', color: '#22c55e' },
             { key: 'fat_g',     label: 'L', color: '#f59e0b' },
           ] as const).map(m => {
@@ -97,7 +87,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
         </div>
 
         {/* Hydratation bar */}
-        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.06]">
+        <div className="flex items-center gap-3 mt-4 pt-3">
           <span className="text-[13px]">💧</span>
           <div className="flex-1">
             <div className="flex justify-between text-[10px] mb-1.5">
@@ -113,12 +103,6 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
               />
             </div>
           </div>
-          <button
-            onClick={() => setWaterOpen(true)}
-            className="w-8 h-8 rounded-xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d] active:scale-95 transition-transform shrink-0"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-          </button>
         </div>
       </div>
     </>

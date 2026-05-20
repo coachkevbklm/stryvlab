@@ -32,7 +32,7 @@ export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetP
 
           {/* Sheet — hauteur fixe 88vh pour que flex-1 des enfants reçoive une hauteur réelle */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-[60] bg-[#161616] rounded-t-2xl border-t border-white/[0.08]"
+            className="fixed bottom-0 left-0 right-0 z-[60] bg-[#111111] rounded-t-2xl"
             style={{ height: "88vh", display: "flex", flexDirection: "column" }}
             initial={{ y: "100%" }}
             animate={{ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }}
@@ -45,10 +45,11 @@ export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetP
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setVoiceOpen(true)}
-                  className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
+                  className="h-8 w-8 flex items-center justify-center rounded-xl transition-colors"
+                  style={{ background: '#1a1a1a', color: '#808080' }}
                   title="Saisie vocale"
                 >
-                  <Mic size={13} />
+                  <Mic size={15} />
                 </button>
                 <button
                   onClick={onClose}
@@ -61,7 +62,7 @@ export default function MealLogSheet({ open, onClose, onSuccess }: MealLogSheetP
 
             {/* Content — flex-1 reçoit la hauteur restante du sheet */}
             <div className="flex-1 overflow-hidden relative min-h-0">
-              <Suspense fallback={<div className="h-full bg-[#161616]" />}>
+              <Suspense fallback={<div className="h-full bg-[#111111]" />}>
                 <NutritionLogContent embedded onSuccess={onSuccess ?? onClose} />
               </Suspense>
             </div>

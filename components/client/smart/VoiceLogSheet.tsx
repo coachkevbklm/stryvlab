@@ -399,8 +399,8 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
 
           {/* Sheet */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-2xl border-t border-white/[0.08]"
-            style={{ background: '#0d0d0d', maxHeight: "88vh", display: "flex", flexDirection: "column" }}
+            className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-2xl"
+            style={{ background: '#080808', maxHeight: "88vh", display: "flex", flexDirection: "column" }}
             initial={{ y: "100%" }}
             animate={{ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }}
             exit={{ y: "100%", transition: { duration: 0.2, ease: "easeIn" } }}
@@ -436,7 +436,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                   <div className="flex items-center justify-center gap-[4px]" style={{ height: 44, marginBottom: 10 }}>
                     {waveBars.map((h, i) => (
                       <motion.div key={i}
-                        style={{ width: 4, borderRadius: 99, backgroundColor: isActive ? "#ffe01e" : "rgba(255,255,255,0.13)" }}
+                        style={{ width: 4, borderRadius: 99, backgroundColor: isActive ? "#f2f2f2" : "#2e2e2e" }}
                         animate={{ height: isActive ? h : 4 }}
                         transition={{ type: "spring", stiffness: 500, damping: 28 }}
                       />
@@ -446,7 +446,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                   {/* Timer */}
                   <span
                     className="tabular-nums font-barlow-condensed font-bold tracking-[0.16em]"
-                    style={{ fontSize: 12, color: timeWarning ? '#ef4444' : isActive ? '#ffe01e' : 'rgba(255,255,255,0.18)', marginBottom: 14 }}
+                    style={{ fontSize: 12, color: timeWarning ? '#ef4444' : isActive ? '#f2f2f2' : '#5a5a5a', marginBottom: 14 }}
                   >
                     {formatTime(elapsedSec)}
                     {timeWarning && ` / ${formatTime(MAX_RECORD_SEC)}`}
@@ -478,17 +478,17 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                       className="flex flex-col items-center justify-center select-none"
                       style={{
                         width: 88, height: 88, borderRadius: 22, gap: 5,
-                        background: isActive ? '#161616' : '#ffe01e',
-                        border: isActive ? '1.5px solid #ffe01e' : 'none',
+                        background: isActive ? '#222222' : '#f2f2f2',
+                        border: 'none',
                       }}
                     >
                       <Mic size={28} strokeWidth={2}
-                        style={{ color: isActive ? '#ffe01e' : '#0d0d0d' }}
+                        style={{ color: isActive ? '#f2f2f2' : '#080808' }}
                       />
                       <span style={{
                         fontSize: 8, fontFamily: 'var(--font-barlow-condensed)', fontWeight: 700,
                         textTransform: 'uppercase', letterSpacing: '0.14em', lineHeight: 1,
-                        color: isActive ? '#ffe01e' : '#0d0d0d',
+                        color: isActive ? '#f2f2f2' : '#080808',
                       }}>
                         {isActive ? "ARRÊTER" : "ENREGISTRER"}
                       </span>
@@ -506,7 +506,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
               {/* ── LAYER: processing ── */}
               {layer === "processing" && (
                 <div className="flex flex-col items-center justify-center h-48 gap-5">
-                  <div className="h-10 w-10 border-2 border-white/10 border-t-[#ffe01e] rounded-full animate-spin" />
+                  <div className="h-10 w-10 border-2 border-[#2e2e2e] border-t-[#f2f2f2] rounded-full animate-spin" />
                   <p className="text-[13px] text-white/50 font-barlow-condensed uppercase tracking-[0.14em]">
                     {t("voice.processing")}
                   </p>
@@ -522,14 +522,14 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
 
                   {items.map((item, idx) => (
                     <motion.div key={idx} layout
-                      className="rounded-xl border border-white/[0.08] p-3"
+                      className="rounded-xl p-3"
                       style={{ background: 'rgba(255,255,255,0.03)' }}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <input
                           value={item.name}
                           onChange={e => updateItem(idx, "name", e.target.value)}
-                          className="flex-1 min-w-0 bg-transparent text-[13px] text-white border-b border-white/[0.08] pb-0.5 focus:outline-none focus:border-[#ffe01e]/40"
+                          className="flex-1 min-w-0 bg-transparent text-[13px] text-white pb-0.5 focus:outline-none border-b border-[#2e2e2e]"
                         />
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className={`text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg ${CONFIDENCE_STYLES[item.confidence] ?? CONFIDENCE_STYLES.medium}`}>
@@ -581,7 +581,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                     <p className="text-[11px] text-[#f59e0b]/70">{t("voice.new_items_notice").replace("{n}", String(newCount))}</p>
                   )}
 
-                  <div className="rounded-xl border border-white/[0.06] p-3 flex items-center justify-between gap-3 flex-wrap"
+                  <div className="rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap"
                     style={{ background: 'rgba(255,255,255,0.03)' }}>
                     <span className="text-[13px] font-bold text-white">{Math.round(totalKcal)} kcal</span>
                     <div className="flex gap-3 text-[11px] text-white/50">
@@ -597,10 +597,10 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                     onClick={logMeal}
                     disabled={logging || items.filter(i => i.name.trim()).length === 0}
                     className="w-full h-12 rounded-xl font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[13px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
-                    style={{ background: '#ffe01e', color: '#0d0d0d' }}
+                    style={{ background: '#f2f2f2', color: '#080808' }}
                   >
                     {logging
-                      ? <div className="h-4 w-4 border-2 border-[#0d0d0d]/30 border-t-[#0d0d0d] rounded-full animate-spin" />
+                      ? <div className="h-4 w-4 border-2 border-[#080808]/30 border-t-[#080808] rounded-full animate-spin" />
                       : <><ChevronRight size={16} />{t("voice.log_meal")}</>
                     }
                   </button>
