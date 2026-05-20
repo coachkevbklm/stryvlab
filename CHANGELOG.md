@@ -5,6 +5,59 @@
 
 ## 2026-05-20
 
+FEATURE: Add Coach IA Chat — GPT-4o mini daily contextual chat in client PWA, 20 msg/day rate limit, zero message persistence
+SCHEMA: Add ai_coach_daily_usage table for Coach IA daily rate limiting (client_id, date, message_count PK)
+
+REFACTOR: setRecommendation — refonte complète logique ; RIR=0 (échec) = priorité absolue → descend charge d'un palier peu importe Path A/B ; RIR trop bas (≤ targetRir-1) → maintien charge + reps prescrites ; suppression rir_hold Path A (était trop permissif) ; seuil rirTooLow corrigé (< targetRir-1 au lieu de < targetRir-2) ; aboveZone + rirTooHigh → double incrément
+FIX: bodymap recap — trapèzes et muscles absents car client_set_logs n'a pas de colonnes primary/secondary_muscles ; fallback catalog lookup (getPrimaryMuscleFromCatalog + getSecondaryMusclesFromCatalog) ajouté
+FIX: notes de séance invisibles dans recap — SessionLogger envoyait `notes` (JSON string) dans champ texte ; corrigé : envoie `exercise_notes` (objet JSONB) → route PATCH accepte et persiste dans `exercise_notes`, recap les lit correctement
+FIX: SessionLogger — RIR=0 (échec musculaire) force repos 3min automatiquement au lieu du repos prescrit
+FIX: setRecommendation — palier minimum 0.25kg (évite recommandations type 27.6kg impossibles à charger) ; formatWeight snap au 0.25 le plus proche
+FIX: zoom iOS sur focus input — maximum-scale=1 + userScalable=false dans viewport global (app/layout.tsx)
+FIX: TempoGuideModal — bouton close masqué visuellement derrière l'overlay pause (blur zIndex 5) ; close button dupliqué dans l'overlay avec pointerEvents auto, visible et tappable en pause
+FIX: RestTimer — nom exercice suivant tronqué (truncate → leading-snug wrap)
+REFACTOR: SetRow — suppression double saisie (inline + modal) ; rows read-only (valeurs prescrites coach en grisé), tap n'importe où ouvre modal ; modal redesigné : steppers pleine largeur empilés verticalement, input KG centré lisible, RIR visible et éditable, set complété recliquable pour correction
+FIX: ProgrammeClientPage — prochaine séance en mode repos affichait mauvais jour (fallback sessions[0] trié par position au lieu de day_of_week)
+FIX: volume hebdomadaire — zéro affiché malgré séances complétées car getBiomechData retourne null pour exercices non-enrichis biomech ; fallback sur getPrimaryMuscleFromCatalog + 1 set crédit
+FIX: VolumeCoverageWidget — suppression slice(0,12) qui cachait des groupes musculaires ; tri par actual décroissant (muscles travaillés en premier)
+FIX: VolumeCoverageWidget — label "Volume hebdo" → "Volume hebdomadaire" (non tronqué)
+FIX: onFocus select-all sur tous les inputs numériques restants — NutritionLogContent (quantité + macros manuelles), SetRow (repos/reps/poids inline), FreeActivitySheet, PortionScalingForm + type="number"→"text"
+REFACTOR: MacroWeekGrid — suppression toggle Consommé/Restant et ligne récap (redondant), barres simples P/G/L empilées par jour, compact 56px, kcal sous chaque barre, aujourd'hui en jaune
+FIX: nutrition journal — meal_type GPT utilisait heure UTC serveur au lieu heure locale client (client_hour envoyé depuis VoiceLogSheet)
+FIX: couleurs macros — protéines uniformisées #e85d04 (orange) partout : SmartNutritionHero, SmartNutritionWidget, MacroWeekGrid (était #4a90e2 bleu incohérent)
+FIX: icônes meal type — emojis 🌅☀️🌙 remplacés par icônes Lucide (Coffee/Sun/Moon/Apple) dans NutritionMealsList
+CHORE: nutritionConstants.ts — source de vérité unique MACRO_COLORS + MEAL_TYPE_LABEL/ICON
+FIX: VoiceLogSheet — sécurité enregistrement : limite 90s auto-stop, guard double-start (startingRef), guard getUserMedia pending si sheet fermé, visibilitychange coupe si téléphone verrouillé/tab changé, erreurs réseau recognition stoppent proprement, timer rouge 20 dernières secondes
+FIX: VoiceLogSheet — fermeture via croix pendant enregistrement crashait l'app : stopAll() sur open=false, openRef guard dans stopRecording + parseTranscript (pas de setState sur composant fermé)
+REFACTOR: VoiceLogSheet — toggle click (1 clic = démarre, 1 clic = stop+analyse), suppression onPointerDown/Up qui causaient double-trigger sur mobile
+FIX: inputs numériques mobiles — type="number" → type="text" inputMode="decimal/numeric" + onFocus select-all sur VoiceLogSheet, SetRow (reps/poids/RIR), NutritionLogContent, FreeActivitySheet
+REFACTOR: VoiceLogSheet — suppression mode locked/verrouiller, push-to-talk pur (idle=jaune, holding=gris+contour jaune, relâcher=analyse)
+FIX: VoiceLogSheet + VoiceEntryFab — double onSuccess+onClose supprimé (crash app), router.refresh() différé 350ms pour laisser AnimatePresence exit se terminer
+REFACTOR: VoiceLogSheet — réécriture complète, suppression drag/rigole, 3 états bouton distincts (idle/holding/locked), logique pointer fiable, accRef pour transcript sans stale closure
+FIX: Splash screen — remplacé composant React (trop tardif) par HTML/CSS pur inline dans root layout, s'affiche avant tout JS, couvre l'écran noir PWA, fade out au load, supprimé sur routes non-/client
+FIX: VoiceLogSheet — layout recording refondu : bouton 88×88, rigole 44px propre, waveform compacte 48px, transcript placeholder, couleur lock fill corrigée, conflict translateY/animate supprimé
+REFACTOR: VoiceLogSheet — press & hold pour enregistrer, glisser → pour verrouiller, tap pour terminer ; waveform 7 barres ; bouton carré 100×100 Technogym ; SpeechRecognition continuous=true (plus de coupure sur silence)
+REFACTOR: BottomNav — nav tabs w-[72px] justify-end/start gap-1 (paires rapprochées) ; action buttons justify-end/start gap-4
+FIX: SmartNutritionHero — bouton + hydratation supprimé (redondant avec FAB cluster)
+
+## 2026-05-19 (suite 2)
+
+FIX: MealLogSheet — double bouton mic supprimé (NutritionLogContent renderait un 2ème mic en embedded category)
+FIX: MealLogSheet — espace vide disparu (div mic standalone supprimée)
+REFACTOR: MealLogSheet — bouton mic jaune (#ffe01e bg/12 + couleur) dans le header
+REFACTOR: VoiceEntryFab — FAB cluster jaune : bouton + (jaune plein, ouvre MealLogSheet) + mic (jaune outline), stacked verticalement
+
+## 2026-05-19 (suite)
+
+REFACTOR: AdherenceScoreCard — labels complets (Nutrition, Hydratation, Check-ins), font 7px pour tenir en 4 colonnes
+REFACTOR: ClientTopBar — full jaune (#ffe01e), texte #0d0d0d, suppression bande accent
+REFACTOR: BottomNav — onglet actif = icône+label jaune uniquement (suppression bande top + fond), action buttons rounded-2xl
+FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/*
+REFACTOR: ClientHomeShell — wrapper client pour DayChecklist + CheckinModal + router.refresh() sur succès
+REFACTOR: BottomNav — action checkin ouvre CheckinModal (morning/evening selon heure)
+
+## 2026-05-20
+
 FEATURE: Voice nutrition logger — SpeechRecognition + GPT-4o mini parse + review flow
 FEATURE: VoiceLogSheet — bottom sheet 3 couches (recording/processing/review), waveform, silence auto-stop
 FEATURE: /api/client/nutrition/voice-parse — nettoyage transcript + GPT-4o mini + match food_items + rate limit
@@ -14,6 +67,7 @@ SCHEMA: nutrition_entries.input_mode — ajout 'voice' à la contrainte CHECK (m
 
 ## 2026-05-19
 
+FIX: /client page crash prod — extract computePriorityAction to lib/client/smart/priorityAction.ts (was exported from 'use client' component, causing "j is not a function" in Server Component bundle)
 REFACTOR: BottomNav v2 — Technogym flat (full-width, no radius, top stripe jaune 4px onglet actif, Barlow Condensed uppercase labels, action buttons squared)
 REFACTOR: ClientTopBar v2 — bande accent jaune 3px gauche, titre 15px Barlow Condensed uppercase, subtle jaune box-shadow séparateur
 

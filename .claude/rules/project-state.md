@@ -24,7 +24,7 @@
 | Module | Statut | Update |
 |--------|--------|--------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Smart Trio + Profil accordion + Smart Workout Motra-style + Voice Nutrition Logger | 2026-05-20 |
+| **Client App** | ✅ Smart Trio + Profil accordion + Smart Workout Motra-style + Voice Nutrition Logger + Coach IA Chat | 2026-05-20 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,17 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-20 — Coach IA Chat
+
+- `supabase/migrations/20260520_ai_coach_daily_usage.sql` — table rate limit (client_id, date, message_count PK) + RLS client SELECT
+- `lib/client/ai-coach/buildSystemPrompt.ts` — construit system prompt depuis profil + journée (repas, eau, séance, activités, restrictions) — server-side uniquement, crée son propre svc()
+- `app/api/client/ai-coach/context/route.ts` — GET, vérifie auth + retourne remainingMessages + clientName
+- `app/api/client/ai-coach/chat/route.ts` — POST, rate limit DB → buildSystemPrompt → GPT-4o mini (max_tokens 300, content max 500) → upsert usage → réponse
+- `components/client/CoachAIChatSheet.tsx` — bottom sheet DS v3.0 z-[70], greeting fixe, suggestions rapides jaunes, typing indicator animé, compteur 20 msg, bubble user jaune
+- `components/client/CoachAIButton.tsx` — bouton MessageCircle fixe `top-3 right-4 z-50` sur toutes pages shell
+- `components/client/ConditionalClientShell.tsx` — CoachAIButton injecté dans le shell (hors AUTH_PATHS)
+- Points de vigilance : migration `20260520_ai_coach_daily_usage` à appliquer manuellement via Supabase Dashboard ; `OPENAI_API_KEY` déjà présente ; system prompt jamais retourné au client browser ; reset compteur = date physiologique 04:00 ; bouton fixe `top-3 right-4` peut entrer en conflit visuel avec des éléments TopBar right sur certaines pages (vérifier page par page)
 
 ### 2026-05-20 — Voice Nutrition Logger
 
@@ -108,6 +119,7 @@
 
 | Problème | Impact | Mitigation |
 |----------|--------|-----------|
+| `20260520_ai_coach_daily_usage` migration non appliquée | Rate limit non fonctionnel, upsert échoue | `20260520_ai_coach_daily_usage.sql` via Supabase Dashboard |
 | `20260520_voice_input_mode` migration non appliquée | input_mode 'voice' rejeté en DB | `20260520_voice_input_mode.sql` via Supabase Dashboard |
 | `20260519_set_type` migration non appliquée | set_type non persisté (default 'working' OK) | `20260519_set_type.sql` via Supabase Dashboard |
 | `beta_waitlist` migration non appliquée | Waitlist non fonctionnelle | `20260514_beta_waitlist.sql` via Supabase Dashboard |
