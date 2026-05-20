@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import Image from 'next/image'
 import { X } from 'lucide-react'
 import { scoreAlternatives } from '@/lib/programs/intelligence'
 import type { BuilderExercise } from '@/lib/programs/intelligence'
@@ -17,6 +18,7 @@ interface Exercise {
   is_unilateral: boolean
   primary_muscles?: string[]
   secondary_muscles?: string[]
+  movement_pattern?: string | null
 }
 
 interface Props {
@@ -27,10 +29,10 @@ interface Props {
   onClose: () => void
 }
 
-const QUALITY_LABEL: Record<number, string> = {
-  0: 'Recommandé',
-  1: 'Similaire',
-  2: 'Alternative',
+const QUALITY_LABEL: Record<number, { text: string; color: string }> = {
+  0: { text: 'Recommandé', color: 'text-[#f2f2f2] bg-[#f2f2f2]/10' },
+  1: { text: 'Similaire',   color: 'text-blue-400 bg-blue-400/10' },
+  2: { text: 'Alternative', color: 'text-white/50 bg-white/[0.06]' },
 }
 
 export default function ExerciseSwapSheet({
@@ -47,7 +49,7 @@ export default function ExerciseSwapSheet({
     rest_sec: exercise.rest_sec,
     rir: exercise.rir,
     notes: exercise.notes ?? '',
-    movement_pattern: null,
+    movement_pattern: exercise.movement_pattern ?? null,
     equipment_required: [],
     primary_muscles: exercise.primary_muscles ?? [],
     secondary_muscles: exercise.secondary_muscles ?? [],
@@ -60,10 +62,10 @@ export default function ExerciseSwapSheet({
     rest_sec: ex.rest_sec,
     rir: ex.rir,
     notes: ex.notes ?? '',
-    movement_pattern: null,
+    movement_pattern: ex.movement_pattern ?? null,
     equipment_required: [],
-    primary_muscles: [],
-    secondary_muscles: [],
+    primary_muscles: ex.primary_muscles ?? [],
+    secondary_muscles: ex.secondary_muscles ?? [],
   }))
 
   const alternatives = useMemo(
@@ -75,7 +77,7 @@ export default function ExerciseSwapSheet({
         sessionExercises: sessionBuilderExercises,
       }).slice(0, 3),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [exercise.name],
+    [exercise.name, exercise.movement_pattern, JSON.stringify(exercise.primary_muscles)],
   )
 
   function handleUse(name: string) {
@@ -85,24 +87,25 @@ export default function ExerciseSwapSheet({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-[#161616] rounded-t-[2px]">
-        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-1" />
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-[#111111] rounded-t-2xl">
+        <div className="w-10 h-1 bg-white/[0.12] rounded-full mx-auto mt-3 mb-1" />
+
         <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Remplacer</p>
-            <p className="text-[14px] font-bold text-white leading-tight">{exercise.name}</p>
+          <div className="flex-1 min-w-0 mr-3">
+            <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/30">Changer l&apos;exercice</p>
+            <p className="text-[15px] font-bold text-white leading-tight mt-0.5 truncate">{exercise.name}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-white/[0.06] flex items-center justify-center text-white/50"
+            className="shrink-0 w-8 h-8 rounded-xl bg-white/[0.06] flex items-center justify-center text-white/40"
           >
             <X size={14} />
           </button>
         </div>
 
         <p className="text-[11px] text-white/30 px-4 pb-3">
-          Remplacement temporaire — le programme original est restauré après la séance.
+          Remplacement temporaire — programme original restauré après la séance.
         </p>
 
         <div className="flex flex-col gap-2 px-4 pb-8">
@@ -111,28 +114,53 @@ export default function ExerciseSwapSheet({
               Aucune alternative trouvée pour cet exercice.
             </p>
           )}
-          {alternatives.map((alt, idx) => (
-            <div
-              key={alt.entry.slug}
-              className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-[13px] font-semibold text-white truncate">{alt.entry.name}</p>
-                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ffe01e]/10 text-[#ffe01e]">
-                    {QUALITY_LABEL[idx] ?? 'Alternative'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-white/40 mt-0.5">{alt.label}</p>
-              </div>
-              <button
-                onClick={() => handleUse(alt.entry.name)}
-                className="shrink-0 h-8 px-3 rounded-xl bg-[#ffe01e] text-[11px] font-bold uppercase text-[#0d0d0d] hover:bg-[#ffd000] transition-colors"
+          {alternatives.map((alt, idx) => {
+            const badge = QUALITY_LABEL[idx] ?? QUALITY_LABEL[2]
+            const gifUrl = alt.entry.gifUrl ?? null
+            return (
+              <div
+                key={alt.entry.slug}
+                className="flex items-center gap-3 rounded-xl bg-white/[0.02] px-3 py-2.5"
               >
-                Utiliser
-              </button>
-            </div>
-          ))}
+                {/* Thumbnail */}
+                <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/[0.04] flex items-center justify-center">
+                  {gifUrl ? (
+                    <Image
+                      src={gifUrl}
+                      alt={alt.entry.name}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[20px] opacity-20">💪</span>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-white leading-tight line-clamp-2">{alt.entry.name}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full ${badge.color}`}>
+                      {badge.text}
+                    </span>
+                    {alt.label && alt.label !== 'Alternative' && (
+                      <span className="text-[10px] text-white/30">{alt.label}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action */}
+                <button
+                  onClick={() => handleUse(alt.entry.name)}
+                  className="shrink-0 h-9 px-3 rounded-xl bg-[#f2f2f2] text-[11px] font-black uppercase tracking-[0.08em] text-[#080808] active:scale-95 transition-transform"
+                >
+                  Utiliser
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </>
