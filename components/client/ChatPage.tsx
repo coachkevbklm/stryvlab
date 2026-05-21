@@ -123,8 +123,13 @@ export default function ChatPage({ coachAvatarUrl, coachInitial, clientFirstName
   const hasSessionToday = Boolean(todayData?.sessions?.length)
 
   const handleInteract = useCallback((messageId: string, key: string, value: number) => {
+    if (key === 'trigger_checkin') {
+      updateMessage(messageId, { answered: true })
+      handleCheckinClick()
+      return
+    }
     flowHandle?.handleInteract(messageId, key, value)
-  }, [flowHandle])
+  }, [flowHandle, handleCheckinClick, updateMessage])
 
   const handleSkip = useCallback((messageId: string, key: string) => {
     flowHandle?.handleSkip(messageId, key)
