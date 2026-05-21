@@ -39,6 +39,21 @@
 
 ## 🚀 Dernières Avancées
 
+### 2026-05-21 — Metrics Tab Navigation — 3-tab client PWA
+
+- `app/api/client/body-data/route.ts` — extended: `bodyFatSeries`, `leanMassSeries`, `measuresByBilan[]`, `annotations[]` (from `metric_annotations` non-injury)
+- `app/api/client/vitality/route.ts` — new: score agrégé check-ins 0-100, trend 30j (energy/sleep/stress/soreness merged morning+evening)
+- `components/client/metrics/MetricCard.tsx` — generic card: value + sparkline + expand-inline SVG chart + bilan markers + coach annotations
+- `components/client/metrics/MetricExpandedChart.tsx` — full SVG chart, MIN/MOY/MAX stats, annotation vertical lines
+- `components/client/metrics/BodyDataTab.tsx` — 3 cards: poids, masse grasse, masse maigre
+- `components/client/metrics/BodySilhouette.tsx` — SVG front view (viewBox 280×460) + bilan pills navigator + dashed annotation lines (chest/waist/hips/arm) + deltas vs previous bilan
+- `components/client/metrics/MesurationsTab.tsx` — silhouette + 4 measurement cards
+- `components/client/metrics/VitalityScoreHero.tsx` — score bar 0-100 + label (Excellent/Bonne forme/Attention/À surveiller)
+- `components/client/metrics/VitalityTab.tsx` — hero + 4 vitality cards with 7j avg vs previous 7j delta
+- `components/client/MetricsClientPage.tsx` — full refactor: tab bar (Corps/Mensurations/Vitalité) + Promise.all fetch + tab routing
+- Score formula: `(energy_norm×1.5 + sleep_norm×1.5 + stress_inv×1 + soreness_inv×0.5) / 4.5 × 100`
+- Points de vigilance: BodySilhouette bezier control points are approximate — can be visually tuned; annotations from `metric_annotations` require `event_type != 'injury'` AND `label IS NOT NULL`
+
 ### 2026-05-20 — Chat-First Client App — Sub-projet #1
 
 - `supabase/migrations/20260520_chat_messages.sql` — tables `chat_messages` + `chat_sessions` + RLS

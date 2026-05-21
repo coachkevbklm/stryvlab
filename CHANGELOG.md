@@ -3,9 +3,18 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-21
+
+FEATURE: Metrics page refactored with 3-tab navigation (Données corporelles / Mensurations / Vitalité)
+FEATURE: MetricCard generic component with expand-inline SVG chart, bilan markers, coach annotations
+FEATURE: BodySilhouette SVG front-view with bilan date navigator and dashed measurement annotation lines
+FEATURE: VitalityTab with aggregated wellness score (0-100) from client_daily_checkins
+FEATURE: /api/client/vitality route — score formula energy×1.5 + sleep×1.5 − stress − soreness×0.5
+FEATURE: /api/client/body-data extended with bodyFatSeries, leanMassSeries, measuresByBilan, annotations
+
 ## 2026-05-24
 
-FEATURE: Macro color system — copper(#b07840)=protéines, gold(#c8a030)=glucides, petrol(#2d7a62)=lipides, steel(#4d8090)=eau
+FEATURE: Macro color system — copper(#8c5230)=protéines, gold(#9a8038)=glucides, petrol(#2d7a62)=lipides, steel(#4d8090)=eau
 FEATURE: Arc gradient copper→gold→petrol sur jauge calories (SmartNutritionWidget, SmartNutritionHero, NutritionWidget)
 REFACTOR: NutritionWidget, SmartNutritionWidget, SmartNutritionHero — carb var(--data-gold), fat var(--data-petrol), water var(--data-steel)
 REFACTOR: MacroWeekGrid, NutritionMealsList, NutritionLogContent — même mapping macro couleurs
