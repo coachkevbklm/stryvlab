@@ -5,6 +5,16 @@
 
 ## 2026-05-21
 
+FEATURE: BottomNav — central FAB + button (50px, bg-[#f2f2f2]) entre Programme et Nutrition
+FEATURE: QuickLogSheet — bottom sheet 3 actions : Eau (QuickWaterModal), Repas (/client/nutrition), Activité (FreeActivitySheet)
+FEATURE: ClientMeasurementSheet — body zones + horizontal ruler picker + save to DB
+FEATURE: BodyMapAnnotated — BodyMap with measurement overlay, dashed connectors, bilan pills
+FEATURE: /api/client/measurements POST — self-reported measurements endpoint
+SCHEMA: client_measurements table (waist/hips/arm/chest + RLS) — apply manually via Supabase Dashboard
+FEATURE: /api/client/body-data — merges client_measurements into measuresByBilan, sorted by date
+FIX: MesurationsTab — BodyMap replaces BodySilhouette; + FAB opens measurement sheet; onRefresh reloads data
+FIX: MetricsClientPage — tab bar segment-control style (matches ProgrammeClientPage)
+
 FEATURE: System prompt v2 — coach identity (user_profiles), full bilan history (limit 10, ascending), active program, tone rules (2-3 phrases max, no generic advice)
 FEATURE: buildDailyBrief — structured day summary after check-in (session, macros, water, 1 LLM coaching sentence)
 FEATURE: chat-morning-brief Inngest cron 06:30 UTC — proactive morning init message per active client with trigger_checkin chip
