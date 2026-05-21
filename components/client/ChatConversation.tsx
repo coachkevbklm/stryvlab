@@ -66,14 +66,13 @@ export default function ChatConversation({ messages, coachAvatarUrl, coachInitia
 
       {isLoading && (
         <div className="flex items-start gap-2">
-          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#2a2a2a] flex items-center justify-center">
-            {coachAvatarUrl ? (
+          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#2a2a2a] flex items-center justify-center relative">
+            <span className="absolute text-[12px] font-bold text-white select-none">
+              {((coachInitial ?? 'C').trim().charAt(0).toUpperCase()) || 'C'}
+            </span>
+            {coachAvatarUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coachAvatarUrl} alt="Coach" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            ) : (
-              <span className="text-[11px] font-barlow-condensed font-bold text-[#c0c0c0] uppercase">
-                {coachInitial?.trim().charAt(0).toUpperCase() ?? 'C'}
-              </span>
+              <img src={coachAvatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
             )}
           </div>
           <div className="bg-[#111111] rounded-2xl rounded-tl-sm px-3.5 py-3 flex gap-1.5">
