@@ -5,6 +5,16 @@
 
 ## 2026-05-21
 
+FEATURE: System prompt v2 — coach identity (user_profiles), full bilan history (limit 10, ascending), active program, tone rules (2-3 phrases max, no generic advice)
+FEATURE: buildDailyBrief — structured day summary after check-in (session, macros, water, 1 LLM coaching sentence)
+FEATURE: chat-morning-brief Inngest cron 06:30 UTC — proactive morning init message per active client with trigger_checkin chip
+FEATURE: chat-evening-brief Inngest cron 21:30 UTC — proactive evening init message per active client with trigger_checkin chip
+FEATURE: ChatPage handles trigger_checkin chip — activates existing check-in flow, marks chip answered
+FIX: Water target reads from nutrition_protocol_days.hydration_ml (was hardcoded 2500ml)
+FIX: Bilan history expanded from 2 to 10 entries — PROGRESSION TOTALE now shows full delta since first bilan
+FIX: MesurationsTab — replace basic BodySilhouette SVG with BodyMap (full anatomical, neutral mode)
+FIX: MetricsClientPage — tab bar now uses segment-control style matching ProgrammeClientPage
+
 FEATURE: Metrics page refactored with 3-tab navigation (Données corporelles / Mensurations / Vitalité)
 FEATURE: MetricCard generic component with expand-inline SVG chart, bilan markers, coach annotations
 FEATURE: BodySilhouette SVG front-view with bilan date navigator and dashed measurement annotation lines

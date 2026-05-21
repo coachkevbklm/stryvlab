@@ -24,7 +24,7 @@
 | Module | Statut | Update |
 |--------|--------|--------|
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Chat SP2 — interactive check-ins (chips/sliders), system prompt données réelles, 3j trends | 2026-05-21 |
+| **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
@@ -38,6 +38,17 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-21 — Chat SP3-A — Proactive AI Coach + System Prompt v2
+
+- `lib/client/ai-coach/buildSystemPrompt.ts` — refonte complète : coach identity (`user_profiles.first_name/last_name`), bilan history limit 10 ascending (PROGRESSION TOTALE), programme actif (`programs.frequency/weeks/program_sessions`), hydration depuis `nutrition_protocol_days.hydration_ml`, ton coach strict (2-3 phrases max, pas de conseils génériques, référence au programme du coach)
+- `lib/client/ai-coach/buildDailyBrief.ts` — nouveau : structured daily brief post-check-in (séance prévue, macros cibles, eau, 1 phrase LLM coaching max_tokens:40)
+- `app/api/client/checkin/route.ts` — insère `daily_brief` message après le closing LLM, best-effort non-bloquant
+- `lib/inngest/functions/chat-morning-brief.ts` — cron 06:30 UTC : fan-out tous clients actifs, insère `morning_init` message avec chip `trigger_checkin`, double dedup (checkin already done + message already sent)
+- `lib/inngest/functions/chat-evening-brief.ts` — cron 21:30 UTC : même mécanique, `evening_init`
+- `app/api/inngest/route.ts` — enregistre les 2 nouvelles fonctions
+- `components/client/ChatPage.tsx` — `handleInteract` intercepte `key === 'trigger_checkin'` → marque chip answered + active `handleCheckinClick()`
+- Points de vigilance : les messages `morning_init`/`evening_init` sont archivés après 3j par `chat-archive` — normal car check-in doit être fait dans les 3j ; cron UTC (06:30 = 08:30 CEST été) ; `programs.status === 'active'` requis pour la séance prévue
 
 ### 2026-05-21 — Metrics Tab Navigation — 3-tab client PWA
 
@@ -218,7 +229,8 @@
 
 - [x] Toutes migrations appliquées (vérifié 2026-05-21)
 - [x] Chat SP2 : Scripted Flow Engine — flows morning/evening, chips/sliders interactifs, données réelles system prompt
-- [ ] Chat SP3 : Push Notifications + Inngest scheduling — VAPID, cron par client
+- [x] Chat SP3-A : Proactive AI Coach — system prompt v2, Inngest crons, daily brief
+- [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard
 - [ ] Gamification : points check-ins / séances / bilans
