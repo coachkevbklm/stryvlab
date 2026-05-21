@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export interface InteractiveMetadata {
   component: 'chips' | 'slider' | 'number'
@@ -118,6 +118,36 @@ function NumberInput({
   )
 }
 
+function CoachAvatar({ url, initial }: { url?: string | null; initial: string }) {
+  const [photoReady, setPhotoReady] = useState(false)
+
+  useEffect(() => {
+    if (!url) return
+    const img = new window.Image()
+    img.onload = () => setPhotoReady(true)
+    img.onerror = () => setPhotoReady(false)
+    img.src = url
+  }, [url])
+
+  return (
+    <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#3a3a3a] flex items-center justify-center relative">
+      <span className="text-[12px] font-bold text-white leading-none" style={{ fontFamily: 'Arial, sans-serif' }}>
+        {initial}
+      </span>
+      {photoReady && url && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("${url}")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function ChatBubble({ message, coachAvatarUrl, coachInitial, onInteract, onSkip }: ChatBubbleProps) {
   const isUser = message.role === "user"
   const meta = message.metadata
@@ -128,23 +158,7 @@ export default function ChatBubble({ message, coachAvatarUrl, coachInitial, onIn
   return (
     <div className={`flex items-start gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#2a2a2a] flex items-center justify-center relative">
-          {/* Initial always visible in normal flow */}
-          <span className="text-[11px] font-bold text-white leading-none" style={{ fontFamily: 'Arial, sans-serif' }}>
-            {initial}
-          </span>
-          {/* background-image div overlays if URL resolves — no broken-image placeholder */}
-          {coachAvatarUrl && (
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                backgroundImage: `url("${coachAvatarUrl}")`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
-          )}
-        </div>
+        <CoachAvatar url={coachAvatarUrl} initial={initial} />
       )}
 
       <div className={`flex flex-col gap-2 ${isUser ? "items-end" : "items-start"} max-w-[82%]`}>
