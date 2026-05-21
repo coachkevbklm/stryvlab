@@ -3,9 +3,16 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-23
+
+FIX: VoiceLogSheet — stopRecording lit accRef.current dans recognition.onend (non plus en sync) pour capturer les résultats finals ASR sur enregistrements courts
+FIX: VoiceLogSheet logMeal — food_item_id lu via c.data?.id (API retourne { data } pas { id directement }) — élimine erreur "Impossible d'analyser le repas"
+FIX: VoiceLogSheet — reset logging=false au re-open pour éviter le bouton log bloqué si fermeture pendant logMeal
+
 ## 2026-05-22
 
 FEATURE: Add 3-tab navigation to /client/nutrition (Aujourd'hui / Tendances / Protocole)
+FIX: setRecommendation — restore rir_hold veto in Path A, scope failure_recovery to belowZone only, remove 0.25kg increment floor
 FIX: Volume hebdomadaire — client_set_logs ne possède pas completed_at (colonne session-level uniquement) → suppression du champ du select nested, volume coverage affiche désormais les vraies valeurs
 FIX: Perf sessions query — reps_actual inexistant → actual_reps, completed_at sur sets → completed (boolean)
 
