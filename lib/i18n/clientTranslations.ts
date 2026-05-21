@@ -25,6 +25,9 @@ export const clientDict = {
   'nutrition.carbCycle':       { fr: 'Carb Cycling',        en: 'Carb Cycling',         es: 'Carb Cycling' },
   'nutrition.cycleSync':       { fr: 'Phase du cycle',      en: 'Cycle phase',          es: 'Fase del ciclo' },
   'nutrition.recommendations': { fr: 'Recommandations',     en: 'Recommendations',      es: 'Recomendaciones' },
+  'nutrition.tab.aujourd_hui': { fr: "Aujourd'hui", en: 'Today',    es: 'Hoy'        },
+  'nutrition.tab.tendances':   { fr: 'Tendances',   en: 'Trends',   es: 'Tendencias' },
+  'nutrition.tab.protocole':   { fr: 'Protocole',   en: 'Protocol', es: 'Protocolo'  },
 
   // ── Home page ──
   'home.section':             { fr: 'Accueil',    en: 'Home',      es: 'Inicio' },
