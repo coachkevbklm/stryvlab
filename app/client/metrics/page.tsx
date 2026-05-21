@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { resolveClientFromUser } from "@/lib/client/resolve-client"
-import MetricsPage from "@/components/client/MetricsPage"
+import MetricsClientPage from "@/components/client/MetricsClientPage"
 
 function service() {
   return createServiceClient(
@@ -13,25 +13,21 @@ function service() {
 export default async function MetricsRoute() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) return null
 
   const db = service()
-
   const cc = await resolveClientFromUser(
     user.id,
     user.email,
     db,
     'id, first_name, last_name, email, profile_photo_url'
   )
-
   if (!cc) return null
 
   const firstName = (cc as any).first_name ?? ""
   const lastName  = (cc as any).last_name  ?? ""
   const initials  = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "?"
 
-  // Fetch streak from client_streaks table
   const { data: streakRow } = await db
     .from('client_streaks')
     .select('current_streak')
@@ -39,7 +35,7 @@ export default async function MetricsRoute() {
     .maybeSingle()
 
   return (
-    <MetricsPage
+    <MetricsClientPage
       clientName={`${firstName} ${lastName}`.trim()}
       clientEmail={(cc as any).email ?? user.email ?? ""}
       avatarInitials={initials}
