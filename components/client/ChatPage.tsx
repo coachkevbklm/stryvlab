@@ -31,6 +31,10 @@ type TodayData = {
 }
 
 export default function ChatPage({ coachAvatarUrl, coachInitial, clientFirstName }: ChatPageProps) {
+  // Debug: remove once avatar issue resolved
+  if (typeof window !== 'undefined') {
+    console.log('[ChatPage] coachAvatarUrl:', coachAvatarUrl, '| coachInitial:', coachInitial)
+  }
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [remaining, setRemaining] = useState(20)
