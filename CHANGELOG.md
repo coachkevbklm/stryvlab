@@ -3,6 +3,12 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-22
+
+FEATURE: Add 3-tab navigation to /client/nutrition (Aujourd'hui / Tendances / Protocole)
+FIX: Volume hebdomadaire — client_set_logs ne possède pas completed_at (colonne session-level uniquement) → suppression du champ du select nested, volume coverage affiche désormais les vraies valeurs
+FIX: Perf sessions query — reps_actual inexistant → actual_reps, completed_at sur sets → completed (boolean)
+
 ## 2026-05-21
 
 FEATURE: Chat SP2 — interactive check-in flows (chips, sliders, number input) morning/evening with smart time detection
