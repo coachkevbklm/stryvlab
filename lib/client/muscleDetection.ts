@@ -149,7 +149,7 @@ export function getAllMuscles(
   exercise: Parameters<typeof getMuscleActivation>[0],
 ): Set<MuscleGroup> {
   const activation = getMuscleActivation(exercise);
-  return new Set([...activation.primary, ...activation.secondary]);
+  return new Set(Array.from(activation.primary).concat(Array.from(activation.secondary)));
 }
 
 /**
@@ -162,7 +162,7 @@ export function sharesPrimaryMuscle(
   const act1 = getMuscleActivation(ex1);
   const act2 = getMuscleActivation(ex2);
 
-  for (const muscle of act1.primary) {
+  for (const muscle of Array.from(act1.primary)) {
     if (act2.primary.has(muscle)) {
       return true;
     }
@@ -263,9 +263,9 @@ export function computeMuscleIntensity(
 
   // Normalize to 0-1 range
   const intensityMap = new Map<MuscleGroup, number>();
-  const maxVolume = Math.max(...volumeByGroup.values(), 1);
+  const maxVolume = Math.max(...Array.from(volumeByGroup.values()), 1);
 
-  for (const [group, volume] of volumeByGroup.entries()) {
+  for (const [group, volume] of Array.from(volumeByGroup.entries())) {
     intensityMap.set(group, Math.min(volume / maxVolume, 1));
   }
 

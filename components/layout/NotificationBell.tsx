@@ -32,7 +32,7 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 86400)}j`;
 }
 
-export default function NotificationBell() {
+export default function NotificationBell(_props: { topBarMode?: boolean } = {}) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

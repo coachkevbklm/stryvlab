@@ -3,6 +3,15 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-24
+
+FEATURE: Macro color system — copper(#b07840)=protéines, gold(#c8a030)=glucides, petrol(#2d7a62)=lipides, steel(#4d8090)=eau
+FEATURE: Arc gradient copper→gold→petrol sur jauge calories (SmartNutritionWidget, SmartNutritionHero, NutritionWidget)
+REFACTOR: NutritionWidget, SmartNutritionWidget, SmartNutritionHero — carb var(--data-gold), fat var(--data-petrol), water var(--data-steel)
+REFACTOR: MacroWeekGrid, NutritionMealsList, NutritionLogContent — même mapping macro couleurs
+CHORE: globals.css + tailwind.config.ts — data token values mis à jour (copper/gold/petrol/steel)
+CHORE: ui-design-system.md — section DS v4.0 Data Colors ajoutée avec règles macro + arc gradient
+
 ## 2026-05-23
 
 FIX: VoiceLogSheet — stopRecording lit accRef.current dans recognition.onend (non plus en sync) pour capturer les résultats finals ASR sur enregistrements courts

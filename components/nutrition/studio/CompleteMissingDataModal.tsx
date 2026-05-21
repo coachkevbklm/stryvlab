@@ -102,12 +102,14 @@ export default function CompleteMissingDataModal({
       let bmr: number;
 
       if (selectedFormula === "mifflin") {
-        bmr = calculateBMRMifflin({
-          weight_kg: clientData.weight_kg,
-          height_cm: clientData.height_cm,
-          age: clientData.age,
-          gender: clientData.gender,
-        });
+        const result = calculateBMRMifflin(
+          clientData.weight_kg,
+          clientData.height_cm,
+          clientData.age ?? 0,
+          (clientData.gender === 'M' || clientData.gender === 'F') ? clientData.gender : null,
+        )
+        if (result === null) throw new Error("Données insuffisantes pour calculer le BMR")
+        bmr = result
       } else {
         // Katch-McArdle requires lean mass
         if (!clientData.lean_mass_kg && !clientData.body_fat_pct) {
@@ -124,7 +126,8 @@ export default function CompleteMissingDataModal({
 
         if (!lbm) return;
 
-        bmr = calculateBMRKatchMcArdle({ lean_mass_kg: lbm });
+        // Katch-McArdle: BMR = 370 + 21.6 × LBM — lbm already computed above
+        bmr = Math.round(370 + 21.6 * lbm)
       }
 
       await onApply({
