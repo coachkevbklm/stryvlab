@@ -7,6 +7,8 @@ import { checkinReminderSendFunction } from '@/lib/inngest/functions/checkin-rem
 import { mealAnalyzeFunction } from '@/lib/inngest/functions/meal-analyze'
 import { adaptiveTdeeFunction } from '@/lib/inngest/functions/adaptive-tdee'
 import { chatArchiveFunction } from '@/lib/inngest/functions/chat-archive'
+import { chatMorningBriefFunction } from '@/lib/inngest/functions/chat-morning-brief'
+import { chatEveningBriefFunction } from '@/lib/inngest/functions/chat-evening-brief'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -18,5 +20,7 @@ export const { GET, POST, PUT } = serve({
     mealAnalyzeFunction,
     adaptiveTdeeFunction,
     chatArchiveFunction,
+    chatMorningBriefFunction,
+    chatEveningBriefFunction,
   ],
 })
