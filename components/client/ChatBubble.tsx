@@ -137,6 +137,7 @@ export default function ChatBubble({ message, coachAvatarUrl, coachInitial, onIn
               src={coachAvatarUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
             />
           )}
         </div>

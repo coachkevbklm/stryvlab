@@ -72,7 +72,7 @@ export default function ChatConversation({ messages, coachAvatarUrl, coachInitia
             </span>
             {coachAvatarUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coachAvatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={coachAvatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             )}
           </div>
           <div className="bg-[#111111] rounded-2xl rounded-tl-sm px-3.5 py-3 flex gap-1.5">
