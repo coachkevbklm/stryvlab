@@ -5,6 +5,7 @@ import { z } from 'zod'
 import OpenAI from 'openai'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
+import { buildDailyBrief } from '@/lib/client/ai-coach/buildDailyBrief'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 
 function svc() {
@@ -40,6 +41,50 @@ export async function POST(req: NextRequest) {
   const db = svc()
   const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name')
   if (!cc) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+
+  // Fetch data for daily brief in parallel with checkin processing (best-effort)
+  const briefDataPromise = (async () => {
+    try {
+      const [programRes, protocolRes] = await Promise.allSettled([
+        db.from('programs')
+          .select('name, frequency, program_sessions(name, day_of_week, days_of_week)')
+          .eq('client_id', cc.id as string)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        db.from('nutrition_protocols')
+          .select('nutrition_protocol_days(calories, protein_g, hydration_ml)')
+          .eq('client_id', cc.id as string)
+          .eq('status', 'shared')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ])
+
+      const activeProgram = programRes.status === 'fulfilled' ? (programRes.value as any)?.data : null
+      const protocol      = protocolRes.status === 'fulfilled' ? (protocolRes.value as any)?.data : null
+      const protocolDay   = protocol?.nutrition_protocol_days?.[0]
+
+      const todayDow = new Date().getDay()
+      const sessions: any[] = activeProgram?.program_sessions ?? []
+      const todaySession = sessions.find((s: any) => {
+        const dows: number[] = Array.isArray(s.days_of_week) && s.days_of_week.length > 0
+          ? s.days_of_week
+          : s.day_of_week != null ? [s.day_of_week] : []
+        return dows.includes(todayDow)
+      })
+
+      return {
+        sessionName:   todaySession?.name    ?? null,
+        targetKcal:    protocolDay?.calories  ?? 0,
+        targetProtein: protocolDay?.protein_g ?? 0,
+        targetWaterMl: protocolDay?.hydration_ml ?? 2500,
+      }
+    } catch {
+      return { sessionName: null, targetKcal: 0, targetProtein: 0, targetWaterMl: 2500 }
+    }
+  })()
 
   const parsed = checkinSchema.safeParse(await req.json())
   if (!parsed.success) {
@@ -100,6 +145,31 @@ export async function POST(req: NextRequest) {
     })
     .select('id, role, content, message_type, metadata, created_at')
     .single()
+
+  // Daily brief — structured day summary after check-in (non-blocking)
+  try {
+    const briefData = await briefDataPromise
+    const briefContent = await buildDailyBrief({
+      flowType:       flow_type,
+      sessionName:    briefData.sessionName,
+      targetKcal:     briefData.targetKcal,
+      targetProtein:  briefData.targetProtein,
+      targetWaterMl:  briefData.targetWaterMl,
+      energyLevel:    data.energy_level    ?? null,
+      sleepHours:     data.sleep_hours     ?? null,
+      sleepQuality:   data.sleep_quality   ?? null,
+      muscleSoreness: data.muscle_soreness ?? null,
+    })
+
+    await db.from('chat_messages').insert({
+      client_id:    cc.id,
+      role:         'assistant',
+      content:      briefContent,
+      message_type: 'daily_brief',
+    })
+  } catch {
+    // Non-blocking — brief failure must not affect checkin response
+  }
 
   // Update rate limit counter
   const today = computePhysiologicalDate(new Date())
