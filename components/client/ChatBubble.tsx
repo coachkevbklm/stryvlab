@@ -128,16 +128,20 @@ export default function ChatBubble({ message, coachAvatarUrl, coachInitial, onIn
   return (
     <div className={`flex items-start gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       {!isUser && (
-        // Avatar: initial always rendered underneath; image overlays if it loads
         <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-[#2a2a2a] flex items-center justify-center relative">
-          <span className="absolute text-[12px] font-bold text-white select-none">{initial}</span>
+          {/* Initial always visible in normal flow */}
+          <span className="text-[11px] font-bold text-white leading-none" style={{ fontFamily: 'Arial, sans-serif' }}>
+            {initial}
+          </span>
+          {/* background-image div overlays if URL resolves — no broken-image placeholder */}
           {coachAvatarUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coachAvatarUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                backgroundImage: `url("${coachAvatarUrl}")`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
             />
           )}
         </div>
