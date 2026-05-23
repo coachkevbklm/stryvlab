@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
 import type { NutritionMacros } from './SmartNutritionWidget'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 type Props = {
   date: string
@@ -108,9 +109,9 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="grid grid-cols-3 gap-3 mt-3">
           {([
-            { key: 'protein_g', label: 'Protéines', color: '#e85d04' },
-            { key: 'carbs_g',   label: 'Glucides',  color: '#22c55e' },
-            { key: 'fat_g',     label: 'Lipides',   color: '#f59e0b' },
+            { key: 'protein_g', label: 'Protéines', color: NUTRITION_UI_COLORS.protein },
+            { key: 'carbs_g',   label: 'Glucides',  color: NUTRITION_UI_COLORS.carbs },
+            { key: 'fat_g',     label: 'Lipides',   color: NUTRITION_UI_COLORS.fat },
           ] as const).map(m => {
             const c = (consumed as any)[m.key] ?? 0
             const tg = (target as any)[m.key] ?? 0
@@ -152,7 +153,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${waterMeta.clampedPercent}%`,
-                  background: getStateColor(waterMeta.state, '#22d3ee'),
+                  background: getStateColor(waterMeta.state, NUTRITION_UI_COLORS.water),
                 }}
               />
             </div>

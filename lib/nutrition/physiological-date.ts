@@ -1,39 +1,37 @@
-/**
- * Journée physiologique — cutoff 04:00
- * Un repas loggé à 02:30 appartient à la veille (jour physiologique précédent).
- * Conforme au FUNCTIONAL_SPEC.md STRYVR — A.0
- */
-export function computePhysiologicalDate(
-  timestamp: Date | string,
-  cutoffHour = 4
-): string {
-  const dt = new Date(timestamp)
-  // Use local time — toISOString() is UTC and causes 1-2 day offset in non-UTC timezones
-  const hour = dt.getHours()
-  const year = dt.getFullYear()
-  const month = dt.getMonth()
-  const day = dt.getDate()
+import type { MealType } from "@/lib/nutrition/food-items"
 
-  const localDate = new Date(year, month, hour < cutoffHour ? day - 1 : day)
-  const y = localDate.getFullYear()
-  const m = String(localDate.getMonth() + 1).padStart(2, "0")
-  const d = String(localDate.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
+const DAY_RESET_HOUR = 4
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0")
 }
 
-/**
- * Infère le meal_type selon l'heure locale
- */
-export function inferMealType(
-  timestamp: Date | string
-): "breakfast" | "lunch" | "dinner" | "snack" {
-  const dt = new Date(timestamp)
-  const h = dt.getHours()
-  const m = dt.getMinutes()
-  const totalMin = h * 60 + m
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  return `${year}-${month}-${day}`
+}
 
-  if (totalMin >= 5 * 60 && totalMin < 11 * 60) return "breakfast"
-  if (totalMin >= 11 * 60 && totalMin < 15 * 60) return "lunch"
-  if (totalMin >= 17 * 60 + 30 && totalMin < 22 * 60) return "dinner"
+export function computePhysiologicalDate(input: Date): string {
+  const date = new Date(input)
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Invalid date passed to computePhysiologicalDate")
+  }
+
+  if (date.getHours() < DAY_RESET_HOUR) {
+    date.setDate(date.getDate() - 1)
+  }
+
+  return formatLocalDate(date)
+}
+
+export function inferMealType(input: Date): MealType {
+  const hour = input.getHours()
+
+  if (hour < 11) return "breakfast"
+  if (hour < 15) return "lunch"
+  if (hour < 22) return "dinner"
   return "snack"
 }

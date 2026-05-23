@@ -8,6 +8,7 @@ import {
   pickActiveProgramForSchedule,
 } from "@/lib/nutrition/training-week-schedule";
 import { z } from "zod";
+import { getLatestClientMetrics } from "@/lib/client/latest-metrics";
 
 function serviceClient() {
   return createServiceClient(
@@ -153,6 +154,14 @@ export async function GET(
       }
     }
   }
+
+  // Recent client check-ins are considered the freshest client-entered signals.
+  const { data: recentCheckins } = await db
+    .from("client_daily_checkins")
+    .select("date, flow_type, weight_kg, sleep_hours, sleep_quality, energy_level, stress_level")
+    .eq("client_id", clientId)
+    .order("date", { ascending: false })
+    .limit(14);
 
   const entry = {
     weight_kg: null as number | null,
@@ -316,6 +325,51 @@ export async function GET(
         continue;
       }
     }
+  }
+
+  // Overlay with freshest check-in values.
+  if (recentCheckins && recentCheckins.length > 0) {
+    const latestWeight = recentCheckins.find((c: any) => c.weight_kg != null);
+    if (latestWeight?.weight_kg != null) {
+      entry.weight_kg = Number(latestWeight.weight_kg);
+      dataSource.weight_kg = "selected";
+    }
+
+    for (const c of recentCheckins) {
+      if (entry.sleep_h_samples.length < 3 && c.sleep_hours != null) {
+        entry.sleep_h_samples.push(Number(c.sleep_hours));
+      }
+      if (entry.sleep_q_samples.length < 3 && c.sleep_quality != null) {
+        entry.sleep_q_samples.push(Number(c.sleep_quality));
+      }
+      if (entry.energy_samples.length < 3 && c.energy_level != null) {
+        entry.energy_samples.push(Number(c.energy_level));
+      }
+      if (entry.stress_samples.length < 3 && c.stress_level != null) {
+        entry.stress_samples.push(Number(c.stress_level));
+      }
+      if (
+        entry.sleep_h_samples.length >= 3 &&
+        entry.sleep_q_samples.length >= 3 &&
+        entry.energy_samples.length >= 3 &&
+        entry.stress_samples.length >= 3
+      ) {
+        break;
+      }
+    }
+  }
+
+  // Canonical latest values (assessment_responses enriched in realtime, plus check-in freshness)
+  const latest = await getLatestClientMetrics(db, clientId, [
+    "weight_kg",
+    "sleep_duration_h",
+    "sleep_quality",
+    "energy_level",
+    "stress_level",
+  ]);
+  if (latest.weight_kg) {
+    entry.weight_kg = latest.weight_kg.value;
+    dataSource.weight_kg = "selected";
   }
 
   // Fetch manual nutrition data overrides

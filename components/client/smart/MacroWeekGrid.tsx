@@ -1,4 +1,5 @@
 'use client'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 type DayPoint = {
   date: string
@@ -13,9 +14,9 @@ type DayPoint = {
 }
 
 const MACROS = [
-  { key: 'protein_g', color: 'var(--data-copper)' },
-  { key: 'carbs_g',   color: 'var(--data-gold)' },
-  { key: 'fat_g',     color: 'var(--data-petrol)' },
+  { key: 'protein_g', color: NUTRITION_UI_COLORS.protein },
+  { key: 'carbs_g',   color: NUTRITION_UI_COLORS.carbs },
+  { key: 'fat_g',     color: NUTRITION_UI_COLORS.fat },
 ] as const
 
 const DOW_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D']

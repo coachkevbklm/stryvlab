@@ -1,3 +1,5 @@
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+
 type Point = { date: string; consumed: number; target: number }
 
 export default function WeeklyTrendStrip({ trend }: { trend: Point[] }) {
@@ -14,7 +16,7 @@ export default function WeeklyTrendStrip({ trend }: { trend: Point[] }) {
           const future = p.date > today
           const color = future
             ? 'rgba(255,255,255,0.08)'
-            : ratio > 0.85 ? '#22c55e' : ratio > 0.6 ? '#f2f2f2' : '#ef4444'
+            : ratio > 0.85 ? NUTRITION_UI_COLORS.carbs : ratio > 0.6 ? '#f2f2f2' : '#ef4444'
           return (
             <div key={p.date} className="flex-1 flex flex-col items-center gap-1">
               <div className="w-full rounded-md" style={{ height: `${barH}px`, background: color }} />

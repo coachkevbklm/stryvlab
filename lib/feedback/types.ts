@@ -1,8 +1,15 @@
-export type FeedbackEntityType = 'session' | 'exercise' | 'set' | 'checkin' | 'morpho' | 'bilan'
-export type FeedbackEmoji = '👍' | '💪' | '✅' | '🔥' | '❓'
-export type FeedbackAuthorType = 'client' | 'coach'
+export type FeedbackEntityType =
+  | "session"
+  | "exercise"
+  | "set"
+  | "checkin"
+  | "morpho"
+  | "bilan"
 
-export const FEEDBACK_EMOJIS: FeedbackEmoji[] = ['👍', '💪', '✅', '🔥', '❓']
+export type FeedbackEmoji = "👍" | "💪" | "✅" | "🔥" | "❓"
+export type FeedbackAuthorType = "client" | "coach"
+
+export const FEEDBACK_EMOJIS: FeedbackEmoji[] = ["👍", "💪", "✅", "🔥", "❓"]
 
 export interface FeedbackReaction {
   id: string
@@ -27,10 +34,10 @@ export interface CoachFeedback {
 }
 
 export const ENTITY_TYPE_LABEL: Record<FeedbackEntityType, string> = {
-  session: '🏋️ Séance',
-  exercise: '💪 Exercice',
-  set: '💪 Set',
-  checkin: '📊 Check-in',
-  morpho: '📷 Morpho',
-  bilan: '📋 Bilan',
+  session: "🏋️ Séance",
+  exercise: "💪 Exercice",
+  set: "💪 Set",
+  checkin: "📊 Check-in",
+  morpho: "📷 Morpho",
+  bilan: "📋 Bilan",
 }

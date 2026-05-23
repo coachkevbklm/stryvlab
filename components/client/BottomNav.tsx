@@ -1,63 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  MdAdd,
-  MdChat,
-  MdFitnessCenter,
-  MdRestaurant,
-  MdShowChart,
-} from "react-icons/md";
+import { ChatCircle, Barbell, ForkKnife, ChartLine, Plus } from "@phosphor-icons/react";
 import { useClientT } from "./ClientI18nProvider";
 import { useTour } from "./TourContext";
 import type { ClientDictKey } from "@/lib/i18n/clientTranslations";
 import dynamic from "next/dynamic";
 
-const QuickLogSheet = dynamic(
-  () => import("@/components/client/QuickLogSheet"),
-  { ssr: false },
-);
+const QuickLogSheet = dynamic(() => import("@/components/client/QuickLogSheet"), { ssr: false });
 
-const LEFT_NAV: {
-  href: string;
-  labelKey: ClientDictKey;
-  Icon: React.ElementType;
-  iconClassName?: string;
-}[] = [
-  { href: "/client", labelKey: "nav.chat", Icon: MdChat },
-  {
-    href: "/client/programme",
-    labelKey: "nav.programme",
-    Icon: MdFitnessCenter,
-    iconClassName: "-translate-x-1",
-  },
+const LEFT_NAV:  { href: string; labelKey: ClientDictKey; Icon: React.ElementType }[] = [
+  { href: "/client",           labelKey: "nav.chat",      Icon: ChatCircle },
+  { href: "/client/programme", labelKey: "nav.programme", Icon: Barbell },
 ];
-const RIGHT_NAV: {
-  href: string;
-  labelKey: ClientDictKey;
-  Icon: React.ElementType;
-  iconClassName?: string;
-}[] = [
-  {
-    href: "/client/nutrition",
-    labelKey: "nav.nutrition",
-    Icon: MdRestaurant,
-    iconClassName: "translate-x-1",
-  },
-  {
-    href: "/client/metrics",
-    labelKey: "nav.metrics",
-    Icon: MdShowChart,
-    iconClassName: "translate-x-1",
-  },
+const RIGHT_NAV: { href: string; labelKey: ClientDictKey; Icon: React.ElementType }[] = [
+  { href: "/client/nutrition", labelKey: "nav.nutrition", Icon: ForkKnife },
+  { href: "/client/metrics",   labelKey: "nav.metrics",   Icon: ChartLine },
 ];
 
 export default function BottomNav() {
-  const pathname = usePathname();
+  const pathname             = usePathname();
+  const { t }                = useClientT();
   const { highlightedNavIndex } = useTour();
   const [logOpen, setLogOpen] = useState(false);
+  const [chatPendingCheckins, setChatPendingCheckins] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/client/chat/today-strip")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.checkin) return;
+        const pending = Number(!data.checkin.morning) + Number(!data.checkin.evening);
+        setChatPendingCheckins(pending);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   function isActive(href: string, idx: number, offset = 0) {
     const navIdx = offset + idx;
@@ -66,50 +49,62 @@ export default function BottomNav() {
     return pathname.startsWith(href);
   }
 
-  const navItem = (
-    href: string,
-    Icon: React.ElementType,
-    active: boolean,
-    iconClassName?: string,
-  ) => (
+  const navItem = (href: string, labelKey: ClientDictKey, Icon: React.ElementType, active: boolean) => (
     <Link
       key={href}
       href={href}
-      className={`flex items-center justify-center flex-1 h-full transition-colors duration-200 ease-out active:scale-[0.96] ${
-        active ? "text-[#f2f2f2]" : "text-[#8a8a8a] hover:text-[#b2b2b2]"
+      className={`flex flex-col items-center justify-center gap-[5px] flex-1 h-full transition-all duration-200 active:scale-[0.92] ${
+        active ? "text-[#f2f2f2]" : "text-[#5a5a5a] hover:text-[#808080]"
       }`}
     >
-      <Icon size={active ? 30 : 26} className={iconClassName} />
+      <div className="relative">
+        <Icon size={active ? 26 : 23} weight={active ? "fill" : "regular"} />
+        {href === "/client" && chatPendingCheckins > 0 && (
+          <span
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] leading-[16px] text-center font-bold"
+            style={{ background: "#A67C52", color: "#080808" }}
+          >
+            {chatPendingCheckins}
+          </span>
+        )}
+      </div>
+      <span
+        className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] leading-none transition-all duration-200 ${
+          active ? "text-[#f2f2f2]" : "text-[#5a5a5a]"
+        }`}
+      >
+        {t(labelKey)}
+      </span>
     </Link>
   );
 
   return (
     <>
       <nav
-        className="fixed inset-x-4 z-40"
-        style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
+        className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="relative h-[80px]">
-          <div className="absolute inset-0 rounded-[32px] bg-[#0d0d0d]/98 border border-white/10 backdrop-blur-xl shadow-[0_24px_52px_-32px_rgba(0,0,0,0.75)] z-10 pointer-events-none" />
-          <div className="relative z-20 flex items-center justify-between h-full px-3">
-            {LEFT_NAV.map(({ href, Icon, iconClassName }, i) =>
-              navItem(href, Icon, isActive(href, i, 0), iconClassName),
-            )}
+        <div className="flex items-center h-[62px] px-2">
+          {/* Left tabs */}
+          {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
+            navItem(href, labelKey, Icon, isActive(href, i, 0))
+          )}
 
-            <div className="flex-1 flex items-center justify-center h-full">
-              <button
-                onClick={() => setLogOpen(true)}
-                className="relative z-30 inline-flex h-[54px] w-[54px] items-center justify-center rounded-[18px] bg-gradient-to-br from-[#f8f8f8] via-[#e2e2e2] to-[#c1c1c1] text-[#080808] transition-transform duration-120 ease-out active:scale-[0.96] shadow-[0_8px_18px_-12px_rgba(0,0,0,0.42)]"
-                aria-label="Logger"
-              >
-                <MdAdd size={24} />
-              </button>
-            </div>
-
-            {RIGHT_NAV.map(({ href, Icon, iconClassName }, i) =>
-              navItem(href, Icon, isActive(href, i, 2), iconClassName),
-            )}
+          {/* Central FAB */}
+          <div className="flex flex-col items-center justify-center flex-1 h-full">
+            <button
+              onClick={() => setLogOpen(true)}
+              className="w-[50px] h-[50px] rounded-full bg-[#f2f2f2] flex items-center justify-center active:scale-[0.92] transition-transform shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
+              aria-label="Logger"
+            >
+              <Plus size={22} weight="bold" className="text-[#080808]" />
+            </button>
           </div>
+
+          {/* Right tabs */}
+          {RIGHT_NAV.map(({ href, labelKey, Icon }, i) =>
+            navItem(href, labelKey, Icon, isActive(href, i, 2))
+          )}
         </div>
       </nav>
 

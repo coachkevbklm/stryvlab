@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 import QuickWaterModal from '../QuickWaterModal'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 export type NutritionMacros = {
   kcal: number
@@ -31,9 +32,9 @@ function formatOverflow(value: number, unit: 'g' | 'L'): string | null {
 export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
   const { t } = useClientT()
   const MACROS = [
-    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: '#e85d04' },
-    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: '#22c55e' },
-    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: '#f59e0b' },
+    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: NUTRITION_UI_COLORS.protein },
+    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: NUTRITION_UI_COLORS.carbs },
+    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: NUTRITION_UI_COLORS.fat },
   ]
   const [waterOpen, setWaterOpen] = useState(false)
   const [waterDelta, setWaterDelta] = useState(0)
@@ -155,7 +156,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
                 className="h-full rounded-full"
                 style={{
                   width: `${waterMeta.clampedPercent}%`,
-                  background: getStateColor(waterMeta.state, '#22d3ee'),
+                  background: getStateColor(waterMeta.state, NUTRITION_UI_COLORS.water),
                   transition: 'width 0.4s ease',
                 }}
               />

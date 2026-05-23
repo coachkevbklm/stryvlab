@@ -32,23 +32,42 @@ export async function GET(
   const dateFilter = url.searchParams.get('date') // YYYY-MM-DD
 
   let query = service()
-    .from('daily_checkin_responses')
-    .select('*', { count: 'exact' })
+    .from('client_daily_checkins')
+    .select('date, flow_type, sleep_hours, sleep_quality, energy_level, stress_level, muscle_soreness, hunger_level', { count: 'exact' })
     .eq('client_id', params.clientId)
-    .order('responded_at', { ascending: false })
+    .order('date', { ascending: false })
     .range(page * limit, (page + 1) * limit - 1)
 
   if (dateFilter) {
     query = query
-      .gte('responded_at', `${dateFilter}T00:00:00.000Z`)
-      .lte('responded_at', `${dateFilter}T23:59:59.999Z`)
+      .eq('date', dateFilter)
   }
 
   const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const mapped = (data ?? []).map((r: any) => {
+    const isMorning = r.flow_type === 'morning'
+    const responses: Record<string, number> = {}
+    if (r.energy_level != null) responses.energy = Number(r.energy_level)
+    if (isMorning) {
+      if (r.sleep_hours != null) responses.sleep_duration = Number(r.sleep_hours)
+      if (r.sleep_quality != null) responses.sleep_quality = Number(r.sleep_quality)
+    } else {
+      if (r.stress_level != null) responses.stress = Number(r.stress_level)
+      if (r.hunger_level != null) responses.hunger = Number(r.hunger_level)
+      if (r.muscle_soreness != null) responses.muscle_soreness = Number(r.muscle_soreness)
+    }
+    return {
+      moment: isMorning ? 'morning' : 'evening',
+      responses,
+      responded_at: `${r.date}T12:00:00.000Z`,
+      is_late: false,
+    }
+  })
+
   return NextResponse.json({
-    data: data ?? [],
+    data: mapped,
     total: count ?? 0,
     page,
     limit,

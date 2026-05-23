@@ -38,6 +38,104 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey })
 }
 
+const CHECKIN_TEMPLATE_NAME = '__checkin_realtime__'
+
+async function projectCheckinToAssessment(
+  db: ReturnType<typeof svc>,
+  clientId: string,
+  date: string,
+  data: {
+    sleep_hours?: number
+    sleep_quality?: number
+    energy_level?: number
+    stress_level?: number
+    weight_kg?: number
+  },
+) {
+  const fields: Array<{ field_key: string; value_number: number | null }> = [
+    { field_key: 'weight_kg', value_number: data.weight_kg ?? null },
+    { field_key: 'sleep_duration_h', value_number: data.sleep_hours ?? null },
+    { field_key: 'sleep_quality', value_number: data.sleep_quality ?? null },
+    { field_key: 'energy_level', value_number: data.energy_level ?? null },
+    { field_key: 'stress_level', value_number: data.stress_level ?? null },
+  ].filter((f) => f.value_number != null)
+
+  if (fields.length === 0) return
+
+  const { data: owner } = await db
+    .from('coach_clients')
+    .select('coach_id')
+    .eq('id', clientId)
+    .maybeSingle()
+  if (!owner?.coach_id) return
+
+  const { data: existingTpl } = await db
+    .from('assessment_templates')
+    .select('id')
+    .eq('coach_id', owner.coach_id)
+    .eq('name', CHECKIN_TEMPLATE_NAME)
+    .maybeSingle()
+
+  let templateId = existingTpl?.id as string | undefined
+  if (!templateId) {
+    const { data: createdTpl } = await db
+      .from('assessment_templates')
+      .insert({
+        coach_id: owner.coach_id,
+        name: CHECKIN_TEMPLATE_NAME,
+        description: 'Template système — projection temps réel check-in',
+        template_type: 'custom',
+        blocks: [{ id: 'checkin_realtime_block', module: 'biometrics', title: 'Check-in realtime', fields: [] }],
+        is_default: false,
+      })
+      .select('id')
+      .single()
+    templateId = createdTpl?.id
+  }
+  if (!templateId) return
+
+  const submittedAt = new Date(`${date}T12:00:00Z`).toISOString()
+  const { data: existingSub } = await db
+    .from('assessment_submissions')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('template_id', templateId)
+    .eq('submitted_at', submittedAt)
+    .maybeSingle()
+
+  let submissionId = existingSub?.id as string | undefined
+  if (!submissionId) {
+    const { data: createdSub } = await db
+      .from('assessment_submissions')
+      .insert({
+        coach_id: owner.coach_id,
+        client_id: clientId,
+        template_id: templateId,
+        template_snapshot: { blocks: [{ id: 'checkin_realtime_block', module: 'biometrics' }] },
+        status: 'completed',
+        filled_by: 'client',
+        submitted_at: submittedAt,
+        bilan_date: date,
+      })
+      .select('id')
+      .single()
+    submissionId = createdSub?.id
+  }
+  if (!submissionId) return
+
+  for (const f of fields) {
+    await db.from('assessment_responses').upsert(
+      {
+        submission_id: submissionId,
+        block_id: 'checkin_realtime_block',
+        field_key: f.field_key,
+        value_number: f.value_number,
+      },
+      { onConflict: 'submission_id,block_id,field_key' }
+    )
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -111,6 +209,13 @@ export async function POST(req: NextRequest) {
     )
   if (checkinError) {
     return NextResponse.json({ error: 'Failed to save check-in' }, { status: 500 })
+  }
+
+  // Mirror latest check-in metrics into assessment responses (best-effort).
+  try {
+    await projectCheckinToAssessment(db, cc.id as string, date, data)
+  } catch {
+    // Non-blocking — check-in save remains source transaction
   }
 
   // Mark chat_session completed

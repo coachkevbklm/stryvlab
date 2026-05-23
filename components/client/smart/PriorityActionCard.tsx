@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 export type { PriorityActionType, PriorityActionCardProps } from '@/lib/client/smart/priorityAction'
 export { computePriorityAction } from '@/lib/client/smart/priorityAction'
@@ -10,9 +11,9 @@ import type { PriorityActionType, PriorityActionCardProps } from '@/lib/client/s
 const TYPE_COLOR: Record<PriorityActionType, string> = {
   checkin: '#3b82f6',
   session: '#f2f2f2',
-  meal:    '#4ade80',
-  water:   '#22d3ee',
-  protein: '#f59e0b',
+  meal:    NUTRITION_UI_COLORS.carbs,
+  water:   NUTRITION_UI_COLORS.water,
+  protein: NUTRITION_UI_COLORS.protein,
 }
 
 export default function PriorityActionCard({ type, title, subtitle, href, ctaLabel }: PriorityActionCardProps) {

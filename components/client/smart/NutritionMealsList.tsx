@@ -9,8 +9,13 @@ import type { NutritionMeal } from "@/lib/nutrition/food-items"
 import { useClientT } from "@/components/client/ClientI18nProvider"
 import type { ClientDictKey } from "@/lib/i18n/clientTranslations"
 import type { NutritionMacros } from "./SmartNutritionWidget"
+import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 
-const MC = { prot: 'var(--data-copper)', carb: 'var(--data-gold)', fat: 'var(--data-petrol)' }
+const MC = {
+  prot: NUTRITION_UI_COLORS.protein,
+  carb: NUTRITION_UI_COLORS.carbs,
+  fat: NUTRITION_UI_COLORS.fat,
+}
 
 const MEAL_TYPE_KEYS: Record<string, ClientDictKey> = {
   breakfast: "meal.type.breakfast",
@@ -60,7 +65,7 @@ function MealTypeChooser({ mealId, current, onChange }: { mealId: string; curren
 
   return (
     <div className="relative">
-      <button onClick={e => { e.stopPropagation(); setOpen(o => !o) }} className="flex items-center gap-1.5 group">
+      <button onClick={() => setOpen(o => !o)} className="flex items-center gap-1.5 group">
         {(() => { const Icon = MEAL_TYPE_ICON[current] ?? Coffee; return <Icon size={11} className="text-white/50 group-hover:text-white/80 transition-colors" /> })()}
         <span className="text-[11px] font-bold text-white/70 group-hover:text-white transition-colors">
           {MEAL_TYPE_KEYS[current] ? t(MEAL_TYPE_KEYS[current]) : current}
@@ -70,7 +75,7 @@ function MealTypeChooser({ mealId, current, onChange }: { mealId: string; curren
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-40" onClick={e => { e.stopPropagation(); setOpen(false) }} />
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -100,7 +105,7 @@ function MealTypeChooser({ mealId, current, onChange }: { mealId: string; curren
 }
 
 function MealCard({
-  meal, expanded, onToggle, onDelete, onTypeChange, onAddMore, isDeleting, onTimeChange,
+  meal, expanded, onToggle, onDelete, onTypeChange, onAddMore, isDeleting,
 }: {
   meal: NutritionMeal
   expanded: boolean
@@ -109,49 +114,19 @@ function MealCard({
   onTypeChange: (t: string) => void
   onAddMore: () => void
   isDeleting: boolean
-  onTimeChange: (iso: string) => void
 }) {
   const { t } = useClientT()
-  const [editingTime, setEditingTime] = useState(false)
-  const timeStr = formatTime(meal.logged_at)
-  const timeValue = new Date(meal.logged_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false })
-
-  function handleTimeBlur(e: React.FocusEvent<HTMLInputElement>) {
-    setEditingTime(false)
-    const [h, m] = e.target.value.split(':').map(Number)
-    if (isNaN(h) || isNaN(m)) return
-    const dt = new Date(meal.logged_at)
-    dt.setHours(h, m, 0, 0)
-    onTimeChange(dt.toISOString())
-  }
-
   return (
     <motion.div
       layout
       animate={{ opacity: isDeleting ? 0 : 1 }}
       transition={{ duration: 0.25 }}
-      className="bg-[#111111] rounded-2xl"
+      className="bg-[#111111] rounded-2xl overflow-hidden"
     >
       <div className="flex items-center px-4 pt-4 pb-3 cursor-pointer select-none" onClick={onToggle}>
         <div className="flex-1 min-w-0">
           <MealTypeChooser mealId={meal.id} current={meal.meal_type} onChange={onTypeChange} />
-          {editingTime ? (
-            <input
-              type="time"
-              defaultValue={timeValue}
-              autoFocus
-              onBlur={handleTimeBlur}
-              onClick={e => e.stopPropagation()}
-              className="mt-0.5 w-[72px] bg-[#1a1a1a] rounded-lg px-1.5 py-0.5 text-[10px] text-white outline-none"
-            />
-          ) : (
-            <p
-              className="text-[10px] text-white/25 mt-0.5 hover:text-white/50 transition-colors cursor-pointer"
-              onClick={e => { e.stopPropagation(); setEditingTime(true) }}
-            >
-              {timeStr}
-            </p>
-          )}
+          <p className="text-[10px] text-white/25 mt-0.5">{formatTime(meal.logged_at)}</p>
         </div>
         <div className="text-right mr-3">
           <p className="text-[22px] font-black text-white leading-none">{Math.round(meal.total_calories)}</p>
@@ -231,16 +206,16 @@ function MealCard({
 }
 
 interface Props {
-  meals: NutritionMeal[]
-  setMeals: (updater: (prev: NutritionMeal[]) => NutritionMeal[]) => void
+  initialMeals: NutritionMeal[]
   date: string
   target: NutritionMacros
 }
 
-export default function NutritionMealsList({ meals, setMeals, date, target }: Props) {
+export default function NutritionMealsList({ initialMeals, date }: Props) {
   const { t } = useClientT()
   const router = useRouter()
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [meals, setMeals] = useState<NutritionMeal[]>(initialMeals)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(initialMeals.map(m => m.id)))
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; label: string } | null>(null)
 
@@ -267,15 +242,6 @@ export default function NutritionMealsList({ meals, setMeals, date, target }: Pr
 
   function updateMealType(id: string, mealType: string) {
     setMeals(prev => prev.map(m => m.id === id ? { ...m, meal_type: mealType as any } : m))
-  }
-
-  async function updateMealTime(id: string, loggedAt: string) {
-    setMeals(prev => prev.map(m => m.id === id ? { ...m, logged_at: loggedAt } : m))
-    await fetch(`/api/client/nutrition/meals/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ logged_at: loggedAt }),
-    })
   }
 
   if (meals.length === 0) {
@@ -310,7 +276,6 @@ export default function NutritionMealsList({ meals, setMeals, date, target }: Pr
               onToggle={() => toggleExpand(meal.id)}
               onDelete={() => setConfirmTarget({ id: meal.id, label: MEAL_TYPE_KEYS[meal.meal_type] ? t(MEAL_TYPE_KEYS[meal.meal_type]) : meal.meal_type })}
               onTypeChange={type => updateMealType(meal.id, type)}
-              onTimeChange={iso => updateMealTime(meal.id, iso)}
               onAddMore={() => router.push(`/client/nutrition/log?meal_id=${meal.id}`)}
               isDeleting={deletingId === meal.id}
             />

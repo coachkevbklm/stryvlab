@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { computeNutritionBalance } from '@/lib/nutrition/balance'
 import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 type DeltaCard = {
   key: 'protein' | 'carbs' | 'fat' | 'water'
@@ -53,7 +54,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
       remaining: remaining.protein_g,
       overflow: overflow.protein_g,
       unit: 'g',
-      accent: '#e85d04',
+      accent: NUTRITION_UI_COLORS.protein,
     },
     {
       key: 'carbs',
@@ -62,7 +63,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
       remaining: remaining.carbs_g,
       overflow: overflow.carbs_g,
       unit: 'g',
-      accent: '#22c55e',
+      accent: NUTRITION_UI_COLORS.carbs,
     },
     {
       key: 'fat',
@@ -71,7 +72,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
       remaining: remaining.fat_g,
       overflow: overflow.fat_g,
       unit: 'g',
-      accent: '#f59e0b',
+      accent: NUTRITION_UI_COLORS.fat,
     },
     {
       key: 'water',
@@ -80,7 +81,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
       remaining: remaining.water_ml / 1000,
       overflow: overflow.water_ml / 1000,
       unit: 'L',
-      accent: '#22d3ee',
+      accent: NUTRITION_UI_COLORS.water,
     },
   ]
 

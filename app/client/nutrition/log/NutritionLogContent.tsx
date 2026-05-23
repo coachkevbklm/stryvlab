@@ -18,6 +18,7 @@ import {
   type PortionScalingProfile,
 } from "@/lib/nutrition/food-items"
 import { useClientT } from "@/components/client/ClientI18nProvider"
+import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 
 // ─── Icônes catégories ───────────────────────────────────────
 const CATEGORY_ICONS: Record<CategoryL1, string> = {
@@ -133,11 +134,6 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [drafts, setDrafts] = useState<EntryDraft[]>([])
   const [saving, setSaving] = useState(false)
-  const [mealTime, setMealTime] = useState(() => {
-    const now = new Date()
-    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  })
-  const [mealTitle, setMealTitle] = useState("")
   const footerRef = useRef<HTMLDivElement>(null)
   const [footerH, setFooterH] = useState(120)
 
@@ -224,14 +220,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
     if (!drafts.length) return
     setSaving(true)
     try {
-      const [h, m] = mealTime.split(':').map(Number)
-      const dt = new Date()
-      dt.setHours(h, m, 0, 0)
       const body: Record<string, unknown> = {
         entries: drafts.map(d => ({ food_item_id: d.food_item.id, quantity_g: d.quantity_g, input_mode: d.input_mode })),
-        logged_at: dt.toISOString(),
       }
-      if (mealTitle.trim()) body.title = mealTitle.trim()
       if (existingMealId) body.meal_id = existingMealId
       const res = await fetch("/api/client/nutrition/meals", {
         method: "POST",
@@ -361,7 +352,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
       {/* Mic button absent du sub-header embedded — MealLogSheet a le sien dans son header principal */}
 
       {/* Layers content — min-h-0 requis pour que flex-1 ait une hauteur réelle en embedded */}
-      <div className="flex-1 overflow-hidden relative min-h-0">
+      <div className="flex-1 overflow-hidden relative min-h-0" style={{ paddingTop: embedded ? 0 : topBarH }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={layer + (selectedCategory ?? "") + (selectedSubcategory ?? "")}
@@ -372,7 +363,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             exit="exit"
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="absolute inset-0 overflow-y-auto"
-            style={{ paddingBottom: footerH + 16, paddingTop: embedded ? 0 : topBarH }}
+            style={{ paddingBottom: footerH + 16 }}
           >
             {/* Layer 1: Categories */}
             {layer === "category" && (
@@ -387,7 +378,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                           key={fav.id}
                           onClick={() => quickLogFavorite(fav)}
                           disabled={saving}
-                          className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-2.5 active:scale-[0.98] transition-all hover:bg-[#222222] text-left disabled:opacity-50"
+                          className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-2.5 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left disabled:opacity-50"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-semibold text-white truncate">{fav.name}</p>
@@ -403,7 +394,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
-                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#1a1a1a] rounded-xl p-4 active:scale-95 transition-all hover:bg-[#222222]">
+                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#111111] rounded-xl p-4 active:scale-95 transition-all hover:bg-white/[0.06]">
                       <span className="text-2xl">{CATEGORY_ICONS[cat]}</span>
                       <span className="text-[11px] font-semibold text-white/80">{label}</span>
                     </button>
@@ -423,7 +414,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {layer === "subcategory" && selectedCategory && (
               <div className="p-4 space-y-2">
                 {SUBCATEGORIES[selectedCategory].map(sub => (
-                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-[#222222]">
+                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{SUBCATEGORY_ICONS[sub] ?? "•"}</span>
                       <span className="text-[13px] font-medium text-white">{SUBCATEGORY_LABELS_T[sub] ?? sub}</span>
@@ -439,7 +430,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               <div className="p-4">
                 <div className="relative mb-3">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#1a1a1a] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none" />
+                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
                 </div>
                 {loadingItems ? (
                   <div className="space-y-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-white/[0.04] rounded-xl animate-pulse" />)}</div>
@@ -453,15 +444,15 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                       const gPct = Math.round((item.carbs_per_100g * 4 / kcal) * 100)
                       const lPct = Math.round((item.fat_per_100g * 9 / kcal) * 100)
                       return (
-                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-[#222222] text-left">
+                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-white">{item.name_fr}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[11px] text-white/40">{item.kcal_per_100g} kcal</span>
                               <div className="flex h-[4px] w-[64px] rounded-full overflow-hidden gap-[1px]">
-                                <div style={{ width: `${pPct}%`, backgroundColor: 'var(--data-copper)' }} />
-                                <div style={{ width: `${gPct}%`, backgroundColor: 'var(--data-gold)' }} />
-                                <div style={{ width: `${lPct}%`, backgroundColor: 'var(--data-petrol)' }} />
+                                <div style={{ width: `${pPct}%`, backgroundColor: NUTRITION_UI_COLORS.protein }} />
+                                <div style={{ width: `${gPct}%`, backgroundColor: NUTRITION_UI_COLORS.carbs }} />
+                                <div style={{ width: `${lPct}%`, backgroundColor: NUTRITION_UI_COLORS.fat }} />
                               </div>
                               <span className="text-[10px] text-white/25">P·G·L</span>
                             </div>
@@ -478,9 +469,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {/* Layer 4: Quantity */}
             {layer === "quantity" && selectedItem && (
               <div className="p-4 space-y-5">
-                <div className="flex gap-1 bg-[#1a1a1a] rounded-xl p-0.5">
+                <div className="flex gap-1 bg-white/[0.04] rounded-xl p-0.5">
                   {(["grams", "portion"] as const).map(m => (
-                    <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-[#2e2e2e] text-white" : "text-white/40"}`}>
+                    <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-[#111111] text-white" : "text-white/40"}`}>
                       {m === "grams" ? t('log.gramsMode') : t('log.portionMode')}
                     </button>
                   ))}
@@ -490,12 +481,12 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#1a1a1a] rounded-xl text-[18px] font-bold text-white outline-none min-w-0" />
+                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#111111] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
                       <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
                     </div>
                     <div className="flex gap-2">
                       {[50, 100, 150, 200].map(g => (
-                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${quantityG === g ? "bg-[#2e2e2e] text-[#f2f2f2]" : "bg-[#1a1a1a] text-[#5a5a5a]"}`}>{g}g</button>
+                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${quantityG === g ? "bg-[#2e2e2e] text-[#f2f2f2]" : "bg-[#111111] text-[#5a5a5a]"}`}>{g}g</button>
                       ))}
                     </div>
                   </div>
@@ -515,7 +506,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                         const scaledG = getScaledPortionG(p, scalingProfile, portionMult)
                         const isActive = selectedPortion === i && qMode === "portion"
                         return (
-                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-[#2e2e2e]" : "bg-[#1a1a1a]"}`}>
+                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-[#222222]" : "bg-[#111111]"}`}>
                             <span className="text-xl shrink-0">{PORTION_ICON_BY_KEY[p.key] ?? "📏"}</span>
                             <div className="text-left flex-1 min-w-0">
                               <p className="text-[13px] font-medium text-white">{p.label}</p>
@@ -532,13 +523,13 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                   </div>
                 )}
                 {selectedMacros && (
-                  <div className="bg-[#1a1a1a] rounded-xl p-3">
+                  <div className="bg-[#111111] rounded-xl p-3">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold mb-2">{t('log.for', { n: quantityG })}</p>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div><p className="text-[16px] font-black text-white">{Math.round(selectedMacros.calories_kcal)}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">kcal</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-copper)' }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-gold)' }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-petrol)' }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.protein }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.carbs }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.fat }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
                     </div>
                   </div>
                 )}
@@ -561,9 +552,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               </p>
               <div className="flex gap-2 text-[11px]">
                 <span className="text-white font-bold">{Math.round(totals.calories)} kcal</span>
-                <span style={{ color: 'var(--data-copper)' }}>P{totals.protein}g</span>
-                <span style={{ color: 'var(--data-gold)' }}>G{totals.carbs}g</span>
-                <span style={{ color: 'var(--data-petrol)' }}>L{totals.fat}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.protein }}>P{totals.protein}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.carbs }}>G{totals.carbs}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.fat }}>L{totals.fat}g</span>
               </div>
             </div>
             <div className="space-y-1">
@@ -586,27 +577,6 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               <Plus size={16} />
               {t('log.addToMeal')}
             </button>
-          )}
-
-          {/* Time + name row — shown when drafts exist */}
-          {drafts.length > 0 && (
-            <div className="flex gap-2">
-              <div className="relative shrink-0">
-                <input
-                  type="time"
-                  value={mealTime}
-                  onChange={e => setMealTime(e.target.value)}
-                  className="h-9 w-[90px] px-2 bg-[#1a1a1a] rounded-xl text-[12px] text-white outline-none text-center"
-                />
-              </div>
-              <input
-                type="text"
-                placeholder="Nom du repas (optionnel)"
-                value={mealTitle}
-                onChange={e => setMealTitle(e.target.value)}
-                className="flex-1 min-w-0 h-9 px-3 bg-[#1a1a1a] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none"
-              />
-            </div>
           )}
 
           {/* Save as favorite section */}
@@ -694,11 +664,11 @@ function QuickSearch({ onSelect }: { onSelect: (item: FoodItem) => void }) {
     <div>
       <div className="relative mb-2">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#1a1a1a] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none" />
+        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
       </div>
       {loading && <div className="h-10 bg-white/[0.04] rounded-xl animate-pulse" />}
       {results.map(item => (
-        <button key={item.id} onClick={() => { setQ(""); setResults([]); onSelect(item) }} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-2.5 mb-1 active:scale-[0.98] transition-all hover:bg-[#222222] text-left">
+        <button key={item.id} onClick={() => { setQ(""); setResults([]); onSelect(item) }} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-2.5 mb-1 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
           <span className="text-[13px] text-white">{item.name_fr}</span>
           <span className="text-[11px] text-white/35">{item.kcal_per_100g} kcal/100g</span>
         </button>
@@ -743,7 +713,7 @@ function CustomFoodForm({ onCreated, onClose }: { onCreated: (item: FoodItem) =>
   }
 
   return (
-    <div className="mt-3 bg-[#1a1a1a] rounded-2xl p-4 space-y-3">
+    <div className="mt-3 bg-[#111111] rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between mb-1">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">{t('log.custom.title')}</p>
         <button onClick={onClose} className="text-white/20 hover:text-white/60 transition-colors"><X size={14} /></button>

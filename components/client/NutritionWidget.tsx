@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 interface Props {
   calories: number
@@ -15,10 +16,10 @@ interface Props {
 }
 
 const COLORS = {
-  cal:  'var(--data-gold)',
-  prot: 'var(--data-copper)',
-  carb: 'var(--data-gold)',
-  fat:  'var(--data-petrol)',
+  cal:  'var(--data-petrol)',
+  prot: NUTRITION_UI_COLORS.protein,
+  carb: NUTRITION_UI_COLORS.carbs,
+  fat:  NUTRITION_UI_COLORS.fat,
   over: 'var(--data-copper)',
   track: 'rgba(255,255,255,0.05)',
 }
@@ -157,13 +158,6 @@ export default function NutritionWidget({
           height={svgH}
           viewBox={`0 ${(size - svgH) / 2} ${size} ${svgH}`}
         >
-          <defs>
-            <linearGradient id="arcGrad270" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
-              <stop offset="0%"   stopColor="var(--data-copper)" />
-              <stop offset="50%"  stopColor="var(--data-gold)" />
-              <stop offset="100%" stopColor="var(--data-petrol)" />
-            </linearGradient>
-          </defs>
           {/* Track */}
           <path
             d={makeArcPath(cx, cy, R, 1)}
@@ -178,8 +172,9 @@ export default function NutritionWidget({
               d={makeArcPath(cx, cy, R, Math.min(calPct, 1))}
               fill="none"
               strokeWidth={SW}
-              stroke={calOver ? COLORS.over : 'url(#arcGrad270)'}
+              stroke={arcFill}
               strokeLinecap="round"
+              style={undefined}
             />
           )}
         </svg>
