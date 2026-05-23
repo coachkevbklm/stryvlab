@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import ClientTopBar from "@/components/client/ClientTopBar";
@@ -86,6 +86,10 @@ export default function NutritionClientPage({
     () => searchParams.get("addMeal") === "1",
   );
   const [meals, setMeals] = useState<NutritionMeal[]>(initialMeals);
+
+  useEffect(() => {
+    if (searchParams.get("addMeal") === "1") setMealOpen(true);
+  }, [searchParams]);
 
   async function refetchMeals() {
     try {

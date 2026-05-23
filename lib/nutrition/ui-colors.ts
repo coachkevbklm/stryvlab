@@ -1,11 +1,10 @@
 export const NUTRITION_UI_COLORS = {
-  protein: '#2F6FA3',
-  carbs: '#A67C52',
-  fat: '#8A6A47',
-  water: '#2C7EA1',
-  trainingDay: '#2F7A5A',
-  trainingDayBg: '#EAF4EF',
-  restDay: '#B0B0B0',
-  restDayBg: '#222222',
+  protein: '#3B82F6',
+  carbs: '#F59E0B',
+  fat: '#EC4899',
+  water: '#14B8A6',
+  trainingDay: '#22C55E',
+  trainingDayBg: 'rgba(34,197,94,0.12)',
+  restDay: '#A3A3A3',
+  restDayBg: 'rgba(163,163,163,0.14)',
 } as const
-
