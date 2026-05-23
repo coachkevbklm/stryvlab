@@ -152,8 +152,7 @@ export default function NutritionClientPage({
             />
             <RemainingBreakdown consumed={consumed} target={target} />
             <NutritionMealsList
-              meals={meals}
-              setMeals={setMeals}
+              initialMeals={meals}
               date={date}
               target={target}
             />
