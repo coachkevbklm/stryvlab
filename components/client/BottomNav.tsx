@@ -76,7 +76,7 @@ export default function BottomNav() {
     <>
       <nav
         className="fixed inset-x-0 bottom-0 z-40 pointer-events-none"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       >
         <div className="mx-auto mb-2 w-[min(390px,calc(100%-28px))] pointer-events-auto">
           <div className="flex items-center h-[68px] px-2 rounded-[22px] border border-white/[0.12] bg-[#0f0f0f]">
