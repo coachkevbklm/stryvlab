@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { NutritionClientData } from "@/lib/nutrition/types";
+import {
+  buildTrainingWeekSchedule,
+  normalizeProgramForSchedule,
+  pickActiveProgramForSchedule,
+} from "@/lib/nutrition/training-week-schedule";
 import { z } from "zod";
 
 function serviceClient() {
@@ -430,6 +435,27 @@ export async function GET(
       : null,
   };
 
+  // Active training programme → week schedule for Nutrition Studio
+  const { data: clientPrograms } = await db
+    .from("programs")
+    .select(
+      `
+      id, name, status, session_mode, is_client_visible, created_at,
+      program_sessions (
+        id, name, day_of_week, days_of_week, position,
+        program_exercises ( id, name )
+      )
+    `,
+    )
+    .eq("client_id", clientId)
+    .eq("coach_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const activeProgram = pickActiveProgramForSchedule(clientPrograms ?? []);
+  const trainingWeekSchedule = buildTrainingWeekSchedule(
+    activeProgram ? normalizeProgramForSchedule(activeProgram) : null,
+  );
+
   // Fetch adaptive TDEE from active shared protocol
   const { data: activeProtocol } = await db
     .from("nutrition_protocols")
@@ -456,6 +482,7 @@ export async function GET(
       submitted_at: s.submitted_at,
     })),
     selectedSubmissionId: selectedSubmissionId || null,
+    trainingWeekSchedule,
   });
 }
 

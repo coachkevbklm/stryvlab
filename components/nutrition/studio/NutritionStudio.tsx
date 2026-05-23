@@ -159,6 +159,9 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             ccResult={studio.ccResult}
             hasHydration={studio.hydrationLiters !== null}
             coherenceScore={studio.coherenceScore}
+            trainingWeekSchedule={studio.trainingWeekSchedule}
+            selectedScheduleDow={studio.selectedScheduleDow}
+            onSelectScheduleDow={studio.setSelectedScheduleDow}
           />
         </div>
       </div>

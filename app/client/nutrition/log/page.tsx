@@ -8,7 +8,7 @@ function NutritionLogPageInner() {
   const router = useRouter()
   return (
     <NutritionLogContent
-      onSuccess={() => router.push("/client/nutrition/journal")}
+      onSuccess={() => router.push("/client/nutrition")}
     />
   )
 }

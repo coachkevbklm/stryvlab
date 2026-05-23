@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import QuickWaterModal from '../QuickWaterModal'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
 
 export type NutritionMacros = {
   kcal: number
@@ -19,21 +21,37 @@ export type SmartNutritionWidgetProps = {
   proteinStreakDays?: number
 }
 
-const MACROS = [
-  { key: 'protein_g', label: 'Protéines', color: '#4a90e2' },
-  { key: 'carbs_g',   label: 'Glucides',  color: '#22c55e' },
-  { key: 'fat_g',     label: 'Lipides',   color: '#f59e0b' },
-] as const
-
 export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
+  const { t } = useClientT()
+  const MACROS = [
+    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: '#e85d04' },
+    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: '#22c55e' },
+    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: '#f59e0b' },
+  ]
   const [waterOpen, setWaterOpen] = useState(false)
   const [waterDelta, setWaterDelta] = useState(0)
   const effectiveWaterMl = consumed.water_ml + waterDelta
 
-  const kcalPct = target.kcal > 0 ? Math.min(1, consumed.kcal / target.kcal) : 0
+  function getStateColor(state: NutritionProgressState, baseColor: string): string {
+    switch (state) {
+      case 'over':
+        return '#ef4444'
+      case 'near_limit':
+        return '#f59e0b'
+      case 'in_target':
+        return baseColor
+      default:
+        return 'rgba(255,255,255,0.55)'
+    }
+  }
+
+  const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
+  const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
+  const kcalPct = Math.min(kcalMeta.ratio, 1)
   const r = 80
   const arcTotal = Math.PI * r
   const arcOffset = arcTotal * (1 - kcalPct)
+  const kcalStroke = getStateColor(kcalMeta.state, '#f2f2f2')
 
   return (
     <>
@@ -44,11 +62,11 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
       />
       <Link
         href="/client/nutrition"
-        className="block bg-[#161616] rounded-2xl border border-white/[0.08] p-5 active:scale-[0.99] transition-transform"
+        className="block bg-[#111111] rounded-2xl p-5 active:scale-[0.99] transition-transform"
       >
         <div className="flex items-baseline justify-between mb-3">
           <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30">Nutrition</span>
-          <span className="text-[10px] font-semibold text-[#ffe01e]">→</span>
+          <span className="text-[10px] font-semibold text-[#f2f2f2]">→</span>
         </div>
 
         {/* Arc demi-cercle */}
@@ -64,7 +82,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <path
               d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
-              stroke="#ffe01e"
+              stroke={kcalStroke}
               strokeWidth={12}
               strokeLinecap="round"
               strokeDasharray={arcTotal}
@@ -76,7 +94,8 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <div className="font-black leading-none text-white tabular-nums text-[28px]">
               {Math.round(consumed.kcal)}
             </div>
-            <div className="text-[10px] text-white/40 tabular-nums">/ {target.kcal} kcal</div>
+            <div className="text-[9px] uppercase tracking-[0.12em] text-white/35 mt-1">Calories consommées</div>
+            <div className="text-[10px] text-white/50 tabular-nums">/ {target.kcal} kcal</div>
           </div>
         </div>
 
@@ -85,15 +104,36 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
           {MACROS.map(m => {
             const c = (consumed[m.key] as number) ?? 0
             const tg = (target[m.key] as number) ?? 0
-            const pct = tg > 0 ? Math.min(100, (c / tg) * 100) : 0
+            const meta = getNutritionProgressMeta(c, tg)
+            const fillColor = getStateColor(meta.state, m.color)
             return (
               <div key={m.key}>
                 <div className="flex justify-between text-[10px] mb-1">
                   <span className="text-white/50 uppercase tracking-[0.1em] font-bold">{m.label}</span>
-                  <span className="text-white font-bold tabular-nums">{Math.round(c)}/{tg}g</span>
+                  <span className="font-bold tabular-nums" style={{ color: meta.state === 'under' ? 'white' : fillColor }}>
+                    {Math.round(c)}/{tg}g
+                  </span>
                 </div>
                 <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: m.color, transition: 'width 0.4s ease' }} />
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${meta.clampedPercent}%`,
+                      background: fillColor,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+                <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${meta.overflowPercent}%`,
+                      background: '#ef4444',
+                      opacity: meta.state === 'over' ? 1 : 0,
+                      transition: 'width 0.4s ease, opacity 0.2s ease',
+                    }}
+                  />
                 </div>
               </div>
             )
@@ -101,7 +141,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
         </div>
 
         {/* Eau */}
-        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.06]">
+        <div className="flex items-center gap-3 mt-4 pt-3">
           <div className="flex-1">
             <div className="flex justify-between text-[10px] mb-1">
               <span className="text-white/50 uppercase tracking-[0.1em] font-bold">Hydratation</span>
@@ -111,17 +151,29 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             </div>
             <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div
-                className="h-full bg-cyan-400 rounded-full"
+                className="h-full rounded-full"
                 style={{
-                  width: `${target.water_ml > 0 ? Math.min(100, (effectiveWaterMl / target.water_ml) * 100) : 0}%`,
+                  width: `${waterMeta.clampedPercent}%`,
+                  background: getStateColor(waterMeta.state, '#22d3ee'),
                   transition: 'width 0.4s ease',
+                }}
+              />
+            </div>
+            <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${waterMeta.overflowPercent}%`,
+                  background: '#ef4444',
+                  opacity: waterMeta.state === 'over' ? 1 : 0,
+                  transition: 'width 0.4s ease, opacity 0.2s ease',
                 }}
               />
             </div>
           </div>
           <button
             onClick={e => { e.preventDefault(); setWaterOpen(true) }}
-            className="w-9 h-9 rounded-xl bg-[#ffe01e] flex items-center justify-center text-[#0d0d0d] active:scale-95 transition-transform shrink-0"
+            className="w-9 h-9 rounded-xl bg-[#f2f2f2] flex items-center justify-center text-[#080808] active:scale-95 transition-transform shrink-0"
           >
             <Plus size={16} strokeWidth={2.5} />
           </button>
@@ -129,14 +181,14 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
 
         {/* Régularité protéines */}
         {proteinStreakDays !== undefined && target.protein_g > 0 && (
-          <div className="mt-3 pt-3 border-t border-white/[0.06]">
+          <div className="mt-3 pt-3">
             <div className="flex justify-between text-[10px] mb-1.5">
-              <span className="text-white/40 uppercase tracking-[0.1em] font-bold">Régularité protéines</span>
+              <span className="text-white/40 uppercase tracking-[0.1em] font-bold">{t('nutrition.consistency')}</span>
               <span className="text-white/60 tabular-nums font-bold">{proteinStreakDays}/7j</span>
             </div>
             <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#ffe01e]"
+                className="h-full rounded-full bg-[#f2f2f2]"
                 style={{ width: `${(proteinStreakDays / 7) * 100}%`, transition: 'width 0.6s ease' }}
               />
             </div>

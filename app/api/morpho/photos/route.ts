@@ -91,6 +91,7 @@ export async function GET(req: NextRequest) {
 
   type PhotoRow = {
     id: string
+    client_id: string
     storage_path: string
     source: string
     position: string

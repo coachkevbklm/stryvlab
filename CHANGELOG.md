@@ -3,8 +3,217 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-22
+
+FIX: Replace yellow STRYVR logo references with the gray public logo on client auth pages and email templates
+FIX: Chat input voice transcription now appears inside the textarea and no longer shows the separate "Enregistrement vocal actif" message
+REFACTOR: BottomNav icons — replace custom ChatBubbleIcon SVG + lucide-react Dumbbell with Material Design icons (MdChat + MdFitnessCenter) for consistency with Nutrition (MdRestaurant) and Metrics (MdShowChart)
+REFACTOR: BottomNav + button radius — increase from rounded-2xl (16px) to rounded-[20px] for subtly more rounded corners
+FEATURE: Add weekly training/rest-day overview in Nutrition Studio protocol editor
+SCHEMA: Add `weekday` (0=Sunday..6=Saturday) and `day_type` (`training`|`rest`|`special`) to `nutrition_protocol_days` (migration `20260522_add_daytype_weekday.sql`)
+
+## 2026-05-21
+
+REFACTOR: Splash screen PWA — remove splash1.png background image, solid dark #0d0d0d only
+REFACTOR: Logo animation — 180° rotation with momentum, 1s pause, repeat cycle at 3s duration (was 1.4s ease-in-out simple half-rotation)
+REFACTOR: Reduce splash screen duration from 2200ms to 1200ms (1 second faster loading); sync Capacitor SplashScreen launchShowDuration to 1200ms
+REFACTOR: Update Capacitor StatusBar and Android backgroundColor from #ededed to #0d0d0d (dark theme)
+
+REFACTOR: Reorder client mensurations anatomically; remove redundant shoulder circumference field; align client measurements with coach fields
+
+FEATURE: Add fresh lemon juice (Jus de citron pressé) to food_items database — category: drinks/jus-smoothies
+FIX: BottomNav visual redesign to floating premium pill dock with centered CTA, muted inactive states, and safe-area spacing
+FIX: Client BottomNav now uses a centered fade overlay behind the dock on non-chat pages so content disappears smoothly beneath the bar
+FIX: Nutrition targets now respect training schedule — per-day protocol day selection prefers 'high' carb days when training session exists for that date; affects both badge display and macro targets
+FIX: QuickLogSheet "Repas" — navigue vers /client/nutrition?addMeal=1 pour ouvrir MealLogSheet directement
+FIX: NutritionClientPage — détecte ?addMeal=1 via useSearchParams, auto-ouvre MealLogSheet, nettoie le param après fermeture
+FIX: ClientMeasurementSheet — replace silhouette/ruler UI with direct numeric inputs and persist via /api/client/measurements
+FIX: MesurationsTab — dropdown metric selector replaces body silhouette picker; FAB uses rounded-xl and opens measurement sheet
+
+FEATURE: BottomNav — central FAB + button (50px, bg-[#f2f2f2]) entre Programme et Nutrition
+FEATURE: QuickLogSheet — bottom sheet 3 actions : Eau (QuickWaterModal), Repas (/client/nutrition), Activité (FreeActivitySheet)
+FEATURE: ClientMeasurementSheet — body zones + horizontal ruler picker + save to DB
+FEATURE: BodyMapAnnotated — BodyMap with measurement overlay, dashed connectors, bilan pills
+FEATURE: /api/client/measurements POST — self-reported measurements endpoint
+SCHEMA: client_measurements table (waist/hips/arm/chest + RLS) — apply manually via Supabase Dashboard
+FEATURE: /api/client/body-data — merges client_measurements into measuresByBilan, sorted by date
+FIX: MesurationsTab — BodyMap replaces BodySilhouette; + FAB opens measurement sheet; onRefresh reloads data
+FIX: MetricsClientPage — tab bar segment-control style (matches ProgrammeClientPage)
+
+FEATURE: System prompt v2 — coach identity (user_profiles), full bilan history (limit 10, ascending), active program, tone rules (2-3 phrases max, no generic advice)
+FEATURE: buildDailyBrief — structured day summary after check-in (session, macros, water, 1 LLM coaching sentence)
+FEATURE: chat-morning-brief Inngest cron 06:30 UTC — proactive morning init message per active client with trigger_checkin chip
+FEATURE: chat-evening-brief Inngest cron 21:30 UTC — proactive evening init message per active client with trigger_checkin chip
+FEATURE: ChatPage handles trigger_checkin chip — activates existing check-in flow, marks chip answered
+FIX: Water target reads from nutrition_protocol_days.hydration_ml (was hardcoded 2500ml)
+FIX: Bilan history expanded from 2 to 10 entries — PROGRESSION TOTALE now shows full delta since first bilan
+FIX: MesurationsTab — replace basic BodySilhouette SVG with BodyMap (full anatomical, neutral mode)
+FIX: MetricsClientPage — tab bar now uses segment-control style matching ProgrammeClientPage
+
+FEATURE: Metrics page refactored with 3-tab navigation (Données corporelles / Mensurations / Vitalité)
+FEATURE: MetricCard generic component with expand-inline SVG chart, bilan markers, coach annotations
+FEATURE: BodySilhouette SVG front-view with bilan date navigator and dashed measurement annotation lines
+FEATURE: VitalityTab with aggregated wellness score (0-100) from client_daily_checkins
+FEATURE: /api/client/vitality route — score formula energy×1.5 + sleep×1.5 − stress − soreness×0.5
+FEATURE: /api/client/body-data extended with bodyFatSeries, leanMassSeries, measuresByBilan, annotations
+
+## 2026-05-24
+
+FIX: Select nutrition protocol day by physiological date instead of always using the first protocol day
+FIX: Localize /client/nutrition header date and classify protocol day with explicit carb-cycle / cycle phase badge
+FIX: ChatInputBar voice icon now records speech directly into the chat input field instead of opening the nutrition voice sheet
+
+FEATURE: Macro color system — copper(#8c5230)=protéines, gold(#9a8038)=glucides, petrol(#2d7a62)=lipides, steel(#4d8090)=eau
+FEATURE: Arc gradient copper→gold→petrol sur jauge calories (SmartNutritionWidget, SmartNutritionHero, NutritionWidget)
+REFACTOR: NutritionWidget, SmartNutritionWidget, SmartNutritionHero — carb var(--data-gold), fat var(--data-petrol), water var(--data-steel)
+REFACTOR: MacroWeekGrid, NutritionMealsList, NutritionLogContent — même mapping macro couleurs
+CHORE: globals.css + tailwind.config.ts — data token values mis à jour (copper/gold/petrol/steel)
+CHORE: ui-design-system.md — section DS v4.0 Data Colors ajoutée avec règles macro + arc gradient
+
+## 2026-05-23
+
+FIX: VoiceLogSheet — stopRecording lit accRef.current dans recognition.onend (non plus en sync) pour capturer les résultats finals ASR sur enregistrements courts
+FIX: VoiceLogSheet logMeal — food_item_id lu via c.data?.id (API retourne { data } pas { id directement }) — élimine erreur "Impossible d'analyser le repas"
+FIX: VoiceLogSheet — reset logging=false au re-open pour éviter le bouton log bloqué si fermeture pendant logMeal
+
+## 2026-05-22
+
+FEATURE: Add 3-tab navigation to /client/nutrition (Aujourd'hui / Tendances / Protocole)
+FIX: setRecommendation — restore rir_hold veto in Path A, scope failure_recovery to belowZone only, remove 0.25kg increment floor
+FIX: Volume hebdomadaire — client_set_logs ne possède pas completed_at (colonne session-level uniquement) → suppression du champ du select nested, volume coverage affiche désormais les vraies valeurs
+FIX: Perf sessions query — reps_actual inexistant → actual_reps, completed_at sur sets → completed (boolean)
+
+## 2026-05-21
+
+FEATURE: Chat SP2 — interactive check-in flows (chips, sliders, number input) morning/evening with smart time detection
+FEATURE: Chat SP2 — ChatBubble supports interactive message types (chips, slider, number) via metadata JSONB
+FEATURE: Chat SP2 — POST /api/client/checkin saves check-in data to client_daily_checkins + LLM closing message
+FEATURE: Chat SP2 — buildSystemPrompt enriched with 3-day nutrition trends and daily check-in context
+FIX: buildSystemPrompt — correct nutrition_meals columns (total_calories/total_protein_g/total_fat_g/total_carbs_g) + include meal_logs legacy source
+SCHEMA: Add client_daily_checkins table (sleep, energy, stress, weight, hunger, muscle_soreness) with RLS
+
+## 2026-05-22
+
+FIX: NutritionMealsList — cartes collapsées par défaut (était expanded par défaut)
+FIX: MealTypeChooser — stopPropagation sur bouton + overlay pour éviter toggle de la carte; retrait overflow-hidden sur racine MealCard pour que le dropdown ne soit pas tronqué
+FIX: NutritionLogContent standalone — paddingTop déplacé du parent vers la motion.div (absolute inset-0 ignorait le paddingTop du parent, contenu masqué sous la TopBar fixe)
+FIX: ChatBubble — coach avatar shows real photo (logo_url from coach_profiles) with first-letter initial fallback instead of hardcoded "S"
+FIX: ChatConversation — typing indicator uses coach avatar/initial (consistent with message bubbles)
+FIX: ChatPage — empty state coach avatar uses dynamic initial fallback
+
+FEATURE: Nutrition — heure et nom personnalisé sur création repas (NutritionLogContent footer + VoiceLogSheet review layer)
+FEATURE: NutritionMealsList — édition inline heure repas existant (tap heure → input[type=time] → PATCH)
+FEATURE: POST /api/client/nutrition/meals — champ title accepté
+FEATURE: PATCH /api/client/nutrition/meals/[id] — logged_at accepté, physiological_date recomputé
+FIX: TempoGuideModal — ECC phase → vivid gold #d4920f (was gray #e0e0e0); background gradient 18→55 opacity, ellipse 70%x40%→90%x65% for striking phase immersion; diamond colors CON_COLOR/ECC_COLOR
+FIX: BodyMap — muscle colors migrated from yellow rgba(255,224,30) to copper rgba(157,112,82) with opacity tiers (primary 0.90, secondary 0.42, stabilizer 0.16)
+FIX: SetRow — completed set border/bg migrated from yellow to copper (rgba(157,112,82,0.07/0.24))
+FIX: ExerciseBlock — active set glow migrated from yellow to copper ring (rgba(157,112,82,0.28))
+FIX: TdeeChart — band fill + dot fills migrated from yellow to copper
+FIX: PrepTimeModal — all #FFB800 accents replaced with copper #9d7052, CTA → DS v4.0 bg-[#f2f2f2]
+FIX: ProgrammeClientPage/login/onboarding/ClientRestrictionsSection/OnboardingTour/PreferencesForm/ProfileForm — hover:bg-[#ffd000] → hover:bg-[#e8e8e8]
+FIX: NutritionMealsList — MC constant old hex → data-copper/petrol/steel
+FIX: MacroWeekGrid (Régularité 7j) — carb data-gold→data-petrol, fat data-gold→data-steel
+REFACTOR: G/Glucides redéfini globalement data-petrol (#3d7070) — NutritionWidget/SmartNutritionWidget/SmartNutritionHero/NutritionLogContent; kcal arc libéré → data-gold
+FIX: NutritionLogContent — cartes catégories/subcatégories/items/inputs (#111111 sur #111111) → bg-[#1a1a1a] pour profondeur visuelle
+FIX: NutritionLogContent — macros P/G/L → data-copper/petrol/steel (mini-bars, macro card, footer)
+FIX: NutritionWidget — lipides utilisait data-gold comme glucides, remplacé par data-steel (#607a80)
+FEATURE: VoiceLogSheet — ajout item manuel déclenche AI lookup (voice-parse) sur name blur pour auto-remplir les nutriments
+REFACTOR: SmartNutritionWidget + SmartNutritionHero — couleurs macros migrées de hex vivants vers data-copper/gold/steel, eau → data-petrol
+REFACTOR: VoiceLogSheet — badges confiance migrés vers data-petrol/gold (suppression #22c55e/#f59e0b)
+CHORE: globals.css + tailwind.config.ts — ajout token --data-steel: #607a80
+
+## 2026-05-21
+
+REFACTOR: Client PWA — Design System v4.0 dark gray minimal (DS v4.0) — 60+ fichiers
+REFACTOR: Suppression totale #ffe01e (accent jaune) de toute l'app client
+REFACTOR: Suppression totale border-white/_ dans composants client (zéro bordures)
+REFACTOR: Gray scale #080808→#f2f2f2 comme unique système couleur UI /client
+REFACTOR: Boutons primary → bg-[#f2f2f2] text-[#080808] (monochrome max contraste)
+REFACTOR: Nav active → text-[#f2f2f2], inactive → text-[#5a5a5a]
+REFACTOR: Chat — user bubbles bg-[#f2f2f2] text-[#080808], bot bg-[#111111]
+REFACTOR: Nutrition charts — data colors var(--data-copper/gold/petrol) uniquement
+REFACTOR: TempoGuideModal — accent #FFB800 → #e0e0e0, phases PHASE_CONFIG neutres
+REFACTOR: AdherenceScoreCard — thèmes recalibrés sur gray scale
+CHORE: globals.css — ajout tokens --c-_ (gray scale) + --data-copper/gold/petrol
+CHORE: tailwind.config.ts — gray scale + data colors ajoutés
+CHORE: manifest.json + viewport themeColor → #080808
+
+## 2026-05-22
+
+FIX: MetricsPage — fetch and display client profile_photo_url in hero avatar
+FIX: MetricsPage — settings gear button now navigates to /client/profil (full page with all settings) instead of empty bottom sheet
+FIX: app/client/page.tsx — fetch coach_profiles.logo_url from coach_id and pass as coachAvatarUrl to ChatPage
+REFACTOR: MetricsPage — remove unused settings bottom sheet, supabase client, settingsOpen state
+FEATURE: MetricsPage — add "DONNÉES CORPORELLES" section label above body data
+
+FIX: buildSystemPrompt — expand LLM scope to body composition, phases, periodization (removed hardcoded out-of-scope reply)
+FIX: buildSystemPrompt — inject latest body comp data (weight, BF%, LBM, weight delta vs prev bilan) into system prompt
+
+## 2026-05-21
+
+FIX: ChatPage — fixed layout, input bar anchored to bottom (was at top due to h-full in pb-24 shell)
+FIX: ChatPage — empty state with personalized greeting, STRYVR avatar, quick suggestion chips
+FIX: ChatTodayStrip — water query uses gte/lte logged_at instead of .eq('date') — was always 0L
+FIX: ChatTodayStrip — check-in pill sends check-in message to chat, water pill opens QuickWaterModal
+FIX: ChatTodayStrip — calories + water mini progress bars inline
+FIX: MetricsPage — remove streak_days column (doesn't exist), fetch current_streak from client_streaks
+FIX: client/page.tsx — pass clientFirstName for personalized greeting in ChatPage empty state
+FIX: /api/client/body-data — fix broken destructuring of Promise.all (include checkins result); prevents 500 and restores metrics payload
+
+## 2026-05-21
+
+CHORE: food_items — refonte catégories : migration 20260521 (CHECK + reclassifications), category `drinks` séparée, parmesan/mozzarella → proteins/laitiers, miel/confiture → extras/sucres, frites/purée/gnocchis → carbs/fecules, snacks salés/sucrés + boissons restructurés, labels nettoyés (suppression fast-food)
+CHORE: seed-food-items — 171 items total, +ajouts (coupes bœuf, poissons frais, fromages, beurre de baratte, couscous, riz basmati, snacks), zéro doublon
+
 ## 2026-05-20
 
+FEATURE: Chat-first client app SP1 — conversational home page replaces Smart Agenda
+FEATURE: /client now renders ChatPage with today-strip, conversation, voice input
+FEATURE: /client/metrics — new body metrics page replacing /client/profil
+REFACTOR: BottomNav 4 tabs (Chat/Programme/Nutrition/Métriques) — radial FAB removed
+SCHEMA: Add chat_messages table — 3-day rolling window, archived_at archiving
+SCHEMA: Add chat_sessions table — morning/evening/freeform flow tracking
+FEATURE: API GET /api/client/chat/messages — active messages (archived_at IS NULL)
+FEATURE: API POST /api/client/chat/messages — send + LLM response + save both
+FEATURE: API GET /api/client/chat/archives — messages by date
+FEATURE: API GET /api/client/chat/today-strip — sessions, calories, water, checkin status
+FEATURE: Inngest cron chat-archive — archives messages older than 3 days at 03:00 UTC
+REFACTOR: Remove CoachAIButton, CoachAIChatSheet — replaced by dedicated ChatPage
+FIX: VoiceLogSheet — add onTranscriptOnly prop for chat voice input without meal logging
+FIX: ClientTopBar — remove CoachAIButton reference
+FIX: NotificationsBar — update /client/profil links to /client/metrics
+
+## 2026-05-21
+
+CHORE: seed-food-items — +47 aliments : coupes bœuf (entrecôte, faux-filet, bavette, côte, rôti), charcuterie (jambon blanc/sec, lardons), viandes (veau, canard, foie), poissons frais (truite, bar, dorade, tilapia, sole, lieu noir, moules, saumon fumé, thon frais), conserves (thon huile, maquereau tomate, anchois), beurres (baratte, demi-sel, ghee, cacahuète), fromages (emmental, comté, gruyère, camembert, brie, cheddar), glucides (couscous, riz basmati/jasmin, pâtes fraîches, galettes riz, muesli), laits végétaux
+FEATURE: i18n ES/EN — traduction complète app client PWA (+~150 nouvelles clés dans clientTranslations.ts)
+FEATURE: i18n — TempoGuideModal phases (contraction/maintien/descente/pause), tap-resume, PRÊT/READY/LISTO
+FEATURE: i18n — SessionLogger coaching cues, PR flash, erreurs réseau, compteur séries, UI repos
+FEATURE: i18n — ProgrammeClientPage tabs (Séance/Performances/Historique), streak, périodes heatmap, KPIs
+FEATURE: i18n — CoachAIChatSheet greeting, suggestions rapides, erreurs, placeholder, compteur messages
+FEATURE: i18n — SmartWorkoutWidget, SetTypeSelector (types séries), SetRow (valider), ExerciseBlock (résumé)
+FEATURE: i18n — NutritionWidget toggle Consommé/Restant + SmartNutritionWidget régularité protéines
+FEATURE: i18n — FreeActivitySheet (titres, labels), DayChecklist (items), QuickWaterModal (loguer eau)
+FEATURE: i18n — ClientRestrictionsSection zones anatomiques + sévérités + form complet
+FEATURE: i18n — SmartAlertsFeed (voir plus/réduire), DeloadAlertBanner, AdherenceScoreCard labels
+FEATURE: i18n — PortionScalingForm instructions de mesure main
+FEATURE: i18n — pages erreur accès (suspendu, expiré, invalide) converties en Client Components i18n
+
+## 2026-05-20
+
+FIX: VoiceLogSheet — quantité éditable via draft local + commit onBlur, macros calculées depuis bases par gramme (plus de reset à zéro en cours de frappe)
+FIX: voice-parse prompt — règle absolue nom transcript verbatim, catalogHint isolé à résolution ID uniquement (évite substitution par aliments du catalogue), temperature 0.1, préfixe "Transcript vocal :"
+FIX: VoiceLogSheet — setModeSync("recording") déplacé dans startRecording (après le guard) — évite que le guard modeRef==="recording" court-circuite startRecording avant le démarrage
+FIX: CheckinModal — handle 409 "already responded" as success, show error message on failed submit
+FIX: DayChecklist hydratation item — ouvre QuickWaterModal au lieu de naviguer vers /client/nutrition
+FIX: CoachAIButton — déplacé de div fixed global vers ClientTopBar right slot (évite superposition avec photo profil, badges, etc.)
+FIX: CoachAIChatSheet — height 88vh fixe (au lieu de maxHeight) pour éviter le tronquage
+FIX: Remove duplicate mic button from NutritionLogContent embedded sub-header (MealLogSheet already has one in its header)
+
+## 2026-05-20
+
+FIX: SetRow ConfirmModal CTA — h-14 (56px), text-[15px], tracking-[0.14em], safe-area-inset-bottom padding
 FEATURE: Add Coach IA Chat — GPT-4o mini daily contextual chat in client PWA, 20 msg/day rate limit, zero message persistence
 SCHEMA: Add ai_coach_daily_usage table for Coach IA daily rate limiting (client_id, date, message_count PK)
 
@@ -52,7 +261,7 @@ REFACTOR: VoiceEntryFab — FAB cluster jaune : bouton + (jaune plein, ouvre Mea
 REFACTOR: AdherenceScoreCard — labels complets (Nutrition, Hydratation, Check-ins), font 7px pour tenir en 4 colonnes
 REFACTOR: ClientTopBar — full jaune (#ffe01e), texte #0d0d0d, suppression bande accent
 REFACTOR: BottomNav — onglet actif = icône+label jaune uniquement (suppression bande top + fond), action buttons rounded-2xl
-FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/*
+FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/\*
 REFACTOR: ClientHomeShell — wrapper client pour DayChecklist + CheckinModal + router.refresh() sur succès
 REFACTOR: BottomNav — action checkin ouvre CheckinModal (morning/evening selon heure)
 

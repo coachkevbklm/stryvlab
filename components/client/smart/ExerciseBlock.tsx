@@ -8,6 +8,7 @@ import SetRow, { type SetRowData, type SetType } from './SetRow'
 import SetTypeSelector from './SetTypeSelector'
 import ExerciseContextMenu from './ExerciseContextMenu'
 import type { SetRecommendation } from '@/lib/training/setRecommendation'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export interface ExerciseBlockExercise {
   id: string
@@ -64,6 +65,7 @@ export default function ExerciseBlock({
   onDeleteExercise,
   onOpenProgression,
 }: ExerciseBlockProps) {
+  const { t } = useClientT()
   const [menuOpen, setMenuOpen] = useState(false)
   const [typeSelectorFor, setTypeSelectorFor] = useState<{ setNum: number; side: string } | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -111,7 +113,7 @@ export default function ExerciseBlock({
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-bold text-white leading-tight truncate">{exercise.name}</p>
           <p className="text-[11px] text-white/40 mt-0.5">
-            {exercise.sets} séries · {exercise.reps} reps{effectiveRir !== null ? ` · RIR ${effectiveRir}` : ''}
+            {effectiveRir !== null ? t('logger.ex.sets.reps.rir', { sets: String(exercise.sets), reps: String(exercise.reps), rir: String(effectiveRir) }) : t('logger.ex.sets.reps', { sets: String(exercise.sets), reps: String(exercise.reps) })}
           </p>
         </div>
         <button
@@ -124,7 +126,7 @@ export default function ExerciseBlock({
 
       {/* Column headers */}
       <div className="flex items-center gap-2 px-3 pb-1">
-        <span className="shrink-0 min-w-[28px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Série</span>
+        <span className="shrink-0 min-w-[28px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">{t('logger.set')}</span>
         <span className="shrink-0 w-[46px] text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Repos</span>
         <span className="flex-1 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">Reps</span>
         <span className="flex-1 text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/25 text-center">kg</span>
@@ -147,7 +149,7 @@ export default function ExerciseBlock({
             <div
               key={key}
               ref={isActive ? activeSetRef : undefined}
-              style={isActive ? { borderRadius: '12px', boxShadow: '0 0 0 1px rgba(255,224,30,0.2)' } : undefined}
+              style={isActive ? { borderRadius: '12px', boxShadow: '0 0 0 1px rgba(157,112,82,0.28)' } : undefined}
             >
               <SetRow
                 set={s}
@@ -257,7 +259,7 @@ export default function ExerciseBlock({
   }
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] overflow-hidden">
+    <div className="bg-[#111111] rounded-2xl overflow-hidden">
       {inner}
     </div>
   )

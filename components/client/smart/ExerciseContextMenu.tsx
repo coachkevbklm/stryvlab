@@ -39,7 +39,7 @@ export default function ExerciseContextMenu({
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-[#161616] rounded-t-2xl border-t border-white/[0.08] pb-8"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-[#111111] rounded-t-2xl pb-8"
             initial={{ y: '100%' }}
             animate={{ y: 0, transition: { type: 'spring', stiffness: 350, damping: 30 } }}
             exit={{ y: '100%', transition: { duration: 0.18, ease: 'easeIn' } }}

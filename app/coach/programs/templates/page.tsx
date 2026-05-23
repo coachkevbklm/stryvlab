@@ -340,7 +340,7 @@ export default function ProgramTemplatesPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-[#181818] border-subtle rounded-2xl p-16 text-center">
-            <Dumbbell size={40} className="text-white/30 mx-auto mb-4" />
+            <Weight size={40} className="text-white/30 mx-auto mb-4" />
             <p className="text-sm text-white/70 mb-2">
               {templates.length === 0
                 ? "Aucun template créé."
@@ -420,7 +420,7 @@ export default function ProgramTemplatesPage() {
                         {t.weeks} sem.
                       </span>
                       <span className="flex items-center gap-1">
-                        <Dumbbell size={11} />
+                        <Weight size={11} />
                         {sessionCount} séances
                       </span>
                       {totalSets > 0 && (

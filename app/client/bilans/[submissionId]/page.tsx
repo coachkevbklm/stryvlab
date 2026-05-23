@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { resolveClientFromUser } from "@/lib/client/resolve-client";
 import ClientTopBar from "@/components/client/ClientTopBar";
 import { CheckCircle2, Clock } from "lucide-react";
+import FeedbackThread from "@/components/client/smart/FeedbackThread";
 
 export default async function BilanDetailPage({
   params,
@@ -51,7 +52,7 @@ export default async function BilanDetailPage({
   });
 
   const statusBadge = submissionData.status === "completed" ? (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#1f8a65]/15 text-[#1f8a65]">
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#f2f2f2]/15 text-[#f2f2f2]">
       <CheckCircle2 size={11} />
       Complété
     </span>
@@ -67,7 +68,7 @@ export default async function BilanDetailPage({
   );
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans">
+    <div className="min-h-screen bg-[#080808] font-sans">
       <ClientTopBar
         section="Bilans"
         title={templateName}
@@ -92,7 +93,7 @@ export default async function BilanDetailPage({
             return (
               <div
                 key={block.id}
-                className="bg-white/[0.02] rounded-xl border-[0.3px] border-white/[0.06] overflow-hidden"
+                className="bg-white/[0.02] rounded-xl overflow-hidden"
               >
                 <div className="px-4 py-3 border-b-[0.3px] border-white/[0.06]">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
@@ -129,6 +130,11 @@ export default async function BilanDetailPage({
             <p className="text-[13px] text-white/30">Aucune réponse enregistrée.</p>
           </div>
         )}
+
+        {/* Coach feedback thread */}
+        <div className="px-4 pb-6">
+          <FeedbackThread entityType="bilan" entityId={params.submissionId} />
+        </div>
       </main>
     </div>
   );

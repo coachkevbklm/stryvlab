@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import BodyMap from '../BodyMap'
 import type { MuscleGroup } from '@/lib/client/muscleDetection'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export type SmartWorkoutWidgetProps = {
   state: 'scheduled' | 'rest' | 'no_program'
@@ -20,23 +21,23 @@ export type SmartWorkoutWidgetProps = {
 }
 
 export default function SmartWorkoutWidget({ state, session }: SmartWorkoutWidgetProps) {
+  const { t } = useClientT()
   if (state === 'rest') {
     return (
-      <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-5">
-        <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30 mb-2">Séance du jour</div>
-        <p className="text-[14px] font-semibold text-white/50">Repos 💤</p>
-        <p className="text-[11px] text-white/30 mt-1">Profite de la récupération</p>
-        <Link href="/client" className="inline-block mt-3 text-[10px] text-[#ffe01e] uppercase tracking-[0.1em] font-bold">+ Activité →</Link>
+      <div className="bg-[#111111] rounded-2xl p-5">
+        <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30 mb-2">{t('smart.workout.session')}</div>
+        <p className="text-[14px] font-semibold text-white/50">{t('smart.workout.rest')} 💤</p>
+        <p className="text-[11px] text-white/30 mt-1">{t('smart.workout.rest.enjoy')}</p>
+        <Link href="/client" className="inline-block mt-3 text-[10px] text-[#f2f2f2] uppercase tracking-[0.1em] font-bold">{t('smart.workout.addActivity')}</Link>
       </div>
     )
   }
 
   if (state === 'no_program' || !session) {
     return (
-      <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-5">
-        <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30 mb-2">Séance du jour</div>
-        <p className="text-[14px] font-semibold text-white/50">Pas de programme.</p>
-        <p className="text-[11px] text-white/30 mt-1">Contacte ton coach.</p>
+      <div className="bg-[#111111] rounded-2xl p-5">
+        <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30 mb-2">{t('smart.workout.session')}</div>
+        <p className="text-[14px] font-semibold text-white/50">{t('smart.workout.noProgram')}</p>
       </div>
     )
   }
@@ -44,10 +45,10 @@ export default function SmartWorkoutWidget({ state, session }: SmartWorkoutWidge
   return (
     <Link
       href="/client/programme"
-      className="block bg-[#161616] rounded-2xl border border-white/[0.08] p-5 active:scale-[0.99] transition-transform"
+      className="block bg-[#111111] rounded-2xl p-5 active:scale-[0.99] transition-transform"
     >
       <div className="flex items-baseline justify-between mb-3">
-        <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30">Séance du jour</span>
+        <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/30">{t('smart.workout.session')}</span>
         <ChevronRight size={14} className="text-white/30" />
       </div>
 
@@ -57,12 +58,12 @@ export default function SmartWorkoutWidget({ state, session }: SmartWorkoutWidge
           <div className="text-[11px] text-white/40 mt-1">{session.exerciseCount} ex · ~{session.estimatedMinutes}min</div>
           <div className="flex flex-wrap gap-1 mt-2">
             {session.musclePills.slice(0, 3).map(p => (
-              <span key={p} className="bg-[#ffe01e]/10 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{p}</span>
+              <span key={p} className="bg-[#f2f2f2]/10 text-[#f2f2f2] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{p}</span>
             ))}
           </div>
-          <div className="mt-3 flex items-center justify-between w-full h-9 rounded-xl bg-[#ffe01e]/10 border border-[#ffe01e]/20 px-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#ffe01e]">Démarrer</span>
-            <ChevronRight size={13} className="text-[#ffe01e]" />
+          <div className="mt-3 flex items-center justify-between w-full h-9 rounded-xl bg-[#1a1a1a] px-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f2f2f2]">{t('smart.workout.start')}</span>
+            <ChevronRight size={13} className="text-[#f2f2f2]" />
           </div>
         </div>
         <div className="w-20 shrink-0 flex items-center justify-center">

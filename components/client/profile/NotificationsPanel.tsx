@@ -125,7 +125,7 @@ export default function NotificationsPanel({ notifications: initial, preferences
       )}
 
       {/* Notification preferences */}
-      <div className="border-t border-white/40 pt-4">
+      <div className="pt-4">
         <p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-3">
           {t('notif.prefsTitle')}
           {savingPrefs && <Loader2 size={10} className="inline ml-1.5 animate-spin" />}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface Props {
   calories: number
@@ -14,12 +15,12 @@ interface Props {
 }
 
 const COLORS = {
-  cal:  '#3b82f6',
-  prot: '#e85d04',
-  carb: '#2d9a4e',
-  fat:  '#d4a017',
-  over: '#ffe01e',
-  track: 'rgba(255,255,255,0.07)',
+  cal:  'var(--data-gold)',
+  prot: 'var(--data-copper)',
+  carb: 'var(--data-gold)',
+  fat:  'var(--data-petrol)',
+  over: 'var(--data-copper)',
+  track: 'rgba(255,255,255,0.05)',
 }
 
 // ── SVG arc 270° ─────────────────────────────────────────────
@@ -80,6 +81,7 @@ function MacroRow({
 
 // ── Mode sans cible : résumé compact ─────────────────────────
 function NoTargetSummary({ calories, protein, carbs, fat }: { calories: number; protein: number; carbs: number; fat: number }) {
+  const { t } = useClientT()
   const pK = protein * 4, gK = carbs * 4, fK = fat * 9
   const total = pK + gK + fK || 1
 
@@ -103,13 +105,13 @@ function NoTargetSummary({ calories, protein, carbs, fat }: { calories: number; 
       {/* 3 valeurs macro */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'Protéines', value: protein, color: COLORS.prot },
-          { label: 'Glucides',  value: carbs,   color: COLORS.carb },
-          { label: 'Lipides',   value: fat,      color: COLORS.fat },
+          { label: t('smart.nutrition.protein'), value: protein, color: COLORS.prot },
+          { label: t('smart.nutrition.carbs'),  value: carbs,   color: COLORS.carb },
+          { label: t('smart.nutrition.fat'),    value: fat,      color: COLORS.fat },
         ].map(({ label, value, color }) => (
           <div key={label} className="flex flex-col items-center py-2 bg-white/[0.03] rounded-xl">
             <span className="text-[16px] font-black text-white leading-none">{Math.round(value)}g</span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] mt-1" style={{ color }}>{label.slice(0, 4)}</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.12em] mt-1" style={{ color }}>{label}</span>
           </div>
         ))}
       </div>
@@ -122,6 +124,7 @@ export default function NutritionWidget({
   calories, protein, carbs, fat,
   targetCal = 0, targetProt = 0, targetCarb = 0, targetFat = 0,
 }: Props) {
+  const { t } = useClientT()
   const [showRemaining, setShowRemaining] = useState(false)
 
   // Sans cible : mode compact
@@ -154,6 +157,13 @@ export default function NutritionWidget({
           height={svgH}
           viewBox={`0 ${(size - svgH) / 2} ${size} ${svgH}`}
         >
+          <defs>
+            <linearGradient id="arcGrad270" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+              <stop offset="0%"   stopColor="var(--data-copper)" />
+              <stop offset="50%"  stopColor="var(--data-gold)" />
+              <stop offset="100%" stopColor="var(--data-petrol)" />
+            </linearGradient>
+          </defs>
           {/* Track */}
           <path
             d={makeArcPath(cx, cy, R, 1)}
@@ -168,9 +178,8 @@ export default function NutritionWidget({
               d={makeArcPath(cx, cy, R, Math.min(calPct, 1))}
               fill="none"
               strokeWidth={SW}
-              stroke={arcFill}
+              stroke={calOver ? COLORS.over : 'url(#arcGrad270)'}
               strokeLinecap="round"
-              style={undefined}
             />
           )}
         </svg>
@@ -184,7 +193,7 @@ export default function NutritionWidget({
             {centerValue}
           </p>
           <p className="text-[10px] text-white/30 uppercase tracking-[0.14em] mt-1.5">
-            {showRemaining ? `restant / ${targetCal}` : `/ ${targetCal} kcal`}
+            {showRemaining ? t('nutrition.remaining.info', { target: String(targetCal) }) : `/ ${targetCal} kcal`}
           </p>
 
           {/* Flancs */}
@@ -192,11 +201,11 @@ export default function NutritionWidget({
             <div className="flex w-full px-2 justify-between mt-4 absolute" style={{ bottom: size * 0.12 }}>
               <div className="text-center">
                 <p className="text-[16px] font-black text-white/50 leading-none">{remaining}</p>
-                <p className="text-[8px] text-white/25 uppercase tracking-[0.12em] mt-0.5">Restant</p>
+                <p className="text-[8px] text-white/25 uppercase tracking-[0.12em] mt-0.5">{t('nutrition.remaining.tab')}</p>
               </div>
               <div className="text-center">
                 <p className="text-[16px] font-black text-white/30 leading-none">{targetCal}</p>
-                <p className="text-[8px] text-white/20 uppercase tracking-[0.12em] mt-0.5">Cible</p>
+                <p className="text-[8px] text-white/20 uppercase tracking-[0.12em] mt-0.5">{t('nutrition.target.label')}</p>
               </div>
             </div>
           )}
@@ -205,17 +214,17 @@ export default function NutritionWidget({
 
       {/* ── Toggle Consommé / Restant ── */}
       <div className="flex mx-auto w-fit bg-white/[0.06] rounded-full p-[3px] mb-5">
-        {(['Consommé', 'Restant'] as const).map((label) => {
-          const active = (label === 'Restant') === showRemaining
+        {([false, true] as const).map((isRemaining) => {
+          const active = isRemaining === showRemaining
           return (
             <button
-              key={label}
-              onClick={() => setShowRemaining(label === 'Restant')}
+              key={String(isRemaining)}
+              onClick={() => setShowRemaining(isRemaining)}
               className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-all ${
                 active ? 'bg-white text-black' : 'text-white/40'
               }`}
             >
-              {label}
+              {isRemaining ? t('nutrition.remaining.tab') : t('nutrition.consumed')}
             </button>
           )
         })}

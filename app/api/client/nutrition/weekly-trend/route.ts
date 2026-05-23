@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
 
 function svc() {
   return createServiceClient(
@@ -37,14 +38,21 @@ export async function GET(_req: NextRequest) {
 
   const { data: meals } = await svc()
     .from('nutrition_meals')
-    .select('physiological_date, calories')
+    .select('physiological_date, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
     .eq('client_id', cc.id)
     .in('physiological_date', days)
 
   const totals: Record<string, number> = {}
   for (const d of days) totals[d] = 0
   for (const m of meals ?? []) {
-    totals[m.physiological_date] = (totals[m.physiological_date] ?? 0) + Number(m.calories ?? 0)
+    totals[m.physiological_date] =
+      (totals[m.physiological_date] ?? 0) +
+      computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+        fiber_g: Number(m.total_fiber_g ?? 0),
+      })
   }
 
   const trend = days.map(d => ({ date: d, consumed: totals[d], target }))

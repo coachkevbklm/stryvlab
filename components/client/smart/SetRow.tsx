@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, Trash2, X } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export type SetType = 'warmup' | 'working' | 'cooldown' | 'dropset'
 
@@ -58,6 +59,55 @@ function formatRestDisplay(sec: number | null): string {
   return `${m}:${s}`
 }
 
+// ── Stepper component ─────────────────────────────────────────────────────────
+
+interface StepperProps {
+  label: string
+  value: string
+  onDecrement: () => void
+  onIncrement: () => void
+  onChange: (v: string) => void
+  inputMode?: 'numeric' | 'decimal'
+  unit?: string
+}
+
+function Stepper({ label, value, onDecrement, onIncrement, onChange, inputMode = 'numeric', unit }: StepperProps) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-white/30">
+        {label}
+      </p>
+      <div className="flex items-center gap-2 w-full">
+        <button
+          onPointerDown={e => e.preventDefault()}
+          onClick={onDecrement}
+          className="h-12 w-12 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[22px] font-bold active:bg-white/[0.12] active:scale-95 transition-all shrink-0"
+        >
+          −
+        </button>
+        <div className="flex-1 flex flex-col items-center">
+          <input
+            type="text"
+            inputMode={inputMode}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onFocus={e => e.target.select()}
+            className="w-full bg-white/[0.04] rounded-xl text-[26px] font-black text-white text-center outline-none h-12"
+          />
+          {unit && <span className="text-[9px] text-white/25 mt-1 uppercase tracking-wide">{unit}</span>}
+        </div>
+        <button
+          onPointerDown={e => e.preventDefault()}
+          onClick={onIncrement}
+          className="h-12 w-12 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[22px] font-bold active:bg-white/[0.12] active:scale-95 transition-all shrink-0"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Confirmation modal ────────────────────────────────────────────────────────
 
 interface ConfirmModalProps {
@@ -67,14 +117,30 @@ interface ConfirmModalProps {
   setNumber: number
   side: 'left' | 'right' | 'bilateral'
   targetRir?: number | null
+  restSec: number | null
   onConfirm: (reps: string, weight: string, rir: string) => void
   onClose: () => void
 }
 
-function ConfirmModal({ initialReps, initialWeight, initialRir, setNumber, side, targetRir, onConfirm, onClose }: ConfirmModalProps) {
+function ConfirmModal({
+  initialReps,
+  initialWeight,
+  initialRir,
+  setNumber,
+  side,
+  targetRir,
+  restSec,
+  onConfirm,
+  onClose,
+}: ConfirmModalProps) {
+  const { t } = useClientT()
   const [reps, setReps] = useState(initialReps)
   const [weight, setWeight] = useState(initialWeight)
-  const [rir, setRir] = useState(initialRir !== '' ? initialRir : targetRir !== null && targetRir !== undefined ? String(targetRir) : '')
+  const [rir, setRir] = useState(
+    initialRir !== '' ? initialRir
+    : targetRir !== null && targetRir !== undefined ? String(targetRir)
+    : '0'
+  )
 
   const sideLabel = side === 'left' ? 'G' : side === 'right' ? 'D' : null
 
@@ -91,98 +157,74 @@ function ConfirmModal({ initialReps, initialWeight, initialRir, setNumber, side,
         onClick={onClose}
       />
       <motion.div
-        className="fixed bottom-0 left-0 right-0 z-[80] bg-[#161616] rounded-t-2xl border-t border-white/[0.08] p-5 pb-8"
+        className="fixed bottom-0 left-0 right-0 z-[80] bg-[#111111] rounded-t-2xl px-5 pt-4"
+        style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 24px))' }}
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.18, ease: 'easeIn' } }}
       >
+        {/* Handle */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.12]" />
 
+        {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <p className="text-[13px] font-bold text-white">
-            {sideLabel ? `${sideLabel} · ` : ''}SET {setNumber}
-          </p>
-          <button onClick={onClose} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40">
-            <X size={13} />
+          <div>
+            <p className="text-[15px] font-black text-white tracking-tight">
+              {sideLabel ? `${sideLabel} · ` : ''}SET {setNumber}
+            </p>
+            {restSec !== null && (
+              <p className="text-[11px] text-white/30 mt-0.5">{formatRestDisplay(restSec)} repos</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 active:bg-white/[0.10]"
+          >
+            <X size={14} />
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          {/* Reps */}
-          <div>
-            <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-white/30 mb-2 text-center">Reps</p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setReps(r => String(Math.max(1, parseInt(r || '0', 10) - 1)))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >−</button>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={reps}
-                onChange={e => setReps(e.target.value)}
-                className="flex-1 min-w-0 bg-white/[0.04] rounded-xl text-[20px] font-black text-white text-center outline-none h-10 border border-white/[0.08]"
-              />
-              <button
-                onClick={() => setReps(r => String(parseInt(r || '0', 10) + 1))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >+</button>
-            </div>
-          </div>
-
-          {/* Weight */}
-          <div>
-            <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-white/30 mb-2 text-center">kg</p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setWeight(w => String(Math.max(0, parseFloat(w || '0') - 2.5)))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >−</button>
-              <input
-                type="number"
-                inputMode="decimal"
-                step={0.25}
-                value={weight}
-                onChange={e => setWeight(e.target.value)}
-                className="flex-1 min-w-0 bg-white/[0.04] rounded-xl text-[20px] font-black text-white text-center outline-none h-10 border border-white/[0.08]"
-              />
-              <button
-                onClick={() => setWeight(w => String(parseFloat(w || '0') + 2.5))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >+</button>
-            </div>
-          </div>
-
-          {/* RIR */}
-          <div>
-            <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-white/30 mb-2 text-center">
-              RIR{targetRir !== null && targetRir !== undefined ? ` (cible ${targetRir})` : ''}
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setRir(r => String(Math.max(0, parseInt(r || '0', 10) - 1)))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >−</button>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={rir}
-                onChange={e => setRir(e.target.value)}
-                className="flex-1 min-w-0 bg-white/[0.04] rounded-xl text-[20px] font-black text-white text-center outline-none h-10 border border-white/[0.08]"
-              />
-              <button
-                onClick={() => setRir(r => String(parseInt(r || '0', 10) + 1))}
-                className="h-10 w-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-white text-[18px] font-bold active:bg-white/[0.10]"
-              >+</button>
-            </div>
-          </div>
+        {/* Steppers — stacked vertically for full width */}
+        <div className="flex flex-col gap-5 mb-6">
+          <Stepper
+            label={t('logger.reps.input')}
+            value={reps}
+            inputMode="numeric"
+            onDecrement={() => setReps(r => String(Math.max(1, parseInt(r || '0', 10) - 1)))}
+            onIncrement={() => setReps(r => String(parseInt(r || '0', 10) + 1))}
+            onChange={setReps}
+          />
+          <Stepper
+            label="Charge"
+            value={weight}
+            inputMode="decimal"
+            unit="kg"
+            onDecrement={() => setWeight(w => {
+              const v = Math.max(0, parseFloat(w || '0') - 2.5)
+              return Number.isInteger(v) ? String(v) : v.toFixed(1)
+            })}
+            onIncrement={() => setWeight(w => {
+              const v = parseFloat(w || '0') + 2.5
+              return Number.isInteger(v) ? String(v) : v.toFixed(1)
+            })}
+            onChange={setWeight}
+          />
+          <Stepper
+            label={targetRir !== null && targetRir !== undefined ? `RIR — cible ${targetRir}` : 'RIR'}
+            value={rir}
+            inputMode="numeric"
+            onDecrement={() => setRir(r => String(Math.max(0, parseInt(r || '0', 10) - 1)))}
+            onIncrement={() => setRir(r => String(parseInt(r || '0', 10) + 1))}
+            onChange={setRir}
+          />
         </div>
 
+        {/* CTA */}
         <button
           onClick={handleConfirm}
-          className="w-full h-12 flex items-center justify-center bg-[#ffe01e] text-[#0d0d0d] text-[13px] font-black uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-transform"
+          className="w-full h-14 flex items-center justify-center bg-[#f2f2f2] text-[#080808] text-[15px] font-black uppercase tracking-[0.14em] rounded-xl active:scale-[0.97] transition-transform"
         >
-          Valider la série
+          {t('logger.set.validate')}
         </button>
       </motion.div>
     </>
@@ -209,19 +251,12 @@ export default function SetRow({
 }: SetRowProps) {
   const x = useMotionValue(0)
   const hasActioned = useRef(false)
-  const [editingRest, setEditingRest] = useState(false)
-  const [restInputVal, setRestInputVal] = useState(String(set.rest_sec ?? ''))
   const [showConfirm, setShowConfirm] = useState(false)
 
   const leftBgOpacity = useTransform(x, [0, 60, 140], [0, 0.04, 0.14])
   const rightBgOpacity = useTransform(x, [-140, -60, 0], [0.14, 0.04, 0])
   const checkOpacity = useTransform(x, [60, 140], [0.3, 1])
   const trashOpacity = useTransform(x, [-140, -60], [1, 0.3])
-
-  function triggerValidate() {
-    // Open confirm modal — user reviews/edits reps, weight, RIR before committing
-    setShowConfirm(true)
-  }
 
   function handleDragEnd(_: unknown, info: { offset: { x: number } }) {
     if (hasActioned.current) return
@@ -251,18 +286,27 @@ export default function SetRow({
 
   const sideLabel = set.side === 'left' ? 'G' : set.side === 'right' ? 'D' : null
 
-  // Displayed RIR target in the row
-  const displayRir = targetRir !== null && targetRir !== undefined ? String(targetRir) : (recRir !== null && recRir !== undefined ? String(recRir) : null)
+  // Values shown in the row (prescribed, greyed out)
+  const displayReps = set.planned_reps || recReps || '—'
+  const displayWeight = recWeight || '—'
+  const displayRir = targetRir !== null && targetRir !== undefined
+    ? String(targetRir)
+    : recRir !== null && recRir !== undefined ? String(recRir) : null
+
+  // Initial values for modal: prefer already-entered actuals, else prescribed
+  const modalInitialReps = set.actual_reps || recReps || set.planned_reps
+  const modalInitialWeight = set.actual_weight_kg || recWeight || ''
+  const modalInitialRir = set.rir_actual
 
   if (set.completed) {
     return (
       <div className="flex flex-col gap-1">
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer active:scale-[0.99] transition-transform"
-          style={{ backgroundColor: 'rgba(255,224,30,0.06)', borderColor: 'rgba(255,224,30,0.20)' }}
-          onClick={() => onChange({ completed: false })}
+          style={{ backgroundColor: 'rgba(157,112,82,0.07)', borderColor: 'rgba(157,112,82,0.24)' }}
+          onClick={() => setShowConfirm(true)}
         >
-          <CheckCircle2 size={14} className="text-[#ffe01e] shrink-0" />
+          <CheckCircle2 size={14} className="text-[#f2f2f2] shrink-0" />
           <span className={`text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.14em] shrink-0 ${TYPE_COLORS[set.set_type]}`}>
             {sideLabel && <span className="mr-0.5">{sideLabel}</span>}
             {typeLabel}
@@ -274,12 +318,31 @@ export default function SetRow({
             <span className="text-[11px] text-white/40 shrink-0">RIR {set.rir_actual}</span>
           )}
           {isPR && (
-            <span className="bg-[#ffe01e] text-[#0d0d0d] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md shrink-0">PR</span>
+            <span className="bg-[#f2f2f2] text-[#080808] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md shrink-0">PR</span>
           )}
         </div>
         {coachingCue && (
           <p className="px-1 text-[10px] text-white/40 italic">{coachingCue}</p>
         )}
+
+        {/* Modal allows editing a completed set */}
+        <AnimatePresence>
+          {showConfirm && (
+            <ConfirmModal
+              initialReps={set.actual_reps || recReps || set.planned_reps}
+              initialWeight={set.actual_weight_kg || recWeight || ''}
+              initialRir={set.rir_actual}
+              setNumber={set.set_number}
+              side={set.side}
+              targetRir={targetRir}
+              restSec={set.rest_sec}
+              onConfirm={(reps, weight, rir) => {
+                onValidate(reps, weight, rir)
+              }}
+              onClose={() => setShowConfirm(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -287,7 +350,7 @@ export default function SetRow({
   return (
     <>
       <div className="relative overflow-hidden rounded-xl">
-        {/* Swipe right → validate (green) */}
+        {/* Swipe right → validate */}
         <motion.div
           className="absolute inset-0 rounded-xl flex items-center pl-4"
           style={{ backgroundColor: '#10b981', opacity: leftBgOpacity }}
@@ -297,7 +360,7 @@ export default function SetRow({
           </motion.div>
         </motion.div>
 
-        {/* Swipe left → delete (red) */}
+        {/* Swipe left → delete */}
         <motion.div
           className="absolute inset-0 rounded-xl flex items-center justify-end pr-4"
           style={{ backgroundColor: '#ef4444', opacity: rightBgOpacity }}
@@ -313,7 +376,8 @@ export default function SetRow({
           dragElastic={{ left: 0.06, right: 0.06 }}
           style={{ x }}
           onDragEnd={handleDragEnd}
-          className="relative rounded-xl border border-white/[0.08] bg-[#1a1a1a] cursor-grab active:cursor-grabbing"
+          onClick={() => setShowConfirm(true)}
+          className="relative rounded-xl bg-[#1a1a1a] cursor-pointer"
         >
           <div className="flex items-center gap-2 px-3 py-2.5">
             {/* Type pill */}
@@ -326,83 +390,39 @@ export default function SetRow({
               {typeLabel}
             </button>
 
-            {/* Rest */}
-            <div
-              className="shrink-0 w-[46px]"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={e => e.stopPropagation()}
-            >
-              {editingRest ? (
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={restInputVal}
-                  autoFocus
-                  onChange={e => setRestInputVal(e.target.value)}
-                  onBlur={() => {
-                    const sec = parseInt(restInputVal, 10)
-                    if (!isNaN(sec) && sec >= 0) onChange({ rest_sec: sec })
-                    setEditingRest(false)
-                  }}
-                  className="w-full min-w-0 bg-transparent text-[11px] font-mono text-white text-center border-b border-white/20 outline-none"
-                />
-              ) : (
-                <button
-                  onClick={() => { setRestInputVal(String(set.rest_sec ?? '')); setEditingRest(true) }}
-                  className="w-full text-[11px] font-mono text-white/50 text-center"
-                >
-                  {formatRestDisplay(set.rest_sec)}
-                </button>
-              )}
+            {/* Rest — read only, tap opens modal */}
+            <div className="shrink-0 w-[46px] text-center">
+              <span className="text-[11px] font-mono text-white/50">
+                {formatRestDisplay(set.rest_sec)}
+              </span>
             </div>
 
-            {/* Reps */}
-            <input
-              type="number"
-              inputMode="numeric"
-              value={set.actual_reps}
-              placeholder={recReps ?? set.planned_reps}
-              min={1}
-              max={99}
-              onPointerDown={e => e.stopPropagation()}
-              onChange={e => onChange({ actual_reps: e.target.value })}
-              className="flex-1 min-w-0 bg-transparent text-[13px] font-bold text-white text-center outline-none placeholder:text-white/20"
-            />
-
-            {/* Weight */}
-            <div
-              className="flex items-center gap-0.5 flex-1 min-w-0"
-              onPointerDown={e => e.stopPropagation()}
-            >
-              <input
-                type="number"
-                inputMode="decimal"
-                step={0.25}
-                value={set.actual_weight_kg}
-                placeholder={recWeight ?? '—'}
-                min={0}
-                max={999}
-                onChange={e => onChange({ actual_weight_kg: e.target.value })}
-                className="flex-1 min-w-0 w-0 bg-transparent text-[13px] font-bold text-white text-center outline-none placeholder:text-white/20"
-              />
-              <span className="text-[9px] text-white/25 shrink-0">kg</span>
+            {/* Reps — prescribed, read only */}
+            <div className="flex-1 min-w-0 text-center">
+              <span className="text-[13px] font-bold text-white/30">{displayReps}</span>
             </div>
 
-            {/* RIR target display */}
+            {/* Weight — prescribed, read only */}
+            <div className="flex items-center gap-0.5 flex-1 min-w-0 justify-center">
+              <span className="text-[13px] font-bold text-white/30">{displayWeight}</span>
+              <span className="text-[9px] text-white/20 shrink-0">kg</span>
+            </div>
+
+            {/* RIR target */}
             {displayRir !== null && (
-              <div className="shrink-0 text-center min-w-[22px]" onPointerDown={e => e.stopPropagation()}>
-                <p className="text-[13px] font-bold text-white/40 leading-none">{displayRir}</p>
+              <div className="shrink-0 text-center min-w-[22px]">
+                <p className="text-[13px] font-bold text-white/30 leading-none">{displayRir}</p>
                 <p className="text-[8px] text-white/20 uppercase tracking-wide">rir</p>
               </div>
             )}
 
-            {/* Tempo guide slot — always rendered when hasTempo is set, keeps columns aligned */}
+            {/* Tempo guide slot */}
             {onTempoPress !== undefined && (
               hasTempoGuide ? (
                 <button
                   onPointerDown={e => e.stopPropagation()}
                   onClick={e => { e.stopPropagation(); onTempoPress() }}
-                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#FFB800]/10 text-[#FFB800]/70 active:scale-95 transition-all"
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#222222] text-[#808080] active:scale-95 transition-all"
                 >
                   <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor">
                     <polygon points="2,1 9,5 2,9" />
@@ -413,28 +433,29 @@ export default function SetRow({
               )
             )}
 
-            {/* Validate button */}
-            <button
+            {/* Validate icon — visual hint only, tap on row opens modal */}
+            <div
               onPointerDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); triggerValidate() }}
-              className="shrink-0 h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-white/30 hover:text-white/60 hover:bg-white/[0.08] active:scale-95 transition-all"
+              onClick={e => { e.stopPropagation(); setShowConfirm(true) }}
+              className="shrink-0 h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-white/20"
             >
               <CheckCircle2 size={16} />
-            </button>
+            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Confirmation modal */}
+      {/* Modal */}
       <AnimatePresence>
         {showConfirm && (
           <ConfirmModal
-            initialReps={set.actual_reps || recReps || set.planned_reps}
-            initialWeight={set.actual_weight_kg || recWeight || ''}
-            initialRir={set.rir_actual}
+            initialReps={modalInitialReps}
+            initialWeight={modalInitialWeight}
+            initialRir={modalInitialRir}
             setNumber={set.set_number}
             side={set.side}
             targetRir={targetRir}
+            restSec={set.rest_sec}
             onConfirm={(reps, weight, rir) => {
               onValidate(reps, weight, rir)
             }}

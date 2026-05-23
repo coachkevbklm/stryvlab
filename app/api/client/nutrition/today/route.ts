@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 
 function svc() {
@@ -45,17 +46,22 @@ export async function GET(req: NextRequest) {
 
   const { data: meals } = await svc()
     .from('nutrition_meals')
-    .select('id, meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
+    .select('id, meal_type, title, logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
     .eq('client_id', cc.id)
     .eq('physiological_date', date)
     .order('logged_at', { ascending: true })
 
   const consumed = (meals ?? []).reduce(
     (acc, m) => ({
-      kcal: acc.kcal + Number(m.calories ?? 0),
-      protein_g: acc.protein_g + Number(m.protein_g ?? 0),
-      carbs_g: acc.carbs_g + Number(m.carbs_g ?? 0),
-      fat_g: acc.fat_g + Number(m.fat_g ?? 0),
+      kcal: acc.kcal + computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+        fiber_g: Number(m.total_fiber_g ?? 0),
+      }),
+      protein_g: acc.protein_g + Number(m.total_protein_g ?? 0),
+      carbs_g: acc.carbs_g + Number(m.total_carbs_g ?? 0),
+      fat_g: acc.fat_g + Number(m.total_fat_g ?? 0),
     }),
     { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   )

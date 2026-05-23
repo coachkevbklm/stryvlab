@@ -8,6 +8,8 @@ import InfoModal from './InfoModal'
 import { INJECTION_INFO_MODALS } from '@/lib/nutrition/infoModalDefinitions'
 import type { DayDraft } from '@/lib/nutrition/types'
 import type { CarbCyclingResult } from '@/lib/formulas/carbCycling'
+import type { TrainingWeekSchedule } from '@/lib/nutrition/training-week-schedule'
+import TrainingWeekSchedulePanel from './TrainingWeekSchedulePanel'
 
 interface Props {
   protocolName: string
@@ -29,6 +31,9 @@ interface Props {
   hasHydration: boolean
   coherenceScore: { score: number; checks: { label: string; ok: boolean; warning?: string }[] }
   loading?: boolean
+  trainingWeekSchedule?: TrainingWeekSchedule | null
+  selectedScheduleDow?: number | null
+  onSelectScheduleDow?: (dow: number) => void
 }
 
 function NumberField({ label, value, onChange, unit }: {
@@ -59,6 +64,9 @@ export default function ProtocolCanvas({
   hasMacroResult, hasCcResult, hasHydration,
   coherenceScore,
   loading = false,
+  trainingWeekSchedule = null,
+  selectedScheduleDow = null,
+  onSelectScheduleDow,
 }: Props) {
   const [editingName, setEditingName] = useState(false)
   const [tempName, setTempName] = useState(protocolName)
@@ -186,6 +194,14 @@ export default function ProtocolCanvas({
 
         {/* Coherence Score */}
         <CoherenceScore score={coherenceScore.score} checks={coherenceScore.checks} />
+
+        <TrainingWeekSchedulePanel
+          schedule={trainingWeekSchedule}
+          loading={loading}
+          protocolDayNames={days.map((d) => d.name)}
+          activeDow={selectedScheduleDow}
+          onSelectDow={onSelectScheduleDow}
+        />
 
         {/* Day cards overview */}
         <div>

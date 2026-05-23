@@ -26,7 +26,7 @@ function fmt(iso: string): string {
 
 export default function SmartWorkoutHero(p: Props) {
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+    <div className="bg-[#111111] rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[10px] text-white/40">Séance du jour</span>
         <span className="text-[11px] text-white/40">{fmt(p.date)}</span>
@@ -41,7 +41,7 @@ export default function SmartWorkoutHero(p: Props) {
               {p.musclePills && p.musclePills.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {p.musclePills.slice(0, 3).map(pill => (
-                    <span key={pill} className="bg-[#ffe01e]/10 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{pill}</span>
+                    <span key={pill} className="bg-[#f2f2f2]/10 text-[#f2f2f2] text-[9px] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-md">{pill}</span>
                   ))}
                 </div>
               )}
@@ -59,7 +59,7 @@ export default function SmartWorkoutHero(p: Props) {
           {p.sessionLogHref && (
             <Link
               href={p.sessionLogHref}
-              className="mt-4 flex w-full items-center justify-center h-11 rounded-xl bg-[#ffe01e] text-[#0d0d0d] text-[11px] font-black uppercase tracking-[0.1em] active:scale-[0.98] transition-transform"
+              className="mt-4 flex w-full items-center justify-center h-11 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-black uppercase tracking-[0.1em] active:scale-[0.98] transition-transform"
             >
               Démarrer →
             </Link>
@@ -76,7 +76,7 @@ export default function SmartWorkoutHero(p: Props) {
             <div className="text-[12px] text-white font-semibold">Séance terminée</div>
             <div className="text-[10px] text-white/40">{p.performanceSummary}</div>
           </div>
-          {p.recapHref && <Link href={p.recapHref} className="text-[11px] text-[#ffe01e]">Voir →</Link>}
+          {p.recapHref && <Link href={p.recapHref} className="text-[11px] text-[#f2f2f2]">Voir →</Link>}
         </div>
       )}
 

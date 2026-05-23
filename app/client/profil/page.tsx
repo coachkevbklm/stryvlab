@@ -83,12 +83,12 @@ export default async function ClientProfilPage() {
   ).toLocaleDateString(dateLocale, { month: "long", year: "numeric" });
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] font-sans">
+    <div className="min-h-screen bg-[#080808] font-sans">
       <ClientTopBar
         section={ct(lang, "profil.section")}
         title={ct(lang, "profil.title")}
         right={
-          <div className="w-8 h-8 rounded-full bg-[#ffe01e]/20 border-[0.3px] border-[#ffe01e]/30 flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-[#222222] flex items-center justify-center shrink-0 overflow-hidden">
             {client?.profile_photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -97,7 +97,7 @@ export default async function ClientProfilPage() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-[11px] font-bold text-[#ffe01e]">
+              <span className="text-[11px] font-bold text-[#f2f2f2]">
                 {initials}
               </span>
             )}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 export type DayChecklistProps = {
   morningCheckin: boolean
@@ -11,6 +12,8 @@ export type DayChecklistProps = {
   mealsLogged: number
   waterMl: number
   waterTargetMl: number
+  onCheckin?: (moment: 'morning' | 'evening') => void
+  onWater?: () => void
 }
 
 type ChecklistItem = {
@@ -30,33 +33,39 @@ export default function DayChecklist({
   mealsLogged,
   waterMl,
   waterTargetMl,
+  onCheckin,
+  onWater,
 }: DayChecklistProps) {
+  const { t } = useClientT()
+  const mealsSublabel = mealsLogged > 1
+    ? t('checkin.meals.plural', { n: String(mealsLogged) })
+    : t('checkin.meals', { n: String(mealsLogged) })
   const items: ChecklistItem[] = [
     {
       id: 'checkin_morning',
-      label: 'Check-in matin',
+      label: t('checkin.morning'),
       done: morningCheckin,
       color: '#3b82f6',
-      href: '/client/checkin/morning',
+      href: '#checkin_morning',
     },
     {
       id: 'session',
-      label: sessionName ? `Séance — ${sessionName}` : 'Séance du jour',
+      label: sessionName ? t('checkin.session', { name: sessionName }) : t('checkin.session.default'),
       done: sessionCompleted,
-      color: '#ffe01e',
+      color: '#f2f2f2',
       href: '/client/programme',
     },
     {
       id: 'nutrition',
-      label: 'Nutrition',
-      sublabel: `${mealsLogged} repas loggé${mealsLogged > 1 ? 's' : ''}`,
+      label: t('checkin.nutrition'),
+      sublabel: mealsSublabel,
       done: mealsLogged >= 2,
       color: '#4ade80',
       href: '/client/nutrition',
     },
     {
       id: 'water',
-      label: 'Hydratation',
+      label: t('checkin.water'),
       sublabel: `${(waterMl / 1000).toFixed(1)}L / ${(waterTargetMl / 1000).toFixed(1)}L`,
       done: waterTargetMl > 0 && waterMl >= waterTargetMl * 0.8,
       color: '#22d3ee',
@@ -64,10 +73,10 @@ export default function DayChecklist({
     },
     {
       id: 'checkin_evening',
-      label: 'Check-in soir',
+      label: t('checkin.evening'),
       done: eveningCheckin,
       color: '#a78bfa',
-      href: '/client/checkin/evening',
+      href: '#checkin_evening',
     },
   ]
 
@@ -78,7 +87,7 @@ export default function DayChecklist({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <span className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[10px] text-white/40">
-          Aujourd'hui
+          {t('smart.agenda.title')}
         </span>
         <span className="text-[10px] font-bold tabular-nums" style={{ color: doneCount === items.length ? '#4ade80' : 'rgba(255,255,255,0.35)' }}>
           {doneCount}/{items.length}
@@ -108,6 +117,26 @@ export default function DayChecklist({
             {!item.done && <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />}
           </div>
         )
+
+        if ((item.id === 'checkin_morning' || item.id === 'checkin_evening') && onCheckin) {
+          return (
+            <button
+              key={item.id}
+              className="w-full text-left"
+              onClick={() => onCheckin(item.id === 'checkin_morning' ? 'morning' : 'evening')}
+            >
+              {inner}
+            </button>
+          )
+        }
+
+        if (item.id === 'water' && onWater) {
+          return (
+            <button key={item.id} className="w-full text-left" onClick={onWater}>
+              {inner}
+            </button>
+          )
+        }
 
         return (
           <Link key={item.id} href={item.href}>

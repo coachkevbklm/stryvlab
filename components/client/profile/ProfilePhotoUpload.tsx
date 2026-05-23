@@ -58,17 +58,17 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
   if (compact) {
     return (
       <div className="relative shrink-0">
-        <div className="w-14 h-14 rounded-full overflow-hidden bg-[#ffe01e]/10 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-[#f2f2f2]/10 flex items-center justify-center">
           {url ? (
             <Image src={url} alt="Photo de profil" fill className="object-cover" />
           ) : (
-            <span className="text-[16px] font-bold text-[#ffe01e]">{initials}</span>
+            <span className="text-[16px] font-bold text-[#f2f2f2]">{initials}</span>
           )}
         </div>
         <button
           onClick={() => inputRef.current?.click()}
           disabled={loading}
-          className="absolute bottom-0 right-0 w-5 h-5 bg-[#ffe01e] text-[#0d0d0d] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="absolute bottom-0 right-0 w-5 h-5 bg-[#f2f2f2] text-[#080808] rounded-full flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {loading ? <Loader2 size={9} className="animate-spin" /> : <Camera size={9} />}
         </button>

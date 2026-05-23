@@ -178,9 +178,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
       // Delete exercises that are no longer present (orphans)
       const incomingPositions = new Set(
-        (s.exercises ?? []).map((_, idx) => idx)
+        (s.exercises ?? []).map((_ex: unknown, idx: number) => idx)
       )
-      for (const [pos, exId] of existingExsMap.entries()) {
+      for (const [pos, exId] of Array.from(existingExsMap.entries())) {
         if (!incomingPositions.has(pos)) {
           await db
             .from('coach_program_template_exercises')
@@ -192,9 +192,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // Delete sessions that are no longer present (orphans)
     const incomingPositions = new Set(
-      body.sessions.map((_, idx) => idx)
+      body.sessions.map((_s: unknown, idx: number) => idx)
     )
-    for (const [pos, sessionId] of existingSessionsMap.entries()) {
+    for (const [pos, sessionId] of Array.from(existingSessionsMap.entries())) {
       if (!incomingPositions.has(pos)) {
         await db
           .from('coach_program_template_sessions')

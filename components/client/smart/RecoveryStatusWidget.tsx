@@ -59,7 +59,7 @@ export default function RecoveryStatusWidget({
       {visibleAlerts.map((alert) => (
         <div
           key={alert.id}
-          className="relative bg-[#161616] rounded-xl border border-white/[0.08] overflow-hidden"
+          className="relative bg-[#111111] rounded-xl overflow-hidden"
           style={{
             borderLeft: `4px solid ${alert.color}`,
           }}
@@ -102,7 +102,7 @@ export default function RecoveryStatusWidget({
             </p>
 
             {/* Recommendation */}
-            <div className="border-t border-white/[0.06] pt-1 mt-1">
+            <div className="pt-1 mt-1">
               <p className="text-[10px] text-white/40 italic">
                 {alert.recommendation}
               </p>

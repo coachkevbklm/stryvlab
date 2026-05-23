@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { AlertTriangle, AlertCircle, Zap, X } from 'lucide-react'
 import type { DeloadSignal } from '@/lib/training/deloadDetection'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 interface DeloadAlertBannerProps {
   clientId: string
 }
 
 export default function DeloadAlertBanner({ clientId }: DeloadAlertBannerProps) {
+  const { t } = useClientT()
   const [signals, setSignals] = useState<DeloadSignal[]>([])
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
@@ -83,7 +85,7 @@ export default function DeloadAlertBanner({ clientId }: DeloadAlertBannerProps) 
       {/* Show count if multiple signals */}
       {signals.length > 1 && (
         <p className="text-[11px] text-white/40 pl-6">
-          +{signals.length - 1} autre signal détecté
+          {t('smart.deload.signals', { n: String(signals.length - 1) })}
         </p>
       )}
     </div>

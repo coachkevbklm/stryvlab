@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronLeft, Search, Plus, Minus, Check, X, Pencil, Mic } from "lucide-react"
+import { ChevronLeft, Search, Plus, Minus, Check, X, Pencil } from "lucide-react"
 import dynamic from "next/dynamic"
 
 const VoiceLogSheet = dynamic(() => import("@/components/client/smart/VoiceLogSheet"), { ssr: false })
@@ -133,6 +133,11 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [drafts, setDrafts] = useState<EntryDraft[]>([])
   const [saving, setSaving] = useState(false)
+  const [mealTime, setMealTime] = useState(() => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  })
+  const [mealTitle, setMealTitle] = useState("")
   const footerRef = useRef<HTMLDivElement>(null)
   const [footerH, setFooterH] = useState(120)
 
@@ -219,9 +224,14 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
     if (!drafts.length) return
     setSaving(true)
     try {
+      const [h, m] = mealTime.split(':').map(Number)
+      const dt = new Date()
+      dt.setHours(h, m, 0, 0)
       const body: Record<string, unknown> = {
         entries: drafts.map(d => ({ food_item_id: d.food_item.id, quantity_g: d.quantity_g, input_mode: d.input_mode })),
+        logged_at: dt.toISOString(),
       }
+      if (mealTitle.trim()) body.title = mealTitle.trim()
       if (existingMealId) body.meal_id = existingMealId
       const res = await fetch("/api/client/nutrition/meals", {
         method: "POST",
@@ -322,7 +332,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
     <div className={embedded ? "flex flex-col h-full" : "min-h-screen bg-[#0a0a0a] flex flex-col"}>
       {/* TopBar — hidden in embedded mode */}
       {!embedded && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 bg-[#0a0a0a] border-b border-white/[0.08]">
+        <div className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 bg-[#080808]">
           <button onClick={goBack} className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/50 hover:text-white active:scale-95 transition-all mr-3">
             <ChevronLeft size={16} />
           </button>
@@ -337,7 +347,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
 
       {/* Embedded sub-header (layer title + back + mic) */}
       {embedded && layer !== "category" && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2 shrink-0">
           <button onClick={goBack} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/50 active:scale-95 transition-all">
             <ChevronLeft size={14} />
           </button>
@@ -345,31 +355,13 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
           <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold mr-1">
             {layer === "subcategory" ? "1/3" : layer === "item" ? "2/3" : "3/3"}
           </p>
-          <button
-            onClick={() => setVoiceOpen(true)}
-            className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
-            title="Saisie vocale"
-          >
-            <Mic size={13} />
-          </button>
         </div>
       )}
 
-      {/* Mic button in category layer (embedded) */}
-      {embedded && layer === "category" && (
-        <div className="flex justify-end px-4 pt-2 shrink-0">
-          <button
-            onClick={() => setVoiceOpen(true)}
-            className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 hover:text-[#ffe01e] transition-colors"
-            title="Saisie vocale"
-          >
-            <Mic size={15} />
-          </button>
-        </div>
-      )}
+      {/* Mic button absent du sub-header embedded — MealLogSheet a le sien dans son header principal */}
 
       {/* Layers content — min-h-0 requis pour que flex-1 ait une hauteur réelle en embedded */}
-      <div className="flex-1 overflow-hidden relative min-h-0" style={{ paddingTop: embedded ? 0 : topBarH }}>
+      <div className="flex-1 overflow-hidden relative min-h-0">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={layer + (selectedCategory ?? "") + (selectedSubcategory ?? "")}
@@ -380,7 +372,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             exit="exit"
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="absolute inset-0 overflow-y-auto"
-            style={{ paddingBottom: footerH + 16 }}
+            style={{ paddingBottom: footerH + 16, paddingTop: embedded ? 0 : topBarH }}
           >
             {/* Layer 1: Categories */}
             {layer === "category" && (
@@ -395,13 +387,13 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                           key={fav.id}
                           onClick={() => quickLogFavorite(fav)}
                           disabled={saving}
-                          className="w-full flex items-center justify-between bg-[#161616] border border-white/[0.08] rounded-xl px-4 py-2.5 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left disabled:opacity-50"
+                          className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-2.5 active:scale-[0.98] transition-all hover:bg-[#222222] text-left disabled:opacity-50"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-semibold text-white truncate">{fav.name}</p>
                             <p className="text-[10px] text-white/40">{Math.round(fav.total_calories ?? 0)} kcal · P{Math.round(fav.total_protein_g ?? 0)}g</p>
                           </div>
-                          <span className="text-[10px] text-[#ffe01e] font-bold ml-2">↗ Ajouter</span>
+                          <span className="text-[10px] text-[#f2f2f2] font-bold ml-2">↗ Ajouter</span>
                         </button>
                       ))}
                     </div>
@@ -411,7 +403,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
-                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#161616] border border-white/[0.08] rounded-xl p-4 active:scale-95 transition-all hover:bg-white/[0.06]">
+                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#1a1a1a] rounded-xl p-4 active:scale-95 transition-all hover:bg-[#222222]">
                       <span className="text-2xl">{CATEGORY_ICONS[cat]}</span>
                       <span className="text-[11px] font-semibold text-white/80">{label}</span>
                     </button>
@@ -419,7 +411,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 </div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mt-6 mb-3">{t('log.quickSearch')}</p>
                 <QuickSearch onSelect={selectItem} />
-                <button onClick={() => setShowCustomForm(v => !v)} className="mt-4 w-full flex items-center justify-center gap-2 h-10 bg-white/[0.04] border border-white/[0.07] rounded-xl text-[12px] text-white/50 hover:text-white/80 hover:bg-white/[0.07] active:scale-[0.98] transition-all">
+                <button onClick={() => setShowCustomForm(v => !v)} className="mt-4 w-full flex items-center justify-center gap-2 h-10 bg-[#1a1a1a] rounded-xl text-[12px] text-[#5a5a5a] hover:text-[#808080] hover:bg-[#222222] active:scale-[0.98] transition-all">
                   <Pencil size={13} />
                   {t('log.createCustom')}
                 </button>
@@ -431,7 +423,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {layer === "subcategory" && selectedCategory && (
               <div className="p-4 space-y-2">
                 {SUBCATEGORIES[selectedCategory].map(sub => (
-                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#161616] border border-white/[0.08] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
+                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-[#222222]">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{SUBCATEGORY_ICONS[sub] ?? "•"}</span>
                       <span className="text-[13px] font-medium text-white">{SUBCATEGORY_LABELS_T[sub] ?? sub}</span>
@@ -447,7 +439,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               <div className="p-4">
                 <div className="relative mb-3">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#161616] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#1a1a1a] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none" />
                 </div>
                 {loadingItems ? (
                   <div className="space-y-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-white/[0.04] rounded-xl animate-pulse" />)}</div>
@@ -461,15 +453,15 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                       const gPct = Math.round((item.carbs_per_100g * 4 / kcal) * 100)
                       const lPct = Math.round((item.fat_per_100g * 9 / kcal) * 100)
                       return (
-                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#161616] border border-white/[0.08] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
+                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-[#222222] text-left">
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-white">{item.name_fr}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[11px] text-white/40">{item.kcal_per_100g} kcal</span>
                               <div className="flex h-[4px] w-[64px] rounded-full overflow-hidden gap-[1px]">
-                                <div style={{ width: `${pPct}%`, backgroundColor: '#e85d04' }} />
-                                <div style={{ width: `${gPct}%`, backgroundColor: '#2d9a4e' }} />
-                                <div style={{ width: `${lPct}%`, backgroundColor: '#d4a017' }} />
+                                <div style={{ width: `${pPct}%`, backgroundColor: 'var(--data-copper)' }} />
+                                <div style={{ width: `${gPct}%`, backgroundColor: 'var(--data-gold)' }} />
+                                <div style={{ width: `${lPct}%`, backgroundColor: 'var(--data-petrol)' }} />
                               </div>
                               <span className="text-[10px] text-white/25">P·G·L</span>
                             </div>
@@ -486,9 +478,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {/* Layer 4: Quantity */}
             {layer === "quantity" && selectedItem && (
               <div className="p-4 space-y-5">
-                <div className="flex gap-1 bg-white/[0.04] rounded-xl p-0.5">
+                <div className="flex gap-1 bg-[#1a1a1a] rounded-xl p-0.5">
                   {(["grams", "portion"] as const).map(m => (
-                    <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-[#161616] text-white border border-white/[0.08]" : "text-white/40"}`}>
+                    <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-[#2e2e2e] text-white" : "text-white/40"}`}>
                       {m === "grams" ? t('log.gramsMode') : t('log.portionMode')}
                     </button>
                   ))}
@@ -498,12 +490,12 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="number" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1 h-10 text-center bg-[#161616] border border-white/[0.08] rounded-xl text-[18px] font-bold text-white outline-none focus:border-[#ffe01e]/40 min-w-0" />
+                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#1a1a1a] rounded-xl text-[18px] font-bold text-white outline-none min-w-0" />
                       <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
                     </div>
                     <div className="flex gap-2">
                       {[50, 100, 150, 200].map(g => (
-                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all border ${quantityG === g ? "bg-[#ffe01e]/10 border-[#ffe01e]/40 text-[#ffe01e]" : "bg-white/[0.03] border-white/[0.06] text-white/50"}`}>{g}g</button>
+                        <button key={g} onClick={() => setQuantityG(g)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${quantityG === g ? "bg-[#2e2e2e] text-[#f2f2f2]" : "bg-[#1a1a1a] text-[#5a5a5a]"}`}>{g}g</button>
                       ))}
                     </div>
                   </div>
@@ -511,11 +503,11 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.choosePortion')}</p>
-                      {isHandOverrideSet(scalingProfile) && <span className="text-[9px] uppercase tracking-[0.12em] text-[#ffe01e]/70 font-bold">ajusté à ta main</span>}
+                      {isHandOverrideSet(scalingProfile) && <span className="text-[9px] uppercase tracking-[0.12em] text-[#f2f2f2]/70 font-bold">ajusté à ta main</span>}
                     </div>
                     <div className="flex gap-1 overflow-x-auto pb-1">
                       {PORTION_MULTIPLIERS.map(m => (
-                        <button key={m} onClick={() => applyMultiplier(m)} className={`shrink-0 h-8 px-3 rounded-xl text-[11px] font-bold transition-all border ${portionMult === m ? "bg-[#ffe01e] text-[#0d0d0d] border-[#ffe01e]" : "bg-white/[0.03] border-white/[0.06] text-white/50"}`}>×{m}</button>
+                        <button key={m} onClick={() => applyMultiplier(m)} className={`shrink-0 h-8 px-3 rounded-xl text-[11px] font-bold transition-all ${portionMult === m ? "bg-[#f2f2f2] text-[#080808]" : "bg-[#111111] text-[#5a5a5a]"}`}>×{m}</button>
                       ))}
                     </div>
                     <div className="space-y-2">
@@ -523,14 +515,14 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                         const scaledG = getScaledPortionG(p, scalingProfile, portionMult)
                         const isActive = selectedPortion === i && qMode === "portion"
                         return (
-                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${isActive ? "bg-[#ffe01e]/[0.06] border-[#ffe01e]/30" : "bg-[#161616] border-white/[0.08]"}`}>
+                          <button key={p.key} onClick={() => applyPortion(i)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-[#2e2e2e]" : "bg-[#1a1a1a]"}`}>
                             <span className="text-xl shrink-0">{PORTION_ICON_BY_KEY[p.key] ?? "📏"}</span>
                             <div className="text-left flex-1 min-w-0">
                               <p className="text-[13px] font-medium text-white">{p.label}</p>
                               <p className="text-[11px] text-white/35 truncate">{p.description}</p>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className={`text-[12px] font-bold ${isActive ? "text-[#ffe01e]" : "text-white/60"}`}>{scaledG}g</span>
+                              <span className={`text-[12px] font-bold ${isActive ? "text-[#f2f2f2]" : "text-white/60"}`}>{scaledG}g</span>
                               {portionMult !== 1 && <p className="text-[9px] text-white/30 mt-0.5">{p.baseG}g × {portionMult}</p>}
                             </div>
                           </button>
@@ -540,13 +532,13 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                   </div>
                 )}
                 {selectedMacros && (
-                  <div className="bg-[#161616] border border-white/[0.08] rounded-xl p-3">
+                  <div className="bg-[#1a1a1a] rounded-xl p-3">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold mb-2">{t('log.for', { n: quantityG })}</p>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div><p className="text-[16px] font-black text-white">{Math.round(selectedMacros.calories_kcal)}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">kcal</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#e85d04' }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#2d9a4e' }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#d4a017' }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-copper)' }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-gold)' }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: 'var(--data-petrol)' }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
                     </div>
                   </div>
                 )}
@@ -559,7 +551,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
       {/* Sticky footer */}
       <div
         ref={footerRef}
-        className={`${embedded ? "sticky bottom-0" : "fixed bottom-0 left-0 right-0"} z-[60] bg-[#161616] border-t border-white/[0.08] shrink-0`}
+        className={`${embedded ? "sticky bottom-0" : "fixed bottom-0 left-0 right-0"} z-[60] bg-[#111111] shrink-0`}
       >
         {drafts.length > 0 && (
           <div className="px-4 pt-3 pb-1 max-h-[120px] overflow-y-auto">
@@ -569,9 +561,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               </p>
               <div className="flex gap-2 text-[11px]">
                 <span className="text-white font-bold">{Math.round(totals.calories)} kcal</span>
-                <span style={{ color: '#e85d04' }}>P{totals.protein}g</span>
-                <span style={{ color: '#2d9a4e' }}>G{totals.carbs}g</span>
-                <span style={{ color: '#d4a017' }}>L{totals.fat}g</span>
+                <span style={{ color: 'var(--data-copper)' }}>P{totals.protein}g</span>
+                <span style={{ color: 'var(--data-gold)' }}>G{totals.carbs}g</span>
+                <span style={{ color: 'var(--data-petrol)' }}>L{totals.fat}g</span>
               </div>
             </div>
             <div className="space-y-1">
@@ -590,10 +582,31 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
           style={{ paddingBottom: embedded ? '0.75rem' : 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
         >
           {layer === "quantity" && selectedItem && (
-            <button onClick={addToMeal} disabled={quantityG <= 0} className="w-full h-11 flex items-center justify-center gap-2 bg-[#ffe01e] disabled:opacity-40 text-black text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
+            <button onClick={addToMeal} disabled={quantityG <= 0} className="w-full h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] disabled:opacity-40 text-black text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
               <Plus size={16} />
               {t('log.addToMeal')}
             </button>
+          )}
+
+          {/* Time + name row — shown when drafts exist */}
+          {drafts.length > 0 && (
+            <div className="flex gap-2">
+              <div className="relative shrink-0">
+                <input
+                  type="time"
+                  value={mealTime}
+                  onChange={e => setMealTime(e.target.value)}
+                  className="h-9 w-[90px] px-2 bg-[#1a1a1a] rounded-xl text-[12px] text-white outline-none text-center"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Nom du repas (optionnel)"
+                value={mealTitle}
+                onChange={e => setMealTitle(e.target.value)}
+                className="flex-1 min-w-0 h-9 px-3 bg-[#1a1a1a] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none"
+              />
+            </div>
           )}
 
           {/* Save as favorite section */}
@@ -613,7 +626,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 placeholder="Nom du repas..."
                 value={favoriteName}
                 onChange={e => setFavoriteName(e.target.value)}
-                className="w-full h-9 px-3 bg-white/[0.05] border border-white/[0.08] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40"
+                className="w-full h-9 px-3 bg-white/[0.05] rounded-xl text-[12px] text-white placeholder:text-white/20 outline-none "
               />
               <div className="flex gap-2">
                 <button
@@ -625,7 +638,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 <button
                   onClick={saveFavorite}
                   disabled={!favoriteName.trim() || savingFavorite}
-                  className="flex-1 h-9 bg-[#ffe01e] text-black text-[11px] font-bold rounded-xl hover:bg-[#ffe01e]/90 disabled:opacity-40 active:scale-95 transition-all"
+                  className="flex-1 h-9 bg-[#f2f2f2] text-black text-[11px] font-bold rounded-xl hover:bg-[#f2f2f2]/90 disabled:opacity-40 active:scale-95 transition-all"
                 >
                   {savingFavorite ? "..." : "Sauvegarder"}
                 </button>
@@ -639,7 +652,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             className={`w-full h-11 flex items-center justify-center gap-2 rounded-xl text-[12px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all ${
               layer === "quantity" && selectedItem
                 ? "bg-white/[0.06] text-white/60 disabled:opacity-30"
-                : "bg-[#ffe01e] text-black disabled:bg-[#ffe01e]/25 disabled:text-black/30"
+                : "bg-[#f2f2f2] text-black disabled:bg-[#f2f2f2]/25 disabled:text-black/30"
             }`}
           >
             <Check size={16} />
@@ -681,11 +694,11 @@ function QuickSearch({ onSelect }: { onSelect: (item: FoodItem) => void }) {
     <div>
       <div className="relative mb-2">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#161616] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+        <input type="text" placeholder={t('log.searchPlaceholder')} value={q} onChange={e => setQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#1a1a1a] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none" />
       </div>
       {loading && <div className="h-10 bg-white/[0.04] rounded-xl animate-pulse" />}
       {results.map(item => (
-        <button key={item.id} onClick={() => { setQ(""); setResults([]); onSelect(item) }} className="w-full flex items-center justify-between bg-[#161616] border border-white/[0.08] rounded-xl px-4 py-2.5 mb-1 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
+        <button key={item.id} onClick={() => { setQ(""); setResults([]); onSelect(item) }} className="w-full flex items-center justify-between bg-[#1a1a1a] rounded-xl px-4 py-2.5 mb-1 active:scale-[0.98] transition-all hover:bg-[#222222] text-left">
           <span className="text-[13px] text-white">{item.name_fr}</span>
           <span className="text-[11px] text-white/35">{item.kcal_per_100g} kcal/100g</span>
         </button>
@@ -730,12 +743,12 @@ function CustomFoodForm({ onCreated, onClose }: { onCreated: (item: FoodItem) =>
   }
 
   return (
-    <div className="mt-3 bg-[#161616] border border-white/[0.08] rounded-2xl p-4 space-y-3">
+    <div className="mt-3 bg-[#1a1a1a] rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between mb-1">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">{t('log.custom.title')}</p>
         <button onClick={onClose} className="text-white/20 hover:text-white/60 transition-colors"><X size={14} /></button>
       </div>
-      <input type="text" placeholder={t('log.custom.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} className="w-full h-10 px-3 bg-white/[0.05] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#ffe01e]/40" />
+      <input type="text" placeholder={t('log.custom.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} className="w-full h-10 px-3 bg-white/[0.05] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
       <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">{t('log.custom.per100')}</p>
       <div className="grid grid-cols-2 gap-2">
         {[
@@ -746,12 +759,12 @@ function CustomFoodForm({ onCreated, onClose }: { onCreated: (item: FoodItem) =>
         ].map(({ label, value, set, required }) => (
           <div key={label} className="space-y-1">
             <p className="text-[10px] text-white/30">{label}{required && " *"}</p>
-            <input type="number" min="0" step="0.1" value={value} onChange={e => set(e.target.value)} className="w-full h-9 px-3 min-w-0 bg-white/[0.05] border border-white/[0.08] rounded-xl text-[13px] text-white outline-none focus:border-[#ffe01e]/40" />
+            <input type="text" inputMode="decimal" value={value} onChange={e => set(e.target.value)} onFocus={e => e.target.select()} className="w-full h-9 px-3 min-w-0 bg-white/[0.05] rounded-xl text-[13px] text-white outline-none " />
           </div>
         ))}
       </div>
       {error && <p className="text-[11px] text-red-400">{error}</p>}
-      <button onClick={submit} disabled={saving || !name.trim() || !kcal} className="w-full h-10 flex items-center justify-center gap-2 bg-[#ffe01e] disabled:opacity-40 text-[#0d0d0d] text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
+      <button onClick={submit} disabled={saving || !name.trim() || !kcal} className="w-full h-10 flex items-center justify-center gap-2 bg-[#f2f2f2] disabled:opacity-40 text-[#080808] text-[12px] font-bold uppercase tracking-[0.1em] rounded-xl active:scale-[0.98] transition-all">
         <Check size={14} />
         {saving ? t('log.custom.creating') : t('log.custom.createCta')}
       </button>

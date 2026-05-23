@@ -3,18 +3,12 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
-import ClientTopBar from '@/components/client/ClientTopBar'
-import SmartNutritionHero from '@/components/client/smart/SmartNutritionHero'
-import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
-import RemainingBreakdown from '@/components/client/smart/RemainingBreakdown'
-import MacroWeekGrid from '@/components/client/smart/MacroWeekGrid'
-import ProtocolRationale from '@/components/client/smart/ProtocolRationale'
-import NutritionMealsList from '@/components/client/smart/NutritionMealsList'
-import NutritionStreakCard from '@/components/client/smart/NutritionStreakCard'
-import TdeeChart from '@/components/client/smart/TdeeChart'
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
-import VoiceEntryFab from '@/components/client/smart/VoiceEntryFab'
+import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
+import { type ClientLang } from '@/lib/i18n/clientTranslations'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
+import NutritionClientPage from './NutritionClientPage'
 
 type SearchParams = { date?: string }
 
@@ -39,7 +33,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
       .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
@@ -115,6 +109,13 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
         .gte('physiological_date', from90)
         .order('physiological_date', { ascending: true })
     })(),
+
+    // Client language preference
+    svc()
+      .from('client_preferences')
+      .select('language')
+      .eq('client_id', clientId)
+      .maybeSingle(),
   ])
 
   // ── Body weight ───────────────────────────────────────────────────────────
@@ -140,6 +141,12 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const rawMeals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
   const meals: NutritionMeal[] = rawMeals.map((m: any) => ({
     ...m,
+    total_calories: computeMacroEnergy({
+      protein_g: Number(m.total_protein_g ?? 0),
+      carbs_g: Number(m.total_carbs_g ?? 0),
+      fat_g: Number(m.total_fat_g ?? 0),
+      fiber_g: Number(m.total_fiber_g ?? 0),
+    }),
     entries: m.nutrition_entries ?? [],
     nutrition_entries: undefined,
   }))
@@ -187,7 +194,11 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   for (const m of trendMeals) {
     const key = (m as any).physiological_date as string
     if (!trendTotals[key]) continue
-    trendTotals[key].kcal      += Number((m as any).total_calories  ?? 0)
+    trendTotals[key].kcal      += computeMacroEnergy({
+      protein_g: Number((m as any).total_protein_g ?? 0),
+      carbs_g: Number((m as any).total_carbs_g ?? 0),
+      fat_g: Number((m as any).total_fat_g ?? 0),
+    })
     trendTotals[key].protein_g += Number((m as any).total_protein_g ?? 0)
     trendTotals[key].carbs_g   += Number((m as any).total_carbs_g   ?? 0)
     trendTotals[key].fat_g     += Number((m as any).total_fat_g     ?? 0)
@@ -210,36 +221,32 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
     streakMeals.map((m: any) => m.physiological_date as string)
   )
 
+  // ── Language ──────────────────────────────────────────────────────────────
+  const rawLang = prefsResult.status === 'fulfilled' ? (prefsResult.value as any)?.data?.language : null
+  const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? (rawLang as ClientLang) : 'fr'
+
   // Day type badge for TopBar
   const dayTypeBadge = protocolDay?.name ? (
-    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#ffe01e]/10 text-[#ffe01e] border border-[#ffe01e]/20">
+    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#222222] text-[#b0b0b0]">
       {protocolDay.name}
     </span>
   ) : null
 
   return (
-    <>
-      <ClientTopBar section="NUTRITION" title={date} right={dayTypeBadge} />
-      <main className="min-h-screen bg-[#0d0d0d] p-4 pt-[72px] pb-24 max-w-[480px] mx-auto space-y-3">
-        <MacroWeekGrid trend={trend} />
-        <SmartNutritionHero date={date} consumed={consumed} target={target} />
-
-        {/* TDEE trend chart — self-hides when no history data */}
-        <TdeeChart />
-
-        <SmartAlertsFeed alerts={alerts} />
-        <RemainingBreakdown consumed={consumed} target={target} />
-        <NutritionStreakCard loggedDates={loggedDatesSet} today={date} />
-        <ProtocolRationale
-          tdee={tdeeAdaptive}
-          tdeeSource={tdeeDataSource}
-          target={target}
-          bodyWeightKg={bodyWeightKg}
-          dayName={protocolDay?.name ?? null}
-        />
-        <NutritionMealsList initialMeals={meals} date={date} target={target} />
-        <VoiceEntryFab lang="fr" />
-      </main>
-    </>
+    <NutritionClientPage
+      date={date}
+      target={target}
+      consumed={consumed}
+      meals={meals}
+      alerts={alerts}
+      trend={trend}
+      loggedDates={loggedDatesSet}
+      tdeeAdaptive={tdeeAdaptive}
+      tdeeDataSource={tdeeDataSource}
+      bodyWeightKg={bodyWeightKg}
+      protocolDay={protocolDay}
+      lang={lang}
+      dayTypeBadge={dayTypeBadge}
+    />
   )
 }

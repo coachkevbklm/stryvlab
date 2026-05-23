@@ -6,7 +6,9 @@ import { CheckCircle2, Clock, Layers, BarChart2, ChevronLeft, TrendingUp, Trendi
 import BodyMap from '@/components/client/BodyMap'
 import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
 import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+import { getPrimaryMuscleFromCatalog, getSecondaryMusclesFromCatalog } from '@/lib/programs/intelligence/catalog-utils'
 import RecapNavButtons from './RecapNavButtons'
+import FeedbackThread from '@/components/client/smart/FeedbackThread'
 
 export default async function SessionRecapPage({ params }: { params: { sessionLogId: string } }) {
   const supabase = createClient()
@@ -77,10 +79,14 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
   for (const s of completedSets) {
     exerciseSetCounts.set(s.exercise_name, (exerciseSetCounts.get(s.exercise_name) ?? 0) + 1)
     if (!exerciseMuscles.has(s.exercise_name)) {
-      exerciseMuscles.set(s.exercise_name, {
-        primary_muscles: (s as any).primary_muscles ?? [],
-        secondary_muscles: (s as any).secondary_muscles ?? [],
-      })
+      const dbPrimary: string[] = (s as any).primary_muscles ?? []
+      const dbSecondary: string[] = (s as any).secondary_muscles ?? []
+      // Fallback to catalog lookup when DB columns are empty (client_set_logs has no muscle cols)
+      const primary_muscles = dbPrimary.length > 0 ? dbPrimary
+        : [getPrimaryMuscleFromCatalog(s.exercise_name)].filter(Boolean) as string[]
+      const secondary_muscles = dbSecondary.length > 0 ? dbSecondary
+        : getSecondaryMusclesFromCatalog(s.exercise_name)
+      exerciseMuscles.set(s.exercise_name, { primary_muscles, secondary_muscles })
     }
   }
   const muscleInputs = Array.from(exerciseSetCounts.entries()).map(([name, sets]) => ({
@@ -128,10 +134,10 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
   const volumeDelta = prevVolume > 0 ? Math.round(((totalVolume - prevVolume) / prevVolume) * 100) : null
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] font-sans pb-10">
+    <div className="min-h-screen bg-[#080808] font-sans pb-10">
 
       {/* Header */}
-      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-xl overflow-hidden border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
+      <header className="fixed top-4 left-4 right-4 z-40 h-14 rounded-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl bg-white/[0.04]">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.025] to-transparent" />
         <div className="relative z-10 max-w-lg mx-auto flex items-center gap-3 h-full px-4">
           <RecapNavButtons icon href="/client/programme" />
@@ -145,8 +151,8 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
       <main className="max-w-lg mx-auto px-5 pt-[88px] pb-5 flex flex-col gap-4">
 
         {/* ── Bannière succès ── */}
-        <div className="flex items-center gap-3 bg-[#ffe01e]/[0.08] border border-[#ffe01e]/20 rounded-xl px-5 py-4">
-          <CheckCircle2 size={20} className="text-[#ffe01e] shrink-0" />
+        <div className="flex items-center gap-3 bg-[#1a1a1a] rounded-xl px-5 py-4">
+          <CheckCircle2 size={20} className="text-[#f2f2f2] shrink-0" />
           <div>
             <p className="text-[13px] font-bold text-white">{ct(lang, 'recap.sessionRecorded')}</p>
             <p className="text-[11px] text-white/40 mt-0.5">
@@ -192,15 +198,15 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         </div>
 
         {/* ── Schéma corporel ── */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-5">
+        <div className="bg-white/[0.02] rounded-xl px-5 py-5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-4">{ct(lang, 'recap.musclesWorked')}</p>
           <BodyMap intensityMap={muscleIntensityMap} />
         </div>
 
         {/* ── Analyse par exercice ── */}
         {exercises.length > 0 && (
-          <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/[0.05]">
+          <div className="bg-white/[0.02] rounded-xl overflow-hidden">
+            <div className="px-5 py-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">{ct(lang, 'recap.exercises')}</p>
             </div>
             <div className="divide-y divide-white/[0.04]">
@@ -221,7 +227,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
                     </div>
                     {delta !== null && (
                       <div className={`flex items-center gap-1 text-[11px] font-bold shrink-0 ${
-                        delta > 0 ? 'text-[#ffe01e]' : delta < 0 ? 'text-red-400' : 'text-white/30'
+                        delta > 0 ? 'text-[#f2f2f2]' : delta < 0 ? 'text-red-400' : 'text-white/30'
                       }`}>
                         {delta > 0 ? <TrendingUp size={12} /> : delta < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
                         {delta > 0 ? '+' : ''}{delta}kg
@@ -235,7 +241,7 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
         )}
 
         {/* ── Notes libres ── */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-4">
+        <div className="bg-white/[0.02] rounded-xl px-5 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-3">{ct(lang, 'recap.sessionNotes')}</p>
           {Object.keys(sessionLog.exercise_notes ?? {}).length > 0 ? (
             <div className="flex flex-col gap-2">
@@ -252,6 +258,11 @@ export default async function SessionRecapPage({ params }: { params: { sessionLo
           ) : (
             <p className="text-[12px] text-white/25 italic">{ct(lang, 'recap.noNotes')}</p>
           )}
+        </div>
+
+        {/* Coach feedback thread */}
+        <div className="px-4 pb-2">
+          <FeedbackThread entityType="session" entityId={params.sessionLogId} />
         </div>
 
         {/* ── CTA ── router.refresh() invalide le cache du Server Component /client
@@ -272,7 +283,7 @@ function StatCard({
   icon?: React.ReactNode
 }) {
   return (
-    <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3">
+    <div className="bg-white/[0.02] rounded-xl px-4 py-3">
       <div className="flex items-center gap-1 text-white/30 mb-1.5">
         {icon}
         <p className="text-[9px] font-semibold uppercase tracking-[0.12em]">{label}</p>
@@ -280,7 +291,7 @@ function StatCard({
       <div className="flex items-end gap-2">
         <p className="text-[1.4rem] font-black text-white font-mono leading-none">{value}</p>
         {delta !== null && delta !== undefined && (
-          <span className={`text-[10px] font-bold mb-0.5 ${delta > 0 ? 'text-[#ffe01e]' : delta < 0 ? 'text-red-400' : 'text-white/30'}`}>
+          <span className={`text-[10px] font-bold mb-0.5 ${delta > 0 ? 'text-[#f2f2f2]' : delta < 0 ? 'text-red-400' : 'text-white/30'}`}>
             {delta > 0 ? '+' : ''}{delta}%
           </span>
         )}

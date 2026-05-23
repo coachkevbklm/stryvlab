@@ -23,7 +23,12 @@ const TRACKED_FIELDS: {
     unit: "kg",
     color: "#2d9f6f",
   },
-  { key: "muscle_mass_pct", label: "% Musculaire", unit: "%", color: "#3db87a" },
+  {
+    key: "muscle_mass_pct",
+    label: "% Musculaire",
+    unit: "%",
+    color: "#3db87a",
+  },
   { key: "body_water_pct", label: "% Hydrique", unit: "%", color: "#4db6e8" },
   { key: "bone_mass_kg", label: "Masse osseuse", unit: "kg", color: "#9b7cdb" },
   {
@@ -45,7 +50,7 @@ const TRACKED_FIELDS: {
   { key: "arm_cm", label: "Tour de bras", unit: "cm", color: "#999999" },
   { key: "thigh_cm", label: "Tour de cuisse", unit: "cm", color: "#bbbbbb" },
   {
-    key: "sleep_hours",
+    key: "sleep_duration_h",
     label: "Heures de sommeil",
     unit: "h",
     color: "#7c9dd4",
@@ -69,10 +74,31 @@ export default function ClientMetricsDashboard({
   useEffect(() => {
     setLoading(true);
     setSeries({});
-    fetch(`/api/clients/${clientId}/metrics`)
+    fetch(`/api/coach/clients/${clientId}/body-data`)
       .then((r) => r.json())
-      .then((d) => {
-        setSeries(d.series ?? {});
+      .then((data) => {
+        const nextSeries: MetricSeries = {};
+        if (Array.isArray(data.weightSeries))
+          nextSeries.weight_kg = data.weightSeries;
+        if (Array.isArray(data.bodyFatSeries))
+          nextSeries.body_fat_pct = data.bodyFatSeries;
+        if (Array.isArray(data.leanMassSeries))
+          nextSeries.lean_mass_kg = data.leanMassSeries;
+        const checkins = data.checkinSeries;
+        if (checkins && typeof checkins === "object") {
+          if (Array.isArray(checkins.weight_kg))
+            nextSeries.weight_kg = checkins.weight_kg;
+          if (Array.isArray(checkins.sleep_duration_h)) {
+            nextSeries.sleep_duration_h = checkins.sleep_duration_h;
+          } else if (Array.isArray(checkins.sleep_hours)) {
+            nextSeries.sleep_duration_h = checkins.sleep_hours;
+          }
+          if (Array.isArray(checkins.energy_level))
+            nextSeries.energy_level = checkins.energy_level;
+          if (Array.isArray(checkins.stress_level))
+            nextSeries.stress_level = checkins.stress_level;
+        }
+        setSeries(nextSeries);
       })
       .catch(() => setSeries({}))
       .finally(() => setLoading(false));

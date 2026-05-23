@@ -240,7 +240,7 @@ export function validateMuscleArray(slugs: unknown[]): CanonicalMuscle[] {
   }
 
   // Dedupe while preserving order
-  return [...new Set(normalized)];
+  return Array.from(new Set(normalized));
 }
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────

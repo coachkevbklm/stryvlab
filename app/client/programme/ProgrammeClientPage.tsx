@@ -1,80 +1,105 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
+import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
-  Dumbbell, Clock, Layers, Target, Timer, Coffee,
-  Flame, ChevronRight, Trophy, TrendingUp, Zap,
-} from 'lucide-react'
-import BodyMap from '@/components/client/BodyMap'
-import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
-import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
-import ClientTopBar from '@/components/client/ClientTopBar'
-import { useClientT } from '@/components/client/ClientI18nProvider'
-import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+  Dumbbell,
+  Clock,
+  Layers,
+  Target,
+  Timer,
+  Coffee,
+  Flame,
+  ChevronRight,
+  Trophy,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import BodyMap from "@/components/client/BodyMap";
+import { computeMuscleIntensity } from "@/lib/client/muscleDetection";
+import ExerciseListDisclosure from "@/components/client/ExerciseListDisclosure";
+import ClientTopBar from "@/components/client/ClientTopBar";
+import { useClientT } from "@/components/client/ClientI18nProvider";
+import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
 import type {
   HeatmapDay,
   PREntry,
   SessionSummary,
   SessionLog,
-} from '@/lib/client/progressTypes'
-import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
-import VolumeCoverageWidget from '@/components/client/smart/VolumeCoverageWidget'
-import RecentSessionsStrip from '@/components/client/smart/RecentSessionsStrip'
-import ExerciseProgressionChart from '@/components/client/smart/ExerciseProgressionChart'
-import OneRMWidget from '@/components/client/smart/OneRMWidget'
-import DeloadAlertBanner from '@/components/client/smart/DeloadAlertBanner'
+} from "@/lib/client/progressTypes";
+import SmartAlertsFeed, {
+  type GenericAlert,
+} from "@/components/client/smart/SmartAlertsFeed";
+import VolumeCoverageWidget from "@/components/client/smart/VolumeCoverageWidget";
+import RecentSessionsStrip from "@/components/client/smart/RecentSessionsStrip";
+import ExerciseProgressionChart from "@/components/client/smart/ExerciseProgressionChart";
+import OneRMWidget from "@/components/client/smart/OneRMWidget";
+import DeloadAlertBanner from "@/components/client/smart/DeloadAlertBanner";
 
-type Tab = 'seance' | 'performances' | 'historique'
+type Tab = "seance" | "performances" | "historique";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function estimateDuration(exercises: any[]): number {
-  let totalSec = 0
+  let totalSec = 0;
   for (const ex of exercises) {
-    const sets = ex.sets ?? 3
-    const restSec = ex.rest_sec ?? 90
-    totalSec += sets * 45 + (sets - 1) * restSec
+    const sets = ex.sets ?? 3;
+    const restSec = ex.rest_sec ?? 90;
+    totalSec += sets * 45 + (sets - 1) * restSec;
   }
-  return Math.round(totalSec / 60)
+  return Math.round(totalSec / 60);
 }
 
 function avgRest(exercises: any[]): number | null {
-  const rests = exercises.filter(ex => ex.rest_sec != null).map(ex => ex.rest_sec as number)
-  if (rests.length === 0) return null
-  return Math.round(rests.reduce((a, b) => a + b, 0) / rests.length)
+  const rests = exercises
+    .filter((ex) => ex.rest_sec != null)
+    .map((ex) => ex.rest_sec as number);
+  if (rests.length === 0) return null;
+  return Math.round(rests.reduce((a, b) => a + b, 0) / rests.length);
 }
 
 function avgRir(exercises: any[]): number | null {
-  const rirs = exercises.filter(ex => ex.rir != null).map(ex => ex.rir as number)
-  if (rirs.length === 0) return null
-  return Math.round(rirs.reduce((a, b) => a + b, 0) / rirs.length)
+  const rirs = exercises
+    .filter((ex) => ex.rir != null)
+    .map((ex) => ex.rir as number);
+  if (rirs.length === 0) return null;
+  return Math.round(rirs.reduce((a, b) => a + b, 0) / rirs.length);
 }
 
 // ── Props ──────────────────────────────────────────────────────────────────
 
 interface Props {
-  program: any
-  sessions: any[]
-  todayDow: number
-  selectedDow: number
-  activeTab: string
-  completedTodayIds: string[]
-  completedTodayNames: string[]
-  daysShort: string[]
-  daysFull: string[]
-  lang: ClientLang
+  program: any;
+  sessions: any[];
+  todayDow: number;
+  selectedDow: number;
+  activeTab: string;
+  completedTodayIds: string[];
+  completedTodayNames: string[];
+  daysShort: string[];
+  daysFull: string[];
+  lang: ClientLang;
   // Performance
-  streak: number
-  bestStreak: number
-  heatmapData: HeatmapDay[]
-  allTimePRs: PREntry[]
-  sessionList: SessionSummary[]
-  rawLogs: SessionLog[]
+  streak: number;
+  bestStreak: number;
+  heatmapData: HeatmapDay[];
+  allTimePRs: PREntry[];
+  sessionList: SessionSummary[];
+  rawLogs: SessionLog[];
   // Smart Workout
-  workoutAlerts?: GenericAlert[]
-  volumeCoverage?: { week_start: string; sessions_count: number; groups: any[] }
-  smartRecentSessions?: { id: string; completed_at: string; program_session_id: string | null; volume_kg: number; avg_rir: number | null }[]
+  workoutAlerts?: GenericAlert[];
+  volumeCoverage?: {
+    week_start: string;
+    sessions_count: number;
+    groups: any[];
+  };
+  smartRecentSessions?: {
+    id: string;
+    completed_at: string;
+    program_session_id: string | null;
+    volume_kg: number;
+    avg_rir: number | null;
+  }[];
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -97,86 +122,109 @@ export default function ProgrammeClientPage({
   sessionList,
   rawLogs,
   workoutAlerts = [],
-  volumeCoverage = { week_start: '', sessions_count: 0, groups: [] },
+  volumeCoverage = { week_start: "", sessions_count: 0, groups: [] },
   smartRecentSessions = [],
 }: Props) {
-  const { t } = useClientT()
+  const { t } = useClientT();
 
-  const [tab, setTab] = useState<Tab>(initialTab as Tab ?? 'seance')
-  const [selectedDow, setSelectedDow] = useState(initialDow)
-  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [tab, setTab] = useState<Tab>((initialTab as Tab) ?? "seance");
+  const [selectedDow, setSelectedDow] = useState(initialDow);
+  const [period, setPeriod] = useState<"7d" | "30d" | "90d" | "all">("30d");
 
-  const completedIdsSet = useMemo(() => new Set(completedTodayIds), [completedTodayIds])
-  const completedNamesSet = useMemo(() => new Set(completedTodayNames), [completedTodayNames])
+  const completedIdsSet = useMemo(
+    () => new Set(completedTodayIds),
+    [completedTodayIds],
+  );
+  const completedNamesSet = useMemo(
+    () => new Set(completedTodayNames),
+    [completedTodayNames],
+  );
 
-  const todaySession = useMemo(() =>
-    sessions.find((s: any) =>
-      (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(selectedDow)
-    ) ?? null,
-    [sessions, selectedDow]
-  )
+  const todaySession = useMemo(
+    () =>
+      sessions.find((s: any) =>
+        (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(
+          selectedDow,
+        ),
+      ) ?? null,
+    [sessions, selectedDow],
+  );
 
-  const todayExercises = useMemo(() =>
-    todaySession
-      ? ((todaySession.program_exercises ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
-      : [],
-    [todaySession]
-  )
+  const todayExercises = useMemo(
+    () =>
+      todaySession
+        ? ((todaySession.program_exercises ?? []) as any[]).sort(
+            (a: any, b: any) => a.position - b.position,
+          )
+        : [],
+    [todaySession],
+  );
 
-  const muscleIntensityMap = useMemo(() =>
-    computeMuscleIntensity(todayExercises.map((e: any) => ({
-      name: e.name,
-      sets: e.sets ?? 3,
-      primary_muscles: e.primary_muscles ?? [],
-      secondary_muscles: e.secondary_muscles ?? [],
-      primary_muscle: e.primary_muscle ?? null,
-      primary_activation: e.primary_activation ?? null,
-      secondary_muscles_detail: e.secondary_muscles_detail ?? [],
-      secondary_activations: e.secondary_activations ?? [],
-    }))),
-    [todayExercises]
-  )
+  const muscleIntensityMap = useMemo(
+    () =>
+      computeMuscleIntensity(
+        todayExercises.map((e: any) => ({
+          name: e.name,
+          sets: e.sets ?? 3,
+          primary_muscles: e.primary_muscles ?? [],
+          secondary_muscles: e.secondary_muscles ?? [],
+          primary_muscle: e.primary_muscle ?? null,
+          primary_activation: e.primary_activation ?? null,
+          secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+          secondary_activations: e.secondary_activations ?? [],
+        })),
+      ),
+    [todayExercises],
+  );
 
-  const durationMin = todaySession ? estimateDuration(todayExercises) : null
-  const totalSets = todayExercises.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)
-  const restAvg = todaySession ? avgRest(todayExercises) : null
-  const rirAvg = todaySession ? avgRir(todayExercises) : null
+  const durationMin = todaySession ? estimateDuration(todayExercises) : null;
+  const totalSets = todayExercises.reduce(
+    (s: number, e: any) => s + (e.sets ?? 0),
+    0,
+  );
+  const restAvg = todaySession ? avgRest(todayExercises) : null;
+  const rirAvg = todaySession ? avgRir(todayExercises) : null;
 
-  const isViewingToday = selectedDow === todayDow
+  const isViewingToday = selectedDow === todayDow;
 
   // Historique — 30 dernières séances
-  const recentSessions = useMemo(() =>
-    [...sessionList].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30),
-    [sessionList]
-  )
+  const recentSessions = useMemo(
+    () =>
+      [...sessionList]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 30),
+    [sessionList],
+  );
 
   // Timeline pour le graphe volume
   const timeline = useMemo(() => {
-    const map: Record<string, { date: string; volume: number }> = {}
+    const map: Record<string, { date: string; volume: number }> = {};
     for (const log of rawLogs) {
-      const date = log.logged_at.split('T')[0]
-      if (!map[date]) map[date] = { date, volume: 0 }
+      const date = log.logged_at.split("T")[0];
+      if (!map[date]) map[date] = { date, volume: 0 };
       for (const s of log.client_set_logs) {
         if (s.completed) {
-          map[date].volume += (s.actual_reps ?? 0) * (parseFloat(String(s.actual_weight_kg)) || 0)
+          map[date].volume +=
+            (s.actual_reps ?? 0) *
+            (parseFloat(String(s.actual_weight_kg)) || 0);
         }
       }
     }
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date))
-  }, [rawLogs])
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }, [rawLogs]);
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'seance',       label: 'Séance'       },
-    { id: 'performances', label: 'Performances'  },
-    { id: 'historique',   label: 'Historique'    },
-  ]
+    { id: "seance", label: ct(lang, "programme.tab.seance") },
+    { id: "performances", label: ct(lang, "programme.tab.performances") },
+    { id: "historique", label: ct(lang, "programme.tab.historique") },
+  ];
 
-  const isOnFire = streak >= 7
+  const isOnFire = streak >= 7;
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] font-sans pb-32">
+    <div className="min-h-screen bg-[#080808] font-sans pb-32">
       <ClientTopBar
-        section={ct(lang, 'programme.section')}
+        section={ct(lang, "programme.section")}
         title={program.name}
         right={
           <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">
@@ -186,10 +234,7 @@ export default function ProgrammeClientPage({
       />
 
       <main className="max-w-lg mx-auto px-5 pt-[88px] flex flex-col gap-4">
-
-        {/* ── Smart alerts + recent sessions ── */}
-        {workoutAlerts.length > 0 && <SmartAlertsFeed alerts={workoutAlerts} />}
-        {smartRecentSessions.length > 0 && <RecentSessionsStrip sessions={smartRecentSessions} />}
+        {/* NOTE: Smart alerts and recent sessions moved below today's session (see Volume widget placement) */}
 
         {/* ── Tab bar ── */}
         <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
@@ -199,8 +244,8 @@ export default function ProgrammeClientPage({
               onClick={() => setTab(id)}
               className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 ${
                 tab === id
-                  ? 'bg-[#ffe01e] text-[#0d0d0d] shadow-sm font-barlow-condensed font-bold uppercase tracking-wide'
-                  : 'text-white/40 hover:text-white/70'
+                  ? "bg-[#f2f2f2] text-[#080808] shadow-sm font-barlow-condensed font-bold uppercase tracking-wide"
+                  : "text-white/40 hover:text-white/70"
               }`}
             >
               {label}
@@ -211,7 +256,7 @@ export default function ProgrammeClientPage({
         {/* ══════════════════════════════════════════════════════════════
             TAB — SÉANCE
         ══════════════════════════════════════════════════════════════ */}
-        {tab === 'seance' && (
+        {tab === "seance" && (
           <>
             {/* Deload Alert */}
             <DeloadAlertBanner clientId={program.client_id} />
@@ -219,26 +264,36 @@ export default function ProgrammeClientPage({
             {/* Sélecteur jours */}
             <div className="flex gap-1">
               {daysShort.map((d, i) => {
-                const dow = i + 1
+                const dow = i + 1;
                 const hasSession = sessions.some((s: any) =>
-                  (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(dow)
-                )
-                const isToday = dow === todayDow
-                const isSelected = dow === selectedDow
+                  (s.days_of_week?.length
+                    ? s.days_of_week
+                    : [s.day_of_week]
+                  ).includes(dow),
+                );
+                const isToday = dow === todayDow;
+                const isSelected = dow === selectedDow;
                 const cls = `flex-1 flex flex-col items-center py-2 rounded-xl text-[10px] font-bold transition-colors ${
                   isSelected
-                    ? 'bg-[#ffe01e] text-[#0d0d0d]'
+                    ? "bg-[#f2f2f2] text-[#080808]"
                     : isToday
-                    ? 'bg-[#ffe01e]/20 text-[#ffe01e]'
-                    : hasSession
-                    ? 'bg-white/[0.04] text-white/50 hover:bg-white/[0.07] cursor-pointer'
-                    : 'text-white/20'
-                }`
+                      ? "bg-[#f2f2f2]/20 text-[#f2f2f2]"
+                      : hasSession
+                        ? "bg-white/[0.04] text-white/50 hover:bg-white/[0.07] cursor-pointer"
+                        : "text-white/20"
+                }`;
                 const dot = hasSession && (
-                  <span className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-[#0d0d0d]' : 'bg-[#ffe01e]/50'}`} />
-                )
+                  <span
+                    className={`w-1 h-1 rounded-full mt-1 ${isSelected ? "bg-[#080808]" : "bg-[#f2f2f2]/50"}`}
+                  />
+                );
                 if (!hasSession && !isToday) {
-                  return <div key={d} className={cls}><span>{d}</span>{dot}</div>
+                  return (
+                    <div key={d} className={cls}>
+                      <span>{d}</span>
+                      {dot}
+                    </div>
+                  );
                 }
                 return (
                   <button
@@ -246,37 +301,67 @@ export default function ProgrammeClientPage({
                     onClick={() => setSelectedDow(dow)}
                     className={cls}
                   >
-                    <span>{d}</span>{dot}
+                    <span>{d}</span>
+                    {dot}
                   </button>
-                )
+                );
               })}
             </div>
 
             {todaySession ? (
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="bg-white/[0.02] rounded-xl overflow-hidden">
                 {/* Header */}
                 <div className="px-5 pt-5 pb-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-1">
-                    {daysFull[selectedDow - 1]}{!isViewingToday ? ' · Aperçu' : ''}
+                    {daysFull[selectedDow - 1]}
+                    {!isViewingToday
+                      ? ` · ${ct(lang, "programme.preview")}`
+                      : ""}
                   </p>
-                  <h2 className="text-[20px] font-bold text-white leading-tight">{todaySession.name}</h2>
+                  <h2 className="text-[20px] font-bold text-white leading-tight">
+                    {todaySession.name}
+                  </h2>
                   <p className="text-[12px] text-white/35 mt-0.5">
-                    {todayExercises.length} {ct(lang, 'programme.session.exercises')}
+                    {todayExercises.length}{" "}
+                    {ct(lang, "programme.session.exercises")}
                   </p>
                 </div>
 
                 {/* BodyMap */}
-                <div className="px-5 py-4 flex justify-center border-t border-b border-white/[0.04]">
+                <div className="px-5 py-4 flex justify-center">
                   <BodyMap intensityMap={muscleIntensityMap} />
                 </div>
 
                 {/* Stats pills */}
                 <div className="px-5 py-4 flex gap-2 flex-wrap">
-                  {durationMin !== null && <StatPill icon={<Clock size={10} />} label={`~${durationMin} min`} />}
-                  <StatPill icon={<Layers size={10} />} label={`${totalSets} ${ct(lang, 'programme.session.sets')}`} />
-                  <StatPill icon={<Dumbbell size={10} />} label={`${todayExercises.length} ex.`} />
-                  {restAvg !== null && <StatPill icon={<Timer size={10} />} label={`${restAvg}s repos`} />}
-                  {rirAvg !== null && <StatPill icon={<Target size={10} />} label={`RIR ${rirAvg}`} />}
+                  {durationMin !== null && (
+                    <StatPill
+                      icon={<Clock size={10} />}
+                      label={`~${durationMin} min`}
+                    />
+                  )}
+                  <StatPill
+                    icon={<Layers size={10} />}
+                    label={`${totalSets} ${ct(lang, "programme.session.sets")}`}
+                  />
+                  <StatPill
+                    icon={<Dumbbell size={10} />}
+                    label={`${todayExercises.length} ex.`}
+                  />
+                  {restAvg !== null && (
+                    <StatPill
+                      icon={<Timer size={10} />}
+                      label={ct(lang, "programme.rest.avgsec", {
+                        n: String(restAvg),
+                      })}
+                    />
+                  )}
+                  {rirAvg !== null && (
+                    <StatPill
+                      icon={<Target size={10} />}
+                      label={`RIR ${rirAvg}`}
+                    />
+                  )}
                 </div>
 
                 {/* Exercices disclosure */}
@@ -291,55 +376,88 @@ export default function ProgrammeClientPage({
 
                 {/* CTA */}
                 <div className="px-5 pb-5 pt-3">
-                  {(completedIdsSet.has(todaySession.id) || completedNamesSet.has(todaySession.name)) ? (
-                    <div className="flex items-center justify-between w-full bg-[#ffe01e]/10 border border-[#ffe01e]/20 pl-5 pr-1.5 py-1.5 rounded-xl">
-                      <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ffe01e]">
-                        Séance réalisée ✓
+                  {completedIdsSet.has(todaySession.id) ||
+                  completedNamesSet.has(todaySession.name) ? (
+                    <div className="flex items-center justify-between w-full bg-[#222222] pl-5 pr-1.5 py-1.5 rounded-xl">
+                      <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#f2f2f2]">
+                        {ct(lang, "programme.session.done")}
                       </span>
                       <Link
                         href={`/client/programme/session/${todaySession.id}`}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ffe01e]/10 text-[#ffe01e] text-[10px] font-bold"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f2f2f2]/10 text-[#f2f2f2] text-[10px] font-bold"
                       >
-                        Refaire
+                        {ct(lang, "programme.session.redo")}
                       </Link>
                     </div>
                   ) : (
                     <Link
                       href={`/client/programme/session/${todaySession.id}`}
-                      className="flex items-center justify-between w-full bg-[#ffe01e] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#ffd000] active:scale-[0.99] transition-all"
+                      className="flex items-center justify-between w-full bg-[#f2f2f2] pl-5 pr-1.5 py-1.5 rounded-xl hover:bg-[#e8e8e8] active:scale-[0.99] transition-all"
                     >
-                      <span className="text-[12px] font-barlow-condensed font-bold uppercase tracking-wide text-[#0d0d0d]">
-                        {ct(lang, 'programme.session.start')}
+                      <span className="text-[12px] font-barlow-condensed font-bold uppercase tracking-wide text-[#080808]">
+                        {ct(lang, "programme.session.start")}
                       </span>
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/[0.15]">
-                        <Dumbbell size={15} className="text-[#0d0d0d]" />
+                        <Dumbbell size={15} className="text-[#080808]" />
                       </div>
                     </Link>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-10 text-center">
+              <div className="bg-white/[0.02] rounded-xl px-5 py-10 text-center">
                 <Coffee size={28} className="text-white/20 mx-auto mb-3" />
-                <p className="text-[14px] font-semibold text-white/50">{ct(lang, 'programme.rest.today')}</p>
-                <p className="text-[11px] text-white/25 mt-1">Profite de la récupération</p>
+                <p className="text-[14px] font-semibold text-white/50">
+                  {ct(lang, "programme.rest.today")}
+                </p>
+                <p className="text-[11px] text-white/25 mt-1">
+                  {ct(lang, "programme.rest.recover")}
+                </p>
                 {(() => {
-                  const next = sessions.find((s: any) => {
-                    const d = (s.days_of_week?.length ? Math.min(...s.days_of_week) : s.day_of_week) ?? 0
-                    return d > selectedDow
-                  }) ?? sessions[0]
-                  if (!next) return null
+                  const sessionsByDow = [...sessions].sort((a: any, b: any) => {
+                    const da =
+                      (a.days_of_week?.length
+                        ? Math.min(...a.days_of_week)
+                        : a.day_of_week) ?? 0;
+                    const db =
+                      (b.days_of_week?.length
+                        ? Math.min(...b.days_of_week)
+                        : b.day_of_week) ?? 0;
+                    return da - db;
+                  });
+                  const next =
+                    sessionsByDow.find((s: any) => {
+                      const d =
+                        (s.days_of_week?.length
+                          ? Math.min(...s.days_of_week)
+                          : s.day_of_week) ?? 0;
+                      return d > selectedDow;
+                    }) ?? sessionsByDow[0];
+                  if (!next) return null;
                   return (
                     <p className="text-[10px] text-white/25 mt-4">
-                      Prochaine ·{' '}
+                      Prochaine ·{" "}
                       <span className="text-white/40">
-                        {(next.days_of_week?.length ? next.days_of_week : [next.day_of_week ?? 1])
-                          .map((d: number) => daysFull[d - 1]).join('/')} — {next.name}
+                        {(next.days_of_week?.length
+                          ? next.days_of_week
+                          : [next.day_of_week ?? 1]
+                        )
+                          .map((d: number) => daysFull[d - 1])
+                          .join("/")}{" "}
+                        — {next.name}
                       </span>
                     </p>
-                  )
+                  );
                 })()}
               </div>
+            )}
+
+            {/* ── Smart alerts + recent sessions (placed under today's session) ── */}
+            {workoutAlerts.length > 0 && (
+              <SmartAlertsFeed alerts={workoutAlerts} />
+            )}
+            {smartRecentSessions.length > 0 && (
+              <RecentSessionsStrip sessions={smartRecentSessions} />
             )}
 
             {/* Volume hebdomadaire — 7 derniers jours */}
@@ -356,124 +474,223 @@ export default function ProgrammeClientPage({
         {/* ══════════════════════════════════════════════════════════════
             TAB — PERFORMANCES
         ══════════════════════════════════════════════════════════════ */}
-        {tab === 'performances' && (
+        {tab === "performances" && (
           <div className="flex flex-col gap-4">
-
             {/* Streak */}
             {streak > 0 ? (
               <div
                 className="relative rounded-xl overflow-hidden px-5 py-5"
                 style={{
-                  background: isOnFire
-                    ? 'linear-gradient(135deg, rgba(255,224,30,0.18) 0%, rgba(255,224,30,0.06) 100%)'
-                    : 'rgba(255,255,255,0.02)',
-                  border: `0.3px solid ${isOnFire ? 'rgba(255,224,30,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                  background: isOnFire ? "#1a1a1a" : "#111111",
                 }}
               >
                 <div className="flex items-center">
                   <div className="flex-1">
                     <div className="flex items-end gap-2 mb-1">
-                      <span className="font-black font-mono leading-none text-[3.5rem]"
-                        style={{ color: isOnFire ? '#ffe01e' : 'white', lineHeight: 1 }}>
+                      <span
+                        className="font-black font-mono leading-none text-[3.5rem]"
+                        style={{
+                          color: isOnFire ? "#f2f2f2" : "white",
+                          lineHeight: 1,
+                        }}
+                      >
                         {streak}
                       </span>
-                      <span className="text-[1.1rem] font-semibold text-white/40 mb-2">j</span>
-                      {isOnFire && <Flame size={22} className="text-[#ffe01e] mb-1.5 ml-1" />}
+                      <span className="text-[1.1rem] font-semibold text-white/40 mb-2">
+                        j
+                      </span>
+                      {isOnFire && (
+                        <Flame
+                          size={22}
+                          className="text-[#f2f2f2] mb-1.5 ml-1"
+                        />
+                      )}
                     </div>
                     <p className="text-[11px] text-white/50">
-                      {isOnFire ? 'Feu vert — continue comme ça' : 'Jours consécutifs'}
+                      {isOnFire
+                        ? ct(lang, "programme.streak.fire")
+                        : ct(lang, "programme.streak.consecutive")}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-1">Record</p>
-                    <p className="text-[1.4rem] font-black text-white/35 font-mono leading-none">
-                      {bestStreak}<span className="text-[0.8rem] font-medium ml-0.5">j</span>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-1">
+                      Record
                     </p>
-                    <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ width: 56, background: 'rgba(255,255,255,0.06)' }}>
-                      <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${Math.min((streak / Math.max(bestStreak, 1)) * 100, 100)}%`, background: '#ffe01e' }} />
+                    <p className="text-[1.4rem] font-black text-white/35 font-mono leading-none">
+                      {bestStreak}
+                      <span className="text-[0.8rem] font-medium ml-0.5">
+                        j
+                      </span>
+                    </p>
+                    <div
+                      className="mt-2 h-1 rounded-full overflow-hidden"
+                      style={{
+                        width: 56,
+                        background: "rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.min((streak / Math.max(bestStreak, 1)) * 100, 100)}%`,
+                          background: "#f2f2f2",
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3">
+              <div className="flex items-center gap-3 bg-white/[0.02] rounded-xl px-4 py-3">
                 <Zap size={14} className="text-white/20 shrink-0" />
                 <p className="text-[12px] text-white/35">
                   {bestStreak > 0
-                    ? `Record : ${bestStreak}j — fais une séance pour relancer`
-                    : 'Fais une séance pour lancer ton streak'}
+                    ? ct(lang, "programme.streak.record.relaunch", {
+                        n: String(bestStreak),
+                      })
+                    : ct(lang, "programme.streak.start")}
                 </p>
               </div>
             )}
 
             {/* Filtre période */}
             <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
-              {(['7d', '30d', '90d', 'all'] as const).map(p => (
+              {(["7d", "30d", "90d", "all"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 ${
-                    period === p ? 'bg-white/[0.08] text-white' : 'text-white/30 hover:text-white/50'
+                    period === p
+                      ? "bg-white/[0.08] text-white"
+                      : "text-white/30 hover:text-white/50"
                   }`}
                 >
-                  {p === '7d' ? '7j' : p === '30d' ? '30j' : p === '90d' ? '90j' : 'Tout'}
+                  {p === "7d"
+                    ? ct(lang, "progress.period.7")
+                    : p === "30d"
+                      ? ct(lang, "progress.period.30")
+                      : p === "90d"
+                        ? ct(lang, "progress.period.90")
+                        : ct(lang, "progress.period.all")}
                 </button>
               ))}
             </div>
 
             {/* KPIs filtrés par période */}
-            {sessionList.length > 0 && (() => {
-              const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null
-              const sinceStr = days ? (() => { const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString().split('T')[0] })() : ''
-              const recent = days ? sessionList.filter(s => s.date >= sinceStr) : sessionList
-              const volume = recent.reduce((sum, s) => sum + s.volume, 0)
-              const sets = recent.reduce((sum, s) => sum + s.setsCompleted, 0)
-              const periodLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : period === '90d' ? '90 derniers jours' : 'Total'
-              return (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                    {periodLabel}
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <KpiCard label="Séances" value={recent.length} />
-                    <KpiCard label="Volume" value={volume >= 1000 ? `${(volume / 1000).toFixed(1)}t` : `${Math.round(volume)}kg`} />
-                    <KpiCard label="Sets" value={sets} />
+            {sessionList.length > 0 &&
+              (() => {
+                const days =
+                  period === "7d"
+                    ? 7
+                    : period === "30d"
+                      ? 30
+                      : period === "90d"
+                        ? 90
+                        : null;
+                const sinceStr = days
+                  ? (() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - days);
+                      return d.toISOString().split("T")[0];
+                    })()
+                  : "";
+                const recent = days
+                  ? sessionList.filter((s) => s.date >= sinceStr)
+                  : sessionList;
+                const volume = recent.reduce((sum, s) => sum + s.volume, 0);
+                const sets = recent.reduce(
+                  (sum, s) => sum + s.setsCompleted,
+                  0,
+                );
+                const periodLabel =
+                  period === "7d"
+                    ? ct(lang, "programme.period.7d")
+                    : period === "30d"
+                      ? ct(lang, "programme.period.30d")
+                      : period === "90d"
+                        ? ct(lang, "programme.period.90d")
+                        : ct(lang, "programme.period.total");
+                return (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
+                      {periodLabel}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <KpiCard
+                        label={ct(lang, "programme.kpi.sessions")}
+                        value={recent.length}
+                      />
+                      <KpiCard
+                        label="Volume"
+                        value={
+                          volume >= 1000
+                            ? `${(volume / 1000).toFixed(1)}t`
+                            : `${Math.round(volume)}kg`
+                        }
+                      />
+                      <KpiCard label="Sets" value={sets} />
+                    </div>
                   </div>
-                </div>
-              )
-            })()}
+                );
+              })()}
 
             {/* Heatmap filtrée par période */}
             {(() => {
-              const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null
-              const filteredHeatmap = days ? heatmapData.slice(-days) : heatmapData
-              const heatLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '4 semaines' : period === '90d' ? '13 semaines' : 'Tout'
+              const days =
+                period === "7d"
+                  ? 7
+                  : period === "30d"
+                    ? 30
+                    : period === "90d"
+                      ? 90
+                      : null;
+              const filteredHeatmap = days
+                ? heatmapData.slice(-days)
+                : heatmapData;
+              const heatLabel =
+                period === "7d"
+                  ? ct(lang, "programme.period.heatmap.7")
+                  : period === "30d"
+                    ? ct(lang, "programme.period.heatmap.30")
+                    : period === "90d"
+                      ? ct(lang, "programme.period.heatmap.90")
+                      : ct(lang, "programme.period.heatmap.all");
               return (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                    Activité — {heatLabel}
+                    {ct(lang, "programme.heatmap.label", { period: heatLabel })}
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {filteredHeatmap.map((d, i) => (
-                      <div key={i} className={`w-4 h-4 rounded-sm ${d.level > 0 ? 'bg-[#ffe01e]/70' : 'bg-white/[0.05]'}`} title={d.date} />
+                      <div
+                        key={i}
+                        className={`w-4 h-4 rounded-sm ${d.level > 0 ? "bg-[#f2f2f2]/70" : "bg-white/[0.05]"}`}
+                        title={d.date}
+                      />
                     ))}
                   </div>
                 </div>
-              )
+              );
             })()}
 
             {/* PRs inline */}
             {allTimePRs.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30 mb-2.5 px-1">
-                  Records personnels
+                  {ct(lang, "programme.prs")}
                 </p>
                 <div className="space-y-2">
                   {allTimePRs.slice(0, 5).map((pr, i) => (
-                    <div key={i} className="flex items-center justify-between bg-white/[0.02] rounded-xl px-3 py-2">
-                      <span className="text-[12px] text-white/70">{pr.exercise}</span>
-                      <span className="text-[12px] font-bold text-[#ffe01e] tabular-nums">{pr.maxWeight}kg</span>
+                    <div
+                      key={i}
+                      className="flex items-center justify-between bg-white/[0.02] rounded-xl px-3 py-2"
+                    >
+                      <span className="text-[12px] text-white/70">
+                        {pr.exercise}
+                      </span>
+                      <span className="text-[12px] font-bold text-[#f2f2f2] tabular-nums">
+                        {pr.maxWeight}kg
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -481,7 +698,9 @@ export default function ProgrammeClientPage({
             )}
 
             {/* Exercise Progression Chart */}
-            {rawLogs.length > 0 && <ExerciseProgressionChart rawLogs={rawLogs} />}
+            {rawLogs.length > 0 && (
+              <ExerciseProgressionChart rawLogs={rawLogs} />
+            )}
 
             {/* 1RM Trends Widget */}
             {sessionList.length > 0 && (
@@ -493,7 +712,9 @@ export default function ProgrammeClientPage({
             {sessionList.length === 0 && (
               <div className="text-center py-12">
                 <TrendingUp size={28} className="text-white/10 mx-auto mb-3" />
-                <p className="text-[12px] text-white/25">Logue ta première séance pour voir tes performances</p>
+                <p className="text-[12px] text-white/25">
+                  {ct(lang, "programme.noPerfFirst")}
+                </p>
               </div>
             )}
           </div>
@@ -502,65 +723,77 @@ export default function ProgrammeClientPage({
         {/* ══════════════════════════════════════════════════════════════
             TAB — HISTORIQUE
         ══════════════════════════════════════════════════════════════ */}
-        {tab === 'historique' && (
+        {tab === "historique" && (
           <div className="flex flex-col gap-2">
             {recentSessions.length === 0 ? (
               <div className="text-center py-12">
                 <Clock size={28} className="text-white/10 mx-auto mb-3" />
-                <p className="text-[12px] text-white/25">Aucune séance enregistrée</p>
+                <p className="text-[12px] text-white/25">
+                  {ct(lang, "programme.noHistory")}
+                </p>
               </div>
             ) : (
-              recentSessions.map(session => {
-                const [, m, d] = session.date.split('-')
+              recentSessions.map((session) => {
+                const [, m, d] = session.date.split("-");
                 return (
                   <Link
                     key={session.id}
                     href={`/client/programme/recap/${session.id}`}
-                    className="flex items-center justify-between bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3 hover:bg-white/[0.04] active:scale-[0.99] transition-all"
+                    className="flex items-center justify-between bg-white/[0.02] rounded-xl px-4 py-3 hover:bg-white/[0.04] active:scale-[0.99] transition-all"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="text-center w-9 shrink-0">
-                        <p className="text-[12px] font-black text-white/50 font-mono">{d}/{m}</p>
+                        <p className="text-[12px] font-black text-white/50 font-mono">
+                          {d}/{m}
+                        </p>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-[12px] font-semibold text-white/80 truncate">{session.name}</p>
+                          <p className="text-[12px] font-semibold text-white/80 truncate">
+                            {session.name}
+                          </p>
                           {session.hasPR && (
-                            <span className="shrink-0 flex items-center gap-1 bg-[#ffe01e]/15 text-[#ffe01e] text-[9px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full">
-                              <Trophy size={8} />PR
+                            <span className="shrink-0 flex items-center gap-1 bg-[#f2f2f2]/15 text-[#f2f2f2] text-[9px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full">
+                              <Trophy size={8} />
+                              PR
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="flex items-center gap-1 text-[10px] text-white/30">
-                            <Layers size={9} />{session.setsCompleted} sets
+                            <Layers size={9} />
+                            {session.setsCompleted} sets
                           </span>
                           {session.durationMin && (
                             <span className="flex items-center gap-1 text-[10px] text-white/30">
-                              <Clock size={9} />{session.durationMin}min
+                              <Clock size={9} />
+                              {session.durationMin}min
                             </span>
                           )}
                           {session.volume > 0 && (
                             <span className="flex items-center gap-1 text-[10px] text-white/30">
                               <TrendingUp size={9} />
-                              {session.volume >= 1000 ? `${(session.volume / 1000).toFixed(1)}t` : `${session.volume}kg`}
+                              {session.volume >= 1000
+                                ? `${(session.volume / 1000).toFixed(1)}t`
+                                : `${session.volume}kg`}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <ChevronRight size={14} className="text-white/20 shrink-0 ml-2" />
+                    <ChevronRight
+                      size={14}
+                      className="text-white/20 shrink-0 ml-2"
+                    />
                   </Link>
-                )
+                );
               })
             )}
           </div>
         )}
-
-
       </main>
     </div>
-  )
+  );
 }
 
 function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
@@ -569,14 +802,18 @@ function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
       <span className="text-white/35">{icon}</span>
       <span className="text-[11px] font-medium text-white/55">{label}</span>
     </div>
-  )
+  );
 }
 
 function KpiCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3 text-center">
-      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-1">{label}</p>
-      <p className="text-[1.3rem] font-black leading-none font-mono text-white">{value}</p>
+    <div className="bg-white/[0.02] rounded-xl p-3 text-center">
+      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-1">
+        {label}
+      </p>
+      <p className="text-[1.3rem] font-black leading-none font-mono text-white">
+        {value}
+      </p>
     </div>
-  )
+  );
 }

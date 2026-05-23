@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { parseTempo, type ParsedTempo } from '@/lib/training/tempo'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -69,14 +70,18 @@ const WAVE_PATH_D = buildWavePath()
 
 // ─── Phase config ─────────────────────────────────────────────────────────────
 
+// Phase accent colors — vivid, read well on #080808
+const CON_COLOR = '#3b82f6'   // Concentric — electric blue
+const ECC_COLOR = '#d4920f'   // Eccentric  — vivid gold
+
 const PHASE_CONFIG = [
-  { label: 'CONTRACTER', color: '#3b82f6' },  // 0 CON — bleu
-  { label: 'TENIR',      color: '#ef4444' },  // 1 ISO — rouge (tenue statique)
-  { label: 'FREINER',    color: '#FFB800' },  // 2 ECC — jaune accent
-  { label: 'PAUSE',      color: '#ef4444' },  // 3 PAUSE — rouge (tenue statique)
+  { label: 'CONTRACTER', color: CON_COLOR  },  // 0 CON
+  { label: 'TENIR',      color: '#ef4444'  },  // 1 ISO
+  { label: 'FREINER',    color: ECC_COLOR  },  // 2 ECC
+  { label: 'PAUSE',      color: '#ef4444'  },  // 3 PAUSE
 ] as const
 
-const ACCENT_TEMPO = '#FFB800'
+const ACCENT_TEMPO = '#e0e0e0'   // UI text (countdown, GO, READY) — neutral
 const TRAIL_LEN = 6
 
 // 300ms avant la fin d'une phase statique (ISO/PAUSE) → balle change de couleur
@@ -138,6 +143,7 @@ function TempoGuideModalInner({
   hapticsEnabled: boolean
   onClose: (result: TempoCloseResult) => void
 }) {
+  const { t } = useClientT()
   const isLandscape = useIsLandscape()
   const vib = useCallback((pattern: number | number[]) => {
     if (hapticsEnabled) vibrate(pattern)
@@ -335,16 +341,16 @@ function TempoGuideModalInner({
 
     if (phase === 0) {
       // CON — bleu toute la montée
-      ballColor = '#3b82f6'
+      ballColor = CON_COLOR
     } else if (phase === 1) {
-      // ISO (tenue sommet) — rouge, annonce ECC (jaune) 300ms avant fin
-      ballColor = timeLeftMs <= PREVIEW_MS ? ACCENT_TEMPO : '#ef4444'
+      // ISO (tenue sommet) — rouge, annonce ECC (gold) 300ms avant fin
+      ballColor = timeLeftMs <= PREVIEW_MS ? ECC_COLOR : '#ef4444'
     } else if (phase === 2) {
-      // ECC — jaune toute la descente
-      ballColor = ACCENT_TEMPO
+      // ECC — gold toute la descente
+      ballColor = ECC_COLOR
     } else {
       // PAUSE (tenue creux) — rouge, annonce CON (bleu) 300ms avant fin
-      ballColor = timeLeftMs <= PREVIEW_MS ? '#3b82f6' : '#ef4444'
+      ballColor = timeLeftMs <= PREVIEW_MS ? CON_COLOR : '#ef4444'
     }
 
     // Appliquer couleur balle si changée
@@ -462,7 +468,7 @@ function TempoGuideModalInner({
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
-        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
+        const dColor = frac === 0.5 ? ECC_COLOR : CON_COLOR
         el.setAttribute('fill', dColor)
         el.setAttribute('opacity', '0.6')
         el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y})`)
@@ -585,7 +591,7 @@ function TempoGuideModalInner({
     </svg>
   )
 
-  const PHASE_SUBLABELS = ['Montée — contraction', 'Maintien au sommet', 'Descente contrôlée', 'Pause bas']
+  const PHASE_SUBLABELS = [t('tempo.phase.ecc'), t('tempo.phase.iso'), t('tempo.phase.con'), t('tempo.phase.pause')]
 
   // ── Rep bars — fenêtre glissante, N barres fixes, centrées ──
   // Fenêtre : toujours N barres à l'écran.
@@ -621,8 +627,8 @@ function TempoGuideModalInner({
                 ? 'rgba(255,255,255,0.06)'
                 : isBonus
                   ? (isDone || isCurrent ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.07)')
-                  : (isDone || isCurrent ? '#FFB800' : 'rgba(255,255,255,0.09)'),
-              boxShadow: isCurrent ? '0 0 10px rgba(255,184,0,0.5)' : 'none',
+                  : (isDone || isCurrent ? '#e0e0e0' : 'rgba(255,255,255,0.09)'),
+              boxShadow: 'none',
             }}
             initial={false}
             transition={{ backgroundColor: { duration: 0.15 } }}
@@ -645,20 +651,21 @@ function TempoGuideModalInner({
           className="fixed inset-0 bg-[#080808] z-[60] select-none touch-none cursor-pointer"
           style={{ display: 'flex', flexDirection: isLandscape ? 'row' : 'column' }}
         >
-          {/* ── Fond couleur synchronisé balle — visible du coin de l'œil ── */}
+          {/* ── Fond couleur synchronisé balle — lueur subtile centrée ── */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: `linear-gradient(to bottom, ${phaseColor}99 0%, ${phaseColor}55 40%, ${phaseColor}11 100%)`,
-              transition: 'background 150ms ease-out',
+              background: `radial-gradient(ellipse 90% 65% at 50% 50%, ${phaseColor}55 0%, ${phaseColor}18 45%, transparent 80%)`,
+              transition: 'background 200ms ease-out',
               pointerEvents: 'none',
+              opacity: (currentPhase === 1 || currentPhase === 3) ? undefined : 1,
               animation: (currentPhase === 1 || currentPhase === 3) ? 'tempoBgPulse 0.9s ease-in-out infinite' : 'none',
             }}
           />
           <style>{`
             @keyframes tempoBgPulse {
-              0%, 100% { opacity: 0.45; }
+              0%, 100% { opacity: 0.5; }
               50%      { opacity: 1.0; }
             }
           `}</style>
@@ -679,11 +686,24 @@ function TempoGuideModalInner({
                   gap: 16, pointerEvents: 'none',
                 }}
               >
+                {/* Close button — visible and tappable over pause overlay */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleClose() }}
+                  style={{
+                    position: 'absolute', top: 20, right: 20,
+                    width: 36, height: 36, borderRadius: 12,
+                    background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.12)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'rgba(255,255,255,0.70)', pointerEvents: 'auto',
+                  }}
+                >
+                  <X size={16} />
+                </button>
                 <span style={{ fontFamily: 'var(--font-barlow-condensed, sans-serif)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.22em', fontSize: 32, color: 'white' }}>
                   PAUSE
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
-                  Touche l&apos;écran pour reprendre
+                  {t('tempo.tap_resume')}
                 </span>
               </motion.div>
             )}
@@ -755,7 +775,7 @@ function TempoGuideModalInner({
                         </motion.span>
                       </AnimatePresence>
                       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-                        Positionnez-vous
+                        {t('tempo.position')}
                       </span>
                     </motion.div>
                   )}
@@ -789,7 +809,7 @@ function TempoGuideModalInner({
                     ref={phaseLabelRef}
                     style={{ fontFamily: 'var(--font-barlow-condensed, sans-serif)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: 20, color: countdown !== null ? ACCENT_TEMPO : phaseColor, display: 'block', marginBottom: 2 }}
                   >
-                    {countdown !== null ? 'PRÊT' : PHASE_CONFIG[currentPhase].label}
+                    {countdown !== null ? t('tempo.ready') : PHASE_CONFIG[currentPhase].label}
                   </span>
                   {countdown === null && (
                     <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' }}>
@@ -815,7 +835,7 @@ function TempoGuideModalInner({
 
                 {/* Counter */}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 32, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 32, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#f2f2f2' }}>
                     {currentRep + 1}
                   </span>
                   <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 18, color: 'rgba(255,255,255,0.2)' }}>/</span>
@@ -866,7 +886,7 @@ function TempoGuideModalInner({
                         </motion.span>
                       </AnimatePresence>
                       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-                        Positionnez-vous
+                        {t('tempo.position')}
                       </span>
                     </motion.div>
                   )}
@@ -918,7 +938,7 @@ function TempoGuideModalInner({
 
               {/* Counter */}
               <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, paddingBottom: 40 }}>
-                <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 52, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#ffe01e' }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 52, lineHeight: 1, color: currentRep >= reps ? 'rgba(255,255,255,0.5)' : '#f2f2f2' }}>
                   {currentRep + 1}
                 </span>
                 <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 28, color: 'rgba(255,255,255,0.2)' }}>/</span>

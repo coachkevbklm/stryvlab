@@ -14,7 +14,7 @@ export default function RecentSessionsStrip({ sessions }: { sessions: Session[] 
   if (sessions.length === 0) return null
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+    <div className="bg-[#111111] rounded-2xl p-4">
       <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-3">
         Dernières séances
       </div>

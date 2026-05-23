@@ -16,7 +16,7 @@ const KIND_CONFIG: Record<
 > = {
   meal: { Icon: ForkKnife, bg: "bg-[#22c55e]/15", tint: "text-[#22c55e]" },
   water: { Icon: Drop, bg: "bg-[#06b6d4]/15", tint: "text-[#06b6d4]" },
-  workout: { Icon: Barbell, bg: "bg-[#ffe01e]/15", tint: "text-[#ffe01e]" },
+  workout: { Icon: Barbell, bg: "bg-[#f2f2f2]/15", tint: "text-[#f2f2f2]" },
   activity: {
     Icon: PersonSimpleRun,
     bg: "bg-white/[0.08]",
@@ -40,7 +40,7 @@ export default function SmartAgendaTimeline({
   entries: TimelineEntry[];
 }) {
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-[18px]">
+    <div className="bg-[#111111] rounded-2xl p-[18px]">
       <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-3">
         Smart Agenda
       </div>
@@ -59,8 +59,8 @@ export default function SmartAgendaTimeline({
             };
             const highlight =
               e.kind === "workout"
-                ? "bg-[#ffe01e]/[0.06] border border-[#ffe01e]/20"
-                : "bg-white/[0.02]";
+                ? "bg-[#1a1a1a]"
+                : "bg-[#111111]";
 
             const Body = (
               <div

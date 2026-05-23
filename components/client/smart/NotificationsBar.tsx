@@ -44,7 +44,7 @@ export default function NotificationsBar({
     } else if (n.type === "program_assigned") {
       router.push("/client/programme");
     } else if (n.type === "coach_note") {
-      router.push("/client/profil");
+      router.push("/client/metrics");
     } else if (n.type === "tdee_updated") {
       router.push("/client/nutrition");
     } else if (n.type === "coach_feedback") {
@@ -64,7 +64,7 @@ export default function NotificationsBar({
           router.push('/client/checkin')
           break
         case 'morpho':
-          router.push('/client/profil')
+          router.push('/client/metrics')
           break
         default:
           router.push('/client')
@@ -81,11 +81,11 @@ export default function NotificationsBar({
         return (
           <div
             key={n.id}
-            className="flex items-start gap-3 bg-[#161616] rounded-2xl border border-white/[0.08] p-3 active:scale-[0.99] transition-transform cursor-pointer"
+            className="flex items-start gap-3 bg-[#111111] rounded-2xl p-3 active:scale-[0.99] transition-transform cursor-pointer"
             onClick={() => handleClick(n)}
           >
-            <div className="w-9 h-9 rounded-lg bg-[#ffe01e]/10 flex items-center justify-center shrink-0">
-              <Icon size={18} className="text-[#ffe01e]" />
+            <div className="w-9 h-9 rounded-lg bg-[#f2f2f2]/10 flex items-center justify-center shrink-0">
+              <Icon size={18} className="text-[#f2f2f2]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-semibold text-white">{n.title}</p>

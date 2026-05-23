@@ -1,46 +1,48 @@
 'use client'
 
 import type { AdherenceResult } from '@/lib/client/smart/adherenceScore'
+import { useClientT } from '@/components/client/ClientI18nProvider'
 
-function getTheme(score: number) {
+function getTheme(score: number, t: (k: string) => string) {
   if (score >= 75) return {
-    bg: '#ffe01e',
-    accent: '#0d0d0d',
-    textPrimary: '#0d0d0d',
+    bg: '#f2f2f2',
+    accent: '#080808',
+    textPrimary: '#080808',
     textSecondary: 'rgba(0,0,0,0.5)',
     trackColor: 'rgba(0,0,0,0.12)',
-    deltaBg: 'rgba(0,0,0,0.12)',
-    label: score >= 85 ? 'Élite' : 'En forme',
+    deltaBg: 'rgba(0,0,0,0.10)',
+    label: score >= 85 ? t('smart.adherence.elite') : t('smart.adherence.fit'),
   }
   if (score >= 50) return {
-    bg: '#1a1500',
-    accent: '#ffe01e',
-    textPrimary: '#ffe01e',
-    textSecondary: 'rgba(255,224,30,0.5)',
+    bg: '#1a1a1a',
+    accent: '#f2f2f2',
+    textPrimary: '#f2f2f2',
+    textSecondary: 'rgba(255,255,255,0.4)',
     trackColor: 'rgba(255,255,255,0.06)',
-    deltaBg: 'rgba(255,224,30,0.12)',
-    label: score >= 60 ? 'Bon rythme' : 'À améliorer',
+    deltaBg: 'rgba(255,255,255,0.08)',
+    label: score >= 60 ? t('smart.adherence.good') : t('smart.adherence.improve'),
   }
   return {
-    bg: '#1a0505',
+    bg: '#111111',
     accent: '#ef4444',
     textPrimary: '#ef4444',
     textSecondary: 'rgba(239,68,68,0.5)',
     trackColor: 'rgba(255,255,255,0.06)',
-    deltaBg: 'rgba(239,68,68,0.12)',
-    label: 'Reprends le fil',
+    deltaBg: 'rgba(239,68,68,0.10)',
+    label: t('smart.adherence.restart'),
   }
 }
 
 const DIMS = [
-  { key: 'sport'     as const, label: 'Sport',    color: '#3b82f6' },
-  { key: 'nutrition' as const, label: 'Nutri',    color: '#22c55e' },
-  { key: 'hydration' as const, label: 'Hydra',    color: '#22d3ee' },
-  { key: 'checkins'  as const, label: 'Check-in', color: '#a78bfa' },
+  { key: 'sport'     as const, label: 'Sport',       color: 'var(--data-petrol)' },
+  { key: 'nutrition' as const, label: 'Nutrition',   color: 'var(--data-gold)' },
+  { key: 'hydration' as const, label: 'Hydratation', color: 'var(--data-copper)' },
+  { key: 'checkins'  as const, label: 'Check-ins',   color: '#808080' },
 ]
 
 export default function AdherenceScoreCard({ score, scoreDelta, dimensions }: AdherenceResult) {
-  const t = getTheme(score)
+  const { t: translate } = useClientT()
+  const t = getTheme(score, translate as (k: string) => string)
   const r = 68
   const arcTotal = Math.PI * r
   const arcOffset = arcTotal * (1 - score / 100)
@@ -121,8 +123,8 @@ export default function AdherenceScoreCard({ score, scoreDelta, dimensions }: Ad
                 />
               </div>
               <span
-                className="font-barlow-condensed font-bold uppercase tracking-[0.12em]"
-                style={{ fontSize: 8, color: t.textSecondary }}
+                className="font-barlow-condensed font-bold uppercase tracking-[0.08em] text-center leading-tight"
+                style={{ fontSize: 7, color: t.textSecondary }}
               >
                 {d.label}
               </span>

@@ -6,6 +6,7 @@ import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import { AnimatePresence, motion } from "framer-motion";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Slider } from "@/components/ui/slider";
+import { Sparkles, Loader2 } from "lucide-react";
 
 type MomentConfig = { moment: "morning" | "evening"; fields: string[] };
 type CheckinConfig = {
@@ -40,6 +41,9 @@ export default function ClientCheckinsPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dateMeals, setDateMeals] = useState<any[]>([]);
+  const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
+  const [aiFeedbackBody, setAiFeedbackBody] = useState<string | null>(null);
+  const [aiFeedbackError, setAiFeedbackError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -155,9 +159,48 @@ export default function ClientCheckinsPage() {
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const year = String(today.getFullYear());
 
+  async function handleAiFeedback() {
+    setAiFeedbackLoading(true);
+    setAiFeedbackError(null);
+    setAiFeedbackBody(null);
+    try {
+      const res = await fetch(`/api/clients/${clientId}/ai-checkin-feedback`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) { setAiFeedbackError(json.error ?? 'Erreur IA.'); return; }
+      setAiFeedbackBody(json.body);
+    } catch { setAiFeedbackError('Erreur réseau.'); }
+    finally { setAiFeedbackLoading(false); }
+  }
+
   return (
     <main className="min-h-screen bg-[#121212]">
       <div className="px-6 pb-24 space-y-4">
+
+        {/* AI feedback panel */}
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/40 font-semibold">Feedback IA</p>
+            <button
+              onClick={handleAiFeedback}
+              disabled={aiFeedbackLoading}
+              className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#1f8a65]/10 border border-[#1f8a65]/20 text-[10px] font-bold text-[#1f8a65] hover:bg-[#1f8a65]/20 transition-all disabled:opacity-50 active:scale-95"
+            >
+              {aiFeedbackLoading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+              {aiFeedbackLoading ? 'Analyse...' : 'Générer message coach'}
+            </button>
+          </div>
+          {aiFeedbackError && <p className="text-[11px] text-red-400">{aiFeedbackError}</p>}
+          {aiFeedbackBody && (
+            <div className="space-y-2">
+              <p className="text-[12px] text-white/80 leading-relaxed bg-white/[0.03] rounded-xl p-3 whitespace-pre-wrap">{aiFeedbackBody}</p>
+              <p className="text-[10px] text-white/25">Message sauvegardé en brouillon. Copiez et envoyez depuis le fil de feedback client.</p>
+            </div>
+          )}
+          {!aiFeedbackBody && !aiFeedbackError && (
+            <p className="text-[11px] text-white/30">Génère un message coach basé sur les 7 derniers check-ins, la dernière séance et la tendance poids.</p>
+          )}
+        </div>
+
         <section className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-4">
           <p className="text-[10px] uppercase tracking-[0.16em] text-white/40 font-semibold">
             Configuration

@@ -1,3 +1,5 @@
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
+
 export type CategoryL1 =
   | "proteins"
   | "carbs"
@@ -194,12 +196,16 @@ export function calcEntryMacros(
   quantity_g: number
 ): Pick<NutritionEntry, "calories_kcal" | "protein_g" | "carbs_g" | "fat_g" | "fiber_g"> {
   const factor = quantity_g / 100
+  const protein_g = Math.round(item.protein_per_100g * factor * 10) / 10
+  const carbs_g = Math.round(item.carbs_per_100g * factor * 10) / 10
+  const fat_g = Math.round(item.fat_per_100g * factor * 10) / 10
+  const fiber_g = Math.round(item.fiber_per_100g * factor * 10) / 10
   return {
-    calories_kcal: Math.round(item.kcal_per_100g * factor * 10) / 10,
-    protein_g: Math.round(item.protein_per_100g * factor * 10) / 10,
-    carbs_g: Math.round(item.carbs_per_100g * factor * 10) / 10,
-    fat_g: Math.round(item.fat_per_100g * factor * 10) / 10,
-    fiber_g: Math.round(item.fiber_per_100g * factor * 10) / 10,
+    calories_kcal: computeMacroEnergy({ protein_g, carbs_g, fat_g, fiber_g }),
+    protein_g,
+    carbs_g,
+    fat_g,
+    fiber_g,
   }
 }
 

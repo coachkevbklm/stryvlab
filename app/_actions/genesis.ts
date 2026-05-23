@@ -2,9 +2,11 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getAnthropicClient() {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured')
+  return new Anthropic({ apiKey })
+}
 
 const GENESIS_SYSTEM_PROMPT = `
 TU ES VIRTUS AI v1.1.
@@ -74,6 +76,7 @@ export async function chatWithGenesis(
   pageContext?: string
 ): Promise<ChatResponse> {
   try {
+    const anthropic = getAnthropicClient()
     if (!message.trim()) return { success: false, response: '' };
 
     let systemMessage = GENESIS_SYSTEM_PROMPT;

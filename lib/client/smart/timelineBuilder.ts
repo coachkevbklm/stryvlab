@@ -65,13 +65,6 @@ const ACTIVITY_LABEL: Record<ActivityRow['activity_type'], string> = {
   other: 'Activité',
 }
 
-const SLOT_REPRESENTATIVE_SUFFIX: Record<'morning' | 'midday' | 'afternoon' | 'evening', string> = {
-  morning: 'T08:00:00Z',
-  midday: 'T13:00:00Z',
-  afternoon: 'T16:00:00Z',
-  evening: 'T20:00:00Z',
-}
-
 const SLOT_LABEL: Record<'morning' | 'midday' | 'afternoon' | 'evening', string> = {
   morning: 'Hydratation matin',
   midday: 'Hydratation midi',
@@ -90,21 +83,35 @@ export function buildTimeline(src: TimelineSource, tz: string = 'Europe/Paris'):
       start_iso: m.logged_at,
       title: m.title,
       subtitle: `${m.kcal} kcal · ${m.protein_g}P ${m.carbs_g}G ${m.fat_g}L`,
-      href: `/client/nutrition/journal#${m.id}`,
+      href: `/client/nutrition`,
     })
   }
 
   // Water aggregated by time of day
   if (src.waterLogs.length > 0) {
     const grouped = groupWaterByTimeOfDay(src.waterLogs, tz)
-    const dateRef = src.waterLogs[0].logged_at.slice(0, 10)
+    // Use the earliest actual log time per slot as representative (avoids UTC display drift)
+    const slotFirstLog: Partial<Record<'morning' | 'midday' | 'afternoon' | 'evening', string>> = {}
+    for (const log of src.waterLogs) {
+      const hour = (() => {
+        const d = new Date(log.logged_at)
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).formatToParts(d)
+        return parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10)
+      })()
+      const slot: 'morning' | 'midday' | 'afternoon' | 'evening' | null =
+        hour >= 5 && hour < 12 ? 'morning' :
+        hour >= 12 && hour < 15 ? 'midday' :
+        hour >= 15 && hour < 19 ? 'afternoon' :
+        hour >= 19 && hour < 24 ? 'evening' : null
+      if (slot && !slotFirstLog[slot]) slotFirstLog[slot] = log.logged_at
+    }
     for (const slot of ['morning', 'midday', 'afternoon', 'evening'] as const) {
       const ml = grouped[slot]
-      if (ml > 0) {
+      if (ml > 0 && slotFirstLog[slot]) {
         entries.push({
           id: `water-${slot}`,
           kind: 'water',
-          start_iso: `${dateRef}${SLOT_REPRESENTATIVE_SUFFIX[slot]}`,
+          start_iso: slotFirstLog[slot]!,
           title: SLOT_LABEL[slot],
           subtitle: `${ml} ml`,
         })

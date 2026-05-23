@@ -6,8 +6,10 @@ import {
   REFERENCE_HAND_CM,
   HEIGHT_TO_HAND_RATIO,
 } from "@/lib/nutrition/food-items"
+import { useClientT } from "@/components/client/ClientI18nProvider"
 
 export default function PortionScalingForm() {
+  const { t } = useClientT()
   const [handCm, setHandCm] = useState<string>("")
   const [heightCm, setHeightCm] = useState<number | null>(null)
   const [savedHand, setSavedHand] = useState<number | null>(null)
@@ -69,12 +71,11 @@ export default function PortionScalingForm() {
     <div className="space-y-4">
       {/* Explication */}
       <p className="text-[12px] text-white/50 leading-relaxed">
-        Les portions visuelles (paume, poing, pouce) sont calibrées sur une main adulte de référence (18 cm).
-        Mesure ta main pour des grammages personnalisés.
+        {t('portion.desc')}
       </p>
 
       {/* Source actuelle */}
-      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-2">
+      <div className="bg-white/[0.03] rounded-xl p-3 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-[0.14em] text-white/40 font-bold">
             Main effective
@@ -87,14 +88,14 @@ export default function PortionScalingForm() {
           <span className="text-[10px] uppercase tracking-[0.14em] text-white/40 font-bold">
             1 paume = viande
           </span>
-          <span className="text-[14px] font-black text-[#ffe01e]">{palmGrams} g</span>
+          <span className="text-[14px] font-black text-[#f2f2f2]">{palmGrams} g</span>
         </div>
         <p className="text-[10px] text-white/30">
           Source : {savedHand
             ? "ta mesure"
             : derivedFromHeight
-              ? `dérivée taille (${heightCm} cm × 0.108)`
-              : "référence 18 cm"}
+              ? t('portion.derived', { cm: String(heightCm) })
+              : t('portion.ref')}
         </p>
       </div>
 
@@ -107,7 +108,7 @@ export default function PortionScalingForm() {
           <button
             type="button"
             onClick={() => setShowGuide((s) => !s)}
-            className="text-[11px] text-[#ffe01e]/80 hover:text-[#ffe01e] flex items-center gap-1"
+            className="text-[11px] text-[#f2f2f2]/80 hover:text-[#f2f2f2] flex items-center gap-1"
           >
             <Ruler size={11} />
             {showGuide ? "Masquer" : "Comment mesurer"}
@@ -115,38 +116,38 @@ export default function PortionScalingForm() {
         </div>
 
         {showGuide && (
-          <div className="bg-[#ffe01e]/[0.04] border border-[#ffe01e]/[0.18] rounded-xl p-3 mb-3 space-y-1.5">
+          <div className="bg-[#1a1a1a] rounded-xl p-3 mb-3 space-y-1.5">
             <p className="text-[11px] text-white/70 leading-relaxed">
-              <span className="font-bold">1.</span> Pose la main à plat, doigts serrés.
+              <span className="font-bold">1.</span> {t('portion.step1')}
             </p>
             <p className="text-[11px] text-white/70 leading-relaxed">
               <span className="font-bold">2.</span> Mesure du pli du poignet jusqu'au bout du majeur.
             </p>
             <p className="text-[11px] text-white/70 leading-relaxed">
-              <span className="font-bold">3.</span> Utilise un mètre ruban ou une règle (pas un téléphone).
+              <span className="font-bold">3.</span> {t('portion.step3')}
             </p>
             <p className="text-[10px] text-white/40 mt-2">
-              Réf femme moyenne : 17.2 cm · homme moyen : 18.9 cm
+              {t('portion.refs')}
             </p>
           </div>
         )}
 
         <div className="flex gap-2">
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
             min="10"
             max="28"
-            step="0.1"
             value={handCm}
             onChange={(e) => setHandCm(e.target.value)}
+            onFocus={e => e.target.select()}
             placeholder={derivedFromHeight ? `auto: ${derivedFromHeight}` : "18.0"}
-            className="flex-1 h-11 px-3 bg-[#161616] border border-white/[0.08] rounded-xl text-[14px] font-bold text-white outline-none focus:border-[#ffe01e]/40 min-w-0"
+            className="flex-1 h-11 px-3 bg-[#111111] rounded-xl text-[14px] font-bold text-white outline-none min-w-0"
           />
           <button
             onClick={save}
             disabled={saving || handCm.trim() === ""}
-            className="h-11 px-4 bg-[#ffe01e] text-[#0d0d0d] rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] disabled:opacity-40"
+            className="h-11 px-4 bg-[#f2f2f2] text-[#080808] rounded-xl text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] disabled:opacity-40"
           >
             {savedToast ? <Check size={15} /> : "Sauver"}
           </button>
@@ -154,8 +155,8 @@ export default function PortionScalingForm() {
             <button
               onClick={clearOverride}
               disabled={saving}
-              className="h-11 w-11 flex items-center justify-center bg-white/[0.04] border border-white/[0.06] rounded-xl text-white/40 hover:text-white/70 active:scale-95"
-              title="Effacer (revenir à la valeur auto)"
+              className="h-11 w-11 flex items-center justify-center bg-white/[0.04] rounded-xl text-white/40 hover:text-white/70 active:scale-95"
+              title={t('portion.clear')}
             >
               <X size={14} />
             </button>

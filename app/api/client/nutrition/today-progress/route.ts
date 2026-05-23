@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
 
 function service() {
   return createServiceClient(
@@ -57,7 +58,11 @@ export async function GET(_req: NextRequest) {
 
   const fromComposer = (composerMeals ?? []).reduce(
     (acc, m: any) => ({
-      calories:  acc.calories  + (Number(m.total_calories)  || 0),
+      calories:  acc.calories  + computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+      }),
       protein_g: acc.protein_g + (Number(m.total_protein_g) || 0),
       carbs_g:   acc.carbs_g   + (Number(m.total_carbs_g)   || 0),
       fat_g:     acc.fat_g     + (Number(m.total_fat_g)     || 0),
@@ -70,7 +75,11 @@ export async function GET(_req: NextRequest) {
       const em = m.estimated_macros as Record<string, number> | null
       if (!em) return acc
       return {
-        calories:  acc.calories  + (em.calories_kcal ?? 0),
+        calories:  acc.calories  + computeMacroEnergy({
+          protein_g: Number(em.protein_g ?? 0),
+          carbs_g: Number(em.carbs_g ?? 0),
+          fat_g: Number(em.fats_g ?? em.fat_g ?? 0),
+        }),
         protein_g: acc.protein_g + (em.protein_g ?? 0),
         carbs_g:   acc.carbs_g   + (em.carbs_g ?? 0),
         fat_g:     acc.fat_g     + (em.fats_g ?? em.fat_g ?? 0),

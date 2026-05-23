@@ -68,8 +68,8 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
         disabled={saveState === 'saving'}
         className={`w-full py-2.5 rounded-xl text-sm font-barlow-condensed font-bold uppercase transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-[#ffe01e] text-[#0d0d0d]'
-            : 'bg-[#ffe01e] text-[#0d0d0d] hover:bg-[#ffd000] disabled:opacity-50'
+            ? 'bg-[#f2f2f2] text-[#080808]'
+            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#e8e8e8] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
@@ -101,7 +101,7 @@ function ToggleGroup({
             onClick={() => onChange(o.value)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               value === o.value
-                ? 'bg-[#ffe01e] text-[#0d0d0d]'
+                ? 'bg-[#f2f2f2] text-[#080808]'
                 : 'bg-white/[0.04] text-white/55 hover:text-white/80'
             }`}
           >

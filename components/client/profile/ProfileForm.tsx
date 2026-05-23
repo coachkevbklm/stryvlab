@@ -219,8 +219,8 @@ export default function ProfileForm({ clientId, initial }: Props) {
               onClick={() => update('weekly_frequency', form.weekly_frequency === n ? null : n)}
               className={`w-9 h-9 rounded-xl text-[13px] font-bold transition-all ${
                 form.weekly_frequency === n
-                  ? 'bg-[#ffe01e] text-[#0d0d0d]'
-                  : 'bg-[#0a0a0a] border-[0.3px] border-white/[0.06] text-white/40 hover:text-white/70'
+                  ? 'bg-[#f2f2f2] text-[#080808]'
+                  : 'bg-[#1a1a1a] text-[#5a5a5a] hover:text-[#808080]'
               }`}
             >
               {n}
@@ -240,8 +240,8 @@ export default function ProfileForm({ clientId, initial }: Props) {
         disabled={saveState === 'saving'}
         className={`w-full h-11 rounded-xl text-[12px] font-barlow-condensed font-bold uppercase tracking-[0.10em] transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
-            ? 'bg-[#ffe01e] text-[#0d0d0d]'
-            : 'bg-[#ffe01e] text-[#0d0d0d] hover:bg-[#ffd000] active:scale-[0.99] disabled:opacity-50'
+            ? 'bg-[#f2f2f2] text-[#080808]'
+            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#e8e8e8] active:scale-[0.99] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
@@ -264,4 +264,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'w-full bg-[#0a0a0a] border-[0.3px] border-white/[0.06] rounded-xl px-3 h-11 text-[13px] text-white outline-none placeholder:text-white/20 transition-all'
+  'w-full bg-[#111111] rounded-xl px-3 h-11 text-[13px] text-white outline-none placeholder:text-[#5a5a5a] transition-all'

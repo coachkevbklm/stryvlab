@@ -13,7 +13,7 @@ type ProtocolDay = {
 export default function CoachProtocolCard({ day }: { day: ProtocolDay | null }) {
   if (!day) {
     return (
-      <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+      <div className="bg-[#111111] rounded-2xl p-4">
         <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-2">
           Protocole coach
         </div>
@@ -23,13 +23,13 @@ export default function CoachProtocolCard({ day }: { day: ProtocolDay | null }) 
   }
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4 space-y-3">
+    <div className="bg-[#111111] rounded-2xl p-4 space-y-3">
       <div className="flex items-baseline justify-between">
         <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white">
           {day.name ?? 'Protocole coach'}
         </div>
         {day.carb_cycle_type && (
-          <span className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#ffe01e]">{day.carb_cycle_type}</span>
+          <span className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#f2f2f2]">{day.carb_cycle_type}</span>
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 text-[11px] text-white/70 tabular-nums">

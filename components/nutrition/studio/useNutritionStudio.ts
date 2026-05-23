@@ -28,6 +28,7 @@ import {
   dayDraftFromDb,
 } from "@/lib/nutrition/types";
 import type { BMRSource } from "@/lib/nutrition/calculators";
+import type { TrainingWeekSchedule } from "@/lib/nutrition/training-week-schedule";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -223,6 +224,11 @@ export function useNutritionStudio(
   const [dataSource, setDataSource] = useState<
     Record<string, "selected" | "fallback">
   >({});
+  const [trainingWeekSchedule, setTrainingWeekSchedule] =
+    useState<TrainingWeekSchedule | null>(null);
+  const [selectedScheduleDow, setSelectedScheduleDow] = useState<number | null>(
+    null,
+  );
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -251,6 +257,11 @@ export function useNutritionStudio(
         if (d.tdeeAdaptive != null) setTdeeAdaptive(d.tdeeAdaptive);
         if (d.tdeeAdaptiveAt) setTdeeAdaptiveAt(new Date(d.tdeeAdaptiveAt));
         if (d.tdeeDataSource) setTdeeDataSource(d.tdeeDataSource);
+        if (d.trainingWeekSchedule) {
+          setTrainingWeekSchedule(d.trainingWeekSchedule);
+        } else {
+          setTrainingWeekSchedule(null);
+        }
         if (cd.training_goal) {
           const mapped =
             CLIENT_GOAL_MAP[cd.training_goal.toLowerCase()] ?? "maintenance";
@@ -778,5 +789,8 @@ export function useNutritionStudio(
     tdeeHistory,
     applyAdaptiveTdee,
     applyingAdaptive,
+    trainingWeekSchedule,
+    selectedScheduleDow,
+    setSelectedScheduleDow,
   };
 }

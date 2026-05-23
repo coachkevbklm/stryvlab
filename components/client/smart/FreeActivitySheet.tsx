@@ -69,14 +69,14 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           />
           <motion.div
-            className="fixed left-0 right-0 bottom-0 z-50 rounded-t-2xl bg-[#161616] border-t-[0.3px] border-white/[0.08] flex flex-col"
+            className="fixed left-0 right-0 bottom-0 z-50 rounded-t-2xl bg-[#111111] flex flex-col"
             style={{ maxHeight: '88vh' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
           >
             <div className="px-4 pt-4 pb-3 shrink-0 flex items-center justify-between">
               <h3 className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[13px] text-white">
-                Logger une activité
+                {t('activity.logTitle')}
               </h3>
               <button onClick={onClose} className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center">
                 <X size={18} className="text-white/60" />
@@ -92,7 +92,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
                       key={tt}
                       onClick={() => setType(tt)}
                       className={`h-10 rounded-xl text-[11px] font-semibold transition-colors ${
-                        type === tt ? 'bg-[#ffe01e] text-[#0d0d0d]' : 'bg-white/[0.04] text-white/60'
+                        type === tt ? 'bg-[#f2f2f2] text-[#080808]' : 'bg-white/[0.04] text-white/60'
                       }`}
                     >
                       {t(`smart.activity.type.${tt}` as any)}
@@ -103,42 +103,44 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
 
               {type === 'other' && (
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">Précise</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{t('activity.specify')}</label>
                   <input
                     value={customLabel}
                     onChange={e => setCustomLabel(e.target.value)}
                     maxLength={80}
-                    className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#0d0d0d] text-white text-[14px] outline-none"
+                    className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#080808] text-white text-[14px] outline-none"
                     placeholder="Ex: Tennis"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">Quand</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{t('activity.when')}</label>
                 <input
                   type="datetime-local"
                   value={startedAt}
                   onChange={e => setStartedAt(e.target.value)}
-                  className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#0d0d0d] text-white text-[14px] outline-none"
+                  className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#080808] text-white text-[14px] outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">Durée (min)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{t('smart.activity.duration')}</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   min={1}
                   max={360}
                   value={duration}
+                  onFocus={e => e.target.select()}
                   onChange={e => setDuration(parseInt(e.target.value) || 1)}
-                  className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#0d0d0d] text-white text-[14px] outline-none"
+                  className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#080808] text-white text-[14px] outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">
-                  Intensité {intensity}/10
+                  {t('activity.intensityFull', { n: String(intensity) })}
                 </label>
                 <input
                   type="range"
@@ -149,19 +151,19 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
                   onChange={e => setIntensity(parseInt(e.target.value))}
                   className="w-full h-2 appearance-none rounded-full cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #ffe01e 0%, #ffe01e ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`,
+                    background: `linear-gradient(to right, #f2f2f2 0%, #f2f2f2 ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`,
                   }}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">Notes (optionnel)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{t('activity.notesOpt')}</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   rows={3}
                   maxLength={500}
-                  className="w-full min-w-0 px-3 py-2 rounded-xl bg-[#0d0d0d] text-white text-[14px] outline-none resize-none"
+                  className="w-full min-w-0 px-3 py-2 rounded-xl bg-[#080808] text-white text-[14px] outline-none resize-none"
                 />
               </div>
 
@@ -170,9 +172,9 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
               <button
                 disabled={saving}
                 onClick={submit}
-                className="w-full h-12 rounded-xl bg-[#ffe01e] text-[#0d0d0d] font-bold uppercase tracking-[0.1em] text-[12px] disabled:opacity-50 active:scale-[0.98] transition-transform"
+                className="w-full h-12 rounded-xl bg-[#f2f2f2] text-[#080808] font-bold uppercase tracking-[0.1em] text-[12px] disabled:opacity-50 active:scale-[0.98] transition-transform"
               >
-                {saving ? '...' : 'Enregistrer'}
+                {saving ? '...' : t('smart.activity.save')}
               </button>
             </div>
           </motion.div>

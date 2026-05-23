@@ -1,40 +1,24 @@
 import Link from 'next/link'
 import type { NutritionMacros } from './SmartNutritionWidget'
-
-type Suggestion = { label: string; macros: string }
-
-function suggest(remaining: NutritionMacros): Suggestion[] {
-  const out: Suggestion[] = []
-  if (remaining.protein_g > 30 && remaining.carbs_g < 30) {
-    out.push({ label: 'Yaourt grec + amandes', macros: '~250 kcal · 25P 10G 12L' })
-  }
-  if (remaining.carbs_g > 50 && remaining.fat_g < 15) {
-    out.push({ label: 'Bol de riz + poulet', macros: '~450 kcal · 35P 55G 8L' })
-  }
-  if (remaining.kcal > 500) {
-    out.push({ label: 'Repas complet équilibré', macros: '~500 kcal · 30P 50G 18L' })
-  }
-  return out.slice(0, 3)
-}
+import { computeNutritionBalance } from '@/lib/nutrition/balance'
+import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
 
 export default function RemainingBreakdown({ consumed, target }: { consumed: NutritionMacros; target: NutritionMacros }) {
-  const remaining: NutritionMacros = {
-    kcal:      Math.max(0, target.kcal      - consumed.kcal),
-    protein_g: Math.max(0, target.protein_g - consumed.protein_g),
-    carbs_g:   Math.max(0, target.carbs_g   - consumed.carbs_g),
-    fat_g:     Math.max(0, target.fat_g     - consumed.fat_g),
-    water_ml:  Math.max(0, target.water_ml  - consumed.water_ml),
-  }
-  const suggestions = suggest(remaining)
+  const balance = computeNutritionBalance(consumed, target)
+  const { remaining, overflow, remainingCaloriesNet, remainingCaloriesFromMacros } = balance
+  const suggestions = suggestFoodsFromBalance(balance)
 
   return (
-    <div className="bg-[#161616] rounded-2xl border border-white/[0.08] p-4">
+    <div className="bg-[#111111] rounded-2xl p-4">
       <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-2">
         Reste à consommer
       </div>
-      <p className="text-[12px] text-white/70 tabular-nums">
-        {Math.round(remaining.kcal)} kcal · {Math.round(remaining.protein_g)}g P · {Math.round(remaining.carbs_g)}g G · {Math.round(remaining.fat_g)}g L · {(remaining.water_ml / 1000).toFixed(1)}L
-      </p>
+      <div className="space-y-1.5 text-[12px] text-white/70 tabular-nums">
+        <p>{Math.round(remainingCaloriesNet)} kcal nettes · {Math.round(remainingCaloriesFromMacros)} kcal via macros restantes</p>
+        <p>{Math.round(remaining.protein_g)}g P restant · +{Math.round(overflow.protein_g)}g dépassés</p>
+        <p>{Math.round(remaining.carbs_g)}g G restant · +{Math.round(overflow.carbs_g)}g dépassés</p>
+        <p>{Math.round(remaining.fat_g)}g L restant · +{Math.round(overflow.fat_g)}g dépassés · {(remaining.water_ml / 1000).toFixed(1)}L eau restante</p>
+      </div>
       {suggestions.length > 0 && (
         <div className="mt-3 space-y-2">
           {suggestions.map(s => (
@@ -45,6 +29,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
             >
               <div className="text-[12px] font-semibold text-white">{s.label}</div>
               <div className="text-[10px] text-white/40 mt-0.5">{s.macros}</div>
+              <div className="text-[10px] text-white/30 mt-1">{s.rationale}</div>
             </Link>
           ))}
         </div>

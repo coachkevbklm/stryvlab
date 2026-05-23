@@ -152,8 +152,8 @@ export default function ExerciseProgressionChart({ rawLogs }: Props) {
               onClick={() => setSelectedExerciseIdx(idx)}
               className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-semibold transition-all duration-200 whitespace-nowrap snap-start ${
                 isSelected
-                  ? 'bg-[#ffe01e] text-[#0d0d0d]'
-                  : 'bg-white/[0.04] text-white/50 hover:bg-white/[0.07]'
+                  ? 'bg-[#f2f2f2] text-[#080808]'
+                  : 'bg-[#1a1a1a] text-[#5a5a5a] hover:bg-[#222222]'
               }`}
             >
               {ex.name} · {maxExWeight}kg
@@ -163,7 +163,7 @@ export default function ExerciseProgressionChart({ rawLogs }: Props) {
       </div>
 
       {/* SVG Chart */}
-      <div className="bg-[#161616] border border-white/[0.08] rounded-xl overflow-hidden p-2">
+      <div className="bg-[#111111] rounded-xl overflow-hidden p-2">
         <svg viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`} className="w-full h-[140px]">
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
@@ -207,7 +207,7 @@ export default function ExerciseProgressionChart({ rawLogs }: Props) {
           <path
             d={pathD}
             fill="none"
-            stroke="#ffe01e"
+            stroke="#f2f2f2"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -224,7 +224,7 @@ export default function ExerciseProgressionChart({ rawLogs }: Props) {
                   cx={x}
                   cy={y}
                   r={isHovered ? 4 : 3}
-                  fill="#ffe01e"
+                  fill="#f2f2f2"
                   className="cursor-pointer transition-all"
                 />
                 {isHovered && (
@@ -274,11 +274,11 @@ export default function ExerciseProgressionChart({ rawLogs }: Props) {
 
 function StatPill({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`flex flex-col items-center rounded-xl px-2 py-2 ${accent ? 'bg-[#ffe01e]/15' : 'bg-white/[0.04]'}`}>
-      <p className={`text-[9px] font-semibold uppercase tracking-[0.1em] ${accent ? 'text-[#ffe01e]' : 'text-white/40'}`}>
+    <div className={`flex flex-col items-center rounded-xl px-2 py-2 ${accent ? 'bg-[#f2f2f2]/15' : 'bg-white/[0.04]'}`}>
+      <p className={`text-[9px] font-semibold uppercase tracking-[0.1em] ${accent ? 'text-[#f2f2f2]' : 'text-white/40'}`}>
         {label}
       </p>
-      <p className={`text-[13px] font-bold font-mono ${accent ? 'text-[#ffe01e]' : 'text-white/70'}`}>
+      <p className={`text-[13px] font-bold font-mono ${accent ? 'text-[#f2f2f2]' : 'text-white/70'}`}>
         {value}
       </p>
     </div>

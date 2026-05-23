@@ -100,14 +100,14 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="w-full max-w-xs bg-[#161616] rounded-2xl p-6"
+          className="w-full max-w-xs bg-[#111111] rounded-2xl p-6"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFB800]/10">
-                <Timer size={15} style={{ color: '#FFB800' }} />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#9d7052]/15">
+                <Timer size={15} style={{ color: '#9d7052' }} />
               </div>
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
@@ -134,7 +134,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           </p>
 
           {/* How to calculate tip */}
-          <div className="bg-white/[0.03] rounded-xl px-3 py-2.5 mb-5 border border-white/[0.04]">
+          <div className="bg-[#111111] rounded-xl px-3 py-2.5 mb-5">
             <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/25 mb-1">
               Comment estimer ?
             </p>
@@ -155,7 +155,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
             <div className="text-center min-w-[72px]">
               <span
                 className="font-mono font-black tabular-nums leading-none"
-                style={{ fontSize: 48, color: '#FFB800' }}
+                style={{ fontSize: 48, color: '#e0e0e0' }}
               >
                 {seconds}
               </span>
@@ -172,7 +172,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
 
           {/* Haptics toggle — masqué sur iOS (API non supportée) */}
           {iosDevice ? (
-            <div className="w-full flex items-center gap-2.5 px-4 h-11 rounded-xl mb-4 bg-white/[0.02] border border-white/[0.04]">
+            <div className="w-full flex items-center gap-2.5 px-4 h-11 rounded-xl mb-4 bg-[#111111]">
               <VibrateOff size={14} className="text-white/20 shrink-0" />
               <span className="text-[11px] text-white/25">
                 Vibrations non disponibles sur iOS
@@ -181,22 +181,20 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           ) : (
             <button
               onClick={toggleHaptics}
-              className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] border ${
-                haptics
-                  ? 'bg-[#FFB800]/[0.08] border-[#FFB800]/20'
-                  : 'bg-white/[0.03] border-white/[0.05]'
+              className={`w-full flex items-center justify-between px-4 h-11 rounded-xl mb-4 transition-all active:scale-[0.98] ${
+                haptics ? 'bg-[#222222]' : 'bg-[#111111]'
               }`}
             >
               <div className="flex items-center gap-2.5">
                 {haptics
-                  ? <Vibrate size={14} style={{ color: '#FFB800' }} />
+                  ? <Vibrate size={14} style={{ color: '#9d7052' }} />
                   : <VibrateOff size={14} className="text-white/25" />
                 }
                 <span className={`text-[11px] font-semibold ${haptics ? 'text-white/80' : 'text-white/30'}`}>
                   Vibrations aux transitions
                 </span>
               </div>
-              <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#FFB800]' : 'bg-white/[0.10]'}`}>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#9d7052]' : 'bg-white/[0.10]'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${haptics ? 'left-4' : 'left-0.5'}`} />
               </div>
             </button>
@@ -206,7 +204,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           <button
             onClick={handleConfirm}
             className="w-full h-12 rounded-xl font-bold text-[13px] uppercase tracking-[0.10em] transition-all active:scale-[0.98]"
-            style={{ backgroundColor: '#FFB800', color: '#0d0d0d' }}
+            style={{ backgroundColor: '#f2f2f2', color: '#080808' }}
           >
             Commencer
           </button>

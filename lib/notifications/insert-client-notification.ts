@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 interface NotificationPayload {
   coachId:      string
   clientId:     string
-  type:         'assessment_sent' | 'assessment_completed' | 'program_assigned' | 'program_updated' | 'bilan_received' | 'session_reminder'
+  type:         'assessment_sent' | 'assessment_completed' | 'program_assigned' | 'program_updated' | 'bilan_received' | 'session_reminder' | 'payment_received'
   message:      string
   submissionId?: string
 }
