@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { computePhysiologicalDate, inferMealType } from "@/lib/nutrition/physiological-date"
 import { calcEntryMacros } from "@/lib/nutrition/food-items"
+import { computeMacroEnergy } from "@/lib/nutrition/energy"
 
 function service() {
   return createServiceClient(
@@ -31,7 +32,6 @@ const createMealSchema = z.object({
   meal_id: z.string().uuid().optional(), // if present, append to existing meal
   meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
   logged_at: z.string().datetime().optional(),
-  title: z.string().max(80).optional(),
   notes: z.string().max(500).optional(),
   entries: z.array(entrySchema).min(1).max(30),
 })
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   const body = createMealSchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { meal_id: existingMealId, meal_type, logged_at, title, notes, entries } = body.data
+  const { meal_id: existingMealId, meal_type, logged_at, notes, entries } = body.data
   const loggedAt = logged_at ? new Date(logged_at) : new Date()
   const physiologicalDate = computePhysiologicalDate(loggedAt)
   const resolvedMealType = meal_type ?? inferMealType(loggedAt)
@@ -86,16 +86,24 @@ export async function POST(req: NextRequest) {
     return { ...e, ...macros }
   })
 
-  const newTotals = entryMacros.reduce(
+  const newTotalsBase = entryMacros.reduce(
     (acc, e) => ({
-      total_calories: Math.round((acc.total_calories + e.calories_kcal) * 10) / 10,
       total_protein_g: Math.round((acc.total_protein_g + e.protein_g) * 10) / 10,
       total_carbs_g: Math.round((acc.total_carbs_g + e.carbs_g) * 10) / 10,
       total_fat_g: Math.round((acc.total_fat_g + e.fat_g) * 10) / 10,
       total_fiber_g: Math.round((acc.total_fiber_g + e.fiber_g) * 10) / 10,
     }),
-    { total_calories: 0, total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
+    { total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
   )
+  const newTotals = {
+    ...newTotalsBase,
+    total_calories: computeMacroEnergy({
+      protein_g: newTotalsBase.total_protein_g,
+      carbs_g: newTotalsBase.total_carbs_g,
+      fat_g: newTotalsBase.total_fat_g,
+      fiber_g: newTotalsBase.total_fiber_g,
+    }),
+  }
 
   let mealId: string
 
@@ -114,14 +122,22 @@ export async function POST(req: NextRequest) {
 
     // Mettre à jour les totaux en ajoutant les nouvelles entrées
     const updatedTotals = {
-      total_calories: Math.round((Number(existing.total_calories) + newTotals.total_calories) * 10) / 10,
       total_protein_g: Math.round((Number(existing.total_protein_g) + newTotals.total_protein_g) * 10) / 10,
       total_carbs_g: Math.round((Number(existing.total_carbs_g) + newTotals.total_carbs_g) * 10) / 10,
       total_fat_g: Math.round((Number(existing.total_fat_g) + newTotals.total_fat_g) * 10) / 10,
       total_fiber_g: Math.round((Number(existing.total_fiber_g) + newTotals.total_fiber_g) * 10) / 10,
     }
+    const updatedTotalsWithCalories = {
+      ...updatedTotals,
+      total_calories: computeMacroEnergy({
+        protein_g: updatedTotals.total_protein_g,
+        carbs_g: updatedTotals.total_carbs_g,
+        fat_g: updatedTotals.total_fat_g,
+        fiber_g: updatedTotals.total_fiber_g,
+      }),
+    }
 
-    await db.from("nutrition_meals").update(updatedTotals).eq("id", mealId)
+    await db.from("nutrition_meals").update(updatedTotalsWithCalories).eq("id", mealId)
   } else {
     // ── Create mode ──
     const { data: meal, error: mealError } = await db
@@ -131,7 +147,6 @@ export async function POST(req: NextRequest) {
         physiological_date: physiologicalDate,
         meal_type: resolvedMealType,
         logged_at: loggedAt.toISOString(),
-        title: title?.trim() || null,
         notes: notes ?? null,
         ...newTotals,
       })

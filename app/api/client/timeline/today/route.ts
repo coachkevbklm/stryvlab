@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { buildTimeline, type TimelineSource } from '@/lib/client/smart/timelineBuilder'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 
 function svc() {
@@ -38,10 +39,9 @@ export async function GET(req: NextRequest) {
   const [mealsResult, waterResult, sessionResult, activitiesResult] = await Promise.allSettled([
     svc()
       .from('nutrition_meals')
-      .select('id, meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
+      .select('id, meal_type, title, logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
       .eq('client_id', cc.id)
       .eq('physiological_date', date)
-      .neq('meal_type', 'drinks')
       .order('logged_at', { ascending: true }),
     svc()
       .from('client_water_logs')
@@ -95,10 +95,15 @@ export async function GET(req: NextRequest) {
       logged_at: m.logged_at,
       title: m.title ?? mealTypeLabel(m.meal_type),
       meal_type: m.meal_type as any,
-      kcal: Number(m.calories ?? 0),
-      protein_g: Number(m.protein_g ?? 0),
-      carbs_g: Number(m.carbs_g ?? 0),
-      fat_g: Number(m.fat_g ?? 0),
+      kcal: computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+        fiber_g: Number(m.total_fiber_g ?? 0),
+      }),
+      protein_g: Number(m.total_protein_g ?? 0),
+      carbs_g: Number(m.total_carbs_g ?? 0),
+      fat_g: Number(m.total_fat_g ?? 0),
     })),
     waterLogs: water.map(w => ({ logged_at: w.logged_at, amount_ml: Number(w.amount_ml ?? 0) })),
     session,

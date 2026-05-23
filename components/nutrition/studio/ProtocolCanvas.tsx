@@ -1,50 +1,43 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Plus, X, Pencil, Check, CheckCircle2, Info } from "lucide-react";
-import MacroBar from "./MacroBar";
-import CoherenceScore from "./CoherenceScore";
-import InfoModal from "./InfoModal";
-import { INJECTION_INFO_MODALS } from "@/lib/nutrition/infoModalDefinitions";
-import type { DayDraft } from "@/lib/nutrition/types";
-import type { CarbCyclingResult } from "@/lib/formulas/carbCycling";
+import { useState } from 'react'
+import { Plus, X, Pencil, Check, CheckCircle2, Info } from 'lucide-react'
+import MacroBar from './MacroBar'
+import CoherenceScore from './CoherenceScore'
+import InfoModal from './InfoModal'
+import { INJECTION_INFO_MODALS } from '@/lib/nutrition/infoModalDefinitions'
+import type { DayDraft } from '@/lib/nutrition/types'
+import type { CarbCyclingResult } from '@/lib/formulas/carbCycling'
+import type { TrainingWeekSchedule } from '@/lib/nutrition/training-week-schedule'
+import TrainingWeekSchedulePanel from './TrainingWeekSchedulePanel'
 
 interface Props {
-  protocolName: string;
-  onProtocolNameChange: (v: string) => void;
-  days: DayDraft[];
-  activeDayIndex: number;
-  onActiveDayChange: (i: number) => void;
-  onUpdateDay: (index: number, patch: Partial<DayDraft>) => void;
-  onAddDay: (name?: string) => void;
-  onRemoveDay: (index: number) => void;
-  onInjectMacros: (i: number) => void;
-  onInjectCCHigh: (i: number) => void;
-  onInjectCCLow: (i: number) => void;
-  onInjectHydration: (i: number) => void;
-  onInjectAll: (i: number) => void;
-  hasMacroResult: boolean;
-  hasCcResult: boolean;
-  ccResult: CarbCyclingResult | null;
-  hasHydration: boolean;
-  coherenceScore: {
-    score: number;
-    checks: { label: string; ok: boolean; warning?: string }[];
-  };
-  loading?: boolean;
-  trainingDays?: number[];
+  protocolName: string
+  onProtocolNameChange: (v: string) => void
+  days: DayDraft[]
+  activeDayIndex: number
+  onActiveDayChange: (i: number) => void
+  onUpdateDay: (index: number, patch: Partial<DayDraft>) => void
+  onAddDay: (name?: string) => void
+  onRemoveDay: (index: number) => void
+  onInjectMacros: (i: number) => void
+  onInjectCCHigh: (i: number) => void
+  onInjectCCLow: (i: number) => void
+  onInjectHydration: (i: number) => void
+  onInjectAll: (i: number) => void
+  hasMacroResult: boolean
+  hasCcResult: boolean
+  ccResult: CarbCyclingResult | null
+  hasHydration: boolean
+  coherenceScore: { score: number; checks: { label: string; ok: boolean; warning?: string }[] }
+  loading?: boolean
+  trainingWeekSchedule?: TrainingWeekSchedule | null
+  selectedScheduleDow?: number | null
+  onSelectScheduleDow?: (dow: number) => void
 }
 
-function NumberField({
-  label,
-  value,
-  onChange,
-  unit,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  unit?: string;
+function NumberField({ label, value, onChange, unit }: {
+  label: string; value: string; onChange: (v: string) => void; unit?: string
 }) {
   return (
     <div className="flex items-center justify-between py-0.5">
@@ -53,65 +46,34 @@ function NumberField({
         <input
           type="number"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={e => onChange(e.target.value)}
           placeholder="—"
           className="w-16 rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-0.5 text-[11px] text-white text-right outline-none placeholder:text-white/20 focus:border-[#1f8a65]/40"
         />
         {unit && <span className="text-[9px] text-white/30 w-5">{unit}</span>}
       </div>
     </div>
-  );
+  )
 }
 
 export default function ProtocolCanvas({
-  protocolName,
-  onProtocolNameChange,
-  days,
-  activeDayIndex,
-  onActiveDayChange,
-  onUpdateDay,
-  onAddDay,
-  onRemoveDay,
-  onInjectMacros,
-  onInjectCCHigh,
-  onInjectCCLow,
-  onInjectHydration,
-  onInjectAll,
-  hasMacroResult,
-  hasCcResult,
-  hasHydration,
+  protocolName, onProtocolNameChange,
+  days, activeDayIndex, onActiveDayChange,
+  onUpdateDay, onAddDay, onRemoveDay,
+  onInjectMacros, onInjectCCHigh, onInjectCCLow, onInjectHydration, onInjectAll,
+  hasMacroResult, hasCcResult, hasHydration,
   coherenceScore,
   loading = false,
+  trainingWeekSchedule = null,
+  selectedScheduleDow = null,
+  onSelectScheduleDow,
 }: Props) {
-  const [editingName, setEditingName] = useState(false);
-  const [tempName, setTempName] = useState(protocolName);
-  const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null);
-  const [tempDayName, setTempDayName] = useState("");
-  const [openInfoModal, setOpenInfoModal] = useState<string | null>(null);
-  const activeDay = days[activeDayIndex];
-
-  const WEEKDAY_ORDER: Array<{ label: string; value: number }> = [
-    { label: "L", value: 1 },
-    { label: "M", value: 2 },
-    { label: "M", value: 3 },
-    { label: "J", value: 4 },
-    { label: "V", value: 5 },
-    { label: "S", value: 6 },
-    { label: "D", value: 0 },
-  ];
-
-  const getDayTypeClasses = (dayType: string | null | undefined) => {
-    if (dayType === "training") {
-      return "bg-[#1f8a65] text-white border-[#1f8a65]/30";
-    }
-    if (dayType === "rest") {
-      return "bg-white/[0.06] text-white/70 border-white/[0.08]";
-    }
-    if (dayType === "special") {
-      return "bg-amber-500/20 text-amber-200 border-amber-400/20";
-    }
-    return "bg-white/[0.02] text-white/35 border-white/[0.06]";
-  };
+  const [editingName, setEditingName] = useState(false)
+  const [tempName, setTempName] = useState(protocolName)
+  const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
+  const [tempDayName, setTempDayName] = useState('')
+  const [openInfoModal, setOpenInfoModal] = useState<string | null>(null)
+  const activeDay = days[activeDayIndex]
 
   if (loading) {
     return (
@@ -135,30 +97,20 @@ export default function ProtocolCanvas({
             </div>
             <div className="h-1.5 w-full rounded-full bg-white/[0.06]" />
             <div className="grid grid-cols-5 gap-1">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-2 rounded bg-white/[0.04]" />
-              ))}
+              {[1,2,3,4,5].map(i => <div key={i} className="h-2 rounded bg-white/[0.04]" />)}
             </div>
           </div>
           {/* Day cards grid */}
           <div>
             <div className="h-2 w-24 rounded bg-white/[0.04] mb-2" />
             <div className="grid grid-cols-2 gap-2">
-              {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] p-3 space-y-2"
-                >
+              {[1,2].map(i => (
+                <div key={i} className="rounded-xl bg-white/[0.04] border-[0.3px] border-white/[0.06] p-3 space-y-2">
                   <div className="h-2.5 w-24 rounded bg-white/[0.06]" />
                   <div className="h-3.5 w-16 rounded bg-white/[0.05]" />
                   <div className="h-[3px] w-full rounded-full bg-white/[0.06]" />
                   <div className="flex gap-1">
-                    {[1, 2, 3].map((j) => (
-                      <div
-                        key={j}
-                        className="h-2 flex-1 rounded bg-white/[0.04]"
-                      />
-                    ))}
+                    {[1,2,3].map(j => <div key={j} className="h-2 flex-1 rounded bg-white/[0.04]" />)}
                   </div>
                 </div>
               ))}
@@ -175,7 +127,7 @@ export default function ProtocolCanvas({
             </div>
             {/* Manual fields */}
             <div className="space-y-1.5 pt-1">
-              {[1, 2, 3, 4].map((i) => (
+              {[1,2,3,4].map(i => (
                 <div key={i} className="flex justify-between items-center">
                   <div className="h-2.5 w-16 rounded bg-white/[0.04]" />
                   <div className="h-6 w-20 rounded-md bg-white/[0.05]" />
@@ -185,7 +137,7 @@ export default function ProtocolCanvas({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -197,49 +149,31 @@ export default function ProtocolCanvas({
             <input
               autoFocus
               value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  onProtocolNameChange(tempName);
-                  setEditingName(false);
-                }
-                if (e.key === "Escape") {
-                  setTempName(protocolName);
-                  setEditingName(false);
-                }
+              onChange={e => setTempName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { onProtocolNameChange(tempName); setEditingName(false) }
+                if (e.key === 'Escape') { setTempName(protocolName); setEditingName(false) }
               }}
               className="flex-1 rounded-lg bg-white/[0.04] border-[0.3px] border-[#1f8a65]/40 px-3 py-1 text-[13px] font-semibold text-white outline-none"
             />
-            <button
-              onClick={() => {
-                onProtocolNameChange(tempName);
-                setEditingName(false);
-              }}
-            >
+            <button onClick={() => { onProtocolNameChange(tempName); setEditingName(false) }}>
               <Check size={14} className="text-[#1f8a65]" />
             </button>
           </div>
         ) : (
           <button
-            onClick={() => {
-              setTempName(protocolName);
-              setEditingName(true);
-            }}
+            onClick={() => { setTempName(protocolName); setEditingName(true) }}
             className="flex items-center gap-2 group"
           >
-            <span className="text-[13px] font-semibold text-white">
-              {protocolName}
-            </span>
-            <Pencil
-              size={11}
-              className="text-white/25 group-hover:text-[#1f8a65] transition-colors"
-            />
+            <span className="text-[13px] font-semibold text-white">{protocolName}</span>
+            <Pencil size={11} className="text-white/25 group-hover:text-[#1f8a65] transition-colors" />
           </button>
         )}
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 p-4">
+
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-3 text-[10px] font-semibold text-white/50">
           <div className="flex items-center gap-1.5">
@@ -259,46 +193,15 @@ export default function ProtocolCanvas({
         </div>
 
         {/* Coherence Score */}
-        <CoherenceScore
-          score={coherenceScore.score}
-          checks={coherenceScore.checks}
-        />
+        <CoherenceScore score={coherenceScore.score} checks={coherenceScore.checks} />
 
-        {/* Weekly day-type map */}
-        <div className="rounded-xl bg-white/[0.02] border-[0.3px] border-white/[0.06] p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
-              Plan hebdomadaire
-            </span>
-            <span className="text-[9px] text-white/30">
-              Entraînement / Repos
-            </span>
-          </div>
-          <div className="grid grid-cols-7 gap-2">
-            {WEEKDAY_ORDER.map((weekday) => {
-              const day = days.find((d) => d.weekday === weekday.value);
-              const classes = getDayTypeClasses(day?.day_type);
-              const subtitle = day?.day_type
-                ? day.day_type === "training"
-                  ? "Entraînement"
-                  : day.day_type === "rest"
-                    ? "Repos"
-                    : "Spécial"
-                : "Non assigné";
-              return (
-                <div
-                  key={weekday.value}
-                  className={`rounded-2xl border px-2 py-2 text-center text-[10px] font-semibold ${classes}`}
-                >
-                  <div>{weekday.label}</div>
-                  <div className="text-[8px] font-medium text-white/40 mt-1">
-                    {subtitle}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <TrainingWeekSchedulePanel
+          schedule={trainingWeekSchedule}
+          loading={loading}
+          protocolDayNames={days.map((d) => d.name)}
+          activeDow={selectedScheduleDow}
+          onSelectDow={onSelectScheduleDow}
+        />
 
         {/* Day cards overview */}
         <div>
@@ -309,74 +212,50 @@ export default function ProtocolCanvas({
           </div>
           <div className="grid grid-cols-2 gap-2 mb-2">
             {days.map((day, i) => {
-              const cal = Number(day.calories) || 0;
-              const p = Number(day.protein_g) || 0;
-              const f = Number(day.fat_g) || 0;
-              const c = Number(day.carbs_g) || 0;
-              const isActive = i === activeDayIndex;
+              const cal = Number(day.calories) || 0
+              const p = Number(day.protein_g) || 0
+              const f = Number(day.fat_g) || 0
+              const c = Number(day.carbs_g) || 0
+              const isActive = i === activeDayIndex
               return (
                 <button
                   key={day.localId}
                   onClick={() => onActiveDayChange(i)}
                   className={`relative rounded-xl p-3 border-[0.3px] text-left transition-all ${
                     isActive
-                      ? "bg-[#1f8a65]/[0.08] border-[#1f8a65]/30"
-                      : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]"
+                      ? 'bg-[#1f8a65]/[0.08] border-[#1f8a65]/30'
+                      : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
                   }`}
                 >
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveDay(i);
-                    }}
+                    onClick={e => { e.stopPropagation(); onRemoveDay(i) }}
                     className="absolute top-1.5 right-1.5 text-white/20 hover:text-red-400 transition-colors"
                   >
                     <X size={10} />
                   </button>
-                  <p className="text-[10px] font-medium text-white/80 leading-tight pr-3">
-                    {day.name}
-                  </p>
+                  <p className="text-[10px] font-medium text-white/80 leading-tight pr-3">{day.name}</p>
                   {cal > 0 ? (
                     <>
-                      <p className="text-[12px] font-bold text-white mt-1">
-                        {cal}{" "}
-                        <span className="text-[9px] font-normal text-white/40">
-                          kcal
-                        </span>
-                      </p>
-                      <p className="text-[9px] text-white/40 mt-0.5">
-                        P{p}·L{f}·G{c}
-                      </p>
+                      <p className="text-[12px] font-bold text-white mt-1">{cal} <span className="text-[9px] font-normal text-white/40">kcal</span></p>
+                      <p className="text-[9px] text-white/40 mt-0.5">P{p}·L{f}·G{c}</p>
                       <div className="mt-2">
-                        <MacroBar
-                          calories={cal}
-                          protein_g={p}
-                          carbs_g={c}
-                          fat_g={f}
-                          height={3}
-                        />
+                        <MacroBar calories={cal} protein_g={p} carbs_g={c} fat_g={f} height={3} />
                       </div>
                       {day.carb_cycle_type && (
-                        <span
-                          className={`inline-block mt-1 text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${
-                            day.carb_cycle_type === "high"
-                              ? "bg-[#1f8a65]/20 text-[#1f8a65]"
-                              : day.carb_cycle_type === "low"
-                                ? "bg-blue-500/20 text-blue-400"
-                                : "bg-amber-500/20 text-amber-400"
-                          }`}
-                        >
+                        <span className={`inline-block mt-1 text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          day.carb_cycle_type === 'high' ? 'bg-[#1f8a65]/20 text-[#1f8a65]' :
+                          day.carb_cycle_type === 'low'  ? 'bg-blue-500/20 text-blue-400' :
+                                                           'bg-amber-500/20 text-amber-400'
+                        }`}>
                           {day.carb_cycle_type.toUpperCase()} CC
                         </span>
                       )}
                     </>
                   ) : (
-                    <p className="text-[9px] text-white/25 mt-1">
-                      Non configuré
-                    </p>
+                    <p className="text-[9px] text-white/25 mt-1">Non configuré</p>
                   )}
                 </button>
-              );
+              )
             })}
           </div>
           <button
@@ -396,22 +275,22 @@ export default function ProtocolCanvas({
                   <input
                     autoFocus
                     value={tempDayName}
-                    onChange={(e) => setTempDayName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        onUpdateDay(activeDayIndex, { name: tempDayName });
-                        setEditingDayIndex(null);
+                    onChange={e => setTempDayName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        onUpdateDay(activeDayIndex, { name: tempDayName })
+                        setEditingDayIndex(null)
                       }
-                      if (e.key === "Escape") {
-                        setEditingDayIndex(null);
+                      if (e.key === 'Escape') {
+                        setEditingDayIndex(null)
                       }
                     }}
                     className="flex-1 rounded-lg bg-white/[0.04] border-[0.3px] border-[#1f8a65]/40 px-2 py-1 text-[11px] font-semibold text-white outline-none"
                   />
                   <button
                     onClick={() => {
-                      onUpdateDay(activeDayIndex, { name: tempDayName });
-                      setEditingDayIndex(null);
+                      onUpdateDay(activeDayIndex, { name: tempDayName })
+                      setEditingDayIndex(null)
                     }}
                     className="text-[#1f8a65] hover:text-[#217356]"
                   >
@@ -420,13 +299,11 @@ export default function ProtocolCanvas({
                 </div>
               ) : (
                 <>
-                  <p className="text-[11px] font-semibold text-white">
-                    {activeDay.name}
-                  </p>
+                  <p className="text-[11px] font-semibold text-white">{activeDay.name}</p>
                   <button
                     onClick={() => {
-                      setTempDayName(activeDay.name);
-                      setEditingDayIndex(activeDayIndex);
+                      setTempDayName(activeDay.name)
+                      setEditingDayIndex(activeDayIndex)
                     }}
                     className="text-white/25 hover:text-white/60 transition-colors"
                   >
@@ -438,6 +315,7 @@ export default function ProtocolCanvas({
 
             {/* Injection buttons */}
             <div className="space-y-2">
+
               {/* Bouton principal — Tous les calculs (macros + hydratation) */}
               {(hasMacroResult || hasHydration) && (
                 <button
@@ -446,10 +324,7 @@ export default function ProtocolCanvas({
                 >
                   <span>Appliquer les paramètres</span>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenInfoModal("allCalculations");
-                    }}
+                    onClick={e => { e.stopPropagation(); setOpenInfoModal('allCalculations') }}
                     className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.1] hover:bg-white/[0.2]"
                   >
                     <Info size={12} />
@@ -465,13 +340,7 @@ export default function ProtocolCanvas({
                     className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-[#1f8a65]/10 border-[0.3px] border-[#1f8a65]/25 text-[10px] text-[#1f8a65] font-medium hover:bg-[#1f8a65]/15 transition-all"
                   >
                     <span>Jour haut CC</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenInfoModal("carbCycleHigh");
-                      }}
-                      className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
-                    >
+                    <button onClick={e => { e.stopPropagation(); setOpenInfoModal('carbCycleHigh') }} className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80">
                       <Info size={11} />
                     </button>
                   </button>
@@ -480,111 +349,29 @@ export default function ProtocolCanvas({
                     className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-blue-500/10 border-[0.3px] border-blue-500/25 text-[10px] text-blue-400 font-medium hover:bg-blue-500/15 transition-all"
                   >
                     <span>Jour bas CC</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenInfoModal("carbCycleLow");
-                      }}
-                      className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80"
-                    >
+                    <button onClick={e => { e.stopPropagation(); setOpenInfoModal('carbCycleLow') }} className="flex h-4 w-4 items-center justify-center rounded text-white/40 hover:text-white/80">
                       <Info size={11} />
                     </button>
                   </button>
                 </div>
               )}
+
             </div>
 
             {/* Manual fine-tune */}
-            <div className="pt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[9px] text-white/30 mb-1 block">
-                    Jour de la semaine
-                  </label>
-                  <select
-                    value={activeDay.weekday ?? ""}
-                    onChange={(e) =>
-                      onUpdateDay(activeDayIndex, {
-                        weekday:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      })
-                    }
-                    className="w-full rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-1 text-[11px] text-white outline-none"
-                  >
-                    <option value="">Aucun</option>
-                    <option value="0">Dimanche</option>
-                    <option value="1">Lundi</option>
-                    <option value="2">Mardi</option>
-                    <option value="3">Mercredi</option>
-                    <option value="4">Jeudi</option>
-                    <option value="5">Vendredi</option>
-                    <option value="6">Samedi</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[9px] text-white/30 mb-1 block">
-                    Type de journée
-                  </label>
-                  <select
-                    value={activeDay.day_type ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value as
-                        | "training"
-                        | "rest"
-                        | "special"
-                        | "";
-                      onUpdateDay(activeDayIndex, {
-                        day_type: v === "" ? null : v,
-                      });
-                    }}
-                    className="w-full rounded-md bg-white/[0.04] border-[0.3px] border-white/[0.06] px-2 py-1 text-[11px] text-white outline-none"
-                  >
-                    <option value="">Aucun</option>
-                    <option value="training">Entraînement</option>
-                    <option value="rest">Repos</option>
-                    <option value="special">Spécial</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
             <div>
               <p className="text-[9px] text-white/30 mb-1">Ajustement manuel</p>
               <div className="space-y-0.5">
-                <NumberField
-                  label="Calories"
-                  value={activeDay.calories}
-                  unit="kcal"
-                  onChange={(v) => onUpdateDay(activeDayIndex, { calories: v })}
-                />
-                <NumberField
-                  label="Protéines"
-                  value={activeDay.protein_g}
-                  unit="g"
-                  onChange={(v) =>
-                    onUpdateDay(activeDayIndex, { protein_g: v })
-                  }
-                />
-                <NumberField
-                  label="Lipides"
-                  value={activeDay.fat_g}
-                  unit="g"
-                  onChange={(v) => onUpdateDay(activeDayIndex, { fat_g: v })}
-                />
-                <NumberField
-                  label="Glucides"
-                  value={activeDay.carbs_g}
-                  unit="g"
-                  onChange={(v) => onUpdateDay(activeDayIndex, { carbs_g: v })}
-                />
-                <NumberField
-                  label="Hydratation"
-                  value={activeDay.hydration_ml}
-                  unit="ml"
-                  onChange={(v) =>
-                    onUpdateDay(activeDayIndex, { hydration_ml: v })
-                  }
-                />
+                <NumberField label="Calories" value={activeDay.calories} unit="kcal"
+                  onChange={v => onUpdateDay(activeDayIndex, { calories: v })} />
+                <NumberField label="Protéines" value={activeDay.protein_g} unit="g"
+                  onChange={v => onUpdateDay(activeDayIndex, { protein_g: v })} />
+                <NumberField label="Lipides" value={activeDay.fat_g} unit="g"
+                  onChange={v => onUpdateDay(activeDayIndex, { fat_g: v })} />
+                <NumberField label="Glucides" value={activeDay.carbs_g} unit="g"
+                  onChange={v => onUpdateDay(activeDayIndex, { carbs_g: v })} />
+                <NumberField label="Hydratation" value={activeDay.hydration_ml} unit="ml"
+                  onChange={v => onUpdateDay(activeDayIndex, { hydration_ml: v })} />
               </div>
             </div>
 
@@ -602,16 +389,10 @@ export default function ProtocolCanvas({
 
             {/* Recommendations */}
             <div>
-              <p className="text-[9px] text-white/30 mb-1">
-                Notes / recommandations
-              </p>
+              <p className="text-[9px] text-white/30 mb-1">Notes / recommandations</p>
               <textarea
                 value={activeDay.recommendations}
-                onChange={(e) =>
-                  onUpdateDay(activeDayIndex, {
-                    recommendations: e.target.value,
-                  })
-                }
+                onChange={e => onUpdateDay(activeDayIndex, { recommendations: e.target.value })}
                 placeholder="Conseils pour ce jour..."
                 rows={2}
                 className="w-full rounded-lg bg-white/[0.04] border-[0.3px] border-white/[0.06] px-3 py-2 text-[11px] text-white/70 placeholder:text-white/20 outline-none resize-none focus:border-[#1f8a65]/40"
@@ -621,36 +402,18 @@ export default function ProtocolCanvas({
         )}
       </div>
 
+
       {/* Info modals */}
-      {openInfoModal &&
-        INJECTION_INFO_MODALS[
-          openInfoModal as keyof typeof INJECTION_INFO_MODALS
-        ] && (
-          <InfoModal
-            isOpen={true}
-            title={
-              INJECTION_INFO_MODALS[
-                openInfoModal as keyof typeof INJECTION_INFO_MODALS
-              ].title
-            }
-            description={
-              INJECTION_INFO_MODALS[
-                openInfoModal as keyof typeof INJECTION_INFO_MODALS
-              ].description
-            }
-            example={
-              INJECTION_INFO_MODALS[
-                openInfoModal as keyof typeof INJECTION_INFO_MODALS
-              ].example
-            }
-            whenToUse={
-              INJECTION_INFO_MODALS[
-                openInfoModal as keyof typeof INJECTION_INFO_MODALS
-              ].whenToUse
-            }
-            onClose={() => setOpenInfoModal(null)}
-          />
-        )}
+      {openInfoModal && INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS] && (
+        <InfoModal
+          isOpen={true}
+          title={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].title}
+          description={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].description}
+          example={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].example}
+          whenToUse={INJECTION_INFO_MODALS[openInfoModal as keyof typeof INJECTION_INFO_MODALS].whenToUse}
+          onClose={() => setOpenInfoModal(null)}
+        />
+      )}
     </div>
-  );
+  )
 }

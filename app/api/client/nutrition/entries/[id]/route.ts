@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { calcEntryMacros } from "@/lib/nutrition/food-items"
+import { computeMacroEnergy } from "@/lib/nutrition/energy"
 
 function service() {
   return createServiceClient(
@@ -37,23 +38,31 @@ async function recalcMealTotals(mealId: string, clientId: string) {
 
   const totals = entries.reduce(
     (acc, entry: any) => ({
-      total_calories: Math.round((acc.total_calories + Number(entry.calories_kcal ?? 0)) * 10) / 10,
       total_protein_g: Math.round((acc.total_protein_g + Number(entry.protein_g ?? 0)) * 10) / 10,
       total_carbs_g: Math.round((acc.total_carbs_g + Number(entry.carbs_g ?? 0)) * 10) / 10,
       total_fat_g: Math.round((acc.total_fat_g + Number(entry.fat_g ?? 0)) * 10) / 10,
       total_fiber_g: Math.round((acc.total_fiber_g + Number(entry.fiber_g ?? 0)) * 10) / 10,
     }),
-    { total_calories: 0, total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
+    { total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
   )
+  const totalsWithCalories = {
+    ...totals,
+    total_calories: computeMacroEnergy({
+      protein_g: totals.total_protein_g,
+      carbs_g: totals.total_carbs_g,
+      fat_g: totals.total_fat_g,
+      fiber_g: totals.total_fiber_g,
+    }),
+  }
 
   const { error: updateError } = await db
     .from("nutrition_meals")
-    .update(totals)
+    .update(totalsWithCalories)
     .eq("id", mealId)
     .eq("client_id", clientId)
 
   if (updateError) throw new Error(updateError.message)
-  return { deletedMeal: false, totals }
+  return { deletedMeal: false, totals: totalsWithCalories }
 }
 
 const patchEntrySchema = z.object({

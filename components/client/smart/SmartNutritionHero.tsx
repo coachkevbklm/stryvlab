@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
 import type { NutritionMacros } from './SmartNutritionWidget'
 
 type Props = {
@@ -24,12 +25,36 @@ function formatNav(iso: string): string {
 
 export default function SmartNutritionHero({ date, consumed, target }: Props) {
   const effectiveWaterMl = consumed.water_ml
-  const pct = target.kcal > 0 ? Math.min(1, consumed.kcal / target.kcal) : 0
+  const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
+  const pct = Math.min(kcalMeta.ratio, 1)
   const total = 251.2
   const offset = total * (1 - pct)
   const prev = shiftDate(date, -1)
   const next = shiftDate(date, 1)
-  const waterPct = target.water_ml > 0 ? Math.min(100, (effectiveWaterMl / target.water_ml) * 100) : 0
+  const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
+
+  function getStateColor(state: NutritionProgressState, baseColor: string): string {
+    switch (state) {
+      case 'over':
+        return '#ef4444'
+      case 'near_limit':
+        return '#f59e0b'
+      case 'in_target':
+        return baseColor
+      default:
+        return 'rgba(255,255,255,0.55)'
+    }
+  }
+
+  const kcalStroke = getStateColor(kcalMeta.state, '#f2f2f2')
+  const kcalBadge =
+    kcalMeta.state === 'over'
+      ? 'Dépassement'
+      : kcalMeta.state === 'near_limit'
+        ? 'Proche de la limite'
+        : kcalMeta.state === 'in_target'
+          ? 'Dans la cible'
+          : 'En progression'
 
   return (
     <>
@@ -46,18 +71,11 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="relative h-[180px]">
           <svg viewBox="0 0 200 110" className="w-full h-full">
-            <defs>
-              <linearGradient id="arcGradHero" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stopColor="var(--data-copper)" />
-                <stop offset="50%"  stopColor="var(--data-gold)" />
-                <stop offset="100%" stopColor="var(--data-petrol)" />
-              </linearGradient>
-            </defs>
             <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round" />
             <path
               d="M 20 100 A 80 80 0 0 1 180 100"
               fill="none"
-              stroke="url(#arcGradHero)"
+              stroke={kcalStroke}
               strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={total}
@@ -66,27 +84,48 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
             <div className="text-[32px] font-black leading-none text-white tabular-nums">{Math.round(consumed.kcal)}</div>
-            <div className="text-[11px] text-white/40 mt-1 tabular-nums">/ {target.kcal} kcal</div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-white/35 mt-1">Calories consommées</div>
+            <div className="text-[11px] text-white/50 mt-1 tabular-nums">/ {target.kcal} kcal</div>
+            <div
+              className="mt-2 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em]"
+              style={{
+                color: kcalStroke,
+                background: kcalMeta.state === 'under' ? 'rgba(255,255,255,0.06)' : `${kcalStroke}1A`,
+              }}
+            >
+              {kcalBadge}
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 mt-3">
           {([
-            { key: 'protein_g', label: 'P', color: 'var(--data-copper)' },
-            { key: 'carbs_g',   label: 'G', color: 'var(--data-gold)' },
-            { key: 'fat_g',     label: 'L', color: 'var(--data-petrol)' },
+            { key: 'protein_g', label: 'P', color: '#e85d04' },
+            { key: 'carbs_g',   label: 'G', color: '#22c55e' },
+            { key: 'fat_g',     label: 'L', color: '#f59e0b' },
           ] as const).map(m => {
             const c = (consumed as any)[m.key] ?? 0
             const tg = (target as any)[m.key] ?? 0
-            const w = tg > 0 ? Math.min(100, (c / tg) * 100) : 0
+            const meta = getNutritionProgressMeta(c, tg)
+            const fillColor = getStateColor(meta.state, m.color)
             return (
               <div key={m.key} className="text-center">
-                <div className="text-[20px] font-black text-white tabular-nums">
+                <div className="text-[20px] font-black tabular-nums" style={{ color: meta.state === 'under' ? 'white' : fillColor }}>
                   {Math.round(c)}<span className="text-[12px] text-white/40">/{tg}g</span>
                 </div>
                 <div className="text-[9px] text-white/55 uppercase font-bold tracking-[0.1em] mt-1">{m.label}</div>
                 <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mt-1.5">
-                  <div className="h-full" style={{ width: `${w}%`, background: m.color }} />
+                  <div className="h-full" style={{ width: `${meta.clampedPercent}%`, background: fillColor }} />
+                </div>
+                <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full"
+                    style={{
+                      width: `${meta.overflowPercent}%`,
+                      background: '#ef4444',
+                      opacity: meta.state === 'over' ? 1 : 0,
+                    }}
+                  />
                 </div>
               </div>
             )
@@ -106,7 +145,20 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
             <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${waterPct}%`, backgroundColor: 'var(--data-steel)' }}
+                style={{
+                  width: `${waterMeta.clampedPercent}%`,
+                  background: getStateColor(waterMeta.state, '#22d3ee'),
+                }}
+              />
+            </div>
+            <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
+              <div
+                className="h-full"
+                style={{
+                  width: `${waterMeta.overflowPercent}%`,
+                  background: '#ef4444',
+                  opacity: waterMeta.state === 'over' ? 1 : 0,
+                }}
               />
             </div>
           </div>

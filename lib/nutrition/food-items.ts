@@ -1,3 +1,5 @@
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
+
 export type CategoryL1 =
   | "proteins"
   | "carbs"
@@ -151,46 +153,41 @@ export const CATEGORY_LABELS: Record<CategoryL1, string> = {
   fruits: "Fruits",
   fats: "Lipides",
   drinks: "Boissons",
-  extras: "Condiments & Extras",
+  extras: "Snacks & Extras",
 }
 
 export const SUBCATEGORY_LABELS: Record<string, string> = {
-  // proteins
   viandes: "Viandes",
-  poissons: "Poissons & fruits de mer",
+  poissons: "Poissons",
   oeufs: "Œufs",
-  laitiers: "Produits laitiers & fromages",
+  laitiers: "Produits laitiers",
   vegetales: "Protéines végétales",
   complements: "Compléments",
-  // carbs
   cereales: "Céréales",
-  fecules: "Féculents & pommes de terre",
+  fecules: "Féculents",
   pain: "Pain & Tortillas",
   legumineuses: "Légumineuses",
-  // vegetables
-  feuilles: "Légumes feuilles",
+  feuilles: "Feuilles",
   cruciferes: "Crucifères",
   "autres-legumes": "Autres légumes",
-  // fruits
   frais: "Fruits frais",
-  secs: "Fruits séchés",
-  // fats
+  secs: "Fruits secs",
   huiles: "Huiles",
   "noix-graines": "Noix & Graines",
-  "autres-lipides": "Beurres & Graisses",
-  // drinks
-  chauds: "Boissons chaudes",
-  "laits-vegetaux": "Laits végétaux",
-  "jus-smoothies": "Jus & Smoothies",
+  "autres-lipides": "Autres",
+  sauces: "Sauces & Condiments",
+  boissons: "Boissons",
+  divers: "Divers",
+  "snacks-sales": "Snacks salés",
+  "snacks-sucres": "Snacks & Sucreries",
+  "fast-food": "Fast-food",
+  // drinks subcategories
   eau: "Eau & Hydratation",
+  chauds: "Boissons chaudes",
+  "jus-smoothies": "Jus & Smoothies",
+  "laits-vegetaux": "Laits végétaux",
   "sports-drinks": "Boissons sportives",
   alcools: "Alcools",
-  // extras
-  sauces: "Sauces & Condiments",
-  sucres: "Sucres & Tartinades",
-  "snacks-sales": "Snacks salés",
-  "snacks-sucres": "Snacks sucrés",
-  divers: "Divers",
 }
 
 /** Calcule les macros d'une entrée depuis food_item + quantité */
@@ -199,12 +196,16 @@ export function calcEntryMacros(
   quantity_g: number
 ): Pick<NutritionEntry, "calories_kcal" | "protein_g" | "carbs_g" | "fat_g" | "fiber_g"> {
   const factor = quantity_g / 100
+  const protein_g = Math.round(item.protein_per_100g * factor * 10) / 10
+  const carbs_g = Math.round(item.carbs_per_100g * factor * 10) / 10
+  const fat_g = Math.round(item.fat_per_100g * factor * 10) / 10
+  const fiber_g = Math.round(item.fiber_per_100g * factor * 10) / 10
   return {
-    calories_kcal: Math.round(item.kcal_per_100g * factor * 10) / 10,
-    protein_g: Math.round(item.protein_per_100g * factor * 10) / 10,
-    carbs_g: Math.round(item.carbs_per_100g * factor * 10) / 10,
-    fat_g: Math.round(item.fat_per_100g * factor * 10) / 10,
-    fiber_g: Math.round(item.fiber_per_100g * factor * 10) / 10,
+    calories_kcal: computeMacroEnergy({ protein_g, carbs_g, fat_g, fiber_g }),
+    protein_g,
+    carbs_g,
+    fat_g,
+    fiber_g,
   }
 }
 
