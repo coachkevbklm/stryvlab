@@ -81,10 +81,11 @@ export default function BottomNav() {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]"
+        className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-center h-[62px] px-2">
+        <div className="pointer-events-auto w-full max-w-[520px] px-3 pb-2">
+        <div className="flex items-center h-[62px] px-2 rounded-2xl border border-white/[0.08] bg-[#0d0d0d]/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.55)]">
           {/* Left tabs */}
           {LEFT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 0))
@@ -105,6 +106,7 @@ export default function BottomNav() {
           {RIGHT_NAV.map(({ href, labelKey, Icon }, i) =>
             navItem(href, labelKey, Icon, isActive(href, i, 2))
           )}
+        </div>
         </div>
       </nav>
 

@@ -87,6 +87,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.muscle_mass_kg.toFixed(1)} kg`}
           series={[]}
           unit=" kg"
+          expandable={false}
         />
       )}
       {data.composition.skeletal_muscle_pct != null && (
@@ -95,6 +96,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.skeletal_muscle_pct.toFixed(1)}%`}
           series={[]}
           unit="%"
+          expandable={false}
         />
       )}
       {data.composition.visceral_fat_level != null && (
@@ -103,6 +105,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.visceral_fat_level.toFixed(1)}`}
           series={[]}
           unit=""
+          expandable={false}
         />
       )}
       {data.composition.body_water_pct != null && (
@@ -111,6 +114,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.body_water_pct.toFixed(1)}%`}
           series={[]}
           unit="%"
+          expandable={false}
         />
       )}
       {data.composition.muscle_mass_pct != null && (
@@ -119,6 +123,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.muscle_mass_pct.toFixed(1)}%`}
           series={[]}
           unit="%"
+          expandable={false}
         />
       )}
       {data.composition.bone_mass_kg != null && (
@@ -127,6 +132,7 @@ export default function BodyDataTab({ data }: Props) {
           value={`${data.composition.bone_mass_kg.toFixed(1)} kg`}
           series={[]}
           unit=" kg"
+          expandable={false}
         />
       )}
     </div>
