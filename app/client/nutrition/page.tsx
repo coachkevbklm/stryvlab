@@ -7,9 +7,24 @@ import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWi
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
 import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
 import { type ClientLang } from '@/lib/i18n/clientTranslations'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 import NutritionClientPage from './NutritionClientPage'
 
 type SearchParams = { date?: string }
+
+function inferTrainingDay(protocolDay: Record<string, unknown> | null): boolean {
+  if (!protocolDay) return false
+  const name = String(protocolDay.name ?? '').toLowerCase()
+  const cycle = String(protocolDay.carb_cycle_type ?? '').toLowerCase()
+  return (
+    name.includes('entraînement') ||
+    name.includes('entrainement') ||
+    name.includes('training') ||
+    cycle.includes('high')
+  )
+}
 
 function svc() {
   return createServiceClient(
@@ -32,10 +47,10 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
-      .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
+      .select('tdee_adaptive, tdee_data_source, schedule_start_date, nutrition_protocol_days(position, name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', clientId)
       .eq('status', 'shared')
       .order('created_at', { ascending: false })
@@ -75,6 +90,16 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .eq('field_key', 'weight_kg')
       .not('numeric_value', 'is', null)
       .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+
+    // Latest body weight from client check-ins (preferred when available)
+    svc()
+      .from('client_daily_checkins')
+      .select('weight_kg')
+      .eq('client_id', clientId)
+      .not('weight_kg', 'is', null)
+      .order('date', { ascending: false })
       .limit(1)
       .maybeSingle(),
 
@@ -119,11 +144,19 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   // ── Body weight ───────────────────────────────────────────────────────────
   const bodyWeightRow = weightResult.status === 'fulfilled' ? weightResult.value.data : null
-  const bodyWeightKg = bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null
+  const checkinWeightRow = checkinWeightResult.status === 'fulfilled' ? checkinWeightResult.value.data : null
+  const bodyWeightKg = checkinWeightRow?.weight_kg != null
+    ? Number(checkinWeightRow.weight_kg)
+    : (bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null)
 
   // ── Protocol day ──────────────────────────────────────────────────────────
   const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
-  const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
+  const protocolDay = resolveProtocolDayByDate(
+    date,
+    (protoData as any)?.schedule_start_date ?? null,
+    (protoData?.nutrition_protocol_days as any) ?? [],
+    (protoData?.nutrition_protocol_schedule_slots as any) ?? [],
+  )
   const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
   const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
 
@@ -140,6 +173,12 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const rawMeals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
   const meals: NutritionMeal[] = rawMeals.map((m: any) => ({
     ...m,
+    total_calories: computeMacroEnergy({
+      protein_g: Number(m.total_protein_g ?? 0),
+      carbs_g: Number(m.total_carbs_g ?? 0),
+      fat_g: Number(m.total_fat_g ?? 0),
+      fiber_g: Number(m.total_fiber_g ?? 0),
+    }),
     entries: m.nutrition_entries ?? [],
     nutrition_entries: undefined,
   }))
@@ -187,7 +226,11 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   for (const m of trendMeals) {
     const key = (m as any).physiological_date as string
     if (!trendTotals[key]) continue
-    trendTotals[key].kcal      += Number((m as any).total_calories  ?? 0)
+    trendTotals[key].kcal      += computeMacroEnergy({
+      protein_g: Number((m as any).total_protein_g ?? 0),
+      carbs_g: Number((m as any).total_carbs_g ?? 0),
+      fat_g: Number((m as any).total_fat_g ?? 0),
+    })
     trendTotals[key].protein_g += Number((m as any).total_protein_g ?? 0)
     trendTotals[key].carbs_g   += Number((m as any).total_carbs_g   ?? 0)
     trendTotals[key].fat_g     += Number((m as any).total_fat_g     ?? 0)
@@ -215,11 +258,19 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? (rawLang as ClientLang) : 'fr'
 
   // Day type badge for TopBar
-  const dayTypeBadge = protocolDay?.name ? (
-    <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#222222] text-[#b0b0b0]">
-      {protocolDay.name}
+  const isTrainingDay = inferTrainingDay((protocolDay as Record<string, unknown>) ?? null)
+  const dayTypeLabel = String((protocolDay as Record<string, unknown> | null)?.name ?? 'Repos')
+  const dayTypeBadge = (
+    <span
+      className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg"
+      style={{
+        background: isTrainingDay ? NUTRITION_UI_COLORS.trainingDayBg : NUTRITION_UI_COLORS.restDayBg,
+        color: isTrainingDay ? NUTRITION_UI_COLORS.trainingDay : NUTRITION_UI_COLORS.restDay,
+      }}
+    >
+      {dayTypeLabel}
     </span>
-  ) : null
+  )
 
   return (
     <NutritionClientPage

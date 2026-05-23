@@ -39,11 +39,11 @@ export async function GET(
 
   const [responsesRes, streakRes, configRes] = await Promise.all([
     service()
-      .from('daily_checkin_responses')
-      .select('moment, responses, responded_at, is_late')
+      .from('client_daily_checkins')
+      .select('date, flow_type, sleep_hours, sleep_quality, energy_level, stress_level, muscle_soreness, hunger_level')
       .eq('client_id', params.clientId)
-      .gte('responded_at', since)
-      .order('responded_at', { ascending: true }),
+      .gte('date', since.slice(0, 10))
+      .order('date', { ascending: true }),
     service()
       .from('client_streaks')
       .select('*')
@@ -59,7 +59,26 @@ export async function GET(
 
   if (responsesRes.error) return NextResponse.json({ error: responsesRes.error.message }, { status: 500 })
 
-  const responses = responsesRes.data ?? []
+  const rows = (responsesRes.data ?? []) as any[]
+  const responses = rows.map((r) => {
+    const isMorning = r.flow_type === 'morning'
+    const responsesObj: Record<string, number> = {}
+    if (r.energy_level != null) responsesObj.energy = Number(r.energy_level)
+    if (isMorning) {
+      if (r.sleep_hours != null) responsesObj.sleep_duration = Number(r.sleep_hours)
+      if (r.sleep_quality != null) responsesObj.sleep_quality = Number(r.sleep_quality)
+    } else {
+      if (r.stress_level != null) responsesObj.stress = Number(r.stress_level)
+      if (r.hunger_level != null) responsesObj.hunger = Number(r.hunger_level)
+      if (r.muscle_soreness != null) responsesObj.muscle_soreness = Number(r.muscle_soreness)
+    }
+    return {
+      moment: isMorning ? 'morning' : 'evening',
+      responses: responsesObj,
+      responded_at: `${r.date}T12:00:00.000Z`,
+      is_late: false,
+    }
+  })
 
   // Compute per-field averages across all responses
   const fieldSums: Record<string, { sum: number; count: number }> = {}

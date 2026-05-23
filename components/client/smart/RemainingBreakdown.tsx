@@ -1,50 +1,189 @@
 import Link from 'next/link'
 import type { NutritionMacros } from './SmartNutritionWidget'
+import { computeNutritionBalance } from '@/lib/nutrition/balance'
+import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
-type Suggestion = { label: string; macros: string }
+type DeltaCard = {
+  key: 'protein' | 'carbs' | 'fat' | 'water'
+  label: string
+  shortLabel: string
+  remaining: number
+  overflow: number
+  unit: 'g' | 'L'
+  accent: string
+}
 
-function suggest(remaining: NutritionMacros): Suggestion[] {
-  const out: Suggestion[] = []
-  if (remaining.protein_g > 30 && remaining.carbs_g < 30) {
-    out.push({ label: 'Yaourt grec + amandes', macros: '~250 kcal · 25P 10G 12L' })
+function formatValue(value: number, unit: 'g' | 'L'): string {
+  return unit === 'L' ? `${value.toFixed(1)} ${unit}` : `${Math.round(value)}${unit}`
+}
+
+function buildHeadline(cards: DeltaCard[], remainingCaloriesNet: number): string {
+  const activeRemaining = cards.filter(card => card.remaining > 0)
+  const activeOverflow = cards.filter(card => card.overflow > 0)
+
+  if (activeOverflow.length === 0 && activeRemaining.length === 0 && remainingCaloriesNet <= 0) {
+    return 'Objectifs atteints pour aujourd’hui.'
   }
-  if (remaining.carbs_g > 50 && remaining.fat_g < 15) {
-    out.push({ label: 'Bol de riz + poulet', macros: '~450 kcal · 35P 55G 8L' })
+
+  if (activeOverflow.length > 0) {
+    const names = activeOverflow.map(card => card.shortLabel.toLowerCase()).join(', ')
+    return `On évite surtout d’ajouter ${names} maintenant.`
   }
-  if (remaining.kcal > 500) {
-    out.push({ label: 'Repas complet équilibré', macros: '~500 kcal · 30P 50G 18L' })
+
+  const primary = activeRemaining.sort((a, b) => b.remaining - a.remaining)[0]
+  if (!primary) {
+    return remainingCaloriesNet > 0
+      ? `${Math.round(remainingCaloriesNet)} kcal encore disponibles.`
+      : 'La journée est bien calibrée.'
   }
-  return out.slice(0, 3)
+
+  return `${primary.label} en priorité pour finir la journée proprement.`
 }
 
 export default function RemainingBreakdown({ consumed, target }: { consumed: NutritionMacros; target: NutritionMacros }) {
-  const remaining: NutritionMacros = {
-    kcal:      Math.max(0, target.kcal      - consumed.kcal),
-    protein_g: Math.max(0, target.protein_g - consumed.protein_g),
-    carbs_g:   Math.max(0, target.carbs_g   - consumed.carbs_g),
-    fat_g:     Math.max(0, target.fat_g     - consumed.fat_g),
-    water_ml:  Math.max(0, target.water_ml  - consumed.water_ml),
-  }
-  const suggestions = suggest(remaining)
+  const balance = computeNutritionBalance(consumed, target)
+  const { remaining, overflow, remainingCaloriesNet, remainingCaloriesFromMacros } = balance
+  const suggestions = suggestFoodsFromBalance(balance)
+
+  const cards: DeltaCard[] = [
+    {
+      key: 'protein',
+      label: 'Protéines',
+      shortLabel: 'Protéines',
+      remaining: remaining.protein_g,
+      overflow: overflow.protein_g,
+      unit: 'g',
+      accent: NUTRITION_UI_COLORS.protein,
+    },
+    {
+      key: 'carbs',
+      label: 'Glucides',
+      shortLabel: 'Glucides',
+      remaining: remaining.carbs_g,
+      overflow: overflow.carbs_g,
+      unit: 'g',
+      accent: NUTRITION_UI_COLORS.carbs,
+    },
+    {
+      key: 'fat',
+      label: 'Lipides',
+      shortLabel: 'Lipides',
+      remaining: remaining.fat_g,
+      overflow: overflow.fat_g,
+      unit: 'g',
+      accent: NUTRITION_UI_COLORS.fat,
+    },
+    {
+      key: 'water',
+      label: 'Hydratation',
+      shortLabel: 'Eau',
+      remaining: remaining.water_ml / 1000,
+      overflow: overflow.water_ml / 1000,
+      unit: 'L',
+      accent: NUTRITION_UI_COLORS.water,
+    },
+  ]
+
+  const activeCards = cards.filter(card => card.remaining > 0 || card.overflow > 0)
+  const remainingCards = activeCards
+    .filter(card => card.remaining > 0)
+    .sort((a, b) => b.remaining - a.remaining)
+  const overflowCards = activeCards
+    .filter(card => card.overflow > 0)
+    .sort((a, b) => b.overflow - a.overflow)
+  const headline = buildHeadline(cards, remainingCaloriesNet)
 
   return (
     <div className="bg-[#111111] rounded-2xl p-4">
-      <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-2">
-        Reste à consommer
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white mb-1">
+            Reste à consommer
+          </div>
+          <p className="text-[13px] text-white/65 leading-relaxed max-w-[28ch]">
+            {headline}
+          </p>
+        </div>
+        <div className="shrink-0 rounded-2xl bg-white/[0.04] px-3 py-2 text-right">
+          <div className="text-[18px] font-black text-white tabular-nums">
+            {Math.round(remainingCaloriesNet)}
+          </div>
+          <div className="text-[9px] uppercase tracking-[0.12em] text-white/35">
+            kcal restantes
+          </div>
+        </div>
       </div>
-      <p className="text-[12px] text-white/70 tabular-nums">
-        {Math.round(remaining.kcal)} kcal · {Math.round(remaining.protein_g)}g P · {Math.round(remaining.carbs_g)}g G · {Math.round(remaining.fat_g)}g L · {(remaining.water_ml / 1000).toFixed(1)}L
-      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {remainingCards.length > 0 ? (
+          remainingCards.map(card => (
+            <div key={card.key} className="rounded-2xl bg-white/[0.03] border border-white/[0.05] p-3">
+              <div className="text-[10px] uppercase tracking-[0.1em] text-white/40 font-bold">{card.label}</div>
+              <div className="mt-1 text-[20px] font-black tabular-nums" style={{ color: card.accent }}>
+                {formatValue(card.remaining, card.unit)}
+              </div>
+              <div className="text-[10px] text-white/35 mt-1">
+                encore utiles
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="col-span-2 rounded-2xl bg-[#0d1713] border border-[#1f8a65]/25 p-3">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-[#7dd3a7] font-bold">Bonne zone</div>
+            <div className="mt-1 text-[13px] text-white/75 leading-relaxed">
+              Aucun macro n’est réellement en retard pour le moment.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {overflowCards.length > 0 && (
+        <div className="mt-3 rounded-2xl bg-[#1a1010] border border-[#ef4444]/20 p-3">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-[#ef4444] font-bold">À freiner</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {overflowCards.map(card => (
+              <div
+                key={card.key}
+                className="rounded-full bg-[#ef4444]/10 border border-[#ef4444]/20 px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#ff8b8b]"
+              >
+                {card.label} +{formatValue(card.overflow, card.unit)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {remainingCaloriesFromMacros > 0 && (
+        <div className="mt-3 rounded-2xl bg-white/[0.025] px-3 py-2.5 flex items-center justify-between gap-3">
+          <span className="text-[11px] uppercase tracking-[0.1em] text-white/35 font-bold">
+            Estimation macros
+          </span>
+          <span className="text-[12px] text-white/60 tabular-nums">
+            {Math.round(remainingCaloriesFromMacros)} kcal via les macros restantes
+          </span>
+        </div>
+      )}
+
       {suggestions.length > 0 && (
         <div className="mt-3 space-y-2">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-white/35 font-bold">
+            Idées simples maintenant
+          </div>
           {suggestions.map(s => (
             <Link
               key={s.label}
               href="/client/nutrition/log"
-              className="block bg-white/[0.02] rounded-xl p-3 active:scale-[0.99] transition-transform"
+              className="block bg-white/[0.02] border border-white/[0.05] rounded-2xl p-3 active:scale-[0.99] transition-transform"
             >
-              <div className="text-[12px] font-semibold text-white">{s.label}</div>
-              <div className="text-[10px] text-white/40 mt-0.5">{s.macros}</div>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[13px] font-semibold text-white">{s.label}</div>
+                  <div className="text-[10px] text-white/40 mt-0.5">{s.macros}</div>
+                </div>
+                <div className="text-[10px] text-white/25 shrink-0 mt-0.5">→</div>
+              </div>
+              <div className="text-[10px] text-white/32 mt-2 leading-relaxed">{s.rationale}</div>
             </Link>
           ))}
         </div>

@@ -32,6 +32,11 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
   const [vitalityData, setVitalityData] = useState<VitalityResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
+  async function refreshBodyData() {
+    const body = await fetch('/api/client/body-data').then(r => r.ok ? r.json() : null)
+    setBodyData(body)
+  }
+
   useEffect(() => {
     Promise.all([
       fetch('/api/client/body-data').then(r => r.ok ? r.json() : null),
@@ -120,7 +125,7 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
         ) : (
           <>
             {tab === 'corps'        && bodyData     && <BodyDataTab    data={bodyData} />}
-            {tab === 'mensurations' && bodyData     && <MesurationsTab data={bodyData} />}
+            {tab === 'mensurations' && bodyData     && <MesurationsTab data={bodyData} onSaved={refreshBodyData} />}
             {tab === 'vitalite'     && vitalityData && <VitalityTab    data={vitalityData} />}
           </>
         )}

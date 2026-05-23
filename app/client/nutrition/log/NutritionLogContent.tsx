@@ -18,6 +18,7 @@ import {
   type PortionScalingProfile,
 } from "@/lib/nutrition/food-items"
 import { useClientT } from "@/components/client/ClientI18nProvider"
+import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 
 // ─── Icônes catégories ───────────────────────────────────────
 const CATEGORY_ICONS: Record<CategoryL1, string> = {
@@ -449,9 +450,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[11px] text-white/40">{item.kcal_per_100g} kcal</span>
                               <div className="flex h-[4px] w-[64px] rounded-full overflow-hidden gap-[1px]">
-                                <div style={{ width: `${pPct}%`, backgroundColor: '#e85d04' }} />
-                                <div style={{ width: `${gPct}%`, backgroundColor: '#2d9a4e' }} />
-                                <div style={{ width: `${lPct}%`, backgroundColor: '#d4a017' }} />
+                                <div style={{ width: `${pPct}%`, backgroundColor: NUTRITION_UI_COLORS.protein }} />
+                                <div style={{ width: `${gPct}%`, backgroundColor: NUTRITION_UI_COLORS.carbs }} />
+                                <div style={{ width: `${lPct}%`, backgroundColor: NUTRITION_UI_COLORS.fat }} />
                               </div>
                               <span className="text-[10px] text-white/25">P·G·L</span>
                             </div>
@@ -526,9 +527,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     <p className="text-[10px] uppercase tracking-[0.14em] text-white/30 font-semibold mb-2">{t('log.for', { n: quantityG })}</p>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div><p className="text-[16px] font-black text-white">{Math.round(selectedMacros.calories_kcal)}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">kcal</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#e85d04' }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#2d9a4e' }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
-                      <div><p className="text-[16px] font-black" style={{ color: '#d4a017' }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.protein }}>{selectedMacros.protein_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Prot.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.carbs }}>{selectedMacros.carbs_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Gluc.</p></div>
+                      <div><p className="text-[16px] font-black" style={{ color: NUTRITION_UI_COLORS.fat }}>{selectedMacros.fat_g}</p><p className="text-[9px] text-white/30 uppercase tracking-wide">Lip.</p></div>
                     </div>
                   </div>
                 )}
@@ -551,9 +552,9 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               </p>
               <div className="flex gap-2 text-[11px]">
                 <span className="text-white font-bold">{Math.round(totals.calories)} kcal</span>
-                <span style={{ color: '#e85d04' }}>P{totals.protein}g</span>
-                <span style={{ color: '#2d9a4e' }}>G{totals.carbs}g</span>
-                <span style={{ color: '#d4a017' }}>L{totals.fat}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.protein }}>P{totals.protein}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.carbs }}>G{totals.carbs}g</span>
+                <span style={{ color: NUTRITION_UI_COLORS.fat }}>L{totals.fat}g</span>
               </div>
             </div>
             <div className="space-y-1">

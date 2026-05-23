@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import QuickWaterModal from '../QuickWaterModal'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 export type NutritionMacros = {
   kcal: number
@@ -20,21 +22,45 @@ export type SmartNutritionWidgetProps = {
   proteinStreakDays?: number
 }
 
+function formatOverflow(value: number, unit: 'g' | 'L'): string | null {
+  if (value <= 0) return null
+  return unit === 'L'
+    ? `+${value.toFixed(1)} ${unit} au-dessus`
+    : `+${Math.round(value)}${unit} au-dessus`
+}
+
 export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
   const { t } = useClientT()
   const MACROS = [
-    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: '#e85d04' },
-    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: '#22c55e' },
-    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: '#f59e0b' },
+    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: NUTRITION_UI_COLORS.protein },
+    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: NUTRITION_UI_COLORS.carbs },
+    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: NUTRITION_UI_COLORS.fat },
   ]
   const [waterOpen, setWaterOpen] = useState(false)
   const [waterDelta, setWaterDelta] = useState(0)
   const effectiveWaterMl = consumed.water_ml + waterDelta
 
-  const kcalPct = target.kcal > 0 ? Math.min(1, consumed.kcal / target.kcal) : 0
+  function getStateColor(state: NutritionProgressState, baseColor: string): string {
+    switch (state) {
+      case 'over':
+        return '#ef4444'
+      case 'near_limit':
+        return '#f59e0b'
+      case 'in_target':
+        return baseColor
+      default:
+        return 'rgba(255,255,255,0.55)'
+    }
+  }
+
+  const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
+  const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
+  const waterOverflowLabel = formatOverflow((effectiveWaterMl - target.water_ml) / 1000, 'L')
+  const kcalPct = Math.min(kcalMeta.ratio, 1)
   const r = 80
   const arcTotal = Math.PI * r
   const arcOffset = arcTotal * (1 - kcalPct)
+  const kcalStroke = getStateColor(kcalMeta.state, '#f2f2f2')
 
   return (
     <>
@@ -65,7 +91,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <path
               d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
-              stroke="#f2f2f2"
+              stroke={kcalStroke}
               strokeWidth={12}
               strokeLinecap="round"
               strokeDasharray={arcTotal}
@@ -77,7 +103,8 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <div className="font-black leading-none text-white tabular-nums text-[28px]">
               {Math.round(consumed.kcal)}
             </div>
-            <div className="text-[10px] text-white/40 tabular-nums">/ {target.kcal} kcal</div>
+            <div className="text-[9px] uppercase tracking-[0.12em] text-white/35 mt-1">Calories consommées</div>
+            <div className="text-[10px] text-white/50 tabular-nums">/ {target.kcal} kcal</div>
           </div>
         </div>
 
@@ -86,15 +113,29 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
           {MACROS.map(m => {
             const c = (consumed[m.key] as number) ?? 0
             const tg = (target[m.key] as number) ?? 0
-            const pct = tg > 0 ? Math.min(100, (c / tg) * 100) : 0
+            const meta = getNutritionProgressMeta(c, tg)
+            const fillColor = getStateColor(meta.state, m.color)
+            const overflowLabel = formatOverflow(c - tg, 'g')
             return (
               <div key={m.key}>
                 <div className="flex justify-between text-[10px] mb-1">
                   <span className="text-white/50 uppercase tracking-[0.1em] font-bold">{m.label}</span>
-                  <span className="text-white font-bold tabular-nums">{Math.round(c)}/{tg}g</span>
+                  <span className="font-bold tabular-nums" style={{ color: meta.state === 'under' ? 'white' : fillColor }}>
+                    {Math.round(c)}/{tg}g
+                  </span>
                 </div>
                 <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: m.color, transition: 'width 0.4s ease' }} />
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${meta.clampedPercent}%`,
+                      background: fillColor,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+                <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: meta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+                  {overflowLabel ?? '\u00A0'}
                 </div>
               </div>
             )
@@ -112,12 +153,16 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             </div>
             <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div
-                className="h-full bg-cyan-400 rounded-full"
+                className="h-full rounded-full"
                 style={{
-                  width: `${target.water_ml > 0 ? Math.min(100, (effectiveWaterMl / target.water_ml) * 100) : 0}%`,
+                  width: `${waterMeta.clampedPercent}%`,
+                  background: getStateColor(waterMeta.state, NUTRITION_UI_COLORS.water),
                   transition: 'width 0.4s ease',
                 }}
               />
+            </div>
+            <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: waterMeta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+              {waterOverflowLabel ?? '\u00A0'}
             </div>
           </div>
           <button

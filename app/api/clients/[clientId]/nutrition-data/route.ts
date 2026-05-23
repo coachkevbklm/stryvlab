@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { NutritionClientData } from "@/lib/nutrition/types";
+import {
+  buildTrainingWeekSchedule,
+  normalizeProgramForSchedule,
+  pickActiveProgramForSchedule,
+} from "@/lib/nutrition/training-week-schedule";
 import { z } from "zod";
+import { getLatestClientMetrics } from "@/lib/client/latest-metrics";
 
 function serviceClient() {
   return createServiceClient(
@@ -148,6 +154,14 @@ export async function GET(
       }
     }
   }
+
+  // Recent client check-ins are considered the freshest client-entered signals.
+  const { data: recentCheckins } = await db
+    .from("client_daily_checkins")
+    .select("date, flow_type, weight_kg, sleep_hours, sleep_quality, energy_level, stress_level")
+    .eq("client_id", clientId)
+    .order("date", { ascending: false })
+    .limit(14);
 
   const entry = {
     weight_kg: null as number | null,
@@ -313,6 +327,51 @@ export async function GET(
     }
   }
 
+  // Overlay with freshest check-in values.
+  if (recentCheckins && recentCheckins.length > 0) {
+    const latestWeight = recentCheckins.find((c: any) => c.weight_kg != null);
+    if (latestWeight?.weight_kg != null) {
+      entry.weight_kg = Number(latestWeight.weight_kg);
+      dataSource.weight_kg = "selected";
+    }
+
+    for (const c of recentCheckins) {
+      if (entry.sleep_h_samples.length < 3 && c.sleep_hours != null) {
+        entry.sleep_h_samples.push(Number(c.sleep_hours));
+      }
+      if (entry.sleep_q_samples.length < 3 && c.sleep_quality != null) {
+        entry.sleep_q_samples.push(Number(c.sleep_quality));
+      }
+      if (entry.energy_samples.length < 3 && c.energy_level != null) {
+        entry.energy_samples.push(Number(c.energy_level));
+      }
+      if (entry.stress_samples.length < 3 && c.stress_level != null) {
+        entry.stress_samples.push(Number(c.stress_level));
+      }
+      if (
+        entry.sleep_h_samples.length >= 3 &&
+        entry.sleep_q_samples.length >= 3 &&
+        entry.energy_samples.length >= 3 &&
+        entry.stress_samples.length >= 3
+      ) {
+        break;
+      }
+    }
+  }
+
+  // Canonical latest values (assessment_responses enriched in realtime, plus check-in freshness)
+  const latest = await getLatestClientMetrics(db, clientId, [
+    "weight_kg",
+    "sleep_duration_h",
+    "sleep_quality",
+    "energy_level",
+    "stress_level",
+  ]);
+  if (latest.weight_kg) {
+    entry.weight_kg = latest.weight_kg.value;
+    dataSource.weight_kg = "selected";
+  }
+
   // Fetch manual nutrition data overrides
   // Priority: per-submission data (if submission selected), then global fallback
   let manualData = null;
@@ -430,6 +489,27 @@ export async function GET(
       : null,
   };
 
+  // Active training programme → week schedule for Nutrition Studio
+  const { data: clientPrograms } = await db
+    .from("programs")
+    .select(
+      `
+      id, name, status, session_mode, is_client_visible, created_at,
+      program_sessions (
+        id, name, day_of_week, days_of_week, position,
+        program_exercises ( id, name )
+      )
+    `,
+    )
+    .eq("client_id", clientId)
+    .eq("coach_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const activeProgram = pickActiveProgramForSchedule(clientPrograms ?? []);
+  const trainingWeekSchedule = buildTrainingWeekSchedule(
+    activeProgram ? normalizeProgramForSchedule(activeProgram) : null,
+  );
+
   // Fetch adaptive TDEE from active shared protocol
   const { data: activeProtocol } = await db
     .from("nutrition_protocols")
@@ -456,6 +536,7 @@ export async function GET(
       submitted_at: s.submitted_at,
     })),
     selectedSubmissionId: selectedSubmissionId || null,
+    trainingWeekSchedule,
   });
 }
 

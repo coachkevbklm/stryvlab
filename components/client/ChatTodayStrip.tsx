@@ -42,7 +42,10 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
     )
   }
 
-  const checkinDone = data.checkin.morning
+  const morningDone = data.checkin.morning
+  const eveningDone = data.checkin.evening
+  const checkinDone = morningDone && eveningDone
+  const pendingCount = Number(!morningDone) + Number(!eveningDone)
   const calPct = data.calories.target > 0 ? Math.min(data.calories.logged / data.calories.target, 1) : 0
   const waterPct = data.water.target > 0 ? Math.min(data.water.logged / data.water.target, 1) : 0
 
@@ -63,7 +66,7 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
               : <Circle size={13} className="text-[#808080]" />
             }
             <span className={`text-[11px] font-barlow font-semibold whitespace-nowrap ${checkinDone ? "text-[#f2f2f2]" : "text-[#808080]"}`}>
-              {checkinDone ? "Check-in ✓" : "Check-in"}
+              {checkinDone ? "Check-ins ✓" : pendingCount === 2 ? "Check-ins (2)" : "Check-in (1)"}
             </span>
           </button>
 

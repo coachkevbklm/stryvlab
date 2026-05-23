@@ -22,13 +22,20 @@ async function resolveProtocol(coachId: string, clientId: string, protocolId: st
 
   const { data } = await db
     .from('nutrition_protocols')
-    .select(`*, days:nutrition_protocol_days(*)`)
+    .select(`*, days:nutrition_protocol_days(*), schedule_slots:nutrition_protocol_schedule_slots(*)`)
     .eq('id', protocolId)
     .eq('client_id', clientId)
     .single()
   if (!data) return null
 
-  return { ...data, days: (data.days ?? []).sort((a: { position: number }, b: { position: number }) => a.position - b.position) }
+  return {
+    ...data,
+    days: (data.days ?? []).sort((a: { position: number }, b: { position: number }) => a.position - b.position),
+    schedule_slots: (data.schedule_slots ?? []).sort(
+      (a: { week_index: number; dow: number }, b: { week_index: number; dow: number }) =>
+        a.week_index - b.week_index || a.dow - b.dow,
+    ),
+  }
 }
 
 export async function GET(
@@ -63,6 +70,12 @@ const updateDaySchema = z.object({
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   notes: z.string().nullable().optional(),
+  schedule_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  schedule_slots: z.array(z.object({
+    week_index: z.number().int().min(1).max(4),
+    dow: z.number().int().min(1).max(7),
+    protocol_day_position: z.number().int().min(0),
+  })).optional(),
   days: z.array(updateDaySchema).optional(),
 })
 
@@ -83,10 +96,11 @@ export async function PATCH(
 
   const db = serviceClient()
 
-  if (body.data.name !== undefined || body.data.notes !== undefined) {
+  if (body.data.name !== undefined || body.data.notes !== undefined || body.data.schedule_start_date !== undefined) {
     const updates: Record<string, unknown> = {}
     if (body.data.name !== undefined) updates.name = body.data.name
     if (body.data.notes !== undefined) updates.notes = body.data.notes
+    if (body.data.schedule_start_date !== undefined) updates.schedule_start_date = body.data.schedule_start_date
     await db.from('nutrition_protocols').update(updates).eq('id', protocolId)
   }
 
@@ -106,6 +120,19 @@ export async function PATCH(
       recommendations: d.recommendations ?? null,
     }))
     await db.from('nutrition_protocol_days').insert(daysToInsert)
+  }
+
+  if (body.data.schedule_slots !== undefined) {
+    await db.from('nutrition_protocol_schedule_slots').delete().eq('protocol_id', protocolId)
+    if (body.data.schedule_slots.length > 0) {
+      const slotsToInsert = body.data.schedule_slots.map((slot) => ({
+        protocol_id: protocolId,
+        week_index: slot.week_index,
+        dow: slot.dow,
+        protocol_day_position: slot.protocol_day_position,
+      }))
+      await db.from('nutrition_protocol_schedule_slots').insert(slotsToInsert)
+    }
   }
 
   const updated = await resolveProtocol(user.id, clientId, protocolId)

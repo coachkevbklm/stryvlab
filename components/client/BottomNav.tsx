@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChatCircle, Barbell, ForkKnife, ChartLine, Plus } from "@phosphor-icons/react";
@@ -25,6 +25,22 @@ export default function BottomNav() {
   const { t }                = useClientT();
   const { highlightedNavIndex } = useTour();
   const [logOpen, setLogOpen] = useState(false);
+  const [chatPendingCheckins, setChatPendingCheckins] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/client/chat/today-strip")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.checkin) return;
+        const pending = Number(!data.checkin.morning) + Number(!data.checkin.evening);
+        setChatPendingCheckins(pending);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   function isActive(href: string, idx: number, offset = 0) {
     const navIdx = offset + idx;
@@ -41,7 +57,17 @@ export default function BottomNav() {
         active ? "text-[#f2f2f2]" : "text-[#5a5a5a] hover:text-[#808080]"
       }`}
     >
-      <Icon size={active ? 26 : 23} weight={active ? "fill" : "regular"} />
+      <div className="relative">
+        <Icon size={active ? 26 : 23} weight={active ? "fill" : "regular"} />
+        {href === "/client" && chatPendingCheckins > 0 && (
+          <span
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] leading-[16px] text-center font-bold"
+            style={{ background: "#A67C52", color: "#080808" }}
+          >
+            {chatPendingCheckins}
+          </span>
+        )}
+      </div>
       <span
         className={`text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] leading-none transition-all duration-200 ${
           active ? "text-[#f2f2f2]" : "text-[#5a5a5a]"

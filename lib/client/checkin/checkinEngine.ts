@@ -19,12 +19,17 @@ export function determineFlow(
     s => s.flow_type === 'evening' && s.completed_at != null
   )
 
+  // If only one flow is pending, always propose it (no time lock).
+  if (morningDone && !eveningDone) return 'evening'
+  if (!morningDone && eveningDone) return 'morning'
+
+  // If both are done, nothing to do.
+  if (morningDone && eveningDone) return null
+
+  // If both are pending, use time-based default.
   if (currentHour < 14) {
-    if (!morningDone) return 'morning'
-    return null // morning done, too early for evening
+    return 'morning'
   }
 
-  // hour >= 14
-  if (!eveningDone) return 'evening'
-  return null
+  return 'evening'
 }

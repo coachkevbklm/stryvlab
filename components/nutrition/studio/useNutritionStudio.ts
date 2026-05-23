@@ -28,6 +28,7 @@ import {
   dayDraftFromDb,
 } from "@/lib/nutrition/types";
 import type { BMRSource } from "@/lib/nutrition/calculators";
+import type { TrainingWeekSchedule } from "@/lib/nutrition/training-week-schedule";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -136,6 +137,12 @@ export interface TdeeHistoryEntry {
   protocol_updated: boolean
 }
 
+export type ScheduleSlotDraft = {
+  week_index: number
+  dow: number
+  protocol_day_position: number
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useNutritionStudio(
@@ -223,6 +230,15 @@ export function useNutritionStudio(
   const [dataSource, setDataSource] = useState<
     Record<string, "selected" | "fallback">
   >({});
+  const [trainingWeekSchedule, setTrainingWeekSchedule] =
+    useState<TrainingWeekSchedule | null>(null);
+  const [selectedScheduleDow, setSelectedScheduleDow] = useState<number | null>(
+    null,
+  );
+  const [scheduleStartDate, setScheduleStartDate] = useState<string>(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -251,6 +267,11 @@ export function useNutritionStudio(
         if (d.tdeeAdaptive != null) setTdeeAdaptive(d.tdeeAdaptive);
         if (d.tdeeAdaptiveAt) setTdeeAdaptiveAt(new Date(d.tdeeAdaptiveAt));
         if (d.tdeeDataSource) setTdeeDataSource(d.tdeeDataSource);
+        if (d.trainingWeekSchedule) {
+          setTrainingWeekSchedule(d.trainingWeekSchedule);
+        } else {
+          setTrainingWeekSchedule(null);
+        }
         if (cd.training_goal) {
           const mapped =
             CLIENT_GOAL_MAP[cd.training_goal.toLowerCase()] ?? "maintenance";
@@ -303,6 +324,18 @@ export function useNutritionStudio(
     if (existingProtocol?.days?.length) {
       setDays(existingProtocol.days.map(dayDraftFromDb));
       setProtocolName(existingProtocol.name);
+    }
+    if (existingProtocol?.schedule_start_date) {
+      setScheduleStartDate(existingProtocol.schedule_start_date);
+    }
+    if (existingProtocol?.schedule_slots) {
+      setScheduleSlots(
+        existingProtocol.schedule_slots.map((slot) => ({
+          week_index: slot.week_index,
+          dow: slot.dow,
+          protocol_day_position: slot.protocol_day_position,
+        })),
+      );
     }
   }, [existingProtocol]);
 
@@ -640,6 +673,14 @@ export function useNutritionStudio(
   const buildPayload = useCallback(
     () => ({
       name: protocolName,
+      schedule_start_date: scheduleStartDate,
+      schedule_slots: scheduleSlots
+        .filter((slot) => slot.protocol_day_position >= 0 && slot.protocol_day_position < days.length)
+        .map((slot) => ({
+          week_index: slot.week_index,
+          dow: slot.dow,
+          protocol_day_position: slot.protocol_day_position,
+        })),
       days: days.map((d, i) => ({
         name: d.name,
         position: i,
@@ -653,7 +694,7 @@ export function useNutritionStudio(
         recommendations: d.recommendations || null,
       })),
     }),
-    [protocolName, days],
+    [protocolName, scheduleStartDate, scheduleSlots, days],
   );
 
   const save = useCallback(async (): Promise<string | null> => {
@@ -778,5 +819,12 @@ export function useNutritionStudio(
     tdeeHistory,
     applyAdaptiveTdee,
     applyingAdaptive,
+    trainingWeekSchedule,
+    selectedScheduleDow,
+    setSelectedScheduleDow,
+    scheduleStartDate,
+    setScheduleStartDate,
+    scheduleSlots,
+    setScheduleSlots,
   };
 }

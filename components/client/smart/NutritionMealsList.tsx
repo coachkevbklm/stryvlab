@@ -9,8 +9,13 @@ import type { NutritionMeal } from "@/lib/nutrition/food-items"
 import { useClientT } from "@/components/client/ClientI18nProvider"
 import type { ClientDictKey } from "@/lib/i18n/clientTranslations"
 import type { NutritionMacros } from "./SmartNutritionWidget"
+import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 
-const MC = { prot: '#e85d04', carb: '#2d9a4e', fat: '#d4a017' }
+const MC = {
+  prot: NUTRITION_UI_COLORS.protein,
+  carb: NUTRITION_UI_COLORS.carbs,
+  fat: NUTRITION_UI_COLORS.fat,
+}
 
 const MEAL_TYPE_KEYS: Record<string, ClientDictKey> = {
   breakfast: "meal.type.breakfast",

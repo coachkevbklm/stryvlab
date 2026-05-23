@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 
 function service() {
   return createServiceClient(
@@ -65,7 +66,7 @@ export async function GET() {
       .eq('date', today),
 
     db.from('nutrition_protocols')
-      .select('nutrition_protocol_days(calories)')
+      .select('schedule_start_date, nutrition_protocol_days(position, calories), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', cc.id)
       .eq('status', 'shared')
       .order('updated_at', { ascending: false })
@@ -82,10 +83,13 @@ export async function GET() {
 
   const waterLogged = (waterRows ?? []).reduce((s: number, r: any) => s + (Number(r.amount_ml) || 0), 0)
 
-  const protocolDays = (protocol as any)?.nutrition_protocol_days ?? []
-  const calorieTarget = protocolDays.length > 0
-    ? Number(protocolDays.sort((a: any, b: any) => a.position - b.position)[0].calories ?? 2000)
-    : 2000
+  const protocolDay = resolveProtocolDayByDate(
+    today,
+    (protocol as any)?.schedule_start_date ?? null,
+    (protocol as any)?.nutrition_protocol_days ?? [],
+    (protocol as any)?.nutrition_protocol_schedule_slots ?? [],
+  )
+  const calorieTarget = Number((protocolDay as any)?.calories ?? 2000)
 
   return NextResponse.json({
     sessions: (sessions ?? []).map((s: any) => ({ id: s.id, name: s.name })),

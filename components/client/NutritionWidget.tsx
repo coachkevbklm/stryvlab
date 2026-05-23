@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 interface Props {
   calories: number
@@ -16,9 +17,9 @@ interface Props {
 
 const COLORS = {
   cal:  'var(--data-petrol)',
-  prot: 'var(--data-copper)',
-  carb: 'var(--data-gold)',
-  fat:  'var(--data-gold)',
+  prot: NUTRITION_UI_COLORS.protein,
+  carb: NUTRITION_UI_COLORS.carbs,
+  fat:  NUTRITION_UI_COLORS.fat,
   over: 'var(--data-copper)',
   track: 'rgba(255,255,255,0.05)',
 }

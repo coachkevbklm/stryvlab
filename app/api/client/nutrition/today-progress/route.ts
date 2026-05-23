@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 
 function service() {
   return createServiceClient(
@@ -35,7 +37,7 @@ export async function GET(_req: NextRequest) {
 
   const [{ data: protocol }, { data: composerMeals }, { data: legacyMeals }] = await Promise.all([
     db.from('nutrition_protocols')
-      .select('id, nutrition_protocol_days(*)')
+      .select('id, schedule_start_date, nutrition_protocol_days(*), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', cc.id)
       .eq('status', 'shared')
       .order('updated_at', { ascending: false })
@@ -57,7 +59,11 @@ export async function GET(_req: NextRequest) {
 
   const fromComposer = (composerMeals ?? []).reduce(
     (acc, m: any) => ({
-      calories:  acc.calories  + (Number(m.total_calories)  || 0),
+      calories:  acc.calories  + computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+      }),
       protein_g: acc.protein_g + (Number(m.total_protein_g) || 0),
       carbs_g:   acc.carbs_g   + (Number(m.total_carbs_g)   || 0),
       fat_g:     acc.fat_g     + (Number(m.total_fat_g)     || 0),
@@ -70,7 +76,11 @@ export async function GET(_req: NextRequest) {
       const em = m.estimated_macros as Record<string, number> | null
       if (!em) return acc
       return {
-        calories:  acc.calories  + (em.calories_kcal ?? 0),
+        calories:  acc.calories  + computeMacroEnergy({
+          protein_g: Number(em.protein_g ?? 0),
+          carbs_g: Number(em.carbs_g ?? 0),
+          fat_g: Number(em.fats_g ?? em.fat_g ?? 0),
+        }),
         protein_g: acc.protein_g + (em.protein_g ?? 0),
         carbs_g:   acc.carbs_g   + (em.carbs_g ?? 0),
         fat_g:     acc.fat_g     + (em.fats_g ?? em.fat_g ?? 0),
@@ -87,7 +97,13 @@ export async function GET(_req: NextRequest) {
   }
 
   const days = (protocol as any)?.nutrition_protocol_days ?? []
-  const targetDay = [...days].sort((a: any, b: any) => a.position - b.position)[0] ?? null
+  const slots = (protocol as any)?.nutrition_protocol_schedule_slots ?? []
+  const targetDay = resolveProtocolDayByDate(
+    today,
+    (protocol as any)?.schedule_start_date ?? null,
+    days,
+    slots,
+  )
 
   const target = targetDay
     ? {

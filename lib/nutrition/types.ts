@@ -7,9 +7,11 @@ export interface NutritionProtocol {
   name: string
   status: 'draft' | 'shared'
   notes: string | null
+  schedule_start_date?: string | null
   created_at: string
   updated_at: string
   days?: NutritionProtocolDay[]
+  schedule_slots?: NutritionProtocolScheduleSlot[]
 }
 
 export interface NutritionProtocolDay {
@@ -25,6 +27,15 @@ export interface NutritionProtocolDay {
   carb_cycle_type: 'high' | 'medium' | 'low' | null
   cycle_sync_phase: 'follicular' | 'ovulatory' | 'luteal' | 'menstrual' | null
   recommendations: string | null
+  created_at: string
+}
+
+export interface NutritionProtocolScheduleSlot {
+  id: string
+  protocol_id: string
+  week_index: number
+  dow: number
+  protocol_day_position: number
   created_at: string
 }
 

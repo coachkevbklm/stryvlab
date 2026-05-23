@@ -37,7 +37,7 @@ export async function GET(
   const db = serviceClient()
   const { data, error } = await db
     .from('nutrition_protocols')
-    .select(`*, days:nutrition_protocol_days(*)`)
+    .select(`*, days:nutrition_protocol_days(*), schedule_slots:nutrition_protocol_schedule_slots(*)`)
     .eq('client_id', clientId)
     .order('created_at', { ascending: false })
 
@@ -46,6 +46,10 @@ export async function GET(
   const protocols = (data ?? []).map(p => ({
     ...p,
     days: (p.days ?? []).sort((a: { position: number }, b: { position: number }) => a.position - b.position),
+    schedule_slots: (p.schedule_slots ?? []).sort(
+      (a: { week_index: number; dow: number }, b: { week_index: number; dow: number }) =>
+        a.week_index - b.week_index || a.dow - b.dow,
+    ),
   }))
 
   return NextResponse.json({ protocols })
@@ -64,10 +68,18 @@ const daySchema = z.object({
   recommendations: z.string().nullable().optional(),
 })
 
+const slotSchema = z.object({
+  week_index: z.number().int().min(1).max(4),
+  dow: z.number().int().min(1).max(7),
+  protocol_day_position: z.number().int().min(0),
+})
+
 const createSchema = z.object({
   name: z.string().min(1).max(200),
   notes: z.string().optional().nullable(),
+  schedule_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   days: z.array(daySchema).min(1),
+  schedule_slots: z.array(slotSchema).optional().default([]),
 })
 
 export async function POST(
@@ -90,7 +102,13 @@ export async function POST(
 
   const { data: protocol, error: protoError } = await db
     .from('nutrition_protocols')
-    .insert({ client_id: clientId, coach_id: user.id, name: body.data.name, notes: body.data.notes ?? null })
+    .insert({
+      client_id: clientId,
+      coach_id: user.id,
+      name: body.data.name,
+      notes: body.data.notes ?? null,
+      schedule_start_date: body.data.schedule_start_date ?? new Date().toISOString().slice(0, 10),
+    })
     .select('*')
     .single()
 
@@ -121,5 +139,22 @@ export async function POST(
     return NextResponse.json({ error: daysError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ protocol: { ...protocol, days: days ?? [] } }, { status: 201 })
+  let slots: unknown[] = []
+  if (body.data.schedule_slots.length > 0) {
+    const { data: insertedSlots, error: slotsError } = await db
+      .from('nutrition_protocol_schedule_slots')
+      .insert(
+        body.data.schedule_slots.map((slot) => ({
+          protocol_id: protocol.id,
+          week_index: slot.week_index,
+          dow: slot.dow,
+          protocol_day_position: slot.protocol_day_position,
+        })),
+      )
+      .select('*')
+    if (slotsError) return NextResponse.json({ error: slotsError.message }, { status: 500 })
+    slots = insertedSlots ?? []
+  }
+
+  return NextResponse.json({ protocol: { ...protocol, days: days ?? [], schedule_slots: slots } }, { status: 201 })
 }

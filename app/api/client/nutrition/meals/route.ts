@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { computePhysiologicalDate, inferMealType } from "@/lib/nutrition/physiological-date"
 import { calcEntryMacros } from "@/lib/nutrition/food-items"
+import { computeMacroEnergy } from "@/lib/nutrition/energy"
 
 function service() {
   return createServiceClient(
@@ -85,16 +86,24 @@ export async function POST(req: NextRequest) {
     return { ...e, ...macros }
   })
 
-  const newTotals = entryMacros.reduce(
+  const newTotalsBase = entryMacros.reduce(
     (acc, e) => ({
-      total_calories: Math.round((acc.total_calories + e.calories_kcal) * 10) / 10,
       total_protein_g: Math.round((acc.total_protein_g + e.protein_g) * 10) / 10,
       total_carbs_g: Math.round((acc.total_carbs_g + e.carbs_g) * 10) / 10,
       total_fat_g: Math.round((acc.total_fat_g + e.fat_g) * 10) / 10,
       total_fiber_g: Math.round((acc.total_fiber_g + e.fiber_g) * 10) / 10,
     }),
-    { total_calories: 0, total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
+    { total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0, total_fiber_g: 0 }
   )
+  const newTotals = {
+    ...newTotalsBase,
+    total_calories: computeMacroEnergy({
+      protein_g: newTotalsBase.total_protein_g,
+      carbs_g: newTotalsBase.total_carbs_g,
+      fat_g: newTotalsBase.total_fat_g,
+      fiber_g: newTotalsBase.total_fiber_g,
+    }),
+  }
 
   let mealId: string
 
@@ -113,14 +122,22 @@ export async function POST(req: NextRequest) {
 
     // Mettre à jour les totaux en ajoutant les nouvelles entrées
     const updatedTotals = {
-      total_calories: Math.round((Number(existing.total_calories) + newTotals.total_calories) * 10) / 10,
       total_protein_g: Math.round((Number(existing.total_protein_g) + newTotals.total_protein_g) * 10) / 10,
       total_carbs_g: Math.round((Number(existing.total_carbs_g) + newTotals.total_carbs_g) * 10) / 10,
       total_fat_g: Math.round((Number(existing.total_fat_g) + newTotals.total_fat_g) * 10) / 10,
       total_fiber_g: Math.round((Number(existing.total_fiber_g) + newTotals.total_fiber_g) * 10) / 10,
     }
+    const updatedTotalsWithCalories = {
+      ...updatedTotals,
+      total_calories: computeMacroEnergy({
+        protein_g: updatedTotals.total_protein_g,
+        carbs_g: updatedTotals.total_carbs_g,
+        fat_g: updatedTotals.total_fat_g,
+        fiber_g: updatedTotals.total_fiber_g,
+      }),
+    }
 
-    await db.from("nutrition_meals").update(updatedTotals).eq("id", mealId)
+    await db.from("nutrition_meals").update(updatedTotalsWithCalories).eq("id", mealId)
   } else {
     // ── Create mode ──
     const { data: meal, error: mealError } = await db

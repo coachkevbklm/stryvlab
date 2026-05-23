@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 
 type Props = {
   tdee: number | null
@@ -70,7 +71,7 @@ function buildSteps(props: Props): Step[] {
       n: tdee != null ? 2 : 1,
       title: goalLabel,
       value: `${Math.round(target.kcal).toLocaleString('fr-FR')} kcal${deltaStr}`,
-      valueColor: '#22c55e',
+      valueColor: NUTRITION_UI_COLORS.carbs,
       body: `Objectif calorique${dayName ? ` pour "${dayName}"` : ''}.${
         delta != null && Math.abs(delta) > 100
           ? delta > 0
@@ -91,7 +92,7 @@ function buildSteps(props: Props): Step[] {
       n: (steps.length + 1),
       title: 'Protéines cibles',
       value: `${Math.round(target.protein_g)}g${gPerKg ? ` · ${gPerKg} g/kg` : ''}`,
-      valueColor: '#e85d04',
+      valueColor: NUTRITION_UI_COLORS.protein,
       body: `Les protéines préservent la masse musculaire et favorisent la récupération.${
         gPerKg ? ` Un ratio de ${gPerKg} g/kg est adapté à ton niveau d'activité et ton objectif.` : ''
       }`,
@@ -109,7 +110,7 @@ function buildSteps(props: Props): Step[] {
       n: steps.length + 1,
       title: 'Répartition glucides / lipides',
       value: `${Math.round(target.carbs_g)}g G · ${Math.round(target.fat_g)}g L`,
-      valueColor: '#f59e0b',
+      valueColor: NUTRITION_UI_COLORS.fat,
       body: `Glucides ${carbPct}% des calories — carburant pour l'entraînement et la récupération glycogénique. Lipides ${fatPct}% — essentiels pour la régulation hormonale.`,
     })
   }

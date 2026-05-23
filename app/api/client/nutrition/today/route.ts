@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { computeMacroEnergy } from '@/lib/nutrition/energy'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 
 function svc() {
   return createServiceClient(
@@ -27,14 +29,21 @@ export async function GET(req: NextRequest) {
 
   const { data: proto } = await svc()
     .from('nutrition_protocols')
-    .select('nutrition_protocol_days(calories, protein_g, carbs_g, fat_g, hydration_ml)')
+    .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
     .eq('client_id', cc.id)
     .eq('status', 'shared')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  const td = (proto?.nutrition_protocol_days as any)?.[0]
+  const days = (proto?.nutrition_protocol_days as any) ?? []
+  const slots = (proto?.nutrition_protocol_schedule_slots as any) ?? []
+  const td = resolveProtocolDayByDate(
+    date,
+    (proto as any)?.schedule_start_date ?? null,
+    days,
+    slots,
+  )
   const target = {
     kcal: Number(td?.calories ?? 0),
     protein_g: Number(td?.protein_g ?? 0),
@@ -45,17 +54,22 @@ export async function GET(req: NextRequest) {
 
   const { data: meals } = await svc()
     .from('nutrition_meals')
-    .select('id, meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
+    .select('id, meal_type, title, logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
     .eq('client_id', cc.id)
     .eq('physiological_date', date)
     .order('logged_at', { ascending: true })
 
   const consumed = (meals ?? []).reduce(
     (acc, m) => ({
-      kcal: acc.kcal + Number(m.calories ?? 0),
-      protein_g: acc.protein_g + Number(m.protein_g ?? 0),
-      carbs_g: acc.carbs_g + Number(m.carbs_g ?? 0),
-      fat_g: acc.fat_g + Number(m.fat_g ?? 0),
+      kcal: acc.kcal + computeMacroEnergy({
+        protein_g: Number(m.total_protein_g ?? 0),
+        carbs_g: Number(m.total_carbs_g ?? 0),
+        fat_g: Number(m.total_fat_g ?? 0),
+        fiber_g: Number(m.total_fiber_g ?? 0),
+      }),
+      protein_g: acc.protein_g + Number(m.total_protein_g ?? 0),
+      carbs_g: acc.carbs_g + Number(m.total_carbs_g ?? 0),
+      fat_g: acc.fat_g + Number(m.total_fat_g ?? 0),
     }),
     { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
   )
