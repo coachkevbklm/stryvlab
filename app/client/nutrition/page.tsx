@@ -8,6 +8,7 @@ import type { NutritionMeal } from '@/lib/nutrition/food-items'
 import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
 import { type ClientLang } from '@/lib/i18n/clientTranslations'
 import { computeMacroEnergy } from '@/lib/nutrition/energy'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import NutritionClientPage from './NutritionClientPage'
 
 type SearchParams = { date?: string }
@@ -36,7 +37,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
-      .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
+      .select('tdee_adaptive, tdee_data_source, schedule_start_date, nutrition_protocol_days(position, name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', clientId)
       .eq('status', 'shared')
       .order('created_at', { ascending: false })
@@ -124,7 +125,12 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   // ── Protocol day ──────────────────────────────────────────────────────────
   const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
-  const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
+  const protocolDay = resolveProtocolDayByDate(
+    date,
+    (protoData as any)?.schedule_start_date ?? null,
+    (protoData?.nutrition_protocol_days as any) ?? [],
+    (protoData?.nutrition_protocol_schedule_slots as any) ?? [],
+  )
   const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
   const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
 
