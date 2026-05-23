@@ -392,11 +392,17 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                 )}
 
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
-                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#111111] rounded-xl p-4 active:scale-95 transition-all hover:bg-white/[0.06]">
-                      <span className="text-2xl">{CATEGORY_ICONS[cat]}</span>
-                      <span className="text-[11px] font-semibold text-white/80">{label}</span>
+                    <button
+                      key={cat}
+                      onClick={() => selectCategory(cat)}
+                      className="flex items-center gap-3 bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3.5 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left"
+                    >
+                      <span className="h-9 w-9 rounded-xl bg-white/[0.08] flex items-center justify-center text-[18px] shrink-0">
+                        {CATEGORY_ICONS[cat]}
+                      </span>
+                      <span className="text-[12px] font-semibold text-white/85 leading-tight">{label}</span>
                     </button>
                   ))}
                 </div>
