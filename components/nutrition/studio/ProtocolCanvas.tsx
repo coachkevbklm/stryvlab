@@ -82,7 +82,6 @@ export default function ProtocolCanvas({
   hasHydration,
   coherenceScore,
   loading = false,
-  trainingDays = [],
 }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(protocolName);
@@ -278,20 +277,11 @@ export default function ProtocolCanvas({
           <div className="grid grid-cols-7 gap-2">
             {WEEKDAY_ORDER.map((weekday) => {
               const day = days.find((d) => d.weekday === weekday.value);
-              // If day is explicitly set, use its day_type; otherwise infer from training schedule
-              let inferred_day_type = day?.day_type;
-              if (!inferred_day_type && trainingDays.includes(weekday.value)) {
-                inferred_day_type = "training";
-              }
-              if (!inferred_day_type && trainingDays.length > 0) {
-                // If we know training days and this isn't one, it's a rest day
-                inferred_day_type = "rest";
-              }
-              const classes = getDayTypeClasses(inferred_day_type);
-              const subtitle = inferred_day_type
-                ? inferred_day_type === "training"
+              const classes = getDayTypeClasses(day?.day_type);
+              const subtitle = day?.day_type
+                ? day.day_type === "training"
                   ? "Entraînement"
-                  : inferred_day_type === "rest"
+                  : day.day_type === "rest"
                     ? "Repos"
                     : "Spécial"
                 : "Non assigné";
