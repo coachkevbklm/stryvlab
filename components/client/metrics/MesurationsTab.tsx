@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import BodySilhouette from './BodySilhouette'
+import { Plus } from '@phosphor-icons/react'
 import MetricCard from './MetricCard'
 import type { BodyDataResponse } from '@/app/api/client/body-data/route'
 
@@ -27,6 +27,7 @@ function measureDelta(series: { value: number }[]): { delta: string; deltaGood: 
 }
 
 export default function MesurationsTab({ data, onSaved }: Props) {
+  const [editorOpen, setEditorOpen] = useState(false)
   const [weightKg, setWeightKg] = useState('')
   const [measureInputs, setMeasureInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
@@ -58,54 +59,55 @@ export default function MesurationsTab({ data, onSaved }: Props) {
     }
   }
 
-  const hasSilhouette = data.measuresByBilan.length > 0
   const hasCards = data.measureOrder.some(
     key => buildMeasureSeries(data.measuresByBilan, key).length > 0
   )
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-[#111111] p-3 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-white/45 font-bold">Saisie rapide</p>
-        <div className="grid grid-cols-2 gap-2 max-h-[42vh] overflow-y-auto pr-1">
-          <input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} inputMode="decimal" placeholder="Poids (kg)" className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none" />
-          <div />
-          {data.measureOrder.map((key) => (
-            <input
-              key={key}
-              value={measureInputs[key] ?? ''}
-              onChange={(e) => setMeasureInputs((prev) => ({ ...prev, [key]: e.target.value }))}
-              inputMode="decimal"
-              placeholder={`${data.measureLabels[key] ?? key} (cm)`}
-              className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none"
-            />
-          ))}
-        </div>
-        <button onClick={saveEntry} disabled={saving} className="h-9 px-4 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-50">
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-[#5a5a5a]">
+          Évolution
+        </p>
+        <button
+          onClick={() => setEditorOpen(v => !v)}
+          className="h-8 w-8 rounded-xl bg-white/[0.06] text-[#f2f2f2] flex items-center justify-center active:scale-[0.96] transition-transform"
+          aria-label="Ajouter des mensurations"
+        >
+          <Plus size={16} weight="bold" />
         </button>
       </div>
 
-      {!hasSilhouette && !hasCards && (
+      {editorOpen && (
+        <div className="rounded-2xl bg-[#111111] p-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2 max-h-[42vh] overflow-y-auto pr-1">
+            <input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} inputMode="decimal" placeholder="Poids (kg)" className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none" />
+            <div />
+            {data.measureOrder.map((key) => (
+              <input
+                key={key}
+                value={measureInputs[key] ?? ''}
+                onChange={(e) => setMeasureInputs((prev) => ({ ...prev, [key]: e.target.value }))}
+                inputMode="decimal"
+                placeholder={`${data.measureLabels[key] ?? key} (cm)`}
+                className="h-9 rounded-xl bg-white/[0.05] px-3 text-[12px] text-white placeholder:text-white/30 outline-none"
+              />
+            ))}
+          </div>
+          <button onClick={saveEntry} disabled={saving} className="h-9 px-4 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-50">
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      )}
+
+      {!hasCards && (
         <p className="text-[12px] text-[#5a5a5a] leading-relaxed py-1 text-center">
           Aucune mensuration enregistrée pour le moment.
         </p>
       )}
 
-      {hasSilhouette && (
-        <div>
-          <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-[#5a5a5a] mb-3">
-            Silhouette
-          </p>
-          <BodySilhouette bilanList={data.measuresByBilan} />
-        </div>
-      )}
-
       {hasCards && (
         <div className="space-y-3">
-          <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-[#5a5a5a]">
-            Évolution
-          </p>
           {data.measureOrder.map((key) => {
             const series = buildMeasureSeries(data.measuresByBilan, key)
             if (series.length === 0) return null

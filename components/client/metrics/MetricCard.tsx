@@ -22,6 +22,7 @@ interface Props {
   series: DataPoint[]
   unit: string
   annotations?: Annotation[]
+  expandable?: boolean
 }
 
 function Sparkline({ series, good }: { series: DataPoint[]; good: boolean }) {
@@ -50,13 +51,35 @@ function Sparkline({ series, good }: { series: DataPoint[]; good: boolean }) {
   )
 }
 
-export default function MetricCard({ label, value, delta, deltaGood = true, series, unit, annotations }: Props) {
+export default function MetricCard({ label, value, delta, deltaGood = true, series, unit, annotations, expandable = true }: Props) {
   const [expanded, setExpanded] = useState(false)
+
+  const cardClass = "w-full text-left bg-[#161616] rounded-2xl p-4 space-y-2 transition-all duration-300"
+
+  if (!expandable) {
+    return (
+      <div className={cardClass}>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-[#5a5a5a]">
+            {label}
+          </span>
+          <div className="text-right">
+            <span className="text-[20px] font-black text-[#f2f2f2] leading-none">{value}</span>
+            {delta && (
+              <p className={`text-[10px] font-medium mt-0.5 ${deltaGood ? 'text-[#a0a0a0]' : 'text-red-400'}`}>
+                {delta}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <button
       onClick={() => setExpanded(e => !e)}
-      className="w-full text-left bg-[#161616] rounded-2xl p-4 space-y-2 transition-all duration-300 active:opacity-80"
+      className={`${cardClass} active:opacity-80`}
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-[#5a5a5a]">
