@@ -46,11 +46,18 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="relative h-[180px]">
           <svg viewBox="0 0 200 110" className="w-full h-full">
+            <defs>
+              <linearGradient id="arcGradHero" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="var(--data-copper)" />
+                <stop offset="50%"  stopColor="var(--data-gold)" />
+                <stop offset="100%" stopColor="var(--data-petrol)" />
+              </linearGradient>
+            </defs>
             <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round" />
             <path
               d="M 20 100 A 80 80 0 0 1 180 100"
               fill="none"
-              stroke="#f2f2f2"
+              stroke="url(#arcGradHero)"
               strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={total}
@@ -65,9 +72,9 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="grid grid-cols-3 gap-3 mt-3">
           {([
-            { key: 'protein_g', label: 'P', color: '#e85d04' },
-            { key: 'carbs_g',   label: 'G', color: '#22c55e' },
-            { key: 'fat_g',     label: 'L', color: '#f59e0b' },
+            { key: 'protein_g', label: 'P', color: 'var(--data-copper)' },
+            { key: 'carbs_g',   label: 'G', color: 'var(--data-gold)' },
+            { key: 'fat_g',     label: 'L', color: 'var(--data-petrol)' },
           ] as const).map(m => {
             const c = (consumed as any)[m.key] ?? 0
             const tg = (target as any)[m.key] ?? 0
@@ -98,8 +105,8 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
             </div>
             <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div
-                className="h-full bg-cyan-400 rounded-full transition-all duration-500"
-                style={{ width: `${waterPct}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${waterPct}%`, backgroundColor: 'var(--data-steel)' }}
               />
             </div>
           </div>

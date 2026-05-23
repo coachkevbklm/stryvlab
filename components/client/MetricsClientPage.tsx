@@ -93,20 +93,22 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-2 px-4 pb-4 overflow-x-auto scrollbar-hide shrink-0">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] transition-colors ${
-              tab === t.id
-                ? 'bg-[#f2f2f2] text-[#080808]'
-                : 'bg-white/[0.06] text-[#5a5a5a]'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="px-4 pb-4 shrink-0">
+        <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 ${
+                tab === t.id
+                  ? 'bg-[#f2f2f2] text-[#080808] font-barlow-condensed font-bold uppercase tracking-wide'
+                  : 'text-white/40'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
@@ -120,7 +122,16 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
         ) : (
           <>
             {tab === 'corps'        && bodyData     && <BodyDataTab    data={bodyData} />}
-            {tab === 'mensurations' && bodyData     && <MesurationsTab data={bodyData} />}
+            {tab === 'mensurations' && bodyData     && (
+              <MesurationsTab
+                data={bodyData}
+                onRefresh={() => {
+                  fetch('/api/client/body-data').then(r => r.ok ? r.json() : null).then(d => {
+                    if (d) setBodyData(d)
+                  })
+                }}
+              />
+            )}
             {tab === 'vitalite'     && vitalityData && <VitalityTab    data={vitalityData} />}
           </>
         )}

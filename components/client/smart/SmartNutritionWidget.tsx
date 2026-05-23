@@ -23,9 +23,9 @@ export type SmartNutritionWidgetProps = {
 export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
   const { t } = useClientT()
   const MACROS = [
-    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: '#e85d04' },
-    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: '#22c55e' },
-    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: '#f59e0b' },
+    { key: 'protein_g' as const, label: t('smart.nutrition.protein'), color: 'var(--data-copper)' },
+    { key: 'carbs_g'   as const, label: t('smart.nutrition.carbs'),   color: 'var(--data-gold)' },
+    { key: 'fat_g'     as const, label: t('smart.nutrition.fat'),     color: 'var(--data-petrol)' },
   ]
   const [waterOpen, setWaterOpen] = useState(false)
   const [waterDelta, setWaterDelta] = useState(0)
@@ -55,6 +55,13 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
         {/* Arc demi-cercle */}
         <div className="relative" style={{ height: 110 }}>
           <svg viewBox="0 0 200 110" className="w-full h-full">
+            <defs>
+              <linearGradient id="arcGradWidget" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="var(--data-copper)" />
+                <stop offset="50%"  stopColor="var(--data-gold)" />
+                <stop offset="100%" stopColor="var(--data-petrol)" />
+              </linearGradient>
+            </defs>
             <path
               d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
@@ -65,7 +72,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             <path
               d={`M ${100 - r} 100 A ${r} ${r} 0 0 1 ${100 + r} 100`}
               fill="none"
-              stroke="#f2f2f2"
+              stroke="url(#arcGradWidget)"
               strokeWidth={12}
               strokeLinecap="round"
               strokeDasharray={arcTotal}
@@ -112,8 +119,9 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             </div>
             <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div
-                className="h-full bg-cyan-400 rounded-full"
+                className="h-full rounded-full"
                 style={{
+                  backgroundColor: 'var(--data-steel)',
                   width: `${target.water_ml > 0 ? Math.min(100, (effectiveWaterMl / target.water_ml) * 100) : 0}%`,
                   transition: 'width 0.4s ease',
                 }}

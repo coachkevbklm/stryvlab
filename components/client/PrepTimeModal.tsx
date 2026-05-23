@@ -106,8 +106,8 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFB800]/10">
-                <Timer size={15} style={{ color: '#FFB800' }} />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#9d7052]/15">
+                <Timer size={15} style={{ color: '#9d7052' }} />
               </div>
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
@@ -155,7 +155,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
             <div className="text-center min-w-[72px]">
               <span
                 className="font-mono font-black tabular-nums leading-none"
-                style={{ fontSize: 48, color: '#FFB800' }}
+                style={{ fontSize: 48, color: '#e0e0e0' }}
               >
                 {seconds}
               </span>
@@ -187,14 +187,14 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
             >
               <div className="flex items-center gap-2.5">
                 {haptics
-                  ? <Vibrate size={14} style={{ color: '#FFB800' }} />
+                  ? <Vibrate size={14} style={{ color: '#9d7052' }} />
                   : <VibrateOff size={14} className="text-white/25" />
                 }
                 <span className={`text-[11px] font-semibold ${haptics ? 'text-white/80' : 'text-white/30'}`}>
                   Vibrations aux transitions
                 </span>
               </div>
-              <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#FFB800]' : 'bg-white/[0.10]'}`}>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${haptics ? 'bg-[#9d7052]' : 'bg-white/[0.10]'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${haptics ? 'left-4' : 'left-0.5'}`} />
               </div>
             </button>
@@ -204,7 +204,7 @@ export default function PrepTimeModal({ exerciseName, onConfirm, onClose }: Prep
           <button
             onClick={handleConfirm}
             className="w-full h-12 rounded-xl font-bold text-[13px] uppercase tracking-[0.10em] transition-all active:scale-[0.98]"
-            style={{ backgroundColor: '#FFB800', color: '#0d0d0d' }}
+            style={{ backgroundColor: '#f2f2f2', color: '#080808' }}
           >
             Commencer
           </button>

@@ -131,7 +131,7 @@ export default async function ClientProgrammePage({
     service
       .from("client_session_logs")
       .select(
-        "id, completed_at, client_set_logs(id, exercise_name, set_number, reps_actual, rir_actual, completed_at)",
+        "id, completed_at, client_set_logs(id, exercise_name, set_number, actual_reps, rir_actual, completed)",
       )
       .eq("client_id", client.id)
       .not("completed_at", "is", null)
@@ -147,7 +147,7 @@ export default async function ClientProgrammePage({
     // This week's sessions for volume coverage
     service
       .from("client_session_logs")
-      .select("id, client_set_logs(exercise_name, completed_at)")
+      .select("id, client_set_logs(exercise_name)")
       .eq("client_id", client.id)
       .not("completed_at", "is", null)
       .gte("completed_at", monday.toISOString())
@@ -261,9 +261,9 @@ export default async function ClientProgrammePage({
           exercise_id: sl.exercise_name,
           exercise_name: sl.exercise_name,
           set_number: sl.set_number ?? 1,
-          actual_reps: sl.reps_actual ?? null,
+          actual_reps: sl.actual_reps ?? null,
           rir_actual: sl.rir_actual ?? null,
-          completed: sl.completed_at != null,
+          completed: sl.completed === true,
         }) satisfies SetLogEntry,
     ),
   }));

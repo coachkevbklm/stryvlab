@@ -3,7 +3,32 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-22
+
+FIX: Replace yellow STRYVR logo references with the gray public logo on client auth pages and email templates
+FIX: Chat input voice transcription now appears inside the textarea and no longer shows the separate "Enregistrement vocal actif" message
+REFACTOR: BottomNav icons — replace custom ChatBubbleIcon SVG + lucide-react Dumbbell with Material Design icons (MdChat + MdFitnessCenter) for consistency with Nutrition (MdRestaurant) and Metrics (MdShowChart)
+REFACTOR: BottomNav + button radius — increase from rounded-2xl (16px) to rounded-[20px] for subtly more rounded corners
+FEATURE: Add weekly training/rest-day overview in Nutrition Studio protocol editor
+SCHEMA: Add `weekday` (0=Sunday..6=Saturday) and `day_type` (`training`|`rest`|`special`) to `nutrition_protocol_days` (migration `20260522_add_daytype_weekday.sql`)
+
 ## 2026-05-21
+
+REFACTOR: Splash screen PWA — remove splash1.png background image, solid dark #0d0d0d only
+REFACTOR: Logo animation — 180° rotation with momentum, 1s pause, repeat cycle at 3s duration (was 1.4s ease-in-out simple half-rotation)
+REFACTOR: Reduce splash screen duration from 2200ms to 1200ms (1 second faster loading); sync Capacitor SplashScreen launchShowDuration to 1200ms
+REFACTOR: Update Capacitor StatusBar and Android backgroundColor from #ededed to #0d0d0d (dark theme)
+
+REFACTOR: Reorder client mensurations anatomically; remove redundant shoulder circumference field; align client measurements with coach fields
+
+FEATURE: Add fresh lemon juice (Jus de citron pressé) to food_items database — category: drinks/jus-smoothies
+FIX: BottomNav visual redesign to floating premium pill dock with centered CTA, muted inactive states, and safe-area spacing
+FIX: Client BottomNav now uses a centered fade overlay behind the dock on non-chat pages so content disappears smoothly beneath the bar
+FIX: Nutrition targets now respect training schedule — per-day protocol day selection prefers 'high' carb days when training session exists for that date; affects both badge display and macro targets
+FIX: QuickLogSheet "Repas" — navigue vers /client/nutrition?addMeal=1 pour ouvrir MealLogSheet directement
+FIX: NutritionClientPage — détecte ?addMeal=1 via useSearchParams, auto-ouvre MealLogSheet, nettoie le param après fermeture
+FIX: ClientMeasurementSheet — replace silhouette/ruler UI with direct numeric inputs and persist via /api/client/measurements
+FIX: MesurationsTab — dropdown metric selector replaces body silhouette picker; FAB uses rounded-xl and opens measurement sheet
 
 FEATURE: BottomNav — central FAB + button (50px, bg-[#f2f2f2]) entre Programme et Nutrition
 FEATURE: QuickLogSheet — bottom sheet 3 actions : Eau (QuickWaterModal), Repas (/client/nutrition), Activité (FreeActivitySheet)
@@ -33,6 +58,10 @@ FEATURE: /api/client/vitality route — score formula energy×1.5 + sleep×1.5 �
 FEATURE: /api/client/body-data extended with bodyFatSeries, leanMassSeries, measuresByBilan, annotations
 
 ## 2026-05-24
+
+FIX: Select nutrition protocol day by physiological date instead of always using the first protocol day
+FIX: Localize /client/nutrition header date and classify protocol day with explicit carb-cycle / cycle phase badge
+FIX: ChatInputBar voice icon now records speech directly into the chat input field instead of opening the nutrition voice sheet
 
 FEATURE: Macro color system — copper(#8c5230)=protéines, gold(#9a8038)=glucides, petrol(#2d7a62)=lipides, steel(#4d8090)=eau
 FEATURE: Arc gradient copper→gold→petrol sur jauge calories (SmartNutritionWidget, SmartNutritionHero, NutritionWidget)
@@ -98,7 +127,7 @@ CHORE: globals.css + tailwind.config.ts — ajout token --data-steel: #607a80
 
 REFACTOR: Client PWA — Design System v4.0 dark gray minimal (DS v4.0) — 60+ fichiers
 REFACTOR: Suppression totale #ffe01e (accent jaune) de toute l'app client
-REFACTOR: Suppression totale border-white/* dans composants client (zéro bordures)
+REFACTOR: Suppression totale border-white/_ dans composants client (zéro bordures)
 REFACTOR: Gray scale #080808→#f2f2f2 comme unique système couleur UI /client
 REFACTOR: Boutons primary → bg-[#f2f2f2] text-[#080808] (monochrome max contraste)
 REFACTOR: Nav active → text-[#f2f2f2], inactive → text-[#5a5a5a]
@@ -106,7 +135,7 @@ REFACTOR: Chat — user bubbles bg-[#f2f2f2] text-[#080808], bot bg-[#111111]
 REFACTOR: Nutrition charts — data colors var(--data-copper/gold/petrol) uniquement
 REFACTOR: TempoGuideModal — accent #FFB800 → #e0e0e0, phases PHASE_CONFIG neutres
 REFACTOR: AdherenceScoreCard — thèmes recalibrés sur gray scale
-CHORE: globals.css — ajout tokens --c-* (gray scale) + --data-copper/gold/petrol
+CHORE: globals.css — ajout tokens --c-_ (gray scale) + --data-copper/gold/petrol
 CHORE: tailwind.config.ts — gray scale + data colors ajoutés
 CHORE: manifest.json + viewport themeColor → #080808
 
@@ -130,6 +159,7 @@ FIX: ChatTodayStrip — check-in pill sends check-in message to chat, water pill
 FIX: ChatTodayStrip — calories + water mini progress bars inline
 FIX: MetricsPage — remove streak_days column (doesn't exist), fetch current_streak from client_streaks
 FIX: client/page.tsx — pass clientFirstName for personalized greeting in ChatPage empty state
+FIX: /api/client/body-data — fix broken destructuring of Promise.all (include checkins result); prevents 500 and restores metrics payload
 
 ## 2026-05-21
 
@@ -231,7 +261,7 @@ REFACTOR: VoiceEntryFab — FAB cluster jaune : bouton + (jaune plein, ouvre Mea
 REFACTOR: AdherenceScoreCard — labels complets (Nutrition, Hydratation, Check-ins), font 7px pour tenir en 4 colonnes
 REFACTOR: ClientTopBar — full jaune (#ffe01e), texte #0d0d0d, suppression bande accent
 REFACTOR: BottomNav — onglet actif = icône+label jaune uniquement (suppression bande top + fond), action buttons rounded-2xl
-FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/*
+FEATURE: CheckinModal — bottom sheet DS v3.0 (sliders jaunes, progress dots, success state +pts), remplace les pages /client/checkin/\*
 REFACTOR: ClientHomeShell — wrapper client pour DayChecklist + CheckinModal + router.refresh() sur succès
 REFACTOR: BottomNav — action checkin ouvre CheckinModal (morning/evening selon heure)
 

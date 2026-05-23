@@ -31,6 +31,7 @@ const createMealSchema = z.object({
   meal_id: z.string().uuid().optional(), // if present, append to existing meal
   meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
   logged_at: z.string().datetime().optional(),
+  title: z.string().max(80).optional(),
   notes: z.string().max(500).optional(),
   entries: z.array(entrySchema).min(1).max(30),
 })
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   const body = createMealSchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { meal_id: existingMealId, meal_type, logged_at, notes, entries } = body.data
+  const { meal_id: existingMealId, meal_type, logged_at, title, notes, entries } = body.data
   const loggedAt = logged_at ? new Date(logged_at) : new Date()
   const physiologicalDate = computePhysiologicalDate(loggedAt)
   const resolvedMealType = meal_type ?? inferMealType(loggedAt)
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
         physiological_date: physiologicalDate,
         meal_type: resolvedMealType,
         logged_at: loggedAt.toISOString(),
+        title: title?.trim() || null,
         notes: notes ?? null,
         ...newTotals,
       })

@@ -43,7 +43,7 @@ const NAV_SECTIONS = [
         match: (p: string) => p.startsWith("/coach/assessments"),
       },
       {
-        icon: Dumbbell,
+        icon: Weight,
         label: "Programmes",
         href: "/coach/programs/templates",
         match: (p: string) => p.startsWith("/coach/programs"),

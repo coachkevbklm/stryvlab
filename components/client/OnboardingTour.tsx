@@ -155,7 +155,7 @@ export default function OnboardingTour() {
 
           <button
             onClick={advance}
-            className="w-full h-9 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] rounded-xl transition-all pl-4 pr-1.5"
+            className="w-full h-9 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#e8e8e8] active:scale-[0.98] rounded-xl transition-all pl-4 pr-1.5"
           >
             <span className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.10em] text-[#080808]">
               {isLast ? t('tour.cta.ready') : t('tour.cta.understood')}

@@ -39,7 +39,7 @@ export default function QuickLogSheet({ open, onClose }: Props) {
       Icon: ForkKnife,
       label: "Repas",
       sub: "Ajouter un repas ou aliment",
-      onClick: () => { handleClose(); router.push("/client/nutrition"); },
+      onClick: () => { handleClose(); router.push("/client/nutrition?addMeal=1"); },
     },
     {
       key: "activity",

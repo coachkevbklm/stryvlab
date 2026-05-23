@@ -39,6 +39,7 @@ const bodySchema = z.object({
   transcript: z.string().min(3).max(1000),
   physiological_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   lang: z.enum(["fr", "en", "es"]).default("fr"),
+  client_hour: z.number().int().min(0).max(23).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   const body = bodySchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { transcript, lang } = body.data
+  const { transcript, lang, client_hour } = body.data
   const db = service()
 
   // ── Fetch top-20 food items this client uses most ─────────────────────────
@@ -78,21 +79,30 @@ export async function POST(req: NextRequest) {
     .slice(0, 20)
     .map(f => `${f.name} (id: ${f.id})`)
 
-  const currentHour = new Date().getHours()
+  const currentHour = client_hour ?? new Date().getHours() // prefer client local time
   const catalogHint = topFoods.length
-    ? `Catalogue préféré du client :\n${topFoods.join('\n')}`
+    ? `Aliments fréquents du client (pour résolution d'ID uniquement — ne PAS s'en servir pour renommer un aliment du transcript) :\n${topFoods.join('\n')}`
     : ""
 
   // ── GPT-4o mini call ──────────────────────────────────────────────────────
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-  const systemPrompt = `Tu es un assistant nutritionnel. Analyse ce texte et retourne UNIQUEMENT un JSON valide.
+  const systemPrompt = `Tu es un assistant nutritionnel. Extrais les aliments et quantités du transcript ci-dessous. Retourne UNIQUEMENT un JSON valide.
 
-Format de réponse :
+RÈGLE ABSOLUE — NOM DES ALIMENTS :
+Utilise le nom tel qu'il est dit dans le transcript. Ne jamais renommer, paraphraser ni substituer.
+- "beurre de baratte" → "Beurre de baratte" (PAS "beurre de cacahuète")
+- "flocons d'avoine" → "Flocons d'avoine" (PAS "porridge")
+- "riz basmati" → "Riz basmati" (PAS "riz blanc")
+Exception UNIQUEMENT si le terme est un non-mot ou un nom de marque clairement déformé :
+- "proutimuscle", "prunty", "nutrimuscle protimuscle" → "Whey protéine" (générique)
+- Si la marque est reconnaissable (Danone, Activia, etc.), conserve-la.
+
+Format JSON :
 {
   "items": [
     {
-      "name": "nom de l'aliment en français",
+      "name": "nom de l'aliment issu du transcript",
       "quantity_g": 150,
       "kcal": 248,
       "protein_g": 31.5,
@@ -105,13 +115,13 @@ Format de réponse :
   "meal_type": "lunch"
 }
 
-Règles :
+Autres règles :
 - Identifie chaque aliment distinct mentionné
-- Si la quantité n'est pas précisée, estime une portion standard
-- confidence: "high" si quantité explicite, "medium" si estimée, "low" si très incertain
-- meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
-- Ne retourne QUE le JSON, aucun texte autour
-- Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
+- Si quantité non précisée, estime une portion standard
+- confidence: "high" si quantité ET aliment explicites, "medium" si estimés, "low" si très incertain
+- meal_type : breakfast | lunch | dinner | snack — selon contexte ou heure (${currentHour}h)
+- Valeurs nutritionnelles = pour la quantité indiquée (pas pour 100g)
+- Ne retourne QUE le JSON
 
 ${catalogHint}`
 
@@ -123,9 +133,9 @@ ${catalogHint}`
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: transcript },
+          { role: "user", content: `Transcript vocal :\n${transcript}` },
         ],
-        temperature: 0.2,
+        temperature: 0.1,
         max_tokens: 800,
         response_format: { type: "json_object" },
       })

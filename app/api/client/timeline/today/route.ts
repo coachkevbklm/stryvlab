@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
       .select('id, meal_type, title, logged_at, calories, protein_g, carbs_g, fat_g')
       .eq('client_id', cc.id)
       .eq('physiological_date', date)
+      .neq('meal_type', 'drinks')
       .order('logged_at', { ascending: true }),
     svc()
       .from('client_water_logs')

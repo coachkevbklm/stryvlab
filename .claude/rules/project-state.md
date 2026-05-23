@@ -8,32 +8,32 @@
 
 ## 🎯 État Stratégique Global
 
-| Métrique | Statut |
-|----------|--------|
-| Phase | MVP Phase 1 ✅ Complet → Phase 2 Prêt |
-| Architecture | Solide (Supabase RLS, Inngest, TypeScript strict) |
-| Performance | Excellent (< 300ms API, real-time scoring) |
-| Adherence focus | ✅ 5-min client app target atteint |
-| Roadmap | Phase 2 Q3 2026 : wearables, export, IA coach |
-| Landing STRYVR | ✅ Refonte DA Technogym — `/stryvr` live |
+| Métrique        | Statut                                            |
+| --------------- | ------------------------------------------------- |
+| Phase           | MVP Phase 1 ✅ Complet → Phase 2 Prêt             |
+| Architecture    | Solide (Supabase RLS, Inngest, TypeScript strict) |
+| Performance     | Excellent (< 300ms API, real-time scoring)        |
+| Adherence focus | ✅ 5-min client app target atteint                |
+| Roadmap         | Phase 2 Q3 2026 : wearables, export, IA coach     |
+| Landing STRYVR  | ✅ Refonte DA Technogym — `/stryvr` live          |
 
 ---
 
 ## 📦 Modules Core Status
 
-| Module | Statut | Update |
-|--------|--------|--------|
-| **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
-| **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
-| **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
-| **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
-| **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
-| **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
-| **Design System v4.0** | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2 | 2026-05-21 |
-| **Landing STRYVR** | ✅ `/stryvr` — DA Technogym, waitlist Supabase | 2026-05-16 |
-| **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
-| **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
-| **Daily Check-ins** | 📋 Spec documentée, Phase 2 | — |
+| Module                          | Statut                                                                                                                                                                       | Update     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet                                                                                                                                              | 2026-04-26 |
+| **Client App**                  | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
+| **Nutrition Composer**          | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique                                                                                                | 2026-05-16 |
+| **Nutrition Protocols**         | ✅ Macros, carb cycling, cycle sync                                                                                                                                          | 2026-04-26 |
+| **MorphoPro Bridge**            | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée)                                                                                                                | 2026-04-28 |
+| **Design System v2.0**          | ✅ Dark flat minimal DS-compliant (coach web)                                                                                                                                | 2026-04-27 |
+| **Design System v4.0**          | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2                                                                                                  | 2026-05-21 |
+| **Landing STRYVR**              | ✅ `/stryvr` — DA Technogym, waitlist Supabase                                                                                                                               | 2026-05-16 |
+| **Coach Dashboard**             | ✅ MRR, alerts, client segmentation                                                                                                                                          | 2026-04-13 |
+| **Client Onboarding**           | ✅ 5-screen tour + guided tooltip tour                                                                                                                                       | 2026-04-27 |
+| **Daily Check-ins**             | 📋 Spec documentée, Phase 2                                                                                                                                                  | —          |
 
 ---
 
@@ -49,6 +49,23 @@
 - `app/api/inngest/route.ts` — enregistre les 2 nouvelles fonctions
 - `components/client/ChatPage.tsx` — `handleInteract` intercepte `key === 'trigger_checkin'` → marque chip answered + active `handleCheckinClick()`
 - Points de vigilance : les messages `morning_init`/`evening_init` sont archivés après 3j par `chat-archive` — normal car check-in doit être fait dans les 3j ; cron UTC (06:30 = 08:30 CEST été) ; `programs.status === 'active'` requis pour la séance prévue
+
+### 2026-05-22 — Nutrition Protocols: weekday & day_type migration
+
+- `supabase/migrations/20260522_add_daytype_weekday.sql` — Add `weekday` (0=Sunday..6=Saturday) and `day_type` (`training`|`rest`|`special`) to `nutrition_protocol_days`. Indexes added on `weekday` and `day_type`. Apply via Supabase SQL Editor or CI migration runner.
+- `app/api/clients/[clientId]/nutrition-protocols/[protocolId]/today-context/route.ts` — new server endpoint returning `{ days, hasSessionToday }` to provide authoritative per-day selection for the client app.
+- `components/nutrition/studio/ProtocolCanvas.tsx` — coach editor: added selects for `Jour de la semaine` and `Type de journée` (Entraînement / Repos / Spécial) wired to `onUpdateDay`.
+- `lib/nutrition/useTodayProtocol.tsx` — client hook to call the `/today-context` endpoint, compute `selectedDay` (fallback via `selectDayForDate`) and cache result in `localStorage` for offline fallback.
+
+Points de vigilance:
+
+- RLS: `nutrition_protocol_days` policies already exist — ensure the migration preserves RLS policies and re-apply partial policies if migration is applied via Supabase SQL Editor.
+- Prisma: this repository doesn't have a `prisma/schema.prisma` file present; if you use Prisma, add fields to the `NutritionProtocolDay` model and run `npx prisma migrate dev --name add_weekday_daytype` followed by `npx prisma generate`.
+
+Next steps:
+
+- Apply SQL migration to Supabase (manual or CI). If you want, I can prepare a Prisma schema patch if you maintain Prisma locally.
+- Update `CHANGELOG.md` (done) and this `project-state.md` entry (done).
 
 ### 2026-05-21 — Metrics Tab Navigation — 3-tab client PWA
 
@@ -159,6 +176,7 @@
 - Points de vigilance : migration à appliquer manuellement via Supabase Dashboard, `OPENAI_API_KEY` requis, SpeechRecognition non supporté iOS Safari < 16.4 (fallback message affiché)
 
 ### 2026-05-19 — Smart Workout Redesign (Motra-style)
+
 - `supabase/migrations/20260519_set_type.sql` — colonne `set_type` sur `client_set_logs` (warmup/working/cooldown/dropset) — **appliquer manuellement**
 - `components/client/smart/SetRow.tsx` — row inline-editable, swipe droite=valider, swipe gauche=supprimer, type pill EC/RC/↘
 - `components/client/smart/SetTypeSelector.tsx` — bottom sheet type de série
@@ -171,6 +189,7 @@
 - Conservé : live save, PR detection, SetRecommendation, RestTimer, tempo guide, hydration, long press terminer
 
 ### 2026-05-19 — Client Profil Accordion Redesign
+
 - `app/api/client/body-data/route.ts` — agrège bilans (poids série, composition, mensurations)
 - `components/client/profile/AccordionSection.tsx` — section collapsible Framer Motion
 - `components/client/profile/BodyDataSection.tsx` — sparkline SVG + composition + mensurations
@@ -181,6 +200,7 @@
 - Photos morpho : non affichées côté client (RLS morpho_photos = coach uniquement)
 
 ### 2026-05-18 — Elite Client App Sprint
+
 - PR detection temps réel (Epley + historique), flash "⚡ Nouveau record", badge PR jaune
 - `getCoachingCue()` — messages contextuels par RIR
 - `client_meal_favorites` table + API GET/POST/DELETE/use — repas récents 1 tap
@@ -191,6 +211,7 @@
 - Bugs résolus : eau 0ml, router.refresh() eau, home grid 2 colonnes
 
 ### 2026-05-18 — Smart Trio Refonte App Client
+
 - Smart Agenda (home), Smart Nutrition, Smart Workout, BottomNav 5 slots + RadialActionMenu
 - 16 nouveaux composants dans `components/client/smart/`
 - 4 libs pures testées Vitest dans `lib/client/smart/`
@@ -198,16 +219,19 @@
 - Routes supprimées : `/client/agenda` + `/client/progress` → redirect 301 → `/client`
 
 ### 2026-05-17 — Tempo Guide Modal v2 + Set Recommendation Engine v2
+
 - TempoGuideModal : circuit triangle fermé, codes couleurs par phase, anticipation isométrique, reps bonus, landscape responsive
 - SetRecommendation : Path B corrigé, modulation RIR Path A, formatWeight() locale-independent
 
 ### 2026-05-16 — Landing STRYVR + Nutrition Composer + Tempo Phase 1
+
 - Landing DA Technogym : fond `#0a0a0a`, accent `#F5D800`, Urbanist, grille industrielle
 - Nutrition Composer 4 couches : `food_items` + `nutrition_meals` + `nutrition_entries`, journée physiologique 04:00
 - Tempo Phase 1 : `lib/training/tempo.ts`, badge auto/coach, TempoGuideModal Phase 1
 - BodyMap : LEGACY_TO_CANONICAL 40+ slugs, fallback primary_muscle singulier
 
 ### 2026-04-28 — MorphoPro Phase 1 + 5 Bugs SessionLogger
+
 - `morpho_photos` + `morpho_annotations` + RLS, GPT-4o structuré, Fabric.js v6 canvas
 - SessionLogger : parseFloat("0") fix, home séances du jour, muscleDetection slugs, rest timer 8s, superset UX
 
@@ -215,10 +239,10 @@
 
 ## 🔑 Points de Vigilance (Actuels)
 
-| Problème | Impact | Mitigation |
-|----------|--------|-----------|
-| Supabase Redirect URLs | Onboarding brisé | Whitelist `/client/onboarding` |
-| `three@0.170` requis | Build error si downgrade | Ne pas downgrader — `three-mesh-bvh` peer dep |
+| Problème               | Impact                   | Mitigation                                    |
+| ---------------------- | ------------------------ | --------------------------------------------- |
+| Supabase Redirect URLs | Onboarding brisé         | Whitelist `/client/onboarding`                |
+| `three@0.170` requis   | Build error si downgrade | Ne pas downgrader — `three-mesh-bvh` peer dep |
 
 > ✅ **Migrations vérifiées le 2026-05-21** via `scripts/verify-migrations.sql` — toutes appliquées.
 > Script de vérification réutilisable : `scripts/verify-migrations.sql` → Supabase SQL Editor.
@@ -250,14 +274,14 @@
 
 ## ⚙️ Config Production
 
-| Variable | Statut |
-|----------|--------|
-| INNGEST_SIGNING_KEY | ✅ Injected (Vercel) |
-| INNGEST_EVENT_KEY | ✅ Injected (Vercel) |
-| CRON_SECRET | ✅ Configured |
-| Supabase RLS | ✅ Enabled |
-| PWA Manifest | ✅ Updated (#121212) |
-| Service Worker | ✅ v2 (network-first pages) |
+| Variable            | Statut                      |
+| ------------------- | --------------------------- |
+| INNGEST_SIGNING_KEY | ✅ Injected (Vercel)        |
+| INNGEST_EVENT_KEY   | ✅ Injected (Vercel)        |
+| CRON_SECRET         | ✅ Configured               |
+| Supabase RLS        | ✅ Enabled                  |
+| PWA Manifest        | ✅ Updated (#121212)        |
+| Service Worker      | ✅ v2 (network-first pages) |
 
 ## 🎯 Règles Non-Négociables
 

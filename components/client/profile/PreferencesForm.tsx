@@ -69,7 +69,7 @@ export default function PreferencesForm({ initial }: { initial: Prefs }) {
         className={`w-full py-2.5 rounded-xl text-sm font-barlow-condensed font-bold uppercase transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
             ? 'bg-[#f2f2f2] text-[#080808]'
-            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#ffd000] disabled:opacity-50'
+            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#e8e8e8] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}

@@ -215,7 +215,7 @@ export default function ClientRestrictionsSection() {
               type="button"
               onClick={handleAdd}
               disabled={!formBodyPart || saving}
-              className="flex-1 h-9 rounded-xl bg-[#f2f2f2] text-[12px] font-barlow-condensed font-bold uppercase text-[#080808] hover:bg-[#ffd000] disabled:opacity-50 transition-colors"
+              className="flex-1 h-9 rounded-xl bg-[#f2f2f2] text-[12px] font-barlow-condensed font-bold uppercase text-[#080808] hover:bg-[#e8e8e8] disabled:opacity-50 transition-colors"
             >
               {saving ? '…' : t('common.save')}
             </button>

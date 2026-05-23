@@ -151,41 +151,46 @@ export const CATEGORY_LABELS: Record<CategoryL1, string> = {
   fruits: "Fruits",
   fats: "Lipides",
   drinks: "Boissons",
-  extras: "Snacks & Extras",
+  extras: "Condiments & Extras",
 }
 
 export const SUBCATEGORY_LABELS: Record<string, string> = {
+  // proteins
   viandes: "Viandes",
-  poissons: "Poissons",
+  poissons: "Poissons & fruits de mer",
   oeufs: "Œufs",
-  laitiers: "Produits laitiers",
+  laitiers: "Produits laitiers & fromages",
   vegetales: "Protéines végétales",
   complements: "Compléments",
+  // carbs
   cereales: "Céréales",
-  fecules: "Féculents",
+  fecules: "Féculents & pommes de terre",
   pain: "Pain & Tortillas",
   legumineuses: "Légumineuses",
-  feuilles: "Feuilles",
+  // vegetables
+  feuilles: "Légumes feuilles",
   cruciferes: "Crucifères",
   "autres-legumes": "Autres légumes",
+  // fruits
   frais: "Fruits frais",
-  secs: "Fruits secs",
+  secs: "Fruits séchés",
+  // fats
   huiles: "Huiles",
   "noix-graines": "Noix & Graines",
-  "autres-lipides": "Autres",
-  sauces: "Sauces & Condiments",
-  boissons: "Boissons",
-  divers: "Divers",
-  "snacks-sales": "Snacks salés",
-  "snacks-sucres": "Snacks & Sucreries",
-  "fast-food": "Fast-food",
-  // drinks subcategories
-  eau: "Eau & Hydratation",
+  "autres-lipides": "Beurres & Graisses",
+  // drinks
   chauds: "Boissons chaudes",
-  "jus-smoothies": "Jus & Smoothies",
   "laits-vegetaux": "Laits végétaux",
+  "jus-smoothies": "Jus & Smoothies",
+  eau: "Eau & Hydratation",
   "sports-drinks": "Boissons sportives",
   alcools: "Alcools",
+  // extras
+  sauces: "Sauces & Condiments",
+  sucres: "Sucres & Tartinades",
+  "snacks-sales": "Snacks salés",
+  "snacks-sucres": "Snacks sucrés",
+  divers: "Divers",
 }
 
 /** Calcule les macros d'une entrée depuis food_item + quantité */

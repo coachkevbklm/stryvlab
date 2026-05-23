@@ -15,7 +15,7 @@ type DayPoint = {
 const MACROS = [
   { key: 'protein_g', color: 'var(--data-copper)' },
   { key: 'carbs_g',   color: 'var(--data-gold)' },
-  { key: 'fat_g',     color: 'var(--data-gold)' },
+  { key: 'fat_g',     color: 'var(--data-petrol)' },
 ] as const
 
 const DOW_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D']

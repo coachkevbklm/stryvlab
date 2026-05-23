@@ -159,6 +159,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             ccResult={studio.ccResult}
             hasHydration={studio.hydrationLiters !== null}
             coherenceScore={studio.coherenceScore}
+            trainingDays={studio.trainingDays}
           />
         </div>
       </div>

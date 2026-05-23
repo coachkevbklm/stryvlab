@@ -43,8 +43,8 @@ interface VoiceLogSheetProps {
 const MAX_RECORD_SEC = 90 // hard recording limit — auto-stops + parses
 
 const CONFIDENCE_STYLES: Record<string, string> = {
-  high:   "bg-[#22c55e]/15 text-[#22c55e]",
-  medium: "bg-[#f59e0b]/15 text-[#f59e0b]",
+  high:   "bg-[#3d7070]/20 text-[#6aabab]",
+  medium: "bg-[#a89060]/15 text-[#a89060]",
   low:    "bg-red-500/15 text-red-400",
 }
 
@@ -62,6 +62,11 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   const [logging, setLogging]               = useState(false)
   const [waveBars, setWaveBars]             = useState<number[]>([6, 6, 6, 6, 6, 6, 6])
   const [elapsedSec, setElapsedSec]         = useState(0)
+  const [lookingUp, setLookingUp]           = useState<Set<number>>(new Set())
+  const [mealTime, setMealTime]             = useState(() => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  })
 
   const recognitionRef  = useRef<any>(null)
   const analyserRef     = useRef<AnalyserNode | null>(null)
@@ -74,6 +79,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   const accRef          = useRef("")
   const openRef         = useRef(open)
   const startingRef     = useRef(false) // prevent double-start
+  const pendingParseRef = useRef(false)  // parse on recognition.onend (not synchronously after stop)
 
   const isSpeechSupported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
@@ -92,6 +98,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
       setError(null)
       setItems([])
       setElapsedSec(0)
+      setLogging(false)
       setWaveBars([6, 6, 6, 6, 6, 6, 6])
       accRef.current = ""
     } else {
@@ -126,6 +133,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     recognitionRef.current = null
     analyserRef.current = null
     startingRef.current = false
+    pendingParseRef.current = false
   }
 
   // ── Waveform animation ────────────────────────────────────────────────────
@@ -174,21 +182,27 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   }, [lang, t])
 
   // ── Stop recording + parse ─────────────────────────────────────────────────
+  // NOTE: accRef is read in recognition.onend (not here) because the ASR engine
+  // delivers final onresult events AFTER stop() is called but BEFORE onend fires.
+  // Reading accRef synchronously here would miss those late-arriving finals.
   const stopRecording = useCallback(() => {
     if (timerRef.current)    clearInterval(timerRef.current)
     if (waveFrameRef.current) cancelAnimationFrame(waveFrameRef.current)
     if (streamRef.current)   streamRef.current.getTracks().forEach(t => t.stop())
     if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {})
-    try { recognitionRef.current?.stop() } catch {}
     setWaveBars([6, 6, 6, 6, 6, 6, 6])
     setModeSync("idle")
-    const final = accRef.current.trim()
-    accRef.current = ""
-    if (final.length > 2 && openRef.current) {
-      if (onTranscriptOnly) {
-        onTranscriptOnly(final)
-      } else {
-        parseTranscript(final)
+    pendingParseRef.current = true  // onend will read accRef and parse
+    try {
+      recognitionRef.current?.stop()
+    } catch {
+      // stop() threw — recognition already ended, parse what we have now
+      pendingParseRef.current = false
+      const final = accRef.current.trim()
+      accRef.current = ""
+      if (final.length > 2 && openRef.current) {
+        if (onTranscriptOnly) onTranscriptOnly(final)
+        else parseTranscript(final)
       }
     }
   }, [parseTranscript, onTranscriptOnly])
@@ -265,9 +279,18 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     }
 
     recognition.onend = () => {
-      // Restart only if still actively recording (network blip recovery)
       if (modeRef.current === "recording" && openRef.current) {
+        // Network blip recovery — restart
         try { recognition.start() } catch { stopRecording() }
+      } else if (pendingParseRef.current) {
+        // Intentional stop — all final onresult events have now been delivered
+        pendingParseRef.current = false
+        const final = accRef.current.trim()
+        accRef.current = ""
+        if (final.length > 2 && openRef.current) {
+          if (onTranscriptOnly) onTranscriptOnly(final)
+          else parseTranscript(final)
+        }
       }
     }
 
@@ -324,6 +347,41 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
 
   function removeItem(index: number) { setItems(prev => prev.filter((_, i) => i !== index)) }
 
+  // Auto-fetch nutrients when user types a name on a manually-added item (0 kcal)
+  async function lookupItem(idx: number) {
+    const item = items[idx]
+    if (!item || item.name.trim().length < 3 || item.kcal > 0) return
+    setLookingUp(prev => new Set(Array.from(prev).concat(idx)))
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const transcript = `${item.quantity_g}g ${item.name.trim()}`
+      const res = await fetch("/api/client/nutrition/voice-parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript, physiological_date: today, lang, client_hour: new Date().getHours() }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      const found = data.items?.[0]
+      if (found) {
+        setItems(prev => prev.map((it, i) => i !== idx ? it : withBases({
+          ...it,
+          kcal:        found.kcal,
+          protein_g:   found.protein_g,
+          carbs_g:     found.carbs_g,
+          fat_g:       found.fat_g,
+          fiber_g:     found.fiber_g,
+          food_item_id: found.food_item_id,
+          confidence:  found.confidence as "high" | "medium" | "low",
+          is_new:      found.is_new ?? true,
+        })))
+      }
+    } catch {}
+    finally {
+      setLookingUp(prev => { const n = new Set(prev); n.delete(idx); return n })
+    }
+  }
+
   function addEmptyItem() {
     setItems(prev => [...prev, withBases({
       name: "", quantity_g: 100, kcal: 0,
@@ -353,7 +411,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name_fr: item.name, category_l1: "extras", category_l2: "divers", ...per100 }),
         })
-        if (res.ok) { const c = await res.json(); item.food_item_id = c.id; item.is_new = false }
+        if (res.ok) { const c = await res.json(); item.food_item_id = c.data?.id; item.is_new = false }
       } catch {}
     }
     const entries = validItems.filter(i => i.food_item_id).map(i => ({
@@ -363,10 +421,13 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     }))
     if (entries.length === 0) { setLogging(false); setError(t("voice.error_parse")); return }
     try {
+      const [h, m] = mealTime.split(':').map(Number)
+      const dt = new Date()
+      dt.setHours(h, m, 0, 0)
       const res = await fetch("/api/client/nutrition/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...(mealId ? { meal_id: mealId } : {}), meal_type: mealType, entries }),
+        body: JSON.stringify({ ...(mealId ? { meal_id: mealId } : {}), meal_type: mealType, logged_at: dt.toISOString(), entries }),
       })
       if (!res.ok) throw new Error()
       if (onSuccess) onSuccess()
@@ -529,14 +590,19 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                         <input
                           value={item.name}
                           onChange={e => updateItem(idx, "name", e.target.value)}
+                          onBlur={() => lookupItem(idx)}
                           className="flex-1 min-w-0 bg-transparent text-[13px] text-white pb-0.5 focus:outline-none border-b border-[#2e2e2e]"
                         />
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg ${CONFIDENCE_STYLES[item.confidence] ?? CONFIDENCE_STYLES.medium}`}>
-                            {t(item.confidence === "high" ? "voice.confidence_high" : item.confidence === "medium" ? "voice.confidence_med" : "voice.confidence_low")}
-                          </span>
-                          {item.is_new && (
-                            <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg bg-[#f59e0b]/15 text-[#f59e0b]">
+                          {lookingUp.has(idx) ? (
+                            <div className="h-3 w-3 border border-[#404040] border-t-[#808080] rounded-full animate-spin" />
+                          ) : (
+                            <span className={`text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg ${CONFIDENCE_STYLES[item.confidence] ?? CONFIDENCE_STYLES.medium}`}>
+                              {t(item.confidence === "high" ? "voice.confidence_high" : item.confidence === "medium" ? "voice.confidence_med" : "voice.confidence_low")}
+                            </span>
+                          )}
+                          {!lookingUp.has(idx) && item.is_new && (
+                            <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg bg-[#a89060]/15 text-[#a89060]">
                               {t("voice.new_badge")}
                             </span>
                           )}
@@ -578,7 +644,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                   </button>
 
                   {newCount > 0 && (
-                    <p className="text-[11px] text-[#f59e0b]/70">{t("voice.new_items_notice").replace("{n}", String(newCount))}</p>
+                    <p className="text-[11px] text-[#a89060]/70">{t("voice.new_items_notice").replace("{n}", String(newCount))}</p>
                   )}
 
                   <div className="rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap"
@@ -589,6 +655,19 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                       <span>G {totalC.toFixed(1)}g</span>
                       <span>L {totalF.toFixed(1)}g</span>
                     </div>
+                  </div>
+
+                  {/* Time picker */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.14em] text-white/30 shrink-0">
+                      Heure
+                    </span>
+                    <input
+                      type="time"
+                      value={mealTime}
+                      onChange={e => setMealTime(e.target.value)}
+                      className="h-8 px-2 bg-white/[0.06] rounded-xl text-[12px] text-white outline-none"
+                    />
                   </div>
 
                   {error && <p className="text-[12px] text-red-400">{error}</p>}

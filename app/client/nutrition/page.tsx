@@ -1,51 +1,75 @@
-import { createClient } from '@/utils/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { resolveClientFromUser } from '@/lib/client/resolve-client'
-import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
-import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
-import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
-import type { NutritionMeal } from '@/lib/nutrition/food-items'
-import type { GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
-import { type ClientLang } from '@/lib/i18n/clientTranslations'
-import NutritionClientPage from './NutritionClientPage'
+import { createClient } from "@/utils/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { resolveClientFromUser } from "@/lib/client/resolve-client";
+import { computePhysiologicalDate } from "@/lib/nutrition/physiological-date";
+import { selectProtocolDayForTraining } from "@/lib/nutrition/selectProtocolDayForDate";
+import { computeNutritionAlerts } from "@/lib/client/smart/nutritionAlerts";
+import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
+import type { NutritionMeal } from "@/lib/nutrition/food-items";
+import type { GenericAlert } from "@/components/client/smart/SmartAlertsFeed";
+import { type ClientLang } from "@/lib/i18n/clientTranslations";
+import NutritionClientPage from "./NutritionClientPage";
 
-type SearchParams = { date?: string }
+type SearchParams = { date?: string };
 
 function svc() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
+  );
 }
 
-export default async function ClientNutritionPage({ searchParams }: { searchParams: SearchParams }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+export default async function ClientNutritionPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  const client = await resolveClientFromUser(user.id, user.email, svc(), 'id, gender')
-  if (!client) return null
+  const client = await resolveClientFromUser(
+    user.id,
+    user.email,
+    svc(),
+    "id, gender",
+  );
+  if (!client) return null;
 
-  const date = searchParams.date ?? computePhysiologicalDate(new Date())
-  const dayStart = `${date}T00:00:00Z`
-  const dayEnd   = `${date}T23:59:59Z`
-  const clientId = client.id
+  const date = searchParams.date ?? computePhysiologicalDate(new Date());
+  const dayStart = `${date}T00:00:00Z`;
+  const dayEnd = `${date}T23:59:59Z`;
+  const clientId = client.id;
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, weightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
+  const [
+    protoResult,
+    mealsResult,
+    waterResult,
+    weightResult,
+    trendResult,
+    streakResult,
+    prefsResult,
+    trainingResult,
+  ] = await Promise.allSettled([
     svc()
-      .from('nutrition_protocols')
-      .select('tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)')
-      .eq('client_id', clientId)
-      .eq('status', 'shared')
-      .order('created_at', { ascending: false })
+      .from("nutrition_protocols")
+      .select(
+        "created_at, tdee_adaptive, tdee_data_source, nutrition_protocol_days(name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations)",
+      )
+      .eq("client_id", clientId)
+      .eq("status", "shared")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
 
     // Meals with full entries for the journal list
     svc()
-      .from('nutrition_meals')
-      .select(`
+      .from("nutrition_meals")
+      .select(
+        `
         id, meal_type, title, logged_at, physiological_date,
         total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g,
         photo_urls, notes,
@@ -54,172 +78,273 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
           input_mode, confidence_score,
           food_items (id, name_fr, category_l1, item_key, kcal_per_100g)
         )
-      `)
-      .eq('client_id', clientId)
-      .eq('physiological_date', date)
-      .neq('meal_type', 'drinks')
-      .order('logged_at', { ascending: true }),
+      `,
+      )
+      .eq("client_id", clientId)
+      .eq("physiological_date", date)
+      .neq("meal_type", "drinks")
+      .order("logged_at", { ascending: true }),
 
     svc()
-      .from('client_water_logs')
-      .select('amount_ml, logged_at')
-      .eq('client_id', clientId)
-      .gte('logged_at', dayStart)
-      .lte('logged_at', dayEnd),
+      .from("client_water_logs")
+      .select("amount_ml, logged_at")
+      .eq("client_id", clientId)
+      .gte("logged_at", dayStart)
+      .lte("logged_at", dayEnd),
 
     // Latest body weight from assessments
     svc()
-      .from('assessment_responses')
-      .select('numeric_value')
-      .eq('client_id', clientId)
-      .eq('field_key', 'weight_kg')
-      .not('numeric_value', 'is', null)
-      .order('created_at', { ascending: false })
+      .from("assessment_responses")
+      .select("numeric_value")
+      .eq("client_id", clientId)
+      .eq("field_key", "weight_kg")
+      .not("numeric_value", "is", null)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
 
     // Weekly trend: last 7 days — full macros for grid
     (async () => {
-      const today = new Date()
-      const days: string[] = []
+      const today = new Date();
+      const days: string[] = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(today)
-        d.setDate(today.getDate() - i)
-        days.push(d.toISOString().slice(0, 10))
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
       }
       return svc()
-        .from('nutrition_meals')
-        .select('physiological_date, total_calories, total_protein_g, total_carbs_g, total_fat_g')
-        .eq('client_id', clientId)
-        .neq('meal_type', 'drinks')
-        .in('physiological_date', days)
+        .from("nutrition_meals")
+        .select(
+          "physiological_date, total_calories, total_protein_g, total_carbs_g, total_fat_g",
+        )
+        .eq("client_id", clientId)
+        .neq("meal_type", "drinks")
+        .in("physiological_date", days);
     })(),
 
     // 90-day logged dates for streak + calendar
     (async () => {
-      const d90ago = new Date()
-      d90ago.setDate(d90ago.getDate() - 89)
-      const from90 = d90ago.toISOString().slice(0, 10)
+      const d90ago = new Date();
+      d90ago.setDate(d90ago.getDate() - 89);
+      const from90 = d90ago.toISOString().slice(0, 10);
       return svc()
-        .from('nutrition_meals')
-        .select('physiological_date')
-        .eq('client_id', clientId)
-        .neq('meal_type', 'drinks')
-        .gte('physiological_date', from90)
-        .order('physiological_date', { ascending: true })
+        .from("nutrition_meals")
+        .select("physiological_date")
+        .eq("client_id", clientId)
+        .neq("meal_type", "drinks")
+        .gte("physiological_date", from90)
+        .order("physiological_date", { ascending: true });
     })(),
 
     // Client language preference
     svc()
-      .from('client_preferences')
-      .select('language')
-      .eq('client_id', clientId)
+      .from("client_preferences")
+      .select("language")
+      .eq("client_id", clientId)
       .maybeSingle(),
-  ])
+
+    // Training sessions for today (to detect if client has a planned session)
+    svc()
+      .from("training_sessions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("date", date)
+      .limit(1),
+  ]);
+
+  // Fetch training sessions for the week to adjust per-day targets
+  const weekDays: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(new Date().getDate() - i);
+    weekDays.push(d.toISOString().slice(0, 10));
+  }
+  const { data: trainingWeekData } = await svc()
+    .from("training_sessions")
+    .select("id, date")
+    .eq("user_id", user.id)
+    .in("date", weekDays);
+  const trainingDateSet = new Set<string>(
+    (trainingWeekData ?? []).map((s) => s.date as string),
+  );
 
   // ── Body weight ───────────────────────────────────────────────────────────
-  const bodyWeightRow = weightResult.status === 'fulfilled' ? weightResult.value.data : null
-  const bodyWeightKg = bodyWeightRow?.numeric_value ? Number(bodyWeightRow.numeric_value) : null
+  const bodyWeightRow =
+    weightResult.status === "fulfilled" ? weightResult.value.data : null;
+  const bodyWeightKg = bodyWeightRow?.numeric_value
+    ? Number(bodyWeightRow.numeric_value)
+    : null;
 
   // ── Protocol day ──────────────────────────────────────────────────────────
-  const protoData = protoResult.status === 'fulfilled' ? protoResult.value.data : null
-  const protocolDay = (protoData?.nutrition_protocol_days as any)?.[0] ?? null
-  const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
-  const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
+  const protoData =
+    protoResult.status === "fulfilled" ? protoResult.value.data : null;
+  const hasTrainingToday =
+    trainingResult && trainingResult.status === "fulfilled"
+      ? (trainingResult as any).value.data &&
+        (trainingResult as any).value.data.length > 0
+      : false;
+  const protocolDay = selectProtocolDayForTraining(
+    protoData as any,
+    date,
+    hasTrainingToday,
+  );
+  const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null;
+  const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null;
 
-  const td = protocolDay
+  const td = protocolDay;
   const target: NutritionMacros = {
-    kcal:      Number(td?.calories     ?? 0),
-    protein_g: Number(td?.protein_g    ?? 0),
-    carbs_g:   Number(td?.carbs_g      ?? 0),
-    fat_g:     Number(td?.fat_g        ?? 0),
-    water_ml:  Number(td?.hydration_ml ?? 2500),
-  }
+    kcal: Number(td?.calories ?? 0),
+    protein_g: Number(td?.protein_g ?? 0),
+    carbs_g: Number(td?.carbs_g ?? 0),
+    fat_g: Number(td?.fat_g ?? 0),
+    water_ml: Number(td?.hydration_ml ?? 2500),
+  };
 
   // ── Consumed today ────────────────────────────────────────────────────────
-  const rawMeals = mealsResult.status === 'fulfilled' ? (mealsResult.value.data ?? []) : []
+  const rawMeals =
+    mealsResult.status === "fulfilled" ? (mealsResult.value.data ?? []) : [];
   const meals: NutritionMeal[] = rawMeals.map((m: any) => ({
     ...m,
     entries: m.nutrition_entries ?? [],
     nutrition_entries: undefined,
-  }))
-  const water = waterResult.status === 'fulfilled' ? (waterResult.value.data ?? []) : []
+  }));
+  const water =
+    waterResult.status === "fulfilled" ? (waterResult.value.data ?? []) : [];
 
   const consumedBase = meals.reduce(
     (acc, m) => ({
-      kcal:      acc.kcal      + Number(m.total_calories  ?? 0),
+      kcal: acc.kcal + Number(m.total_calories ?? 0),
       protein_g: acc.protein_g + Number(m.total_protein_g ?? 0),
-      carbs_g:   acc.carbs_g   + Number(m.total_carbs_g   ?? 0),
-      fat_g:     acc.fat_g     + Number(m.total_fat_g     ?? 0),
+      carbs_g: acc.carbs_g + Number(m.total_carbs_g ?? 0),
+      fat_g: acc.fat_g + Number(m.total_fat_g ?? 0),
     }),
     { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
-  )
-  const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0)
-  const consumed: NutritionMacros = { ...consumedBase, water_ml }
+  );
+  const water_ml = water.reduce((s, w) => s + Number(w.amount_ml ?? 0), 0);
+  const consumed: NutritionMacros = { ...consumedBase, water_ml };
 
   // ── IA alerts (pure fn, no HTTP) ──────────────────────────────────────────
-  const hasLunchLog = meals.some(m => m.meal_type === 'lunch')
+  const hasLunchLog = meals.some((m) => m.meal_type === "lunch");
   const rawAlerts = computeNutritionAlerts({
     consumed: { ...consumedBase, water_ml },
     target,
     currentHour: new Date().getHours(),
     hasLunchLog,
-  })
-  const alerts: GenericAlert[] = rawAlerts.map(a => ({
+  });
+  const alerts: GenericAlert[] = rawAlerts.map((a) => ({
     code: a.code,
     severity: a.severity,
     title: a.title,
     body: a.body,
-  }))
+  }));
 
   // ── Weekly trend ──────────────────────────────────────────────────────────
-  const today = new Date()
-  const days: string[] = []
+  const today = new Date();
+  const days: string[] = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-    days.push(d.toISOString().slice(0, 10))
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    days.push(computePhysiologicalDate(d));
   }
-  const trendMeals = trendResult.status === 'fulfilled' ? (trendResult.value.data ?? []) : []
-  type DayTotals = { kcal: number; protein_g: number; carbs_g: number; fat_g: number }
-  const trendTotals: Record<string, DayTotals> = {}
-  for (const d of days) trendTotals[d] = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+  const trendMeals =
+    trendResult.status === "fulfilled" ? (trendResult.value.data ?? []) : [];
+  type DayTotals = {
+    kcal: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+  };
+  const trendTotals: Record<string, DayTotals> = {};
+  for (const d of days)
+    trendTotals[d] = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
   for (const m of trendMeals) {
-    const key = (m as any).physiological_date as string
-    if (!trendTotals[key]) continue
-    trendTotals[key].kcal      += Number((m as any).total_calories  ?? 0)
-    trendTotals[key].protein_g += Number((m as any).total_protein_g ?? 0)
-    trendTotals[key].carbs_g   += Number((m as any).total_carbs_g   ?? 0)
-    trendTotals[key].fat_g     += Number((m as any).total_fat_g     ?? 0)
+    const key = (m as any).physiological_date as string;
+    if (!trendTotals[key]) continue;
+    trendTotals[key].kcal += Number((m as any).total_calories ?? 0);
+    trendTotals[key].protein_g += Number((m as any).total_protein_g ?? 0);
+    trendTotals[key].carbs_g += Number((m as any).total_carbs_g ?? 0);
+    trendTotals[key].fat_g += Number((m as any).total_fat_g ?? 0);
   }
-  const trend = days.map(d => ({
-    date:      d,
-    consumed:  trendTotals[d].kcal,
+  const perDayTargets: Record<string, NutritionMacros> = {};
+  for (const d of days) {
+    const pd = selectProtocolDayForTraining(
+      protoData as any,
+      d,
+      trainingDateSet.has(d),
+    );
+    perDayTargets[d] = {
+      kcal: Number(pd?.calories ?? target.kcal),
+      protein_g: Number(pd?.protein_g ?? target.protein_g),
+      carbs_g: Number(pd?.carbs_g ?? target.carbs_g),
+      fat_g: Number(pd?.fat_g ?? target.fat_g),
+      water_ml: Number(pd?.hydration_ml ?? target.water_ml),
+    };
+  }
+  const trend = days.map((d) => ({
+    date: d,
+    consumed: trendTotals[d].kcal,
     protein_g: trendTotals[d].protein_g,
-    carbs_g:   trendTotals[d].carbs_g,
-    fat_g:     trendTotals[d].fat_g,
-    target:    target.kcal,
-    targetProtein: target.protein_g,
-    targetCarbs:   target.carbs_g,
-    targetFat:     target.fat_g,
-  }))
+    carbs_g: trendTotals[d].carbs_g,
+    fat_g: trendTotals[d].fat_g,
+    target: perDayTargets[d].kcal,
+    targetProtein: perDayTargets[d].protein_g,
+    targetCarbs: perDayTargets[d].carbs_g,
+    targetFat: perDayTargets[d].fat_g,
+  }));
 
   // ── Streak / logged dates ─────────────────────────────────────────────────
-  const streakMeals = streakResult.status === 'fulfilled' ? (streakResult.value.data ?? []) : []
+  const streakMeals =
+    streakResult.status === "fulfilled" ? (streakResult.value.data ?? []) : [];
   const loggedDatesSet = new Set<string>(
-    streakMeals.map((m: any) => m.physiological_date as string)
-  )
+    streakMeals.map((m: any) => m.physiological_date as string),
+  );
 
   // ── Language ──────────────────────────────────────────────────────────────
-  const rawLang = prefsResult.status === 'fulfilled' ? (prefsResult.value as any)?.data?.language : null
-  const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? (rawLang as ClientLang) : 'fr'
+  const rawLang =
+    prefsResult.status === "fulfilled"
+      ? (prefsResult.value as any)?.data?.language
+      : null;
+  const lang: ClientLang = ["fr", "en", "es"].includes(rawLang)
+    ? (rawLang as ClientLang)
+    : "fr";
 
-  // Day type badge for TopBar
-  const dayTypeBadge = protocolDay?.name ? (
+  const dayTypeLabel = (() => {
+    if (!protocolDay) return null;
+    // If the client has a training session today, prefer a training day label
+    if (hasTrainingToday) return "Jour haut";
+
+    if (protocolDay.carb_cycle_type) {
+      switch (protocolDay.carb_cycle_type) {
+        case "high":
+          return "Jour haut";
+        case "medium":
+          return "Jour moyen";
+        case "low":
+          return "Jour bas";
+      }
+    }
+
+    if (protocolDay.cycle_sync_phase) {
+      const phaseLabels: Record<string, string> = {
+        follicular: "Phase folliculaire",
+        ovulatory: "Phase ovulatoire",
+        luteal: "Phase lutéale",
+        menstrual: "Phase menstruelle",
+      };
+      return (
+        phaseLabels[protocolDay.cycle_sync_phase] ??
+        protocolDay.cycle_sync_phase
+      );
+    }
+
+    return protocolDay.name ?? null;
+  })();
+
+  const dayTypeBadge = dayTypeLabel ? (
     <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-lg bg-[#222222] text-[#b0b0b0]">
-      {protocolDay.name}
+      {dayTypeLabel}
     </span>
-  ) : null
+  ) : null;
 
   return (
     <NutritionClientPage
@@ -237,5 +362,5 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       lang={lang}
       dayTypeBadge={dayTypeBadge}
     />
-  )
+  );
 }

@@ -124,16 +124,16 @@ function getActivityLevel(clientData: NutritionClientData): ActivityLevel {
 }
 
 export interface TdeeHistoryEntry {
-  id: string
-  calculated_at: string
-  tdee_formula: number
-  tdee_adaptive: number
-  delta_kcal: number
-  weight_samples: number
-  calories_source: 'logs' | 'protocol'
-  avg_intake_kcal: number
-  weight_delta_kg: number
-  protocol_updated: boolean
+  id: string;
+  calculated_at: string;
+  tdee_formula: number;
+  tdee_adaptive: number;
+  delta_kcal: number;
+  weight_samples: number;
+  calories_source: "logs" | "protocol";
+  avg_intake_kcal: number;
+  weight_delta_kg: number;
+  protocol_updated: boolean;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -211,7 +211,9 @@ export function useNutritionStudio(
   );
   const [tdeeAdaptive, setTdeeAdaptive] = useState<number | null>(null);
   const [tdeeAdaptiveAt, setTdeeAdaptiveAt] = useState<Date | null>(null);
-  const [tdeeDataSource, setTdeeDataSource] = useState<'weight_delta' | 'formula_proxy' | null>(null);
+  const [tdeeDataSource, setTdeeDataSource] = useState<
+    "weight_delta" | "formula_proxy" | null
+  >(null);
   const [tdeeHistory, setTdeeHistory] = useState<TdeeHistoryEntry[]>([]);
   const [applyingAdaptive, setApplyingAdaptive] = useState(false);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
@@ -223,6 +225,7 @@ export function useNutritionStudio(
   const [dataSource, setDataSource] = useState<
     Record<string, "selected" | "fallback">
   >({});
+  const [trainingDays, setTrainingDays] = useState<number[]>([]);
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -290,9 +293,16 @@ export function useNutritionStudio(
       .then(() => {
         // Load TDEE history for current client
         fetch(`/api/clients/${clientId}/nutrition-tdee-history`)
-          .then(r => r.ok ? r.json() : [])
+          .then((r) => (r.ok ? r.json() : []))
           .then(setTdeeHistory)
-          .catch(() => {})
+          .catch(() => {});
+      })
+      .then(() => {
+        // Load training schedule for current client
+        fetch(`/api/clients/${clientId}/training-schedule`)
+          .then((r) => (r.ok ? r.json() : { trainingDays: [] }))
+          .then((d) => setTrainingDays(d.trainingDays ?? []))
+          .catch(() => {});
       })
       .catch(() => {})
       .finally(() => setClientLoading(false));
@@ -707,14 +717,14 @@ export function useNutritionStudio(
     try {
       const res = await fetch(
         `/api/clients/${clientId}/nutrition-protocols/${currentId}/apply-adaptive-tdee`,
-        { method: 'POST' }
+        { method: "POST" },
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setTdeeAdaptive(data.tdeeAdaptive);
       setTdeeAdaptiveAt(new Date());
       fetch(`/api/clients/${clientId}/nutrition-tdee-history`)
-        .then(r => r.ok ? r.json() : [])
+        .then((r) => (r.ok ? r.json() : []))
         .then(setTdeeHistory)
         .catch(() => {});
     } finally {
@@ -778,5 +788,6 @@ export function useNutritionStudio(
     tdeeHistory,
     applyAdaptiveTdee,
     applyingAdaptive,
+    trainingDays,
   };
 }

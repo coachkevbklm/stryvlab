@@ -24,28 +24,28 @@ export default function BodyMap({ intensityMap, primaryGroups, secondaryGroups, 
     if (intensityMap) {
       const ratio = intensityMap.get(group) ?? 0
       if (ratio < MIN_RATIO) return 'rgba(255,255,255,0.08)'
-      // Interpolation : opacity 0.10 → 1.0 selon ratio
-      const opacity = 0.10 + ratio * 0.90
-      return `rgba(255,224,30,${opacity.toFixed(2)})`
+      // Interpolation : opacity 0.12 → 0.92 selon ratio (copper #9d7052)
+      const opacity = 0.12 + ratio * 0.80
+      return `rgba(157,112,82,${opacity.toFixed(2)})`
     }
-    // Fallback binaire
+    // Fallback binaire — copper scale
     const _stab = stabilizerGroups ?? new Set<MuscleGroup>()
-    if (primaryGroups?.has(group))   return '#f2f2f2'
-    if (secondaryGroups?.has(group)) return 'rgba(255,224,30,0.42)'
-    if (_stab.has(group))            return 'rgba(255,224,30,0.14)'
+    if (primaryGroups?.has(group))   return 'rgba(157,112,82,0.90)'
+    if (secondaryGroups?.has(group)) return 'rgba(157,112,82,0.42)'
+    if (_stab.has(group))            return 'rgba(157,112,82,0.16)'
     return 'rgba(255,255,255,0.08)'
   }
   function s(group: MuscleGroup): string {
     if (intensityMap) {
       const ratio = intensityMap.get(group) ?? 0
       if (ratio < MIN_RATIO) return 'rgba(255,255,255,0.10)'
-      const opacity = 0.12 + ratio * 0.40
-      return `rgba(255,224,30,${opacity.toFixed(2)})`
+      const opacity = 0.14 + ratio * 0.38
+      return `rgba(157,112,82,${opacity.toFixed(2)})`
     }
     const _stab = stabilizerGroups ?? new Set<MuscleGroup>()
-    if (primaryGroups?.has(group))   return 'rgba(255,224,30,0.50)'
-    if (secondaryGroups?.has(group)) return 'rgba(255,224,30,0.28)'
-    if (_stab.has(group))            return 'rgba(255,224,30,0.12)'
+    if (primaryGroups?.has(group))   return 'rgba(157,112,82,0.55)'
+    if (secondaryGroups?.has(group)) return 'rgba(157,112,82,0.30)'
+    if (_stab.has(group))            return 'rgba(157,112,82,0.14)'
     return 'rgba(255,255,255,0.10)'
   }
   function sw(group: MuscleGroup): string {
