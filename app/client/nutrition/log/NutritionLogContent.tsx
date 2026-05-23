@@ -420,7 +420,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {layer === "subcategory" && selectedCategory && (
               <div className="p-4 space-y-2">
                 {SUBCATEGORIES[selectedCategory].map(sub => (
-                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
+                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{SUBCATEGORY_ICONS[sub] ?? "•"}</span>
                       <span className="text-[13px] font-medium text-white">{SUBCATEGORY_LABELS_T[sub] ?? sub}</span>
@@ -436,7 +436,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
               <div className="p-4">
                 <div className="relative mb-3">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
+                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#121212] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
                 </div>
                 {loadingItems ? (
                   <div className="space-y-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-white/[0.04] rounded-xl animate-pulse" />)}</div>
@@ -450,7 +450,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                       const gPct = Math.round((item.carbs_per_100g * 4 / kcal) * 100)
                       const lPct = Math.round((item.fat_per_100g * 9 / kcal) * 100)
                       return (
-                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
+                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-white">{item.name_fr}</p>
                             <div className="flex items-center gap-2 mt-1">
@@ -475,7 +475,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
             {/* Layer 4: Quantity */}
             {layer === "quantity" && selectedItem && (
               <div className="p-4 space-y-5">
-                <div className="flex gap-1 bg-white/[0.04] rounded-xl p-0.5">
+                  <div className="flex gap-1 bg-white/[0.04] border border-white/[0.08] rounded-xl p-0.5">
                   {(["grams", "portion"] as const).map(m => (
                     <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-[#111111] text-white" : "text-white/40"}`}>
                       {m === "grams" ? t('log.gramsMode') : t('log.portionMode')}
@@ -487,7 +487,7 @@ export function NutritionLogContent({ onSuccess, embedded = false }: NutritionLo
                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#111111] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
+                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#121212] border border-white/[0.08] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
                       <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
                     </div>
                     <div className="flex gap-2">
