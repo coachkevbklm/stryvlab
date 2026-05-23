@@ -21,6 +21,13 @@ export type SmartNutritionWidgetProps = {
   proteinStreakDays?: number
 }
 
+function formatOverflow(value: number, unit: 'g' | 'L'): string | null {
+  if (value <= 0) return null
+  return unit === 'L'
+    ? `+${value.toFixed(1)} ${unit} au-dessus`
+    : `+${Math.round(value)}${unit} au-dessus`
+}
+
 export default function SmartNutritionWidget({ consumed, target, proteinStreakDays }: SmartNutritionWidgetProps) {
   const { t } = useClientT()
   const MACROS = [
@@ -47,6 +54,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
 
   const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
   const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
+  const waterOverflowLabel = formatOverflow((effectiveWaterMl - target.water_ml) / 1000, 'L')
   const kcalPct = Math.min(kcalMeta.ratio, 1)
   const r = 80
   const arcTotal = Math.PI * r
@@ -106,6 +114,7 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
             const tg = (target[m.key] as number) ?? 0
             const meta = getNutritionProgressMeta(c, tg)
             const fillColor = getStateColor(meta.state, m.color)
+            const overflowLabel = formatOverflow(c - tg, 'g')
             return (
               <div key={m.key}>
                 <div className="flex justify-between text-[10px] mb-1">
@@ -124,16 +133,8 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
                     }}
                   />
                 </div>
-                <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${meta.overflowPercent}%`,
-                      background: '#ef4444',
-                      opacity: meta.state === 'over' ? 1 : 0,
-                      transition: 'width 0.4s ease, opacity 0.2s ease',
-                    }}
-                  />
+                <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: meta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+                  {overflowLabel ?? '\u00A0'}
                 </div>
               </div>
             )
@@ -159,16 +160,8 @@ export default function SmartNutritionWidget({ consumed, target, proteinStreakDa
                 }}
               />
             </div>
-            <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${waterMeta.overflowPercent}%`,
-                  background: '#ef4444',
-                  opacity: waterMeta.state === 'over' ? 1 : 0,
-                  transition: 'width 0.4s ease, opacity 0.2s ease',
-                }}
-              />
+            <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: waterMeta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+              {waterOverflowLabel ?? '\u00A0'}
             </div>
           </div>
           <button

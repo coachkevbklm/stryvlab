@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
 import { computeMacroEnergy } from '@/lib/nutrition/energy'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 
 function svc() {
   return createServiceClient(
@@ -24,14 +25,19 @@ export async function GET(_req: NextRequest) {
 
   const { data: proto } = await svc()
     .from('nutrition_protocols')
-    .select('nutrition_protocol_days(calories, protein_g, carbs_g, fat_g, hydration_ml)')
+    .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
     .eq('client_id', cc.id)
     .eq('status', 'shared')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  const td = (proto?.nutrition_protocol_days as any)?.[0]
+  const td = resolveProtocolDayByDate(
+    date,
+    (proto as any)?.schedule_start_date ?? null,
+    (proto?.nutrition_protocol_days as any) ?? [],
+    (proto?.nutrition_protocol_schedule_slots as any) ?? [],
+  )
   const target = {
     kcal: Number(td?.calories ?? 0),
     protein_g: Number(td?.protein_g ?? 0),

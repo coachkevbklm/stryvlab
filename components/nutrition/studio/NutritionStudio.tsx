@@ -162,6 +162,8 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             trainingWeekSchedule={studio.trainingWeekSchedule}
             selectedScheduleDow={studio.selectedScheduleDow}
             onSelectScheduleDow={studio.setSelectedScheduleDow}
+            scheduleSlots={studio.scheduleSlots}
+            onScheduleSlotsChange={studio.setScheduleSlots}
           />
         </div>
       </div>

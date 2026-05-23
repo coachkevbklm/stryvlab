@@ -23,6 +23,13 @@ function formatNav(iso: string): string {
     .format(new Date(Date.UTC(y, m - 1, d)))
 }
 
+function formatOverflow(value: number, unit: 'g' | 'L'): string | null {
+  if (value <= 0) return null
+  return unit === 'L'
+    ? `+${value.toFixed(1)} ${unit} au-dessus`
+    : `+${Math.round(value)}${unit} au-dessus`
+}
+
 export default function SmartNutritionHero({ date, consumed, target }: Props) {
   const effectiveWaterMl = consumed.water_ml
   const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
@@ -32,6 +39,7 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
   const prev = shiftDate(date, -1)
   const next = shiftDate(date, 1)
   const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
+  const waterOverflowLabel = formatOverflow((effectiveWaterMl - target.water_ml) / 1000, 'L')
 
   function getStateColor(state: NutritionProgressState, baseColor: string): string {
     switch (state) {
@@ -100,32 +108,29 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
 
         <div className="grid grid-cols-3 gap-3 mt-3">
           {([
-            { key: 'protein_g', label: 'P', color: '#e85d04' },
-            { key: 'carbs_g',   label: 'G', color: '#22c55e' },
-            { key: 'fat_g',     label: 'L', color: '#f59e0b' },
+            { key: 'protein_g', label: 'Protéines', color: '#e85d04' },
+            { key: 'carbs_g',   label: 'Glucides',  color: '#22c55e' },
+            { key: 'fat_g',     label: 'Lipides',   color: '#f59e0b' },
           ] as const).map(m => {
             const c = (consumed as any)[m.key] ?? 0
             const tg = (target as any)[m.key] ?? 0
             const meta = getNutritionProgressMeta(c, tg)
             const fillColor = getStateColor(meta.state, m.color)
+            const overflowLabel = formatOverflow(c - tg, 'g')
             return (
-              <div key={m.key} className="text-center">
+              <div key={m.key}>
                 <div className="text-[20px] font-black tabular-nums" style={{ color: meta.state === 'under' ? 'white' : fillColor }}>
                   {Math.round(c)}<span className="text-[12px] text-white/40">/{tg}g</span>
                 </div>
-                <div className="text-[9px] text-white/55 uppercase font-bold tracking-[0.1em] mt-1">{m.label}</div>
+                <div className="text-[8px] text-white/55 uppercase font-bold tracking-[0.08em] mt-1">{m.label}</div>
                 <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mt-1.5">
-                  <div className="h-full" style={{ width: `${meta.clampedPercent}%`, background: fillColor }} />
-                </div>
-                <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full"
-                    style={{
-                      width: `${meta.overflowPercent}%`,
-                      background: '#ef4444',
-                      opacity: meta.state === 'over' ? 1 : 0,
-                    }}
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${meta.clampedPercent}%`, background: fillColor }}
                   />
+                </div>
+                <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: meta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+                  {overflowLabel ?? '\u00A0'}
                 </div>
               </div>
             )
@@ -151,15 +156,8 @@ export default function SmartNutritionHero({ date, consumed, target }: Props) {
                 }}
               />
             </div>
-            <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full"
-                style={{
-                  width: `${waterMeta.overflowPercent}%`,
-                  background: '#ef4444',
-                  opacity: waterMeta.state === 'over' ? 1 : 0,
-                }}
-              />
+            <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: waterMeta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
+              {waterOverflowLabel ?? '\u00A0'}
             </div>
           </div>
         </div>

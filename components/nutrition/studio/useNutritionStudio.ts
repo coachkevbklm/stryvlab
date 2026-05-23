@@ -137,6 +137,12 @@ export interface TdeeHistoryEntry {
   protocol_updated: boolean
 }
 
+export type ScheduleSlotDraft = {
+  week_index: number
+  dow: number
+  protocol_day_position: number
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useNutritionStudio(
@@ -229,6 +235,10 @@ export function useNutritionStudio(
   const [selectedScheduleDow, setSelectedScheduleDow] = useState<number | null>(
     null,
   );
+  const [scheduleStartDate, setScheduleStartDate] = useState<string>(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -314,6 +324,18 @@ export function useNutritionStudio(
     if (existingProtocol?.days?.length) {
       setDays(existingProtocol.days.map(dayDraftFromDb));
       setProtocolName(existingProtocol.name);
+    }
+    if (existingProtocol?.schedule_start_date) {
+      setScheduleStartDate(existingProtocol.schedule_start_date);
+    }
+    if (existingProtocol?.schedule_slots) {
+      setScheduleSlots(
+        existingProtocol.schedule_slots.map((slot) => ({
+          week_index: slot.week_index,
+          dow: slot.dow,
+          protocol_day_position: slot.protocol_day_position,
+        })),
+      );
     }
   }, [existingProtocol]);
 
@@ -651,6 +673,14 @@ export function useNutritionStudio(
   const buildPayload = useCallback(
     () => ({
       name: protocolName,
+      schedule_start_date: scheduleStartDate,
+      schedule_slots: scheduleSlots
+        .filter((slot) => slot.protocol_day_position >= 0 && slot.protocol_day_position < days.length)
+        .map((slot) => ({
+          week_index: slot.week_index,
+          dow: slot.dow,
+          protocol_day_position: slot.protocol_day_position,
+        })),
       days: days.map((d, i) => ({
         name: d.name,
         position: i,
@@ -664,7 +694,7 @@ export function useNutritionStudio(
         recommendations: d.recommendations || null,
       })),
     }),
-    [protocolName, days],
+    [protocolName, scheduleStartDate, scheduleSlots, days],
   );
 
   const save = useCallback(async (): Promise<string | null> => {
@@ -792,5 +822,9 @@ export function useNutritionStudio(
     trainingWeekSchedule,
     selectedScheduleDow,
     setSelectedScheduleDow,
+    scheduleStartDate,
+    setScheduleStartDate,
+    scheduleSlots,
+    setScheduleSlots,
   };
 }
