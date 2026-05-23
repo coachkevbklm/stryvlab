@@ -31,7 +31,11 @@ const checkinSchema = z.object({
   summary: z.string().max(500),
 })
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
+  return new OpenAI({ apiKey })
+}
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -117,6 +121,7 @@ export async function POST(req: NextRequest) {
     : 'Check-in soir enregistré ✓'
 
   try {
+    const openai = getOpenAIClient()
     const systemPrompt = await buildSystemPrompt(cc.id as string)
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
