@@ -9,19 +9,19 @@ interface Composition {
   body_fat_pct: number | null
   lean_mass_kg: number | null
   muscle_mass_kg: number | null
-}
-
-interface Measures {
-  waist_cm: number | null
-  hips_cm: number | null
-  arm_cm: number | null
-  chest_cm: number | null
+  skeletal_muscle_pct: number | null
+  visceral_fat_level: number | null
+  body_water_pct: number | null
+  muscle_mass_pct: number | null
+  bone_mass_kg: number | null
 }
 
 interface BodyData {
   weightSeries: WeightPoint[]
   composition: Composition
-  measures: Measures
+  measures: Record<string, number | null>
+  measureOrder: string[]
+  measureLabels: Record<string, string>
   latestWeight: number | null
 }
 
@@ -74,15 +74,6 @@ function WeightSparkline({ series }: { series: WeightPoint[] }) {
   )
 }
 
-type MeasureKey = 'waist_cm' | 'hips_cm' | 'arm_cm' | 'chest_cm'
-
-const MEASURE_ROWS: { key: MeasureKey; labelKey: 'profil.body.waist' | 'profil.body.hips' | 'profil.body.arm' | 'profil.body.chest' }[] = [
-  { key: 'waist_cm', labelKey: 'profil.body.waist' },
-  { key: 'hips_cm',  labelKey: 'profil.body.hips' },
-  { key: 'arm_cm',   labelKey: 'profil.body.arm' },
-  { key: 'chest_cm', labelKey: 'profil.body.chest' },
-]
-
 export default function BodyDataSection() {
   const { t } = useClientT()
   const [data, setData] = useState<BodyData | null>(null)
@@ -119,7 +110,7 @@ export default function BodyDataSection() {
     )
   }
 
-  const hasMeasures = data!.measures && MEASURE_ROWS.some(r => data!.measures[r.key] != null)
+  const hasMeasures = data!.measures && data!.measureOrder.some(k => data!.measures[k] != null)
   const hasComposition = data!.composition && (
     data!.composition.body_fat_pct != null || data!.composition.lean_mass_kg != null
   )
@@ -180,12 +171,12 @@ export default function BodyDataSection() {
             {t('profil.body.measures')}
           </p>
           <div className="space-y-1.5">
-            {MEASURE_ROWS.map(({ key, labelKey }) => {
+            {data!.measureOrder.map((key) => {
               const val = data!.measures[key]
               if (val == null) return null
               return (
                 <div key={key} className="flex items-center justify-between py-1">
-                  <span className="text-[12px] text-white/50">{t(labelKey)}</span>
+                  <span className="text-[12px] text-white/50">{data!.measureLabels[key] ?? key}</span>
                   <span className="text-[12px] font-bold text-white">
                     {val} <span className="text-white/30 font-normal">cm</span>
                   </span>

@@ -22,7 +22,15 @@ function formatLeanDelta(series: { value: number }[]): { delta: string; deltaGoo
 }
 
 export default function BodyDataTab({ data }: Props) {
-  const hasAny = data.weightSeries.length > 0 || data.bodyFatSeries.length > 0 || data.leanMassSeries.length > 0
+  const hasExtraComposition =
+    data.composition.muscle_mass_kg != null ||
+    data.composition.skeletal_muscle_pct != null ||
+    data.composition.visceral_fat_level != null ||
+    data.composition.body_water_pct != null ||
+    data.composition.muscle_mass_pct != null ||
+    data.composition.bone_mass_kg != null
+
+  const hasAny = data.weightSeries.length > 0 || data.bodyFatSeries.length > 0 || data.leanMassSeries.length > 0 || hasExtraComposition
 
   if (!hasAny) {
     return (
@@ -70,6 +78,55 @@ export default function BodyDataTab({ data }: Props) {
           unit=" kg"
           annotations={data.annotations}
           {...(leanDelta ?? {})}
+        />
+      )}
+
+      {data.composition.muscle_mass_kg != null && (
+        <MetricCard
+          label="Masse musculaire"
+          value={`${data.composition.muscle_mass_kg.toFixed(1)} kg`}
+          series={[]}
+          unit=" kg"
+        />
+      )}
+      {data.composition.skeletal_muscle_pct != null && (
+        <MetricCard
+          label="Masse musculaire squelettique"
+          value={`${data.composition.skeletal_muscle_pct.toFixed(1)}%`}
+          series={[]}
+          unit="%"
+        />
+      )}
+      {data.composition.visceral_fat_level != null && (
+        <MetricCard
+          label="Graisse viscérale"
+          value={`${data.composition.visceral_fat_level.toFixed(1)}`}
+          series={[]}
+          unit=""
+        />
+      )}
+      {data.composition.body_water_pct != null && (
+        <MetricCard
+          label="Hydratation"
+          value={`${data.composition.body_water_pct.toFixed(1)}%`}
+          series={[]}
+          unit="%"
+        />
+      )}
+      {data.composition.muscle_mass_pct != null && (
+        <MetricCard
+          label="Masse musculaire (%)"
+          value={`${data.composition.muscle_mass_pct.toFixed(1)}%`}
+          series={[]}
+          unit="%"
+        />
+      )}
+      {data.composition.bone_mass_kg != null && (
+        <MetricCard
+          label="Masse osseuse"
+          value={`${data.composition.bone_mass_kg.toFixed(1)} kg`}
+          series={[]}
+          unit=" kg"
         />
       )}
     </div>
