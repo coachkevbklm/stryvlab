@@ -1,9 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 export const maxDuration = 60; // Autorise jusqu'à 60 secondes
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getAnthropicClient() {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured')
+  return new Anthropic({ apiKey })
+}
 
 const GENESIS_SYSTEM_PROMPT = `Tu es VIRTUS ASSISTANT, l'interface conversationnelle officielle de VIRTUS Smart fit.
 
@@ -306,6 +308,7 @@ Forensique. Factuel. Utile. Zero bullshit.`;
 
 export async function POST(req: Request) {
   try {
+    const anthropic = getAnthropicClient()
     const { message, history } = await req.json();
 
     if (!message || typeof message !== 'string') {

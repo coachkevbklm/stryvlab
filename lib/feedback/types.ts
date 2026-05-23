@@ -1,5 +1,3 @@
-// lib/feedback/types.ts
-
 export type FeedbackEntityType = 'session' | 'exercise' | 'set' | 'checkin' | 'morpho' | 'bilan'
 export type FeedbackEmoji = '👍' | '💪' | '✅' | '🔥' | '❓'
 export type FeedbackAuthorType = 'client' | 'coach'

@@ -12,8 +12,13 @@ function service() {
   )
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const DAILY_LIMIT = 20
+
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
+  return new OpenAI({ apiKey })
+}
 
 // GET — messages actifs (3 derniers jours, archived_at IS NULL)
 export async function GET() {
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = await buildSystemPrompt(cc.id)
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAIClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 300,
     messages: [

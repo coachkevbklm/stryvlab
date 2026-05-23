@@ -1,6 +1,10 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
+  return new OpenAI({ apiKey })
+}
 
 export interface DailyBriefInput {
   flowType: 'morning' | 'evening'
@@ -24,6 +28,7 @@ export async function buildDailyBrief(input: DailyBriefInput): Promise<string> {
 
   let coachSentence: string
   try {
+    const openai = getOpenAIClient()
     let context: string
     if (flowType === 'morning') {
       const parts = [
