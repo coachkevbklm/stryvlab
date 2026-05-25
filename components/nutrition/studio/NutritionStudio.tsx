@@ -111,7 +111,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
     <main className="h-screen bg-[#121212] flex flex-col overflow-hidden">
       <div className="flex-1 flex min-h-0">
         {/* Col 1 — Client Intelligence (300px fixed) */}
-        <div className="w-[300px] shrink-0 border-r border-white/[0.04] overflow-hidden">
+        <div className="w-[300px] shrink-0 h-full border-r border-white/[0.04] overflow-hidden">
           <ClientIntelligencePanel
             clientId={clientId}
             clientData={studio.clientData}
@@ -137,7 +137,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
         </div>
 
         {/* Col 2 — Calculation Engine (flex) */}
-        <div className="flex-1 border-r border-white/[0.04] overflow-hidden min-w-0">
+        <div className="flex-1 h-full border-r border-white/[0.04] overflow-hidden min-w-0">
           <CalculationEngine
             goal={studio.goal}
             onGoalChange={studio.setGoal}
@@ -167,11 +167,12 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             isFemale={isFemale}
             currentCycleDay={currentCycleDay}
             baseMacrosForCycleSync={baseMacrosForCycleSync}
+            cycleState={studio.cycleState}
           />
         </div>
 
         {/* Col 3 — Protocol Canvas (480px fixed — expanded from 380px) */}
-        <div className="w-[480px] shrink-0 overflow-hidden">
+        <div className="w-[480px] shrink-0 h-full overflow-hidden">
           <ProtocolCanvas
             loading={studio.clientLoading}
             protocolName={studio.protocolName}

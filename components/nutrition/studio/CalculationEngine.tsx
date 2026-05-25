@@ -20,6 +20,9 @@ import type { HydrationClimate } from "@/lib/formulas/hydration";
 import type { CarbCyclingConfig } from "./useNutritionStudio";
 import CycleSyncPhaseGrid from "./CycleSyncPhaseGrid";
 import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
+import type { CycleState } from "@/lib/cycle/cycleEngine";
+import { getCycleSyncAdjustment } from "@/lib/nutrition/engine/cycleSync";
+import CyclePhasePill from "@/components/client/cycle/CyclePhasePill";
 
 interface Props {
   goal: MacroGoal;
@@ -48,6 +51,7 @@ interface Props {
   isFemale?: boolean;
   currentCycleDay?: number | null;
   baseMacrosForCycleSync?: NutritionMacros | null;
+  cycleState?: CycleState | null;
 }
 
 const GOAL_OPTIONS: { value: MacroGoal; label: string }[] = [
@@ -186,6 +190,7 @@ export default function CalculationEngine({
   isFemale = false,
   currentCycleDay,
   baseMacrosForCycleSync,
+  cycleState,
 }: Props) {
   const [openInfoModal, setOpenInfoModal] = useState<string | null>(null);
 
@@ -595,6 +600,62 @@ export default function CalculationEngine({
               baseMacros={baseMacrosForCycleSync}
               currentCycleDay={currentCycleDay}
             />
+            <div className="mt-3 space-y-2">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                Cycle menstruel — Source de vérité 2
+              </p>
+              {!cycleState ? (
+                <p className="text-[11px] text-white/30 italic">Données de cycle non disponibles.</p>
+              ) : !cycleState.hasActiveCycle ? (
+                <p className="text-[11px] text-white/30">Ménopause / aménorrhée — Cycle sync désactivé.</p>
+              ) : (
+                <div className="rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] p-3 space-y-3">
+                  {cycleState.currentPhase && cycleState.currentCycleDay ? (
+                    <div className="flex items-center justify-between">
+                      <CyclePhasePill
+                        phase={cycleState.currentPhase}
+                        cycleDay={cycleState.currentCycleDay}
+                        confidence={cycleState.confidence}
+                        size="md"
+                      />
+                      {cycleState.nextPhaseIn != null && (
+                        <span className="text-[10px] text-white/30">
+                          Phase suivante dans {cycleState.nextPhaseIn}j
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-white/30 italic">Aucun log de cycle. Client doit logger depuis l&apos;app.</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[9px] text-white/30 mb-0.5">Cycle moyen</p>
+                      <p className="text-[13px] font-mono text-white/70">{cycleState.avgCycleLengthDays}j</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-white/30 mb-0.5">Précision</p>
+                      <p className="text-[11px] text-white/60">
+                        {cycleState.confidence === 'calibrated' ? '● Calibré' : cycleState.confidence === 'learning' ? '◑ En cours' : '◐ Estimé'}
+                        {' '}({cycleState.logsCount} cycle{cycleState.logsCount !== 1 ? 's' : ''})
+                      </p>
+                    </div>
+                  </div>
+                  {cycleState.currentPhase && (() => {
+                    const adj = getCycleSyncAdjustment(cycleState.currentPhase!)
+                    if (!adj.caloriesDelta && !adj.proteinDelta && !adj.carbsDelta) return null
+                    return (
+                      <div className="border-t border-white/[0.06] pt-2 space-y-1">
+                        <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">Ajustements phase actuelle</p>
+                        {adj.caloriesDelta !== 0 && <p className="text-[11px] text-white/50">{adj.caloriesDelta > 0 ? '+' : ''}{adj.caloriesDelta} kcal/j</p>}
+                        {adj.proteinDelta !== 0 && <p className="text-[11px] text-white/50">{adj.proteinDelta > 0 ? '+' : ''}{adj.proteinDelta}g protéines</p>}
+                        {adj.carbsDelta !== 0 && <p className="text-[11px] text-white/50">{adj.carbsDelta > 0 ? '+' : ''}{adj.carbsDelta}g glucides</p>}
+                        <p className="text-[10px] text-white/35 leading-relaxed">{adj.notes[0]}</p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

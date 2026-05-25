@@ -28,6 +28,7 @@ import {
   dayDraftFromDb,
 } from "@/lib/nutrition/types";
 import type { BMRSource } from "@/lib/nutrition/calculators";
+import type { CycleState } from "@/lib/cycle/cycleEngine";
 import type { TrainingWeekSchedule } from "@/lib/nutrition/training-week-schedule";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -239,6 +240,7 @@ export function useNutritionStudio(
     new Date().toISOString().slice(0, 10),
   );
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
+  const [cycleState, setCycleState] = useState<CycleState | null>(null);
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -313,6 +315,11 @@ export function useNutritionStudio(
         fetch(`/api/clients/${clientId}/nutrition-tdee-history`)
           .then(r => r.ok ? r.json() : [])
           .then(setTdeeHistory)
+          .catch(() => {})
+        // Load cycle state (best-effort, non-blocking)
+        fetch(`/api/clients/${clientId}/cycle/status`)
+          .then(r => r.ok ? r.json() : { cycleState: null })
+          .then(d => setCycleState(d.cycleState ?? null))
           .catch(() => {})
       })
       .catch(() => {})
@@ -826,5 +833,6 @@ export function useNutritionStudio(
     setScheduleStartDate,
     scheduleSlots,
     setScheduleSlots,
+    cycleState,
   };
 }
