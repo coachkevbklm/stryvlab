@@ -16,6 +16,10 @@ import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWi
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
 import CycleSyncBanner from '@/components/client/nutrition/CycleSyncBanner'
 import type { CyclePhase, CycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
+import dynamic from 'next/dynamic'
+
+const CyclePhasePill = dynamic(() => import('@/components/client/cycle/CyclePhasePill'), { ssr: false })
 
 type DayPoint = {
   date: string
@@ -42,12 +46,13 @@ interface Props {
   tdeeAdaptive: number | null
   tdeeDataSource: string | null
   bodyWeightKg: number | null
-  protocolDay: { name?: string } | null
+  protocolDay: { name?: string; [key: string]: unknown } | null
   lang: ClientLang
   dayTypeBadge: React.ReactNode
   cycleSyncPhase?: CyclePhase | null
   cycleSyncAdjustment?: CycleSyncAdjustment | null
   cycleDay?: number | null
+  cycleState?: CycleState | null
 }
 
 const TABS: { id: Tab; labelKey: ClientDictKey }[] = [
@@ -61,12 +66,27 @@ export default function NutritionClientPage({
   loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
   protocolDay, lang, dayTypeBadge,
   cycleSyncPhase, cycleSyncAdjustment, cycleDay,
+  cycleState,
 }: Props) {
   const [tab, setTab] = useState<Tab>('aujourd_hui')
 
+  const topBarRight = (
+    <div className="flex flex-col items-end gap-0.5">
+      {dayTypeBadge}
+      {cycleState?.currentPhase && cycleState.currentCycleDay && (
+        <CyclePhasePill
+          phase={cycleState.currentPhase}
+          cycleDay={cycleState.currentCycleDay}
+          confidence={cycleState.confidence}
+          size="sm"
+        />
+      )}
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-[#080808] font-sans pb-32">
-      <ClientTopBar section={ct(lang, 'nutrition.section')} title={date} right={dayTypeBadge} />
+      <ClientTopBar section={ct(lang, 'nutrition.section')} title={date} right={topBarRight} />
 
       <main className="max-w-[480px] mx-auto px-4 pt-[88px] flex flex-col gap-3">
 
