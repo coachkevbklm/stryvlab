@@ -186,6 +186,15 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   )
   const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
   const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
+  const protocolDays: Array<{ name: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; carb_cycle_type?: string | null }> =
+    ((protoData?.nutrition_protocol_days as any[]) ?? []).map((d: any) => ({
+      name:            String(d.name ?? ''),
+      kcal:            Number(d.calories ?? 0),
+      protein_g:       Number(d.protein_g ?? 0),
+      carbs_g:         Number(d.carbs_g ?? 0),
+      fat_g:           Number(d.fat_g ?? 0),
+      carb_cycle_type: d.carb_cycle_type ?? null,
+    }))
 
   const td = protocolDay
   const target: NutritionMacros = {
@@ -357,6 +366,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       cycleSyncAdjustment={cycleSyncAdjustment}
       cycleDay={cycleDay}
       cycleState={cycleState}
+      protocolDays={protocolDays}
     />
   )
 }

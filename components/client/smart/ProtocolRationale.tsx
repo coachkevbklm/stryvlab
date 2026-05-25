@@ -4,125 +4,136 @@ import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { getCycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
 
-type Props = {
+interface ProtocolDay {
+  name: string
+  kcal: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  carb_cycle_type?: string | null
+}
+
+interface Props {
+  protocolDays?: ProtocolDay[]
   tdee: number | null
   tdeeSource: string | null
-  target: {
-    kcal: number
-    protein_g: number
-    carbs_g: number
-    fat_g: number
-  }
   bodyWeightKg?: number | null
+  activeDayName?: string | null
+  cycleState?: CycleState | null
+  // Legacy single-day support (backwards compat)
+  target?: { kcal: number; protein_g: number; carbs_g: number; fat_g: number }
   dayName?: string | null
 }
 
-type Step = {
-  n: number
-  title: string
-  value: string
-  valueColor: string
-  body: string
+const CARB_CYCLE_LABELS: Record<string, string> = {
+  high:   'Glucides élevés (jour entraînement) — glycogène musculaire maximisé.',
+  low:    'Glucides réduits (jour repos) — mobilisation des graisses favorisée.',
+  medium: 'Glucides modérés — équilibre énergie / récupération.',
 }
 
-function buildSteps(props: Props): Step[] {
-  const { tdee, tdeeSource, target, bodyWeightKg, dayName } = props
-  const steps: Step[] = []
+const TDEE_SOURCE_LABELS: Record<string, string> = {
+  formula_proxy: 'Estimé depuis ton programme',
+  adaptive:      'Calibré depuis tes pesées (14 jours)',
+}
 
-  // 1. TDEE
+function DayAccordion({
+  day,
+  tdee,
+  tdeeSource,
+  bodyWeightKg,
+  cycleState,
+  defaultOpen,
+}: {
+  day: ProtocolDay
+  tdee: number | null
+  tdeeSource: string | null
+  bodyWeightKg?: number | null
+  cycleState?: CycleState | null
+  defaultOpen: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  const delta = tdee != null && tdee > 0 ? day.kcal - tdee : null
+  const goalLabel =
+    delta == null ? 'Objectif calorique' :
+    delta > 100 ? 'Prise de masse' :
+    delta < -100 ? 'Perte de masse grasse' : 'Maintenance'
+
+  const gPerKg = bodyWeightKg && bodyWeightKg > 0
+    ? (day.protein_g / bodyWeightKg).toFixed(2)
+    : null
+
+  const fatKcal  = day.fat_g * 9
+  const carbKcal = day.carbs_g * 4
+  const totalMacroCal = fatKcal + carbKcal + day.protein_g * 4
+  const carbPct = totalMacroCal > 0 ? Math.round((carbKcal / totalMacroCal) * 100) : 0
+  const fatPct  = totalMacroCal > 0 ? Math.round((fatKcal  / totalMacroCal) * 100) : 0
+
+  const showCycle = !!(cycleState?.hasActiveCycle && cycleState.currentPhase)
+  const cycleAdj = showCycle ? getCycleSyncAdjustment(cycleState!.currentPhase!) : null
+
+  const steps: Array<{ title: string; value: string; valueColor: string; body: string }> = []
+
   if (tdee != null && tdee > 0) {
-    const sourceLabel =
-      tdeeSource === 'formula_proxy'
-        ? 'Estimé depuis ton programme'
-        : tdeeSource === 'adaptive'
-        ? 'Calibré depuis tes pesées (14 jours)'
-        : 'Estimé'
     steps.push({
-      n: 1,
       title: 'Dépense énergétique estimée',
       value: `${Math.round(tdee).toLocaleString('fr-FR')} kcal`,
       valueColor: '#4a90e2',
-      body: `${sourceLabel}. Cette valeur est la base de calcul de tes objectifs caloriques.`,
+      body: `${TDEE_SOURCE_LABELS[tdeeSource ?? ''] ?? 'Estimé'}. Base de calcul de tes objectifs caloriques.`,
     })
   }
 
-  // 2. Calorie target + delta
-  if (target.kcal > 0) {
-    const delta = tdee != null && tdee > 0 ? target.kcal - tdee : null
-    const deltaStr =
-      delta == null
-        ? ''
-        : delta > 0
-        ? ` (+${Math.round(delta)} kcal de surplus)`
-        : delta < 0
-        ? ` (${Math.round(delta)} kcal de déficit)`
-        : ' (maintenance)'
-    const goalLabel =
-      delta == null
-        ? 'Objectif calorique journalier'
-        : delta > 100
-        ? 'Prise de masse'
-        : delta < -100
-        ? 'Perte de masse grasse'
-        : 'Maintenance'
-
+  if (day.kcal > 0) {
     steps.push({
-      n: tdee != null ? 2 : 1,
       title: goalLabel,
-      value: `${Math.round(target.kcal).toLocaleString('fr-FR')} kcal${deltaStr}`,
+      value: `${Math.round(day.kcal).toLocaleString('fr-FR')} kcal${delta != null ? (delta > 0 ? ` (+${Math.round(delta)})` : ` (${Math.round(delta)})`) : ''}`,
       valueColor: NUTRITION_UI_COLORS.carbs,
-      body: `Objectif calorique${dayName ? ` pour "${dayName}"` : ''}.${
-        delta != null && Math.abs(delta) > 100
-          ? delta > 0
-            ? ' Un surplus calorique favorise la construction musculaire et la récupération.'
-            : ' Un déficit calorique permet de réduire la masse grasse tout en préservant le muscle.'
-          : ' La maintenance préserve ta composition corporelle actuelle.'
-      }`,
+      body: delta != null && Math.abs(delta) > 100
+        ? delta > 0
+          ? 'Surplus calorique — favorise la construction musculaire et la récupération.'
+          : 'Déficit calorique — permet de réduire la masse grasse en préservant le muscle.'
+        : 'Maintenance — préserve ta composition corporelle actuelle.',
     })
   }
 
-  // 3. Protein target
-  if (target.protein_g > 0) {
-    const gPerKg =
-      bodyWeightKg != null && bodyWeightKg > 0
-        ? (target.protein_g / bodyWeightKg).toFixed(2)
-        : null
+  if (day.protein_g > 0) {
     steps.push({
-      n: (steps.length + 1),
       title: 'Protéines cibles',
-      value: `${Math.round(target.protein_g)}g${gPerKg ? ` · ${gPerKg} g/kg` : ''}`,
+      value: `${Math.round(day.protein_g)}g${gPerKg ? ` · ${gPerKg} g/kg` : ''}`,
       valueColor: NUTRITION_UI_COLORS.protein,
-      body: `Les protéines préservent la masse musculaire et favorisent la récupération.${
-        gPerKg ? ` Un ratio de ${gPerKg} g/kg est adapté à ton niveau d'activité et ton objectif.` : ''
-      }`,
+      body: `Préservent la masse musculaire et favorisent la récupération.${gPerKg ? ` Ratio ${gPerKg} g/kg adapté à ton objectif.` : ''}`,
     })
   }
 
-  // 4. Fat / Carb split
-  if (target.fat_g > 0 && target.carbs_g > 0) {
-    const fatKcal = target.fat_g * 9
-    const carbKcal = target.carbs_g * 4
-    const totalMacroCal = fatKcal + carbKcal + target.protein_g * 4
-    const carbPct = totalMacroCal > 0 ? Math.round((carbKcal / totalMacroCal) * 100) : 0
-    const fatPct  = totalMacroCal > 0 ? Math.round((fatKcal  / totalMacroCal) * 100) : 0
+  if (day.fat_g > 0 && day.carbs_g > 0) {
     steps.push({
-      n: steps.length + 1,
       title: 'Répartition glucides / lipides',
-      value: `${Math.round(target.carbs_g)}g G · ${Math.round(target.fat_g)}g L`,
+      value: `${Math.round(day.carbs_g)}g G · ${Math.round(day.fat_g)}g L`,
       valueColor: NUTRITION_UI_COLORS.fat,
-      body: `Glucides ${carbPct}% des calories — carburant pour l'entraînement et la récupération glycogénique. Lipides ${fatPct}% — essentiels pour la régulation hormonale.`,
+      body: day.carb_cycle_type
+        ? (CARB_CYCLE_LABELS[day.carb_cycle_type] ?? `Glucides ${carbPct}% · Lipides ${fatPct}%.`)
+        : `Glucides ${carbPct}% — carburant. Lipides ${fatPct}% — régulation hormonale.`,
     })
   }
 
-  return steps
-}
-
-export default function ProtocolRationale({ tdee, tdeeSource, target, bodyWeightKg, dayName }: Props) {
-  const [open, setOpen] = useState(false)
-  const steps = buildSteps({ tdee, tdeeSource, target, bodyWeightKg, dayName })
-
-  if (steps.length === 0) return null
+  if (showCycle && cycleAdj) {
+    const PHASE_NAMES: Record<string, string> = { menstrual: 'Menstruation', follicular: 'Folliculaire', ovulatory: 'Ovulation', luteal: 'Lutéale' }
+    const phaseName = PHASE_NAMES[cycleState!.currentPhase!] ?? cycleState!.currentPhase!
+    const deltaStr = [
+      cycleAdj.caloriesDelta !== 0 ? `${cycleAdj.caloriesDelta > 0 ? '+' : ''}${cycleAdj.caloriesDelta} kcal` : null,
+      cycleAdj.proteinDelta !== 0  ? `${cycleAdj.proteinDelta > 0 ? '+' : ''}${cycleAdj.proteinDelta}g P`    : null,
+      cycleAdj.carbsDelta !== 0    ? `${cycleAdj.carbsDelta > 0 ? '+' : ''}${cycleAdj.carbsDelta}g G`        : null,
+    ].filter(Boolean).join(' · ') || 'Ajustements neutres'
+    steps.push({
+      title: `Ajustement phase ${phaseName} ●`,
+      value: deltaStr,
+      valueColor: '#9a8038',
+      body: cycleAdj.notes[0] ?? '',
+    })
+  }
 
   return (
     <div className="bg-[#111111] rounded-2xl overflow-hidden">
@@ -130,16 +141,15 @@ export default function ProtocolRationale({ tdee, tdeeSource, target, bodyWeight
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-4 py-3 active:bg-white/[0.03] transition-colors"
       >
-        <div className="text-left">
-          <p className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/70">
-            Comment ton programme a été calculé
+        <div className="text-left flex-1 min-w-0">
+          <p className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/70 truncate">
+            {day.name}
+          </p>
+          <p className="text-[13px] font-barlow font-semibold text-[#e0e0e0] tabular-nums">
+            {Math.round(day.kcal).toLocaleString('fr-FR')} kcal
           </p>
         </div>
-        <motion.div
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="shrink-0 ml-2"
-        >
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 ml-3">
           <ChevronDown size={16} className="text-white/30" />
         </motion.div>
       </button>
@@ -155,23 +165,18 @@ export default function ProtocolRationale({ tdee, tdeeSource, target, bodyWeight
           >
             <div className="px-4 pb-4 space-y-0">
               {steps.map((step, i) => (
-                <div key={step.n} className="flex gap-3">
-                  {/* Timeline */}
+                <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center shrink-0">
                     <div className="w-7 h-7 rounded-full bg-[#2e2e2e] flex items-center justify-center">
-                      <span className="text-[11px] font-black text-white/70">{step.n}</span>
+                      <span className="text-[11px] font-black text-white/70">{i + 1}</span>
                     </div>
                     {i < steps.length - 1 && (
                       <div className="w-px flex-1 bg-white/[0.08] my-1" style={{ minHeight: 16 }} />
                     )}
                   </div>
-
-                  {/* Content */}
-                  <div className={`pb-4 min-w-0 flex-1 ${i === steps.length - 1 ? 'pb-0' : ''}`}>
+                  <div className={`min-w-0 flex-1 ${i === steps.length - 1 ? '' : 'pb-4'}`}>
                     <p className="text-[12px] font-semibold text-white/80 mb-0.5">{step.title}</p>
-                    <p className="text-[14px] font-black tabular-nums mb-1" style={{ color: step.valueColor }}>
-                      {step.value}
-                    </p>
+                    <p className="text-[14px] font-black tabular-nums mb-1" style={{ color: step.valueColor }}>{step.value}</p>
                     <p className="text-[11px] text-white/40 leading-relaxed">{step.body}</p>
                   </div>
                 </div>
@@ -180,6 +185,48 @@ export default function ProtocolRationale({ tdee, tdeeSource, target, bodyWeight
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+export default function ProtocolRationale({
+  protocolDays,
+  tdee,
+  tdeeSource,
+  bodyWeightKg,
+  activeDayName,
+  cycleState,
+  target,
+  dayName,
+}: Props) {
+  // Legacy single-day fallback
+  const days: ProtocolDay[] = protocolDays?.length
+    ? protocolDays
+    : target
+      ? [{ name: dayName ?? 'Journée', kcal: target.kcal, protein_g: target.protein_g, carbs_g: target.carbs_g, fat_g: target.fat_g }]
+      : []
+
+  if (days.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <div className="px-1 pb-1">
+        <p className="font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[11px] text-white/40">
+          Comprendre ton protocole
+        </p>
+        <p className="text-[10px] text-white/25 mt-0.5">Tap sur une journée pour voir le détail</p>
+      </div>
+      {days.map(day => (
+        <DayAccordion
+          key={day.name}
+          day={day}
+          tdee={tdee}
+          tdeeSource={tdeeSource}
+          bodyWeightKg={bodyWeightKg}
+          cycleState={cycleState}
+          defaultOpen={day.name === (activeDayName ?? dayName)}
+        />
+      ))}
     </div>
   )
 }

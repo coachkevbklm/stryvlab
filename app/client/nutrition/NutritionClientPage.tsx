@@ -47,6 +47,14 @@ interface Props {
   tdeeDataSource: string | null
   bodyWeightKg: number | null
   protocolDay: { name?: string; [key: string]: unknown } | null
+  protocolDays?: Array<{
+    name: string
+    kcal: number
+    protein_g: number
+    carbs_g: number
+    fat_g: number
+    carb_cycle_type?: string | null
+  }>
   lang: ClientLang
   dayTypeBadge: React.ReactNode
   cycleSyncPhase?: CyclePhase | null
@@ -64,7 +72,7 @@ const TABS: { id: Tab; labelKey: ClientDictKey }[] = [
 export default function NutritionClientPage({
   date, target, consumed, meals, alerts, trend,
   loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
-  protocolDay, lang, dayTypeBadge,
+  protocolDay, protocolDays, lang, dayTypeBadge,
   cycleSyncPhase, cycleSyncAdjustment, cycleDay,
   cycleState,
 }: Props) {
@@ -137,11 +145,14 @@ export default function NutritionClientPage({
         {/* ══ PROTOCOLE ══ */}
         {tab === 'protocole' && (
           <ProtocolRationale
+            protocolDays={protocolDays}
             tdee={tdeeAdaptive}
             tdeeSource={tdeeDataSource}
             target={target}
             bodyWeightKg={bodyWeightKg}
-            dayName={protocolDay?.name ?? null}
+            activeDayName={protocolDay?.name as string ?? null}
+            dayName={protocolDay?.name as string ?? null}
+            cycleState={cycleState ?? null}
           />
         )}
 
