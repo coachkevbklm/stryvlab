@@ -3,6 +3,37 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-26
+
+FEATURE: Cycle Sync v2 — menstrual_cycle_logs table + cycleEngine (personal avg cycle length, 28 tests), client API routes (POST /cycle/log, GET /cycle/status), coach API route (GET /clients/[clientId]/cycle/status)
+FEATURE: CyclePhasePill component — phase/day/confidence pill shown in Nutrition + Programme + SessionLogger TopBars (female-gated)
+FEATURE: LogPeriodSheet — FAB period logging with start/end flow, conflict detection, Framer Motion sheet
+FEATURE: QuickLogSheet — Cycle action added (conditional on hasActiveCycle), LogPeriodSheet sub-sheet
+FEATURE: ProfilAccordion — "Mon Cycle" section (female-gated): phase pill, avg cycle length, confidence, log button
+FEATURE: ProtocolRationale — per-day-type DayAccordion with timeline steps (TDEE, calorie target, protein, carbs/fat, cycle phase adjustment)
+FEATURE: Nutrition Studio CalculationEngine — live CycleState display as second source of truth (phase pill, avg length, confidence, phase adjustments)
+REFACTOR: SplashScreen — replace loading bar with 2×180° clockwise spin animation (easeOut per half, 150ms pause at midpoint) + zoom pulse (scale 1→1.11→1) on second half; remove all loading bar markup
+FIX: VoiceLogSheet — add transcript review layer (editable textarea before analysis, "Ré-enregistrer" + "Analyser" buttons); fix mic restart bug via MIC_COOLDOWN_MS=600ms guard in startRecording(); fix onend loop guard to check recognitionRef identity
+FIX: QuickWaterModal — create missing /api/client/water route (was calling 404 endpoint, causing "network error"); logs directly to client_water_logs
+FIX: Splash screen — re-mount SplashScreen in client layout (was removed during branch merge; logo + loading bar animation restored)
+
+FIX: CoachAvatar — add /api/client/coach-info route (fresh signed URL each load); ChatPage fetches client-side and overrides SSR props; ChatBubble CoachAvatar uses <img onError> + inline bg-color #454545 (guaranteed visible, not Tailwind arbitrary)
+FIX: today-strip API — water target was hardcoded 2000ml; now reads hydration_ml from nutrition_protocol_days (same source as nutrition page), fallback 2500ml
+FEATURE: ChatTodayStrip — semantic color system on calories + water bars (red <50%, amber 50-80%, green 80-100%; calories: amber 100-110%, red >110%; water lenient: green to 150%, amber >150%); icon + logged value tinted by status
+FIX: CoachAvatar black bubble — ChatPage empty-state + ChatConversation loading indicator both used direct <img>/overlay without onError fallback; replaced with preload pattern (new Image() + onload/onerror) matching ChatBubble.tsx — initial always visible, photo overlays only when confirmed loaded
+CHORE: Remove debug console.log from ChatPage (coachAvatarUrl/coachInitial)
+FEATURE: ChatInputBar — inline voice dictation via SpeechRecognition (fr-FR, continuous, interim live in textarea); mic click toggles on/off; textarea auto-expands up to 120px; VoiceLogSheet removed from chat input
+FIX: ChatPage — bottom offset 62px → 74px so InputBar clears BottomNav pill (62px pill + 12px pb-3)
+FIX: Client chat page — coach avatar now reads logo_url from coach_profiles directly (10-year signed URL) instead of skipping it; getFreshCoachAvatarUrl kept as fallback only
+REFACTOR: NutritionStudio — independent column scroll (h-full on column wrappers + ClientIntelligencePanel root scroll div)
+REFACTOR: Rename "Entraînement" section to "Workout Studio" — TopBar (builder + list), section heading, DockBottom nav (×2), NavDock dropdown
+
+REFACTOR: OnboardingTour — 5 steps realigned with current nav (Chat=coach IA, Programme, Nutrition, FAB quick-log, Metrics) ; added FAB step with spotlight via highlightFAB
+REFACTOR: TourContext — added highlightFAB / setHighlightFAB to support central FAB highlight
+REFACTOR: BottomNav — FAB reacts to highlightFAB from TourContext (boxShadow spotlight + z-index elevation)
+REFACTOR: i18n clientTranslations — tour.step0–4 rewritten (dashboard→coach IA, bilans→quick log, profil→métriques) ; onboarding.screen4 updated to reflect chat-first home
+REFACTOR: onboarding/page.tsx screen4 — icon LayoutDashboard→MessageSquare, rows updated to match AI coach content ; removed unused LayoutDashboard/ClipboardList imports
+
 ## 2026-05-25
 
 FEATURE: Cycle Sync — lib/nutrition/engine/cycleSync.ts : 4 phases (follicular/ovulatory/luteal/menstrual), macro adjustments (Davidsen 2007, Oosthuyse 2010), 20 Vitest tests

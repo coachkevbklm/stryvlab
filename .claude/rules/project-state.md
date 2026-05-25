@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-25**
+> **Dernière mise à jour : 2026-05-26**
 
 ---
 
@@ -27,7 +27,7 @@
 | **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Engine v1** | ✅ Macro matrix, TDEE components, weekly decision matrix, guardrails, real-time triggers | 2026-05-25 |
-| **Cycle Sync** | ✅ Engine module, client banner, coach studio grid — fully integrated | 2026-05-25 |
+| **Cycle Sync v2** | ✅ history-based engine (personal avg cycle), CyclePhasePill TopBars, LogPeriodSheet FAB, Profile section, ProtocolRationale per-day accordions, Studio second source of truth | 2026-05-26 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
@@ -40,6 +40,28 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-26 — Cycle Sync v2 — Système Complet (history-based engine + full PWA integration)
+
+- `supabase/migrations/20260526_menstrual_cycle_logs.sql` — table `menstrual_cycle_logs` (client_id FK coach_clients, UNIQUE period_start+client, RLS client_own ALL + coach_read SELECT) — **appliquer manuellement via Supabase Dashboard**
+- `lib/cycle/cycleEngine.ts` — `getCycleStateFromLogs(logs, bilanValue, today?)` : personal avg cycle length (clamp 21–35, fallback 28), `CycleState` (phase, cycleDay, confidence: estimated/learning/calibrated, nextPhaseIn), `CyclePhase` re-exported from cycleSync
+- `tests/lib/cycle/cycleEngine.test.ts` — 28 tests Vitest PASS
+- `app/api/client/cycle/log/route.ts` — POST type='start'|'end', 3-day conflict guard, computes cycle length from prev log
+- `app/api/client/cycle/status/route.ts` — GET female-gated, returns CycleState
+- `app/api/clients/[clientId]/cycle/status/route.ts` — GET coach-facing, auth via `coach_clients.coach_id = user.id`
+- `components/client/cycle/CyclePhasePill.tsx` — pill with phase color + "Label · Jxx" + ◐ if estimated, size sm|md
+- `components/client/cycle/LogPeriodSheet.tsx` — Framer Motion bottom sheet, start/end flow, 409 conflict confirm, z-[80]/[90]
+- `app/client/nutrition/page.tsx` — server-side `cycleState` from `menstrual_cycle_logs`, passed to NutritionClientPage
+- `app/client/nutrition/NutritionClientPage.tsx` — CyclePhasePill in TopBar right (flex-col with dayTypeBadge)
+- `app/client/programme/ProgrammeClientPage.tsx` — client-side fetch `/cycle/status`, CyclePhasePill in TopBar
+- `app/client/programme/session/[sessionId]/SessionLogger.tsx` — CyclePhasePill above timer in header
+- `components/client/QuickLogSheet.tsx` — Cycle action (red Drop icon) gated on `hasActiveCycle`, LogPeriodSheet sub-sheet
+- `app/client/profil/page.tsx` — passes `cycleState` to ProfilAccordion
+- `components/client/profile/ProfilAccordion.tsx` — "Mon Cycle" AccordionSection (female): phase pill + stats grid + log button + LogPeriodSheet
+- `components/client/smart/ProtocolRationale.tsx` — rewritten: per-day `DayAccordion` with numbered timeline steps (TDEE → calorie target → protein → carbs/fat → cycle adjustment if hasActiveCycle); legacy target prop preserved
+- `components/nutrition/studio/useNutritionStudio.ts` — fetches `/api/clients/${clientId}/cycle/status` best-effort; exposes `cycleState` in return
+- `components/nutrition/studio/CalculationEngine.tsx` — "Cycle Sync (femme)" section extended: live CycleState (phase pill, avg length, confidence, phase adjustments below CycleSyncPhaseGrid)
+- Points de vigilance : migration `20260526_menstrual_cycle_logs` à appliquer manuellement ; `CyclePhase` type vit dans `lib/nutrition/engine/cycleSync.ts` et est re-exporté par `lib/cycle/cycleEngine.ts` — ne pas dupliquer ; confidence='estimated' quand 0 logs (bilan seul), 'learning' 1–3, 'calibrated' 4+
 
 ### 2026-05-25 — Cycle Sync — Intégration Complète Client + Coach Studio
 
@@ -93,151 +115,23 @@
 - Score formula: `(energy_norm×1.5 + sleep_norm×1.5 + stress_inv×1 + soreness_inv×0.5) / 4.5 × 100`
 - Points de vigilance: BodySilhouette bezier control points are approximate — can be visually tuned; annotations from `metric_annotations` require `event_type != 'injury'` AND `label IS NOT NULL`
 
-### 2026-05-20 — Chat-First Client App — Sub-projet #1
+### Avancées 2026-04-28 → 2026-05-21 (condensé)
 
-- `supabase/migrations/20260520_chat_messages.sql` — tables `chat_messages` + `chat_sessions` + RLS
-- `app/api/client/chat/messages/route.ts` — GET actifs + POST (LLM GPT-4o mini, rate limit ai_coach_daily_usage)
-- `app/api/client/chat/archives/route.ts` — GET messages archivés par date
-- `app/api/client/chat/today-strip/route.ts` — GET sessions/calories/eau/checkin du jour
-- `components/client/ChatBubble.tsx` — bulle bot (avatar coach/logo) + user (jaune)
-- `components/client/ChatConversation.tsx` — liste scrollable avec séparateurs date + typing indicator
-- `components/client/ChatTodayStrip.tsx` — pills compactes : séances, calories, eau, check-in
-- `components/client/ChatInputBar.tsx` — texte + mic (VoiceLogSheet.onTranscriptOnly)
-- `components/client/ChatPage.tsx` — orchestrateur, optimistic messages, rate limit UI
-- `app/client/page.tsx` — remplace Smart Agenda par ChatPage
-- `app/client/metrics/page.tsx` + `components/client/MetricsPage.tsx` — remplace /client/profil
-- `components/client/BottomNav.tsx` — 4 tabs : Chat/Programme/Nutrition/Métriques, FAB supprimé
-- `lib/inngest/functions/chat-archive.ts` — cron 03:00 UTC archive messages > 3 jours
-- `components/client/smart/VoiceLogSheet.tsx` — ajout prop `onTranscriptOnly`
-- Supprimés : `CoachAIButton.tsx`, `CoachAIChatSheet.tsx`
-- Points de vigilance : migration `20260520_chat_messages` à appliquer manuellement via Supabase Dashboard ; sous-projets suivants : SP3 (push notifications), SP4 (metrics avancées)
-
-### 2026-05-21 — Chat SP2 — Scripted Flow Engine + Interactive Messages
-
-- `supabase/migrations/20260521_daily_checkins.sql` — table `client_daily_checkins` (sleep, energy, stress, weight, hunger, soreness) + RLS — **à appliquer manuellement**
-- `lib/client/checkin/flows.ts` — définitions flows morning (4 steps) + evening (4 steps)
-- `lib/client/checkin/checkinEngine.ts` — `determineFlow(hour, sessions)` — 10 tests Vitest PASS
-- `app/api/client/checkin/route.ts` — POST save check-in → DB + `chat_sessions.completed_at` + LLM closing message
-- `lib/client/ai-coach/buildSystemPrompt.ts` — fix colonnes `nutrition_meals` (`total_calories`/`total_protein_g`/`total_fat_g`/`total_carbs_g`) + source `meal_logs` legacy + bloc tendances 3j + bloc check-ins du jour
-- `components/client/ChatBubble.tsx` — types `InteractiveMetadata` + `metadata` sur `ChatMessage` + render composants chips/slider/number
-- `components/client/checkin/CheckinFlow.tsx` — `ActiveCheckinFlow` (null-render) orchestre steps, expose `CheckinFlowHandle`
-- `components/client/ChatPage.tsx` — bouton Check-in → `determineFlow` → `ActiveCheckinFlow` monté dynamiquement, input désactivé pendant flow
-- `components/client/ChatConversation.tsx` — forward `onInteract`/`onSkip` vers `ChatBubble`
-- Points de vigilance : migration `20260521_daily_checkins` à appliquer manuellement ; `muscle_soreness` conditionnel (`__has_session_today`) ; flow messages ephémères (seul le closing message LLM est persisté en DB)
-
-### 2026-05-21 — Design System v4.0 — Dark Gray Minimal Client PWA
-
-- `app/globals.css` — tokens `--c-*` (gray scale #080808→#f2f2f2) + `--data-copper/gold/petrol` (charts)
-- `tailwind.config.ts` — gray scale + data color Tailwind tokens
-- `components/client/ClientTopBar.tsx` — fond `#080808`, texte `#e0e0e0` (plus de jaune)
-- `components/client/BottomNav.tsx` — actif `#f2f2f2`, inactif `#5a5a5a`, pas de border-t
-- 60+ composants `/client` et `app/client` — suppression totale `#ffe01e`, borders, surfaces gray scale
-- Data colors `--data-copper/gold/petrol` — uniquement dans charts/SVG
-- Boutons primary : `bg-[#f2f2f2] text-[#080808]`
-- Chat : user bubbles `bg-[#f2f2f2] text-[#080808]`, bot `bg-[#111111]`
-- TempoGuideModal : phases → neutral gray, accent `#FFB800` → `#e0e0e0`
-- AdherenceScoreCard : thèmes recalibrés gray scale
-- Points de vigilance : charts Recharts utilisent `var(--data-*)` via `style={{ stroke }}` — pas via className ; BodyMap primary muscle = `#e0e0e0` (was green `#1f8a65`)
-
-### 2026-05-21 — i18n ES/EN App Client — Couverture Complète
-
-- `lib/i18n/clientTranslations.ts` — +~150 nouvelles clés (tempo, settype, activity, nutrition widget, ai chat, restrictions, water, checkin, logger, smart, programme tabs, portion, access pages)
-- `components/client/TempoGuideModal.tsx` — phases CON/ISO/ECC/PAUSE, tap-resume, PRÊT/READY/LISTO
-- `app/client/programme/session/[sessionId]/SessionLogger.tsx` — coaching cues, PR flash, erreurs réseau, compteur séries, UI repos
-- `app/client/programme/ProgrammeClientPage.tsx` — tabs, streak, périodes heatmap, KPIs
-- `components/client/CoachAIChatSheet.tsx` — greeting, suggestions, erreurs, placeholder, compteur
-- `components/client/smart/SmartWorkoutWidget.tsx` — session/repos/démarrer
-- `components/client/smart/SetTypeSelector.tsx` — types séries (échauffement/principale/retour/dégressive)
-- `components/client/smart/SetRow.tsx` — répétitions, valider la série
-- `components/client/smart/ExerciseBlock.tsx` — résumé sets·reps·RIR
-- `components/client/NutritionWidget.tsx` — toggle Consommé/Restant, Cible
-- `components/client/smart/SmartNutritionWidget.tsx` — macros labels, régularité protéines
-- `components/client/smart/FreeActivitySheet.tsx` — titre, précise, quand, durée, intensité
-- `components/client/smart/DayChecklist.tsx` — items check-in matin/soir, séance, nutrition, hydratation
-- `components/client/QuickWaterModal.tsx` — titre, loguer, erreur réseau
-- `components/client/ClientRestrictionsSection.tsx` — zones anatomiques, sévérités (FR/EN/ES), form
-- `components/client/smart/SmartAlertsFeed.tsx` — voir plus, réduire
-- `components/client/smart/DeloadAlertBanner.tsx` — signaux supplémentaires
-- `components/client/smart/AdherenceScoreCard.tsx` — labels Élite/En forme/Bon rythme/À améliorer
-- `components/client/profile/PortionScalingForm.tsx` — description + instructions mesure main
-- `app/client/acces-suspendu/page.tsx` — converti en Client Component (useClientT)
-- `app/client/access/expired/page.tsx` — converti en Client Component (useClientT)
-- `app/client/access/invalid/page.tsx` — converti en Client Component (useClientT)
-- Points de vigilance : `getCoachingCue` reçoit `t as (k: string) => string` (cast nécessaire pour TS strict) ; `BODY_PART_KEYS` remplace `BODY_PART_LABELS` statique dans ClientRestrictionsSection ; pages accès ne sont plus Server Components (pas de données server-side needed)
-
-### 2026-05-20 — Coach IA Chat
-
-- `supabase/migrations/20260520_ai_coach_daily_usage.sql` — table rate limit (client_id, date, message_count PK) + RLS client SELECT
-- `lib/client/ai-coach/buildSystemPrompt.ts` — construit system prompt depuis profil + journée (repas, eau, séance, activités, restrictions) — server-side uniquement, crée son propre svc()
-- `app/api/client/ai-coach/context/route.ts` — GET, vérifie auth + retourne remainingMessages + clientName
-- `app/api/client/ai-coach/chat/route.ts` — POST, rate limit DB → buildSystemPrompt → GPT-4o mini (max_tokens 300, content max 500) → upsert usage → réponse
-- `components/client/CoachAIChatSheet.tsx` — bottom sheet DS v3.0 z-[70], greeting fixe, suggestions rapides jaunes, typing indicator animé, compteur 20 msg, bubble user jaune
-- `components/client/CoachAIButton.tsx` — bouton MessageCircle fixe `top-3 right-4 z-50` sur toutes pages shell
-- `components/client/ConditionalClientShell.tsx` — CoachAIButton injecté dans le shell (hors AUTH_PATHS)
-- Points de vigilance : migration `20260520_ai_coach_daily_usage` à appliquer manuellement via Supabase Dashboard ; `OPENAI_API_KEY` déjà présente ; system prompt jamais retourné au client browser ; reset compteur = date physiologique 04:00 ; bouton fixe `top-3 right-4` peut entrer en conflit visuel avec des éléments TopBar right sur certaines pages (vérifier page par page)
-
-### 2026-05-20 — Voice Nutrition Logger
-
-- `lib/nutrition/voice.ts` — `cleanTranscript()` (filler words FR/EN/ES, numbers, units), types `VoiceItem` + `VoiceParseResult`
-- `app/api/client/nutrition/voice-parse/route.ts` — POST, GPT-4o mini JSON strict, top-20 food_items hint, food_item_id ILIKE matching, rate limit 10/min in-memory
-- `components/client/smart/VoiceLogSheet.tsx` — 3-layer sheet DS v3.0 : recording (SpeechRecognition + waveform AnalyserNode), processing (spinner), review (items éditables, quantité avec recalcul macro proportionnel, swipe delete, log)
-- `components/client/smart/VoiceEntryFab.tsx` — FAB micro fixe `bottom-[88px] right-4` sur `/client/nutrition`
-- `supabase/migrations/20260520_voice_input_mode.sql` — `'voice'` ajouté à l'enum `input_mode` sur `nutrition_entries`, confidence_score 0.70
-- Bouton micro dans `MealLogSheet` header et `NutritionLogContent` (embedded, layers category + sub-header)
-- Points de vigilance : migration à appliquer manuellement via Supabase Dashboard, `OPENAI_API_KEY` requis, SpeechRecognition non supporté iOS Safari < 16.4 (fallback message affiché)
-
-### 2026-05-19 — Smart Workout Redesign (Motra-style)
-- `supabase/migrations/20260519_set_type.sql` — colonne `set_type` sur `client_set_logs` (warmup/working/cooldown/dropset) — **appliquer manuellement**
-- `components/client/smart/SetRow.tsx` — row inline-editable, swipe droite=valider, swipe gauche=supprimer, type pill EC/RC/↘
-- `components/client/smart/SetTypeSelector.tsx` — bottom sheet type de série
-- `components/client/smart/ExerciseBlock.tsx` — card exercice avec sets inline, Add Set, context menu •••
-- `components/client/smart/ExerciseContextMenu.tsx` — échange, repos, note, tempo, supprimer exercice
-- `components/client/smart/SupersetContextMenu.tsx` — dissocier, repos, supprimer superset
-- `app/client/programme/session/[sessionId]/SessionLogger.tsx` — refonte totale vers liste scrollable (−1050 lignes remplacées)
-- `components/client/smart/SmartWorkoutHero.tsx` — titre 22px, sans navigation date, muscle pills
-- Supprimés : `SetSwipeCard.tsx`, `SetEditSheet.tsx`
-- Conservé : live save, PR detection, SetRecommendation, RestTimer, tempo guide, hydration, long press terminer
-
-### 2026-05-19 — Client Profil Accordion Redesign
-- `app/api/client/body-data/route.ts` — agrège bilans (poids série, composition, mensurations)
-- `components/client/profile/AccordionSection.tsx` — section collapsible Framer Motion
-- `components/client/profile/BodyDataSection.tsx` — sparkline SVG + composition + mensurations
-- `components/client/profile/ProfilAccordion.tsx` — orchestrateur 8 sections (une ouverte à la fois)
-- `app/client/profil/page.tsx` — Server Component pur (−254 lignes)
-- Hero compact : avatar 56px + nom + email + badge statut + streak pill jaune
-- Données depuis `assessment_submissions + assessment_responses` (field_keys: weight_kg, body_fat_pct, lean_mass_kg, waist_cm, hips_cm, arm_cm, chest_cm)
-- Photos morpho : non affichées côté client (RLS morpho_photos = coach uniquement)
-
-### 2026-05-18 — Elite Client App Sprint
-- PR detection temps réel (Epley + historique), flash "⚡ Nouveau record", badge PR jaune
-- `getCoachingCue()` — messages contextuels par RIR
-- `client_meal_favorites` table + API GET/POST/DELETE/use — repas récents 1 tap
-- `ExerciseProgressionChart.tsx` — SVG pur, bezier, sélecteur exercice pills
-- `lib/client/smart/recoveryAlerts.ts` — 10 tests Vitest, alertes sleep/stress/energy
-- `lib/training/oneRepMax.ts` + `lib/training/deloadDetection.ts` — 21 tests Vitest
-- FAB redesign : arc 120°, spring premium, logo 80px
-- Bugs résolus : eau 0ml, router.refresh() eau, home grid 2 colonnes
-
-### 2026-05-18 — Smart Trio Refonte App Client
-- Smart Agenda (home), Smart Nutrition, Smart Workout, BottomNav 5 slots + RadialActionMenu
-- 16 nouveaux composants dans `components/client/smart/`
-- 4 libs pures testées Vitest dans `lib/client/smart/`
-- 11 API routes, 19 tests Vitest PASS, i18n 48 clés `smart.*`
-- Routes supprimées : `/client/agenda` + `/client/progress` → redirect 301 → `/client`
-
-### 2026-05-17 — Tempo Guide Modal v2 + Set Recommendation Engine v2
-- TempoGuideModal : circuit triangle fermé, codes couleurs par phase, anticipation isométrique, reps bonus, landscape responsive
-- SetRecommendation : Path B corrigé, modulation RIR Path A, formatWeight() locale-independent
-
-### 2026-05-16 — Landing STRYVR + Nutrition Composer + Tempo Phase 1
-- Landing DA Technogym : fond `#0a0a0a`, accent `#F5D800`, Urbanist, grille industrielle
-- Nutrition Composer 4 couches : `food_items` + `nutrition_meals` + `nutrition_entries`, journée physiologique 04:00
-- Tempo Phase 1 : `lib/training/tempo.ts`, badge auto/coach, TempoGuideModal Phase 1
-- BodyMap : LEGACY_TO_CANONICAL 40+ slugs, fallback primary_muscle singulier
-
-### 2026-04-28 — MorphoPro Phase 1 + 5 Bugs SessionLogger
-- `morpho_photos` + `morpho_annotations` + RLS, GPT-4o structuré, Fabric.js v6 canvas
-- SessionLogger : parseFloat("0") fix, home séances du jour, muscleDetection slugs, rest timer 8s, superset UX
+| Date | Feature | Fichiers clés |
+|------|---------|---------------|
+| 2026-05-21 | Chat SP2 — `client_daily_checkins`, flows morning/evening 4 steps, chips/slider interactifs. `muscle_soreness` conditionnel (`__has_session_today`). Flow messages éphémères — seul closing LLM persisté. | `lib/client/checkin/`, `app/api/client/checkin/route.ts` |
+| 2026-05-21 | DS v4.0 — gray scale #080808→#f2f2f2, tokens `--data-copper/gold/petrol`. ⚠️ Recharts : `var(--data-*)` via `style={{ stroke }}` uniquement, pas className. BodyMap primary = `#e0e0e0`. | `app/globals.css`, `tailwind.config.ts` |
+| 2026-05-21 | i18n ES/EN — +150 clés, `useClientT()`. `getCoachingCue` reçoit `t as (k: string) => string` (cast TS strict requis). | `lib/i18n/clientTranslations.ts` |
+| 2026-05-20 | Chat-First Client App — `chat_messages`+`chat_sessions`, ChatPage home, BottomNav 4 tabs, chat-archive cron 03:00 UTC. | `supabase/migrations/20260520_chat_messages.sql`, `components/client/ChatPage.tsx` |
+| 2026-05-20 | Coach IA Chat — `ai_coach_daily_usage` rate limit DB, buildSystemPrompt server-only, GPT-4o mini max_tokens 300. Reset compteur = 04:00 physiologique. | `lib/client/ai-coach/buildSystemPrompt.ts` |
+| 2026-05-20 | Voice Nutrition Logger — SpeechRecognition + AnalyserNode + review sheet. ⚠️ Non supporté iOS Safari < 16.4. | `components/client/smart/VoiceLogSheet.tsx`, `lib/nutrition/voice.ts` |
+| 2026-05-19 | Smart Workout Redesign — SetRow swipe (valider/supprimer), ExerciseBlock inline sets, SessionLogger −1050 lignes. | `components/client/smart/SetRow.tsx`, `SessionLogger.tsx` |
+| 2026-05-19 | Profil Accordion — 8 sections Framer Motion, BodyDataSection sparkline, Server Component pur. | `components/client/profile/ProfilAccordion.tsx` |
+| 2026-05-18 | Elite Sprint — PR detection Epley, meal favorites, ExerciseProgressionChart SVG bezier, recoveryAlerts 10 tests. | `lib/training/oneRepMax.ts`, `lib/client/smart/recoveryAlerts.ts` |
+| 2026-05-18 | Smart Trio Refonte — 16 composants `smart/`, 4 libs Vitest, 11 API routes. Routes /agenda + /progress → redirect /client. | `components/client/smart/` |
+| 2026-05-17 | Tempo v2 + SetRecommendation v2 — triangle fermé, Path B fix, formatWeight locale-independent. | `lib/training/tempo.ts` |
+| 2026-05-16 | Landing + Nutrition Composer + Tempo Phase 1 — food_items, nutrition_meals, journée physiologique 04:00. | `app/stryvr/`, `lib/nutrition/` |
+| 2026-04-28 | MorphoPro Phase 1 — morpho_photos + morpho_annotations + RLS, GPT-4o structuré, Fabric.js v6. | `components/clients/MorphoAnalysisSection.tsx` |
 
 ---
 
@@ -247,8 +141,10 @@
 |----------|--------|-----------|
 | Supabase Redirect URLs | Onboarding brisé | Whitelist `/client/onboarding` |
 | `three@0.170` requis | Build error si downgrade | Ne pas downgrader — `three-mesh-bvh` peer dep |
+| Recharts + data colors | `className` ne marche pas | Toujours `style={{ stroke: 'var(--data-copper)' }}` — pas `stroke-data-copper` |
+| Voice logger iOS | Crash silencieux | SpeechRecognition non supporté iOS Safari < 16.4 — fallback affiché |
 
-> ✅ **Migrations vérifiées le 2026-05-21** via `scripts/verify-migrations.sql` — toutes appliquées.
+> ✅ **Migrations vérifiées le 2026-05-21** via `scripts/verify-migrations.sql` — toutes appliquées (sauf `20260526_menstrual_cycle_logs` — à appliquer manuellement).
 > Script de vérification réutilisable : `scripts/verify-migrations.sql` → Supabase SQL Editor.
 
 ---
@@ -260,7 +156,8 @@
 - [x] Chat SP3-A : Proactive AI Coach — system prompt v2, Inngest crons, daily brief
 - [x] Nutrition Engine v1 — macro matrix, TDEE, weekly decision matrix, guardrails, triggers (2026-05-25)
 - [ ] Nutrition Engine — appliquer migration `20260525_nutrition_weekly_reviews` manuellement via Supabase Dashboard
-- [x] Cycle Sync — intégré : engine module + client banner + coach studio grid (2026-05-25)
+- [x] Cycle Sync v2 — history-based engine, CyclePhasePill TopBars, LogPeriodSheet FAB, Profile section, ProtocolRationale per-day, Studio second source of truth (2026-05-26)
+- [ ] Cycle Sync v2 — appliquer migration `20260526_menstrual_cycle_logs` manuellement via Supabase Dashboard
 - [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard
