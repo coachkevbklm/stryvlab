@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-21**
+> **Dernière mise à jour : 2026-05-25**
 
 ---
 
@@ -26,6 +26,7 @@
 | **Program Intelligence Engine** | ✅ Phase 2 Biomechanics complet | 2026-04-26 |
 | **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
+| **Nutrition Engine v1** | ✅ Macro matrix, TDEE components, weekly decision matrix, guardrails, real-time triggers | 2026-05-25 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
@@ -38,6 +39,21 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-25 — Nutrition Engine v1 — Moteur Nutritionnel Intelligent
+
+- `lib/nutrition/engine/types.ts` — types partagés : `EngineGoal`, `EngineGender`, `StryvrmMacros`, `CarbCyclingResult`, `TdeeComponents`, `WeeklyCheckinSummary`, `WeeklyAnalysisResult`, `TriggerRecommendation`
+- `lib/nutrition/engine/macroMatrix.ts` — matrice macro officielle STRYVR : `PROTEIN_RATIO`/`FAT_RATIO` par objectif, `computeBaseMacros` (poids total, pas LBM), `computeCarbCycling` (P+L stables, seuls glucides flexent)
+- `lib/nutrition/engine/tdeeComponents.ts` — TDEE conservateur : `computeBMR` (Mifflin-St Jeor), `computeNEAT` (steps×0.04×weight_factor + occupation bonus), `computeEAT` (4kcal/min, double cap 450/session + 500/j), `computeTEF` (9% BMR)
+- `lib/nutrition/engine/guardrails.ts` — `checkAdherenceGuardrail` (bloque si <85%), `checkFatigueGuardrail` (bloque si signal fatigue + ≥3 jours consécutifs), `runGuardrails` (adhérence prioritaire)
+- `lib/nutrition/engine/weeklyAnalysis.ts` — `analyzeWeek` : 4 cas (optimal_recomp, behavioral, deficit_aggressive, surplus_real), guardrails en premier, 8 tests Vitest PASS
+- `lib/nutrition/engine/triggers.ts` — `computeTriggers` : fatigue (un seul signal), stagnation (RPE+perf+soreness), faim (hunger≥3 sur jour bas), `doNotCutCalories: true` toujours, 9 tests Vitest PASS
+- `lib/nutrition/engine/index.ts` — re-exports publics du module
+- `supabase/migrations/20260525_nutrition_weekly_reviews.sql` — table `nutrition_weekly_reviews` (RLS: coach CRUD, client SELECT) — **à appliquer manuellement via Supabase Dashboard**
+- `app/api/clients/[clientId]/nutrition-engine/weekly-review/route.ts` — POST : agrège 7j de check-ins, exécute `analyzeWeek`, persiste en DB, retourne résultat au coach
+- `app/api/client/nutrition-engine/triggers/route.ts` — GET : `computeTriggers` depuis check-ins récents + protocole actif, phase carb cycling, RPE dernière séance
+- `app/api/client/nutrition-alerts/route.ts` — étendu : retourne maintenant `{ alerts, triggers }` (triggers best-effort, non-bloquant)
+- Points de vigilance : `nutrition_weekly_reviews` migration à appliquer manuellement ; `waistTrend` toujours `null` en v1 (nécessite ≥2 bilans — Phase 2) ; `computeEAT` a deux caps distincts (per-session ET per-day) pour éviter surestimation ; ce moteur est **additif** — `lib/formulas/macros.ts` (LBM-based, studio coach) est conservé intact
 
 ### 2026-05-21 — Chat SP3-A — Proactive AI Coach + System Prompt v2
 
@@ -230,6 +246,9 @@
 - [x] Toutes migrations appliquées (vérifié 2026-05-21)
 - [x] Chat SP2 : Scripted Flow Engine — flows morning/evening, chips/sliders interactifs, données réelles system prompt
 - [x] Chat SP3-A : Proactive AI Coach — system prompt v2, Inngest crons, daily brief
+- [x] Nutrition Engine v1 — macro matrix, TDEE, weekly decision matrix, guardrails, triggers (2026-05-25)
+- [ ] Nutrition Engine — appliquer migration `20260525_nutrition_weekly_reviews` manuellement via Supabase Dashboard
+- [ ] Cycle Sync — intégrer dans le moteur nutrition (cycleSync.ts engine module + coach studio + client app) — prochaine itération
 - [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard

@@ -3,6 +3,18 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-25
+
+FEATURE: Nutrition Engine v1 — official weight-based macro matrix (deficit P×2.2/L×0.8, maintenance P×2.0/L×1.0, surplus P×1.8/L×1.0)
+FEATURE: TDEE engine — BMR (Mifflin-St Jeor) + NEAT (steps+occupation) + EAT (4kcal/min, dual cap 450/session, 500/day) + TEF (9%)
+FEATURE: Carb cycling engine — stable P+F, only carbs flex between high/low days
+FEATURE: Weekly decision matrix — 4 cases (optimal_recomp, behavioral, deficit_aggressive, surplus_real) + guardrails (adherence<85%, fatigue systémique)
+FEATURE: Real-time triggers — fatigue, stagnation, hunger (doNotCutCalories always true)
+FEATURE: Coach weekly-review API — POST /api/clients/[clientId]/nutrition-engine/weekly-review
+FEATURE: Client triggers API — GET /api/client/nutrition-engine/triggers
+FEATURE: nutrition-alerts route extended with engine triggers (best-effort, non-blocking)
+SCHEMA: nutrition_weekly_reviews table — weekly engine results per client (RLS: coach CRUD, client SELECT)
+
 ## 2026-05-21
 
 FEATURE: BottomNav — central FAB + button (50px, bg-[#f2f2f2]) entre Programme et Nutrition
