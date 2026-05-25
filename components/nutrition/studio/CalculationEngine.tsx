@@ -18,6 +18,8 @@ import type {
 } from "@/lib/formulas/carbCycling";
 import type { HydrationClimate } from "@/lib/formulas/hydration";
 import type { CarbCyclingConfig } from "./useNutritionStudio";
+import CycleSyncPhaseGrid from "./CycleSyncPhaseGrid";
+import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
 
 interface Props {
   goal: MacroGoal;
@@ -43,6 +45,9 @@ interface Props {
   tdeeHistory: import('./useNutritionStudio').TdeeHistoryEntry[];
   applyAdaptiveTdee: () => Promise<void>;
   applyingAdaptive: boolean;
+  isFemale?: boolean;
+  currentCycleDay?: number | null;
+  baseMacrosForCycleSync?: NutritionMacros | null;
 }
 
 const GOAL_OPTIONS: { value: MacroGoal; label: string }[] = [
@@ -178,6 +183,9 @@ export default function CalculationEngine({
   tdeeHistory,
   applyAdaptiveTdee,
   applyingAdaptive,
+  isFemale = false,
+  currentCycleDay,
+  baseMacrosForCycleSync,
 }: Props) {
   const [openInfoModal, setOpenInfoModal] = useState<string | null>(null);
 
@@ -578,6 +586,17 @@ export default function CalculationEngine({
             </div>
           </div>
         </div>
+
+        {/* ── CYCLE SYNC ───────────────────────────────────────────────── */}
+        {isFemale && (
+          <div>
+            <SectionDivider label="Cycle Sync (femme)" />
+            <CycleSyncPhaseGrid
+              baseMacros={baseMacrosForCycleSync}
+              currentCycleDay={currentCycleDay}
+            />
+          </div>
+        )}
 
         {/* ── SMART ALERTS ─────────────────────────────────────────────── */}
         {actionableSuggestions.length > 0 && (

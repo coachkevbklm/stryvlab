@@ -100,8 +100,8 @@ export default function ChatPage({ coachAvatarUrl, coachInitial, clientFirstName
     if (!todayData) return
     const currentHour = new Date().getHours()
     const chatSessions = [
-      { flow_type: 'morning', completed_at: todayData.checkin.morning ? 'done' : null },
-      { flow_type: 'evening', completed_at: todayData.checkin.evening ? 'done' : null },
+      { flow_type: 'morning', completed_at: todayData.checkin?.morning ? 'done' : null },
+      { flow_type: 'evening', completed_at: todayData.checkin?.evening ? 'done' : null },
     ]
     const flow = determineFlow(currentHour, chatSessions)
 

@@ -14,6 +14,8 @@ import VoiceEntryFab from '@/components/client/smart/VoiceEntryFab'
 import { ct, type ClientLang, type ClientDictKey } from '@/lib/i18n/clientTranslations'
 import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
 import type { NutritionMeal } from '@/lib/nutrition/food-items'
+import CycleSyncBanner from '@/components/client/nutrition/CycleSyncBanner'
+import type { CyclePhase, CycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
 
 type DayPoint = {
   date: string
@@ -43,6 +45,9 @@ interface Props {
   protocolDay: { name?: string } | null
   lang: ClientLang
   dayTypeBadge: React.ReactNode
+  cycleSyncPhase?: CyclePhase | null
+  cycleSyncAdjustment?: CycleSyncAdjustment | null
+  cycleDay?: number | null
 }
 
 const TABS: { id: Tab; labelKey: ClientDictKey }[] = [
@@ -55,6 +60,7 @@ export default function NutritionClientPage({
   date, target, consumed, meals, alerts, trend,
   loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
   protocolDay, lang, dayTypeBadge,
+  cycleSyncPhase, cycleSyncAdjustment, cycleDay,
 }: Props) {
   const [tab, setTab] = useState<Tab>('aujourd_hui')
 
@@ -85,6 +91,13 @@ export default function NutritionClientPage({
         {tab === 'aujourd_hui' && (
           <>
             <SmartAlertsFeed alerts={alerts} />
+            {cycleSyncPhase && cycleSyncAdjustment && (
+              <CycleSyncBanner
+                phase={cycleSyncPhase}
+                adjustment={cycleSyncAdjustment}
+                cycleDay={cycleDay ?? undefined}
+              />
+            )}
             <SmartNutritionHero date={date} consumed={consumed} target={target} />
             <RemainingBreakdown consumed={consumed} target={target} />
             <NutritionMealsList initialMeals={meals} date={date} target={target} />

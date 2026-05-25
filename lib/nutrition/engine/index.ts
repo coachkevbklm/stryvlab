@@ -18,3 +18,5 @@ export { checkAdherenceGuardrail, checkFatigueGuardrail, runGuardrails } from '.
 export { analyzeWeek } from './weeklyAnalysis'
 export { computeTriggers } from './triggers'
 export type { TriggerInput } from './triggers'
+export { getCycleSyncAdjustment, adjustMacrosForPhase, detectCurrentPhase } from './cycleSync'
+export type { CyclePhase, CycleSyncAdjustment } from './cycleSync'

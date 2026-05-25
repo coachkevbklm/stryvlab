@@ -27,6 +27,7 @@
 | **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Engine v1** | ✅ Macro matrix, TDEE components, weekly decision matrix, guardrails, real-time triggers | 2026-05-25 |
+| **Cycle Sync** | ✅ Engine module, client banner, coach studio grid — fully integrated | 2026-05-25 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
@@ -39,6 +40,17 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-25 — Cycle Sync — Intégration Complète Client + Coach Studio
+
+- `lib/nutrition/engine/cycleSync.ts` — 4 phases (follicular/ovulatory/luteal/menstrual), `CycleSyncAdjustment` interface, `detectCurrentPhase` (mod 28), `getCycleSyncAdjustment`, `adjustMacrosForPhase` (calories = P×4+C×4+F×9 toujours cohérent), 20 tests Vitest PASS
+- `components/client/nutrition/CycleSyncBanner.tsx` — bannière client : phase colors (rouge/vert/amber/violet), macro deltas grid, badge optimal-deficit, première note de guidance
+- `app/client/nutrition/page.tsx` — Server Component : calcul `cycleDay` depuis `menstrual_cycle` (ISO date → diff jours → mod 28, ou numeric_value direct), `detectCurrentPhase` + `getCycleSyncAdjustment` server-side, props passées à NutritionClientPage
+- `app/client/nutrition/NutritionClientPage.tsx` — accepte `cycleSyncPhase/cycleSyncAdjustment/cycleDay`, rend `<CycleSyncBanner />` dans l'onglet Aujourd'hui (entre SmartAlertsFeed et SmartNutritionHero) si phase non nulle
+- `components/nutrition/studio/CycleSyncPhaseGrid.tsx` — grille 2×2 coach studio : 4 phase cards avec deltas (DeltaBadge), badge "Actuelle" si cycleDay connu, optimal-deficit dot, base macros row
+- `components/nutrition/studio/CalculationEngine.tsx` — props `isFemale`, `currentCycleDay`, `baseMacrosForCycleSync` ; section "Cycle Sync (femme)" après Hydratation (gated on `isFemale`)
+- `components/nutrition/studio/NutritionStudio.tsx` — `isFemale = clientData?.gender === 'female'`, `currentCycleDay` calculé depuis `clientData.menstrual_cycle` (même logique que le Server Component client), `baseMacrosForCycleSync` depuis `macroResult.macros`
+- Points de vigilance : `menstrual_cycle` field supporte deux formats (ISO date "2026-05-01" ou numérique "14") — les deux parsés de façon cohérente dans page.tsx ET NutritionStudio.tsx ; cycle sync visible UNIQUEMENT si `gender === 'female'` (côté client et coach) ; CycleSyncBanner n'a aucun impact sur les macros cibles (informatif uniquement — l'ajustement reste la responsabilité du coach via le protocole)
 
 ### 2026-05-25 — Nutrition Engine v1 — Moteur Nutritionnel Intelligent
 
@@ -248,7 +260,7 @@
 - [x] Chat SP3-A : Proactive AI Coach — system prompt v2, Inngest crons, daily brief
 - [x] Nutrition Engine v1 — macro matrix, TDEE, weekly decision matrix, guardrails, triggers (2026-05-25)
 - [ ] Nutrition Engine — appliquer migration `20260525_nutrition_weekly_reviews` manuellement via Supabase Dashboard
-- [ ] Cycle Sync — intégrer dans le moteur nutrition (cycleSync.ts engine module + coach studio + client app) — prochaine itération
+- [x] Cycle Sync — intégré : engine module + client banner + coach studio grid (2026-05-25)
 - [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard

@@ -5,6 +5,11 @@
 
 ## 2026-05-25
 
+FEATURE: Cycle Sync — lib/nutrition/engine/cycleSync.ts : 4 phases (follicular/ovulatory/luteal/menstrual), macro adjustments (Davidsen 2007, Oosthuyse 2010), 20 Vitest tests
+FEATURE: CycleSyncBanner — components/client/nutrition/CycleSyncBanner.tsx : client-side banner with phase colors, macro deltas, optimal-deficit badge
+FEATURE: CycleSyncPhaseGrid — components/nutrition/studio/CycleSyncPhaseGrid.tsx : 4-phase coach studio grid with adjustments + base macros
+FEATURE: Client nutrition page — cycle phase computed server-side from menstrual_cycle field, passed as props to NutritionClientPage
+FEATURE: CalculationEngine + NutritionStudio — cycle sync section gated on isFemale (gender from clientData)
 FEATURE: Nutrition Engine v1 — official weight-based macro matrix (deficit P×2.2/L×0.8, maintenance P×2.0/L×1.0, surplus P×1.8/L×1.0)
 FEATURE: TDEE engine — BMR (Mifflin-St Jeor) + NEAT (steps+occupation) + EAT (4kcal/min, dual cap 450/session, 500/day) + TEF (9%)
 FEATURE: Carb cycling engine — stable P+F, only carbs flex between high/low days

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useMemo } from "react";
+import { detectCurrentPhase } from "@/lib/nutrition/engine/cycleSync";
 import { Eye, Save, Send, Loader2 } from "lucide-react";
 import { useNutritionStudio } from "./useNutritionStudio";
 import ClientIntelligencePanel from "./ClientIntelligencePanel";
@@ -21,8 +22,37 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
   const studio = useNutritionStudio(clientId, existingProtocol);
 
   const clientName = studio.clientData?.name ?? "Client";
+  const isFemale = studio.clientData?.gender === "female";
   const leanMass =
     studio.clientData?.lean_mass_kg ?? studio.macroResult?.leanMass ?? null;
+
+  // Compute current cycle day from menstrual_cycle field (ISO date or numeric)
+  const currentCycleDay = useMemo(() => {
+    if (!isFemale) return null
+    const raw = studio.clientData?.menstrual_cycle ?? null
+    if (!raw) return null
+    const num = Number(raw)
+    if (!isNaN(num) && num >= 1) return num
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      const lastPeriod = new Date(raw)
+      const diffMs = Date.now() - lastPeriod.getTime()
+      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
+      return diffDays >= 0 ? (diffDays % 28) + 1 : null
+    }
+    return null
+  }, [isFemale, studio.clientData?.menstrual_cycle])
+
+  // Build NutritionMacros shape for CycleSyncPhaseGrid base display
+  const baseMacrosForCycleSync = useMemo(() => {
+    if (!studio.macroResult) return null
+    return {
+      kcal:      studio.macroResult.calories,
+      protein_g: studio.macroResult.macros.p,
+      carbs_g:   studio.macroResult.macros.c,
+      fat_g:     studio.macroResult.macros.f,
+      water_ml:  0,
+    }
+  }, [studio.macroResult])
   const clientIntelligenceMacroResult = studio.macroResult
     ? {
         leanMass: studio.macroResult.leanMass,
@@ -134,6 +164,9 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
             tdeeHistory={studio.tdeeHistory}
             applyAdaptiveTdee={studio.applyAdaptiveTdee}
             applyingAdaptive={studio.applyingAdaptive}
+            isFemale={isFemale}
+            currentCycleDay={currentCycleDay}
+            baseMacrosForCycleSync={baseMacrosForCycleSync}
           />
         </div>
 
