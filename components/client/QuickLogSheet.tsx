@@ -1,54 +1,78 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Drop, ForkKnife, Lightning } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
+import type { CycleState } from "@/lib/cycle/cycleEngine";
 
-const QuickWaterModal  = dynamic(() => import("@/components/client/QuickWaterModal"),        { ssr: false });
-const FreeActivitySheet = dynamic(() => import("@/components/client/smart/FreeActivitySheet"), { ssr: false });
+const QuickWaterModal   = dynamic(() => import("@/components/client/QuickWaterModal"),           { ssr: false });
+const FreeActivitySheet = dynamic(() => import("@/components/client/smart/FreeActivitySheet"),   { ssr: false });
+const LogPeriodSheet    = dynamic(() => import("@/components/client/cycle/LogPeriodSheet"),      { ssr: false });
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-type SubSheet = "water" | "activity" | null;
+type SubSheet = "water" | "activity" | "cycle" | null;
 
-import { useState } from "react";
+const BASE_ACTIONS = [
+  {
+    key: "water" as const,
+    Icon: Drop,
+    label: "Eau",
+    sub: "Logger ma consommation d'eau",
+  },
+  {
+    key: "meal" as const,
+    Icon: ForkKnife,
+    label: "Repas",
+    sub: "Ajouter un repas ou aliment",
+  },
+  {
+    key: "activity" as const,
+    Icon: Lightning,
+    label: "Activité",
+    sub: "Course, marche, sport libre…",
+  },
+];
 
 export default function QuickLogSheet({ open, onClose }: Props) {
   const router = useRouter();
   const [sub, setSub] = useState<SubSheet>(null);
+  const [cycleState, setCycleState] = useState<CycleState | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/client/cycle/status")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.cycleState) setCycleState(data.cycleState); })
+      .catch(() => {});
+  }, [open]);
 
   function handleClose() {
     setSub(null);
     onClose();
   }
 
-  const ACTIONS = [
-    {
-      key: "water",
+  function handleAction(key: string) {
+    if (key === "water")    { setSub("water"); return; }
+    if (key === "activity") { setSub("activity"); return; }
+    if (key === "cycle")    { setSub("cycle"); return; }
+    if (key === "meal")     { handleClose(); router.push("/client/nutrition"); }
+  }
+
+  const actions = [
+    ...BASE_ACTIONS,
+    ...(cycleState?.hasActiveCycle ? [{
+      key: "cycle" as const,
       Icon: Drop,
-      label: "Eau",
-      sub: "Logger ma consommation d'eau",
-      onClick: () => setSub("water"),
-    },
-    {
-      key: "meal",
-      Icon: ForkKnife,
-      label: "Repas",
-      sub: "Ajouter un repas ou aliment",
-      onClick: () => { handleClose(); router.push("/client/nutrition"); },
-    },
-    {
-      key: "activity",
-      Icon: Lightning,
-      label: "Activité",
-      sub: "Course, marche, sport libre…",
-      onClick: () => setSub("activity"),
-    },
-  ] as const;
+      label: "Cycle",
+      sub: "Début ou fin de règles",
+    }] : []),
+  ];
 
   return (
     <>
@@ -93,14 +117,14 @@ export default function QuickLogSheet({ open, onClose }: Props) {
 
               {/* Actions */}
               <div className="px-4 pb-4 flex flex-col gap-2">
-                {ACTIONS.map(({ key, Icon, label, sub: subLabel, onClick }) => (
+                {actions.map(({ key, Icon, label, sub: subLabel }) => (
                   <button
                     key={key}
-                    onClick={onClick}
+                    onClick={() => handleAction(key)}
                     className="flex items-center gap-4 px-4 h-[60px] rounded-xl bg-white/[0.04] active:bg-white/[0.08] transition-colors text-left"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
-                      <Icon size={18} className="text-[#e0e0e0]" />
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${key === "cycle" ? "bg-[#c0392b]/10" : "bg-white/[0.06]"}`}>
+                      <Icon size={18} className={key === "cycle" ? "text-[#c0392b]" : "text-[#e0e0e0]"} />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[14px] font-barlow font-semibold text-[#e0e0e0] leading-tight">
@@ -127,6 +151,12 @@ export default function QuickLogSheet({ open, onClose }: Props) {
         open={sub === "activity"}
         onClose={() => { setSub(null); onClose(); }}
         onSaved={() => { setSub(null); onClose(); }}
+      />
+      <LogPeriodSheet
+        open={sub === "cycle"}
+        cycleState={cycleState}
+        onClose={() => { setSub(null); onClose(); }}
+        onUpdated={(newState) => { setCycleState(newState); setSub(null); onClose(); }}
       />
     </>
   );
