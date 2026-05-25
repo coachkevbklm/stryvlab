@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Dumbbell, Clock, Layers, Target, Timer, Coffee,
@@ -12,6 +12,10 @@ import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
 import ClientTopBar from '@/components/client/ClientTopBar'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
+import dynamic from 'next/dynamic'
+
+const CyclePhasePill = dynamic(() => import('@/components/client/cycle/CyclePhasePill'), { ssr: false })
 import type {
   HeatmapDay,
   PREntry,
@@ -105,6 +109,14 @@ export default function ProgrammeClientPage({
   const [tab, setTab] = useState<Tab>(initialTab as Tab ?? 'seance')
   const [selectedDow, setSelectedDow] = useState(initialDow)
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [cycleState, setCycleState] = useState<CycleState | null>(null)
+
+  useEffect(() => {
+    fetch('/api/client/cycle/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.cycleState) setCycleState(data.cycleState) })
+      .catch(() => {})
+  }, [])
 
   const completedIdsSet = useMemo(() => new Set(completedTodayIds), [completedTodayIds])
   const completedNamesSet = useMemo(() => new Set(completedTodayNames), [completedTodayNames])
@@ -179,9 +191,19 @@ export default function ProgrammeClientPage({
         section={ct(lang, 'programme.section')}
         title={program.name}
         right={
-          <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">
-            {program.weeks}sem · {sessions.length} séances
-          </p>
+          <div className="flex flex-col items-end gap-0.5">
+            <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">
+              {program.weeks}sem · {sessions.length} séances
+            </p>
+            {cycleState?.currentPhase && cycleState.currentCycleDay && (
+              <CyclePhasePill
+                phase={cycleState.currentPhase}
+                cycleDay={cycleState.currentCycleDay}
+                confidence={cycleState.confidence}
+                size="sm"
+              />
+            )}
+          </div>
         }
       />
 

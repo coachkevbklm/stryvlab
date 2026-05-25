@@ -7,7 +7,11 @@ import {
   Clock, X, Flag, MoreHorizontal, RefreshCw as Rotate
 } from 'lucide-react'
 import { useClientT } from '@/components/client/ClientI18nProvider'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
+import dynamic from 'next/dynamic'
 import ExerciseSwapSheet from './ExerciseSwapSheet'
+
+const CyclePhasePill = dynamic(() => import('@/components/client/cycle/CyclePhasePill'), { ssr: false })
 import ClientAlternativesSheet from '@/components/client/ClientAlternativesSheet'
 import { recommendNextSet, type SetRecommendation } from '@/lib/training/setRecommendation'
 import { getDefaultTempo, parseTempo } from '@/lib/training/tempo'
@@ -221,6 +225,15 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
   // ── New states for redesign ──
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false)
   const [progressionTarget, setProgressionTarget] = useState<{ exId: string; name: string } | null>(null)
+  const [cycleState, setCycleState] = useState<CycleState | null>(null)
+
+  useEffect(() => {
+    fetch('/api/client/cycle/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.cycleState) setCycleState(data.cycleState) })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [deletedExerciseIds, setDeletedExerciseIds] = useState<Set<string>>(new Set())
   const [dissolvedGroupIds, setDissolvedGroupIds] = useState<Set<string>>(new Set())
   const [supersetMenuFor, setSupersetMenuFor] = useState<string | null>(null)
@@ -804,7 +817,16 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
             <p className="text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white">{session.name}</p>
             <p className="text-[13px] font-mono font-bold text-white tabular-nums mt-0.5">{formatTime(elapsed)}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-0.5">
+            {cycleState?.currentPhase && cycleState.currentCycleDay && (
+              <CyclePhasePill
+                phase={cycleState.currentPhase}
+                cycleDay={cycleState.currentCycleDay}
+                confidence={cycleState.confidence}
+                size="sm"
+              />
+            )}
+            <div className="flex items-center gap-2">
             {restStartedAt !== null && !isOvertime && restRemaining !== null && (
               <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-white/50 bg-white/[0.06] px-2 py-0.5 rounded-lg">
                 <Clock size={9} />{formatTime(restRemaining)}
@@ -835,6 +857,7 @@ export default function SessionLogger({ clientId, sessionId, session, exercises,
                 {saveState === 'saving' ? <Loader2 size={12} className="animate-spin" /> : <Flag size={12} />}
                 {allDone ? 'Terminer' : 'Fin'}
               </button>
+            </div>
             </div>
           </div>
         </div>
