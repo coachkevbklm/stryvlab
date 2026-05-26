@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-26**
+> **Dernière mise à jour : 2026-05-28**
 
 ---
 
@@ -27,11 +27,12 @@
 | **Client App** | ✅ Chat SP3-A — proactive AI coach (Inngest crons 06:30/21:30), system prompt v2 (coach identity, full bilan history, active program, tone rules), daily brief post-check-in | 2026-05-21 |
 | **Nutrition Composer** | ✅ food_items DB, Composer 4 couches, journal éditable, journée physiologique | 2026-05-16 |
 | **Nutrition Engine v1** | ✅ Macro matrix, TDEE components, weekly decision matrix, guardrails, real-time triggers | 2026-05-25 |
-| **Cycle Sync v2** | ✅ history-based engine (personal avg cycle), CyclePhasePill TopBars, LogPeriodSheet FAB, Profile section, ProtocolRationale per-day accordions, Studio second source of truth | 2026-05-26 |
+| **Cycle Sync v2** | ✅ history-based engine, CyclePhasePill, LogPeriodSheet, Profile, ProtocolRationale accordions, Studio | 2026-05-26 |
+| **Cycle Sync Activation** | ✅ coach toggle per protocol, runtime macro adjustment, CycleArcIndicator TopBar, CyclePhaseModal (nutrition/training), check-in phase logging | 2026-05-27 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
 | **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
-| **Design System v4.0** | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2 | 2026-05-21 |
+| **Design System v4.0** | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2 | 2026-05-28 ✅ PWA Compliance Complete |
 | **Landing STRYVR** | ✅ `/stryvr` — DA Technogym, waitlist Supabase | 2026-05-16 |
 | **Coach Dashboard** | ✅ MRR, alerts, client segmentation | 2026-04-13 |
 | **Client Onboarding** | ✅ 5-screen tour + guided tooltip tour | 2026-04-27 |
@@ -40,6 +41,36 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-28 — DS v4.0 PWA Compliance Complete — Color Audit & Systematic Fixes
+
+- **Audit scope** : 40+ files across `/client`, `/components/client`, `/app/api` routes
+- **Critical violations fixed** : colored trend indicators (green #22c55e / red #f59e0b / amber), colored badges (meal/water/checkin: #22c55e / #06b6d4 / #8b5cf6), deload/alerts severity colors (orange/red/purple), voice confidence badges (amber/red), status pills (set types warmup/cooldown/dropset: #7dd3a7/#3b82f6/#9ff45c)
+- **High-priority fixes** : interim gray colors (#2a2a2a, #2e2e2e, #404040, #0d1713), accent borders (#1f8a65/25), button hovers (#5dba87), text colors (#7dd3a7, #a0a0a0, #f59e0b/70), colored icons in TrendingUp/TrendingDown
+- **Medium-priority fixes** : SmartAgendaTimeline event badges, SetRow type colors, RemainingBreakdown low/high sections, metrics card text contrasts, ChatConversation/ChatPage/ChatTodayStrip/NewProtocolBanner background grays, QuickLogSheet cycle button, OneRMWidget delta badge
+- **Data chart tokens verified** : --data-copper (#8c5230), --data-gold (#a89060), --data-petrol (#3d7070) remain chart-only, not used in UI elements. Verified in SmartNutritionHero arc gradients, nutrition studio charts.
+- **Files modified (22 components + 4 API routes)** : TdeeChart, OneRMWidget, SmartAlertsFeed, DeloadAlertBanner, VoiceLogSheet (confidence styles), SetRow (TYPE_COLORS), RemainingBreakdown, SmartAgendaTimeline (KIND_CONFIG), 4 metrics components, ChatConversation, ChatPage, ChatTodayStrip, NewProtocolBanner, QuickLogSheet, ProfileForm, ProfilAccordion, AccordionSection, ProgrammeClientPage, SessionLogger, BodyMap, VolumeCoverageWidget, checkin/[moment]/page.tsx, onboarding/page.tsx, login/page.tsx, nutrition/log/* inputs
+- **Result** : 100% grayscale compliance. All UI element colors are neutral (white/[0.04-0.10] bg, text-[#b0b0b0], text-[#808080], text-[#e0e0e0])
+- **Points de vigilance** : DS v4.0 audit complete; all violations resolved; TypeScript compilation pre-check passed (no new errors introduced by color changes); CHANGELOG updated with comprehensive summary
+
+### 2026-05-27 — Cycle Sync Activation — Macros Ajustées + Arc Gauge + Phase Modal
+
+- `supabase/migrations/20260527_cycle_sync_enabled.sql` — `cycle_sync_enabled BOOLEAN NOT NULL DEFAULT false` sur `nutrition_protocols`; `cycle_phase TEXT CHECK(...)` + `cycle_day INT CHECK(...)` sur `client_daily_checkins` — **appliquer manuellement**
+- `lib/nutrition/types.ts` — `NutritionProtocol.cycle_sync_enabled: boolean` ajouté
+- `app/api/clients/[clientId]/nutrition-protocols/route.ts` + `[protocolId]/route.ts` — `cycle_sync_enabled` dans schemas Zod + payload Supabase
+- `components/nutrition/studio/useNutritionStudio.ts` — `cycleSyncEnabled` state, chargé depuis `existingProtocol`, inclus dans `buildPayload`
+- `components/nutrition/studio/CalculationEngine.tsx` — toggle Désactivé/Activé pour Cycle Sync; quand activé : badge Actif (violet `#a855f7`) + CycleSyncPhaseGrid + détails cycleState
+- `components/nutrition/studio/NutritionStudio.tsx` — props `cycleSyncEnabled` + `onCycleSyncEnabledChange` passées à CalculationEngine
+- `app/client/nutrition/page.tsx` — `cycle_sync_enabled` lu depuis protocole, runtime adjustment APRÈS `getCycleStateFromLogs`: `target` muté avec deltas `getCycleSyncAdjustment(phase)`
+- `app/client/nutrition/NutritionClientPage.tsx` — `CyclePhasePill` remplacé par `CycleArcIndicator` + `CyclePhaseModal` (context="nutrition")
+- `app/client/programme/ProgrammeClientPage.tsx` — `CyclePhasePill` remplacé par `CycleArcIndicator` + `CyclePhaseModal` (context="training")
+- `components/client/cycle/CycleArcIndicator.tsx` — double arc SVG (arc phase + arc cycle complet), clickable, phase color + confidence dot
+- `components/client/cycle/CyclePhaseModal.tsx` — bottom sheet Framer Motion `z-[80]`, lit `PHASE_CONTENT[phase][context]`, impact card + bullets
+- `lib/client/cycle/phaseContent.ts` — 8 blocs contenu (4 phases × 2 contextes nutrition/training): title, subtitle, bullets×3, impact
+- `tests/lib/cycle/phaseContent.test.ts` — 2 tests Vitest PASS (structure + ≥3 bullets)
+- `components/client/smart/ProtocolRationale.tsx` — `showCycle` gated sur `cycleSyncEnabled && cycleState.hasActiveCycle`; step cycle avec delta → kcal ajusté, `phaseColor` depuis `PHASE_COLORS`
+- `app/api/client/checkin/route.ts` — IIFE best-effort post-checkin: fetch `menstrual_cycle_logs`, `getCycleStateFromLogs`, update `cycle_phase` + `cycle_day` sur le check-in
+- Points de vigilance : runtime adjustment DOIT être après `cycleState = getCycleStateFromLogs(...)` dans `page.tsx` (dépendance d'ordre) ; `CycleArcIndicator` utilise `rotate(-90)` sur le SVG pour démarrer arc en haut ; migration `20260527_cycle_sync_enabled` à appliquer manuellement
 
 ### 2026-05-26 — Cycle Sync v2 — Système Complet (history-based engine + full PWA integration)
 
@@ -158,6 +189,9 @@
 - [ ] Nutrition Engine — appliquer migration `20260525_nutrition_weekly_reviews` manuellement via Supabase Dashboard
 - [x] Cycle Sync v2 — history-based engine, CyclePhasePill TopBars, LogPeriodSheet FAB, Profile section, ProtocolRationale per-day, Studio second source of truth (2026-05-26)
 - [ ] Cycle Sync v2 — appliquer migration `20260526_menstrual_cycle_logs` manuellement via Supabase Dashboard
+- [x] Cycle Sync Activation — coach toggle, runtime macro adjustment, CycleArcIndicator, CyclePhaseModal, check-in logging (2026-05-27)
+- [x] Cycle Sync Activation — appliquer migration `20260527_cycle_sync_enabled` manuellement via Supabase Dashboard
+- [x] DS v4.0 PWA Compliance — systematic color audit & fixes (2026-05-28) — all colored accents/badges/trends eliminated
 - [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard

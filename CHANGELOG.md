@@ -3,7 +3,122 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-27
+
+FIX: mailer.ts + AssessmentForm.tsx — DS v3.0 → DS v4.0 : accent #ffe01e → #f2f2f2, bg #0d0d0d → #080808, card #161616 → #111111, CTA texte #0d0d0d → #080808
+FIX: PrepTimeModal — DS v3.0 : suppression #FFB800, icon/timer/toggle/CTA en tokens neutres (blanc)
+FIX: TempoGuideModal — diamants : 5 points (0/0.25/0.5/0.75/1), couleurs correctes (vert=creux+montée, bleu=sommet+descente)
+FIX: TempoGuideModal — vitesse balle linéaire pur (ease-in/out quad supprimé), tempo exact respecté
+FEATURE: invite/route.ts — client avec last_sign_in_at reçoit sendAccessLinkEmail (magic link → /client) au lieu de sendInvitationEmail (set-password); mode: 'access_link' retourné
+FIX: onboarding/page.tsx — lien discret "J'ai déjà un compte — Me connecter" sous form password → /client/login
+CHORE: clientTranslations.ts — clé onboarding.password.alreadyAccount (fr/en/es)
+REFACTOR: mailer.ts — FROM "STRYV" → "STRYVR", DS v3.0 colors (#0d0d0d bg, #ffe01e CTA, #161616 card), silver logo PNG in email header, coachSignature() added to all client-facing emails, footer "© STRYVR"
+FIX: AssessmentForm.tsx (bilan page) — logo /images/logo.png → /logo/logo-stryvr-silver.png, bg #0d0d0d, accent #ffe01e, card #161616, submit button DS v3.0
+FIX: client pages (login, onboarding, access/invalid, access/expired, acces-suspendu) — logo path /images/logo-stryvr.svg → /logo/logo-stryvr-silver.png (was broken — file didn't exist in public/images/)
+CHORE: public/logo/logo-stryvr-silver.png — canonical silver logo (clean filename)
+CHORE: public/images/logo.png + logo-stryvr-silver.png — copies for coach layout + legacy paths
+
+## 2026-05-28
+
+FEATURE: VoiceLogSheet — toggle Voix/Texte dans la layer recording; mode Texte = textarea direct + bouton Analyser → même pipeline voice-parse que la dictée; mode Voix inchangé
+FEATURE: NutritionMealsList — edit entry quantity inline (Pencil icon per ingredient row, PATCH /api/client/nutrition/entries/[id]); delete entry per row (DELETE same route); meal total calories/macros update optimistically after edit
+FIX: NutritionMealsList — TimeEditor remplacé: sr-only + showPicker() ne marche pas iOS Safari; nouveau popover avec input type="time" visible (fontSize:16 anti-zoom, colorScheme:dark), PATCH logged_at en DB
+FEATURE: SmartNutritionHero — hydration section clickable (onWaterClick prop); NutritionClientPage wires QuickWaterModal to open directly from the hydration bar
+FIX: NutritionMealsList — cards collapsed by default (was all-open); MealTypeChooser click no longer toggles card expand/collapse (stopPropagation on button + dropdown); dropdown no longer clipped by card overflow-hidden
+
+FIX: VolumeCoverageWidget — always visible even with 0 sessions this week; shows empty state "Aucune série complétée" instead of hiding; header shows "Semaine en cours" when sessionsCount=0
+FIX: SessionLogger progression chart — labels below sparkline now show first/last session weights (chronological anchors) instead of min/max values which caused apparent inversion when charge decreased
+FEATURE: Water log history + delete — QuickWaterModal shows today's entries (amount + time) with trash button per entry; GET /api/client/water returns logs by date; DELETE /api/client/water/[id] removes entry; POST now returns id for optimistic list update; onDeleted callback for optimistic subtraction in SmartNutritionWidget
+FIX: NutritionMealsList — key={date} force remount on date navigation; useState(initialMeals) ne se resynchronisait pas, historique restait vide sur jours précédents
+REFACTOR: SmartNutritionHero — arc r=76 (was 85), strokeWidth=7 (was 10), Restant/Objectif 20px font-bold (was 24px black), Consommé 28px (was 32px) — meilleure aération
+REFACTOR: SmartNutritionHero + SmartNutritionWidget — jauges toujours colorées (base color) dès 0%; alerte amber ≥90%, rouge >100% ; suppression du gris par défaut pour état 'under'
+FIX: PWA — prevent iOS Safari auto-zoom on input focus via global font-size: 16px !important on input/textarea/select
+REFACTOR: SmartNutritionHero — arc 240° gauge (r=85 cx=110 cy=110), layout 3 valeurs [Restant | Consommé | Objectif], macros label→barre→Xg/Xg, séparateur hydratation
+FIX: food-items API search — ilike '%oeuf%' misses 'Œuf' (ligature); now generates alternate forms oe↔œ ae↔æ and uses .or() with all patterns
+FIX: food-items search — use word-boundary regex (PostgreSQL \m\M via imatch) instead of ilike; prevents "bœuf" matching query "œuf"
+FIX: NutritionLogContent embedded — footer sticky→shrink-0; sticky in flex container without overflow parent doesn't stick, footer was hidden behind absolute motion div
+FIX: NutritionStudio — pb-40 on all 3 column scroll containers so content clears NavDock at bottom
+FIX: NutritionStudio — document.body.style.overflow=hidden on mount blocks page scroll; h-[calc(100vh-88px)] on main; 3 columns now scroll independently
+FIX: ClientIntelligencePanel — bilan date button shows selected bilan date instead of always submissions[0]
+FIX: useNutritionStudio — recalculation now uses biometricsConfig overrides (weight/height/bf/bmr) so ParameterAdjustmentPanel changes apply immediately; biometricsConfig added to deps
+FIX: ClientIntelligencePanel — MissingDataPanel save now updates clientData via onClientDataChange so MissingDataAlerts clears and recalculation triggers
+FIX: NutritionStudio — remove useSetFullscreenPage(true) which was hiding NavDock on all nutrition protocol edit/new pages; NavDock now visible consistently like entrainement pages
+FIX: session/[sessionId]/page.tsx — lastPerformance query rewritten to start from client_session_logs (client_id direct filter) instead of client_set_logs with broken embedded filter; same pattern as exercise-history route; fixes empty history causing no set recommendations
+
+## 2026-05-28
+
+FIX: Nutrition TopBar — badge jour entraînement redesigné : fond vert transparent rgba(93,186,135,0.10), bordure vert rgba(93,186,135,0.28), texte #5dba87 (TRAINING_ACCENT) ; badge repos : fond/bordure neutres
+REFACTOR: ProfilAccordion — supprime section "Données corporelles" (doublon avec onglet Métriques)
+FIX: ProfileForm — inputs bg-[#1e1e1e] + border border-white/[0.08] pour contraste sur fond accordion #111111, focus:border-white/20
+FIX: AccordionSection — séparateur border-t border-white/[0.06] entre header et contenu
+
+FIX: TempoGuideModal — auto-pause quand reps planifiées terminées (overlay "Terminé / Continuer" pour éviter reps fantômes), reset autoFinishedFiredRef sur "Continuer"
+REFACTOR: TempoGuideModal — couleurs balle : CON=vert #5dba87, ECC=bleu #3b82f6, ISO/PAUSE=rouge ; prédictif inversé (fin ISO annonce ECC=bleu, fin PAUSE annonce CON=vert) ; ACCENT_TEMPO=#5dba87 (countdown/GO/ready) ; diamants peak=vert, creux=bleu
+REFACTOR: Training accent color — #5dba87 (protein green) appliqué BodyMap, VolumeCoverageWidget, SetRow (swipe+chip+checkmark), SmartWorkoutHero, SessionLogger (progression/sparkline/TOP/PR) — token TRAINING_ACCENT exporté depuis ui-colors.ts
+REFACTOR: Nutrition color system — Protéines #5dba87, Glucides #ffd15e, Lipides #ff8660, Kcal arc #689ffa, Eau #2373c8 (single source lib/nutrition/ui-colors.ts, propagated to all nutrition components)
+REFACTOR: NutritionClientPage — SmartAlertsFeed moved after SmartNutritionHero, before RemainingBreakdown
+
+## 2026-05-28 — DS v4.0 Complete PWA Compliance Audit (Phase 2)
+
+REFACTOR: DS v4.0 PWA color audit & fixes — eliminated all colored accents, badges, borders, shadows across 40+ files in /client, /components/client, /app/api routes. Replaced colored trends (green/red/amber/yellow), colored badges (meal/water/checkin/strength/deload alerts), interim grays (#2a2a2a/#2e2e2e/#404040), and accent borders with strict grayscale tokens (white/[0.04-0.10], text-[#b0b0b0], text-[#808080]). Files audited: TdeeChart, OneRMWidget, SmartAlertsFeed, DeloadAlertBanner, VoiceLogSheet, SetRow, RemainingBreakdown, SmartAgendaTimeline, metrics/* (VitalityTab, MetricCard, MetricExpandedChart, etc.), ChatConversation, ChatPage, ChatTodayStrip, NewProtocolBanner, QuickLogSheet. Data chart tokens (--data-copper, --data-gold, --data-petrol) remain unchanged and audit-verified for chart-only usage.
+
+## 2026-05-27
+
+FEATURE: Cycle Sync Activation — protocol-level toggle (coach studio), runtime macro adjustment at API read time, double-arc SVG TopBar gauge (CycleArcIndicator), CyclePhaseModal bottom sheet (nutrition/training contexts), ProtocolRationale cycle step gated on cycleSyncEnabled, check-in phase logging best-effort IIFE
+SCHEMA: cycle_sync_enabled boolean on nutrition_protocols, cycle_phase + cycle_day on client_daily_checkins (migration 20260527_cycle_sync_enabled.sql — apply manually)
+FIX: Hydration modal — formule empirique calibrée musculation: 10 ml/kg/h × coeff_goal × coeff_muscles (jambes 1.20 / haut corps 1.05 / isolation 0.90) depuis primary_muscles, fallback genre-aware (75kg H / 60kg F), min 200ml, arrondi 25ml
+FEATURE: GET /api/client/exercise-history — route dédiée historique par exercice: 16 semaines, groupé par séance, best_weight/set list/rir, all_time_best, progression total
+FEATURE: SessionLogger — progression overlay: fetch exercise-history au clic (loading spinner), sparkline SVG charge max multi-séances (petrol #2d7a62), delta vs dernière séance, 3 séances récentes avec sets détaillés, badge PR all-time
+REFACTOR: BodyMap — couleur muscles actifs → petrol #2d7a62 (rgba(45,122,98,...)) cohérent avec accent workout (ring série active, volume hebdo, completed sets)
+FEATURE: SessionLogger — progression overlay remplace placeholder: affiche sets semaine dernière (weight×reps, RIR, badge TOP), sets complétés cette séance, delta best weight avec badge vert/rouge
+FIX: ExerciseBlock — "Add Set" traduit en "Ajouter une série"
+FIX: setRecommendation — rir_hold (Path A): rir_actual <= target-2 était impossible quand target_rir <= 1 (ex: 0 <= -1 = false) → corrigé en rir_actual < effectiveTargetRir; RIR 0 (échec) bloque désormais systématiquement l'overload
+FIX: setRecommendation — lastRirCompliant (Path A): autorisait RIR 0 historique comme "conforme" → ajout garde rir >= 1
+FIX: setRecommendation — Path B inZone + RIR 0: ne tente plus d'ajouter une rep à l'échec musculaire
+FEATURE: SetRow — affiche repos réel (rest_sec_actual) dans completed state; SetRowData.rest_sec_actual ajouté comme champ optionnel (SessionLogger l'alimente déjà, cast préservé)
+REFACTOR: SetRow — completed state refonte: même layout colonnes que pending (type pill | repos | reps | kg | RIR | tempo slot | check), type pill cliquable post-validation (onTypePress), ring petrol #2d7a62 au lieu de jaune, CheckCircle petrol, PR+cue inline
+FIX: ExerciseBlock — label "Tempo" dans header colonne (était span vide); ring série active rgba(45,122,98,0.45) au lieu de rgba(255,224,30,0.2)
+REFACTOR: BodyMap — remplace couleur jaune #ffe01e par cuivre #8c5230 (rgba(140,82,48,...)) pour fill muscles actifs (mode intensityMap et fallback binaire)
+FIX: ProgrammeClientPage — supprime hover:bg-[#ffd000] du bouton Commencer (remplacé par hover:bg-[#e0e0e0] neutre)
+REFACTOR: VolumeCoverageWidget — couleur barre petrol #2d7a62 (au lieu de green), amber #c47c2b (au lieu de #f59e0b) pour dépassement MAV; masque widget si sessionsCount === 0 ou aucun groupe avec actual > 0
+FIX: voice-parse system prompt — added homophone correction rule; SpeechRecognition transcribes without food context (ex: "port" instead of "porc"); LLM now instructed to reinterpret homophones in nutritional context
+FIX: VoiceLogSheet logMeal — food-items POST returns { data: { id } } but code read c.id (undefined); only pre-existing items had food_item_id, new items were dropped from entries; fixed to c.data?.id ?? c.id
+FIX: CyclePhasePill — lutéale color was #8c5230 (copper) instead of #a855f7 (purple); all phase colors now match CycleSyncPhaseGrid tokens (green/amber/purple/red)
+REFACTOR: CycleSyncPhaseGrid — phase cards now show base + delta = result per macro when baseMacros available (e.g. "1518 +100 kcal = 1618 kcal"); removed redundant "Base actuelle" footer section; falls back to delta-only when baseMacros null
+FIX: Cycle status coach route — wrong column name `assessment_submission_id` → `submission_id` was silently killing bilan fallback lookup; cycle phase now resolves correctly for clients with bilan data but no app logs
+FIX: CycleSyncPhaseGrid — non-current phases now dimmed (opacity 35%) when current phase is known; only active phase rendered at full color
+REFACTOR: CalculationEngine cycle section — label "Source de vérité 2" → "Cycle menstruel de la cliente"; no-data state replaced with amber alert card; no-log state shows guidance to Profil → Mon Cycle
+
+FIX: CoachShell PageContent — infinite remount loop fixed: fullscreen/non-fullscreen layouts had different tree depths, causing React to unmount+remount children on every fullscreen toggle, which re-triggered useSetFullscreenPage cleanup (false) → effect (true) → remount cycle; now always renders same two-div structure, only className changes
+FIX: ChatPage — BottomNav overlap with ChatInputBar fixed (bottom 74px → 96px; BottomNav h-70+pb-3=82px was causing visual collision)
+FIX: NutritionClientPage — "Ajouter un repas" empty-state now opens MealLogSheet instead of router.push to full /nutrition/log page; added onAddMeal prop to NutritionMealsList
+FIX: FreeActivitySheet — datetime-local field overflow on iOS fixed via styled overlay div + invisible native input
+FIX: FreeActivitySheet — range slider thumb no longer shows green DS v2.0 border/shadow; added .slider-client CSS class (neutral white thumb, no accent)
+
+FIX: NutritionStudio edit page — infinite loading loop fixed: setSelectedSubmissionId inside the fetch effect was re-triggering setClientLoading(true) on every mount; split into resolvedSubmissionId (display-only, server-assigned) vs selectedSubmissionId (user-triggered refetch only)
+FIX: Nutrition Protocol list page — layout skeleton replaced with minimal generic cards (was mimicking client profile page); nutrition skeleton updated to match actual protocol card structure (header + day rows + macro bar)
+FIX: VoiceLogSheet — recognition.start() wrapped in try-catch; startingRef reset on failure preventing stuck state blocking all subsequent recordings; stopRecording nulls streamRef/audioCtxRef; onend restart failure shows error instead of silent exit
+FIX: VoiceLogSheet — "Ré-enregistrer" button no longer wraps; tracking reduced to 0.08em, text-[11px], whitespace-nowrap, flex-1; "Analyser" uses flex-[1.4] instead of flex-[2] for balanced proportions
+REFACTOR: BottomNav — active pill now covers icon+label (was icon-only white); bg rgba(255,255,255,0.10) gray instead of #f2f2f2 white; icon+label both #e8e8e8 on active; icon size unified to 21 (was 15/19); nav height 62→70px; FAB circle→rounded square (borderRadius 14, matches active pill, nav bar is 22)
+
+
+
+FIX: QuickLogSheet — "Repas" action now opens MealLogSheet as sub-sheet directly instead of navigating to /client/nutrition (sheet was not opening)
+FIX: MealLogSheet — background changed from #111111 to #0a0a0a for contrast against #161616 surface items
+FIX: NutritionLogContent — all layers now use #161616 (DS surface token) for items/inputs; layer 1 category grid and search wrapped in #161616 section containers; layer 2 subcategories and layer 3 items wrapped in #161616 list containers with white/4 dividers; footer bg updated to #0a0a0a with top border
+
 ## 2026-05-26
+
+FIX: Nutrition Protocol page — layout skeleton replaced with minimal generic cards (was mimicking client profile page, non-representative); nutrition page skeleton updated to match actual protocol card structure (header + day rows + macro bar)
+FIX: ImageCropModal — srcUrl stabilized with useMemo (was recreated each render, causing crop snap-back and black canvas uploads)
+FIX: ImageCropModal — completedCrop set on image load so confirm works without requiring a drag interaction
+FIX: ChatBubble — removed hardcoded 'C' fallback initial; shows '?' when coach info not loaded
+FIX: coach-info API — returns 2-char initials (first + last name) instead of single char
+
+FEATURE: NutritionStudio — resizable columns (drag dividers), fullscreen layout mode, per-column scroll isolation matching Workout Studio behavior
+REFACTOR: Nav label "Nutrition" → "Nutrition Studio" in protocoles dropdown + list page TopBar
+
+
 
 FEATURE: Cycle Sync v2 — menstrual_cycle_logs table + cycleEngine (personal avg cycle length, 28 tests), client API routes (POST /cycle/log, GET /cycle/status), coach API route (GET /clients/[clientId]/cycle/status)
 FEATURE: CyclePhasePill component — phase/day/confidence pill shown in Nutrition + Programme + SessionLogger TopBars (female-gated)
