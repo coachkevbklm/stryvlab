@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Mic, X, Trash2, ChevronRight, Plus } from "lucide-react"
+import { Mic, X, Trash2, ChevronRight, Plus, RotateCcw, Keyboard } from "lucide-react"
 import { useClientT } from "@/components/client/ClientI18nProvider"
 import { cleanTranscript, type VoiceItem } from "@/lib/nutrition/voice"
 import type { MealType } from "@/lib/nutrition/food-items"
 
-type Layer = "recording" | "processing" | "review"
+type Layer = "recording" | "transcribing" | "transcript" | "processing" | "review"
 type RecordMode = "idle" | "recording"
+type EntryInputMode = "voice" | "text"
 
 // Extends VoiceItem with per-gram nutritional bases for correct quantity recalculation
 type DisplayItem = VoiceItem & {
@@ -40,30 +41,33 @@ interface VoiceLogSheetProps {
   lang?: string
 }
 
-const MAX_RECORD_SEC = 90 // hard recording limit — auto-stops + parses
+const MAX_RECORD_SEC = 90
 
 const CONFIDENCE_STYLES: Record<string, string> = {
-  high:   "bg-[#22c55e]/15 text-[#22c55e]",
-  medium: "bg-[#f59e0b]/15 text-[#f59e0b]",
-  low:    "bg-red-500/15 text-red-400",
+  high:   "bg-white/[0.06] text-[#b0b0b0]",
+  medium: "bg-white/[0.06] text-[#b0b0b0]",
+  low:    "bg-white/[0.06] text-[#b0b0b0]",
 }
 
 export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOnly, mealId, lang = "fr" }: VoiceLogSheetProps) {
   const { t } = useClientT()
 
-  const [layer, setLayer]                   = useState<Layer>("recording")
-  const [mode, setMode]                     = useState<RecordMode>("idle")
-  const [rawTranscript, setRawTranscript]   = useState("")
-  const [interimTranscript, setInterimTranscript] = useState("")
-  const [error, setError]                   = useState<string | null>(null)
-  const [items, setItems]                   = useState<DisplayItem[]>([])
-  const [qtyDrafts, setQtyDrafts]           = useState<Record<number, string>>({})
-  const [mealType, setMealType]             = useState<MealType>("snack")
-  const [logging, setLogging]               = useState(false)
-  const [waveBars, setWaveBars]             = useState<number[]>([6, 6, 6, 6, 6, 6, 6])
-  const [elapsedSec, setElapsedSec]         = useState(0)
+  const [layer, setLayer]                           = useState<Layer>("recording")
+  const [mode, setMode]                             = useState<RecordMode>("idle")
+  const [inputMode, setInputMode]                   = useState<EntryInputMode>("voice")
+  const [textInput, setTextInput]                   = useState("")
+  const [editableTranscript, setEditableTranscript] = useState("")
+  const [error, setError]                           = useState<string | null>(null)
+  const [items, setItems]                           = useState<DisplayItem[]>([])
+  const [qtyDrafts, setQtyDrafts]                   = useState<Record<number, string>>({})
+  const [mealType, setMealType]                     = useState<MealType>("snack")
+  const [logging, setLogging]                       = useState(false)
+  const [waveBars, setWaveBars]                     = useState<number[]>([6, 6, 6, 6, 6, 6, 6])
+  const [elapsedSec, setElapsedSec]                 = useState(0)
 
-  const recognitionRef  = useRef<any>(null)
+  const recorderRef     = useRef<MediaRecorder | null>(null)
+  const chunksRef       = useRef<Blob[]>([])
+  const mimeTypeRef     = useRef<string>("audio/webm;codecs=opus")
   const analyserRef     = useRef<AnalyserNode | null>(null)
   const audioCtxRef     = useRef<AudioContext | null>(null)
   const streamRef       = useRef<MediaStream | null>(null)
@@ -71,12 +75,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   const maxTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const waveFrameRef    = useRef<number | null>(null)
   const modeRef         = useRef<RecordMode>("idle")
-  const accRef          = useRef("")
   const openRef         = useRef(open)
-  const startingRef     = useRef(false) // prevent double-start
-
-  const isSpeechSupported = typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
 
   openRef.current = open
   function setModeSync(m: RecordMode) { modeRef.current = m; setMode(m) }
@@ -87,18 +86,17 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     if (open) {
       setLayer("recording")
       setModeSync("idle")
-      setRawTranscript("")
-      setInterimTranscript("")
+      setInputMode("voice")
+      setTextInput("")
+      setEditableTranscript("")
       setError(null)
       setItems([])
       setElapsedSec(0)
       setWaveBars([6, 6, 6, 6, 6, 6, 6])
-      accRef.current = ""
+      chunksRef.current = []
     } else {
-      // Sheet closed — kill everything immediately, no parse
       stopAll()
       setModeSync("idle")
-      accRef.current = ""
     }
   }, [open])
 
@@ -106,7 +104,6 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setQtyDrafts({}) }, [items.length])
 
-  // Stop recording if user locks phone or switches tab
   useEffect(() => {
     function onHide() {
       if (modeRef.current === "recording") stopRecording()
@@ -115,20 +112,19 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     return () => document.removeEventListener("visibilitychange", onHide)
   }, [])
 
-  // ── Stop everything — called on close, unmount, timeout, visibility change ──
+  // ── Stop everything ────────────────────────────────────────────────────────
   function stopAll() {
     if (timerRef.current)    { clearInterval(timerRef.current);  timerRef.current = null }
     if (maxTimerRef.current) { clearTimeout(maxTimerRef.current); maxTimerRef.current = null }
     if (waveFrameRef.current){ cancelAnimationFrame(waveFrameRef.current); waveFrameRef.current = null }
+    if (recorderRef.current) { try { recorderRef.current.stop() } catch {} recorderRef.current = null }
     if (streamRef.current)   { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
     if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null }
-    try { recognitionRef.current?.abort() } catch {}
-    recognitionRef.current = null
     analyserRef.current = null
-    startingRef.current = false
+    chunksRef.current = []
   }
 
-  // ── Waveform animation ────────────────────────────────────────────────────
+  // ── Waveform animation ─────────────────────────────────────────────────────
   function startWave() {
     const analyser = analyserRef.current
     if (!analyser) return
@@ -147,7 +143,40 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     waveFrameRef.current = requestAnimationFrame(frame)
   }
 
-  // ── Parse transcript ───────────────────────────────────────────────────────
+  // ── Transcribe blob via Whisper ────────────────────────────────────────────
+  const transcribeBlob = useCallback(async (blob: Blob) => {
+    if (!openRef.current) return
+    const ext = mimeTypeRef.current.includes("mp4") ? "mp4" : "webm"
+    const file = new File([blob], `audio.${ext}`, { type: blob.type })
+    const form = new FormData()
+    form.append("audio", file)
+    try {
+      const res = await fetch("/api/client/nutrition/voice-transcribe", {
+        method: "POST",
+        body: form,
+      })
+      if (!res.ok) {
+        setError(t("voice.error_parse"))
+        setLayer("recording")
+        setModeSync("idle")
+        return
+      }
+      const { transcript } = await res.json()
+      if (!openRef.current) return
+      if (onTranscriptOnly) {
+        onTranscriptOnly(transcript)
+      } else {
+        setEditableTranscript(transcript)
+        setLayer("transcript")
+      }
+    } catch {
+      setError(t("voice.error_parse"))
+      setLayer("recording")
+      setModeSync("idle")
+    }
+  }, [t, onTranscriptOnly])
+
+  // ── Parse transcript → GPT ─────────────────────────────────────────────────
   const parseTranscript = useCallback(async (raw: string) => {
     if (!openRef.current) return
     const clean = cleanTranscript(raw, lang)
@@ -158,10 +187,10 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
       const res = await fetch("/api/client/nutrition/voice-parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: clean, physiological_date: today, lang, client_hour: new Date().getHours() }),
+        body: JSON.stringify({ transcript: clean, physiological_date: today }),
       })
-      if (res.status === 429) { setError(t("voice.error_rate_limit")); setLayer("recording"); return }
-      if (!res.ok)            { setError(t("voice.error_parse"));      setLayer("recording"); return }
+      if (res.status === 429) { setError(t("voice.error_rate_limit")); setLayer("transcript"); return }
+      if (!res.ok)            { setError(t("voice.error_parse"));      setLayer("transcript"); return }
       const data = await res.json()
       if (!openRef.current) return
       setItems((data.items ?? []).map(withBases))
@@ -169,62 +198,52 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
       setLayer("review")
     } catch {
       setError(t("voice.error_parse"))
-      setLayer("recording")
+      setLayer("transcript")
     }
   }, [lang, t])
 
-  // ── Stop recording + parse ─────────────────────────────────────────────────
+  // ── Stop recording → transcribing layer ───────────────────────────────────
   const stopRecording = useCallback(() => {
-    if (timerRef.current)    clearInterval(timerRef.current)
-    if (waveFrameRef.current) cancelAnimationFrame(waveFrameRef.current)
-    if (streamRef.current)   streamRef.current.getTracks().forEach(t => t.stop())
-    if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {})
-    try { recognitionRef.current?.stop() } catch {}
+    if (timerRef.current)     { clearInterval(timerRef.current);  timerRef.current = null }
+    if (maxTimerRef.current)  { clearTimeout(maxTimerRef.current); maxTimerRef.current = null }
+    if (waveFrameRef.current) { cancelAnimationFrame(waveFrameRef.current); waveFrameRef.current = null }
+    if (streamRef.current)    { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
+    if (audioCtxRef.current)  { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null }
+    // recorder.stop() triggers onstop → transcribeBlob
+    if (recorderRef.current) {
+      try { recorderRef.current.stop() } catch {}
+      recorderRef.current = null
+    }
     setWaveBars([6, 6, 6, 6, 6, 6, 6])
     setModeSync("idle")
-    const final = accRef.current.trim()
-    accRef.current = ""
-    if (final.length > 2 && openRef.current) {
-      if (onTranscriptOnly) {
-        onTranscriptOnly(final)
-      } else {
-        parseTranscript(final)
-      }
-    }
-  }, [parseTranscript, onTranscriptOnly])
+    setLayer("transcribing")
+  }, [])
 
   // ── Start recording ────────────────────────────────────────────────────────
   const startRecording = useCallback(async () => {
-    if (!isSpeechSupported) return
-    if (startingRef.current || modeRef.current === "recording") return // guard double-start
-    startingRef.current = true
+    if (modeRef.current === "recording") return
     setModeSync("recording")
-
     setError(null)
-    setRawTranscript("")
-    setInterimTranscript("")
     setElapsedSec(0)
-    accRef.current = ""
+    chunksRef.current = []
 
-    // Request mic — if sheet closed before getUserMedia resolves, abort
     let stream: MediaStream
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
-      startingRef.current = false
       setModeSync("idle")
       setError("Microphone inaccessible")
       return
     }
 
-    // Sheet may have closed while awaiting getUserMedia
     if (!openRef.current) {
       stream.getTracks().forEach(t => t.stop())
-      startingRef.current = false
+      setModeSync("idle")
       return
     }
 
     streamRef.current = stream
+
     try {
       const ctx = new AudioContext()
       audioCtxRef.current = ctx
@@ -236,49 +255,25 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
       startWave()
     } catch {}
 
-    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
-    const recognition = new SR()
-    recognition.lang = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-US"
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognitionRef.current = recognition
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : "audio/mp4"
+    mimeTypeRef.current = mimeType
 
-    recognition.onresult = (e: any) => {
-      if (!openRef.current) return
-      let interim = ""
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const text = e.results[i][0].transcript
-        if (e.results[i].isFinal) {
-          accRef.current = (accRef.current + " " + text).trim()
-          setRawTranscript(accRef.current)
-        } else {
-          interim += text
-        }
-      }
-      setInterimTranscript(interim)
+    const recorder = new MediaRecorder(stream, { mimeType })
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data)
     }
-
-    recognition.onerror = (e: any) => {
-      // network or no-speech errors — stop cleanly, don't loop
-      const fatal = ["network", "service-not-allowed", "not-allowed", "audio-capture"]
-      if (fatal.includes(e.error)) stopRecording()
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: mimeType })
+      transcribeBlob(blob)
     }
+    recorderRef.current = recorder
+    recorder.start(250)
 
-    recognition.onend = () => {
-      // Restart only if still actively recording (network blip recovery)
-      if (modeRef.current === "recording" && openRef.current) {
-        try { recognition.start() } catch { stopRecording() }
-      }
-    }
-
-    recognition.start()
-    startingRef.current = false
-
-    // Elapsed timer
     timerRef.current = setInterval(() => {
       setElapsedSec(p => {
         if (p + 1 >= MAX_RECORD_SEC) {
-          // Auto-stop at limit
           stopRecording()
           return MAX_RECORD_SEC
         }
@@ -286,14 +281,11 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
       })
     }, 1000)
 
-    // Hard timeout safety net (MAX_RECORD_SEC + 2s buffer)
     maxTimerRef.current = setTimeout(() => {
       if (modeRef.current === "recording") stopRecording()
     }, (MAX_RECORD_SEC + 2) * 1000)
+  }, [transcribeBlob, stopRecording])
 
-  }, [lang, isSpeechSupported])
-
-  // ── Toggle click ───────────────────────────────────────────────────────────
   function handleToggle() {
     if (modeRef.current === "idle") {
       startRecording()
@@ -302,6 +294,13 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
     }
   }
 
+  function handleReRecord() {
+    setEditableTranscript("")
+    setError(null)
+    setLayer("recording")
+    setElapsedSec(0)
+    chunksRef.current = []
+  }
 
   // ── Item editing ───────────────────────────────────────────────────────────
   function updateItem(index: number, field: keyof DisplayItem, value: any) {
@@ -353,7 +352,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name_fr: item.name, category_l1: "extras", category_l2: "divers", ...per100 }),
         })
-        if (res.ok) { const c = await res.json(); item.food_item_id = c.id; item.is_new = false }
+        if (res.ok) { const c = await res.json(); item.food_item_id = c.data?.id ?? c.id; item.is_new = false }
       } catch {}
     }
     const entries = validItems.filter(i => i.food_item_id).map(i => ({
@@ -384,7 +383,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
   const totalF    = items.reduce((s, i) => s + i.fat_g, 0)
   const newCount  = items.filter(i => i.is_new).length
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
-  const timeWarning = isActive && elapsedSec >= 70 // warn last 20s
+  const timeWarning = isActive && elapsedSec >= 70
 
   return (
     <AnimatePresence>
@@ -422,84 +421,173 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
             {/* Body */}
             <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-8">
 
-              {!isSpeechSupported && (
-                <div className="flex items-center justify-center h-40">
-                  <p className="text-white/40 text-[13px] text-center px-4">{t("voice.not_supported")}</p>
-                </div>
-              )}
-
               {/* ── LAYER: recording ── */}
-              {isSpeechSupported && layer === "recording" && (
-                <div className="flex flex-col items-center" style={{ paddingTop: 12, paddingBottom: 16, gap: 0 }}>
+              {layer === "recording" && (
+                <div className="flex flex-col" style={{ paddingTop: 4, paddingBottom: 16, gap: 0 }}>
 
-                  {/* Waveform */}
-                  <div className="flex items-center justify-center gap-[4px]" style={{ height: 44, marginBottom: 10 }}>
-                    {waveBars.map((h, i) => (
-                      <motion.div key={i}
-                        style={{ width: 4, borderRadius: 99, backgroundColor: isActive ? "#f2f2f2" : "#2e2e2e" }}
-                        animate={{ height: isActive ? h : 4 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Timer */}
-                  <span
-                    className="tabular-nums font-barlow-condensed font-bold tracking-[0.16em]"
-                    style={{ fontSize: 12, color: timeWarning ? '#ef4444' : isActive ? '#f2f2f2' : '#5a5a5a', marginBottom: 14 }}
-                  >
-                    {formatTime(elapsedSec)}
-                    {timeWarning && ` / ${formatTime(MAX_RECORD_SEC)}`}
-                  </span>
-
-                  {/* Transcript */}
-                  <div style={{ minHeight: 52, width: '100%', textAlign: 'center', padding: '0 8px', marginBottom: 24 }}>
-                    {interimTranscript && (
-                      <p className="text-[13px] text-white/35 italic leading-relaxed">{interimTranscript}</p>
-                    )}
-                    {rawTranscript && !interimTranscript && (
-                      <p className="text-[13px] text-white/60 leading-relaxed">{rawTranscript}</p>
-                    )}
-                    {!interimTranscript && !rawTranscript && (
-                      <p className="text-[13px] text-white/15 italic leading-relaxed">
-                        {isActive ? "En écoute…" : "Appuyez sur le bouton pour parler…"}
-                      </p>
-                    )}
-                  </div>
-
-                  {error && (
-                    <p className="text-[12px] text-red-400 text-center" style={{ marginBottom: 16 }}>{error}</p>
-                  )}
-
-                  {/* ── MIC BUTTON — idle=jaune, recording=gris+contour jaune ── */}
-                  <div style={{ marginBottom: 20 }}>
+                  {/* Mode toggle */}
+                  <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 mb-5">
                     <button
-                      onClick={handleToggle}
-                      className="flex flex-col items-center justify-center select-none"
-                      style={{
-                        width: 88, height: 88, borderRadius: 22, gap: 5,
-                        background: isActive ? '#222222' : '#f2f2f2',
-                        border: 'none',
-                      }}
+                      onClick={() => setInputMode("voice")}
+                      className={`flex-1 h-8 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.1em] transition-all ${
+                        inputMode === "voice" ? "bg-white/[0.10] text-white" : "text-white/30 hover:text-white/50"
+                      }`}
                     >
-                      <Mic size={28} strokeWidth={2}
-                        style={{ color: isActive ? '#f2f2f2' : '#080808' }}
-                      />
-                      <span style={{
-                        fontSize: 8, fontFamily: 'var(--font-barlow-condensed)', fontWeight: 700,
-                        textTransform: 'uppercase', letterSpacing: '0.14em', lineHeight: 1,
-                        color: isActive ? '#f2f2f2' : '#080808',
-                      }}>
-                        {isActive ? "ARRÊTER" : "ENREGISTRER"}
-                      </span>
+                      <Mic size={12} />
+                      Voix
+                    </button>
+                    <button
+                      onClick={() => setInputMode("text")}
+                      className={`flex-1 h-8 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-barlow-condensed font-bold uppercase tracking-[0.1em] transition-all ${
+                        inputMode === "text" ? "bg-white/[0.10] text-white" : "text-white/30 hover:text-white/50"
+                      }`}
+                    >
+                      <Keyboard size={12} />
+                      Texte
                     </button>
                   </div>
 
-                  {/* Hint */}
-                  <p className="font-barlow-condensed font-bold uppercase text-center"
-                    style={{ fontSize: 9, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.18)', lineHeight: 1.4 }}>
-                    {isActive ? "Appuyer pour arrêter et analyser" : "Appuyer pour enregistrer"}
+                  {/* ── Voice sub-panel ── */}
+                  {inputMode === "voice" && (
+                    <div className="flex flex-col items-center" style={{ gap: 0 }}>
+                      {/* Waveform */}
+                      <div className="flex items-center justify-center gap-[4px]" style={{ height: 44, marginBottom: 10 }}>
+                        {waveBars.map((h, i) => (
+                          <motion.div key={i}
+                            style={{ width: 4, borderRadius: 99, backgroundColor: isActive ? "#f2f2f2" : "#2e2e2e" }}
+                            animate={{ height: isActive ? h : 4 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Timer */}
+                      <span
+                        className="tabular-nums font-barlow-condensed font-bold tracking-[0.16em]"
+                        style={{ fontSize: 12, color: timeWarning ? '#b0b0b0' : isActive ? '#f2f2f2' : '#5a5a5a', marginBottom: 14 }}
+                      >
+                        {formatTime(elapsedSec)}
+                        {timeWarning && ` / ${formatTime(MAX_RECORD_SEC)}`}
+                      </span>
+
+                      {/* Spacer */}
+                      <div style={{ height: 52, marginBottom: 24 }} />
+
+                      {error && (
+                        <p className="text-[12px] text-red-400 text-center" style={{ marginBottom: 16 }}>{error}</p>
+                      )}
+
+                      {/* Mic button */}
+                      <div style={{ marginBottom: 20 }}>
+                        <button
+                          onClick={handleToggle}
+                          className="flex flex-col items-center justify-center select-none"
+                          style={{
+                            width: 88, height: 88, borderRadius: 22, gap: 5,
+                            background: isActive ? '#222222' : '#f2f2f2',
+                            border: 'none',
+                          }}
+                        >
+                          <Mic size={28} strokeWidth={2}
+                            style={{ color: isActive ? '#f2f2f2' : '#080808' }}
+                          />
+                          <span style={{
+                            fontSize: 8, fontFamily: 'var(--font-barlow-condensed)', fontWeight: 700,
+                            textTransform: 'uppercase', letterSpacing: '0.14em', lineHeight: 1,
+                            color: isActive ? '#f2f2f2' : '#080808',
+                          }}>
+                            {isActive ? "ARRÊTER" : "ENREGISTRER"}
+                          </span>
+                        </button>
+                      </div>
+
+                      <p className="font-barlow-condensed font-bold uppercase text-center"
+                        style={{ fontSize: 9, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.18)', lineHeight: 1.4 }}>
+                        {isActive ? "Appuyer pour arrêter" : "Appuyer pour enregistrer"}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── Text sub-panel ── */}
+                  {inputMode === "text" && (
+                    <div className="flex flex-col gap-4">
+                      <textarea
+                        autoFocus
+                        value={textInput}
+                        onChange={e => setTextInput(e.target.value)}
+                        rows={5}
+                        placeholder={"Ex: 3 œufs brouillés, 100g de riz basmati, une cuillère d'huile d'olive, 200ml de lait…"}
+                        className="w-full min-w-0 rounded-xl px-4 py-3 text-white/90 leading-relaxed resize-none focus:outline-none"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 16 }}
+                      />
+                      {error && <p className="text-[12px] text-red-400">{error}</p>}
+                      <button
+                        onClick={() => { setError(null); parseTranscript(textInput) }}
+                        disabled={textInput.trim().length < 3}
+                        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[12px] transition-all active:scale-[0.98] disabled:opacity-40"
+                        style={{ background: '#f2f2f2', color: '#080808' }}
+                      >
+                        <ChevronRight size={16} />
+                        Analyser
+                      </button>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* ── LAYER: transcribing ── */}
+              {layer === "transcribing" && (
+                <div className="flex flex-col items-center justify-center h-48 gap-5">
+                  <div className="h-10 w-10 border-2 border-[#2e2e2e] border-t-[#f2f2f2] rounded-full animate-spin" />
+                  <p className="text-[13px] text-white/50 font-barlow-condensed uppercase tracking-[0.14em]">
+                    Transcription…
                   </p>
+                </div>
+              )}
+
+              {/* ── LAYER: transcript — editable before analysis ── */}
+              {layer === "transcript" && (
+                <div className="flex flex-col gap-4" style={{ paddingTop: 4 }}>
+                  <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-white/40">
+                    Vérifier avant d'analyser
+                  </p>
+
+                  <textarea
+                    value={editableTranscript}
+                    onChange={e => setEditableTranscript(e.target.value)}
+                    rows={5}
+                    placeholder="Dictée vide — retapez manuellement ou ré-enregistrez"
+                    className="w-full min-w-0 rounded-xl px-4 py-3 text-white/90 leading-relaxed resize-none focus:outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 16 }}
+                  />
+
+                  {error && (
+                    <p className="text-[12px] text-red-400">{error}</p>
+                  )}
+
+                  <div className="flex gap-3">
+                    {/* Re-record */}
+                    <button
+                      onClick={handleReRecord}
+                      className="h-12 flex-1 flex items-center justify-center gap-2 rounded-xl font-barlow-condensed font-bold uppercase tracking-[0.08em] text-[11px] transition-all active:scale-[0.98] whitespace-nowrap"
+                      style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+                    >
+                      <RotateCcw size={13} />
+                      Ré-enregistrer
+                    </button>
+
+                    {/* Analyse */}
+                    <button
+                      onClick={() => parseTranscript(editableTranscript)}
+                      disabled={editableTranscript.trim().length < 3}
+                      className="h-12 flex-[1.4] flex items-center justify-center gap-2 rounded-xl font-barlow-condensed font-bold uppercase tracking-[0.14em] text-[12px] transition-all active:scale-[0.98] disabled:opacity-40"
+                      style={{ background: '#f2f2f2', color: '#080808' }}
+                    >
+                      <ChevronRight size={16} />
+                      Analyser
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -536,7 +624,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                             {t(item.confidence === "high" ? "voice.confidence_high" : item.confidence === "medium" ? "voice.confidence_med" : "voice.confidence_low")}
                           </span>
                           {item.is_new && (
-                            <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg bg-[#f59e0b]/15 text-[#f59e0b]">
+                            <span className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-lg bg-white/[0.06] text-[#b0b0b0]">
                               {t("voice.new_badge")}
                             </span>
                           )}
@@ -578,7 +666,7 @@ export default function VoiceLogSheet({ open, onClose, onSuccess, onTranscriptOn
                   </button>
 
                   {newCount > 0 && (
-                    <p className="text-[11px] text-[#f59e0b]/70">{t("voice.new_items_notice").replace("{n}", String(newCount))}</p>
+                    <p className="text-[11px] text-[#808080]">{t("voice.new_items_notice").replace("{n}", String(newCount))}</p>
                   )}
 
                   <div className="rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap"
