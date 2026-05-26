@@ -15,6 +15,8 @@ FEATURE: onboarding topbar context keys — check-in, calories, hydration, progr
 FEATURE: onboarding female conditional — cycle sync (period phase logging, coach adapts nutrition/training)
 FEATURE: OnboardingTour expansion — step 5 (TopBar indicators), step 6 (Cycle, female-only); isFemaleOnly gating, gender detection from /api/client/profile
 FEATURE: /api/client/profile endpoint — returns authenticated client data (id, first_name, last_name, email, gender, created_at) for tour gender detection
+FEATURE: coach/clients creation modal — gender select field (male/female/other/prefer_not_to_say); POST /api/clients now accepts + inserts gender
+FEATURE: gender system propagation — gender flows through /api/lab/client-search to calculators, nutrition engine (isFemale gates), OnboardingTour (female steps)
 
 ## 2026-05-27
 
