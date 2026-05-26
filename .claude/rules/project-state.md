@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-28**
+> **Dernière mise à jour : 2026-05-26****
 
 ---
 
@@ -41,6 +41,26 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-26 — DS v4.0 Sheets Alignment Complete — Zero Borders, Pure Gray Hierarchy
+
+- **Scope** : Align all logger sheets to QuickWaterModal reference pattern (zero borders, pure gray nuance via `bg-white/[0.XX]` opacity)
+- **FreeActivitySheet** — button colors: type selector `bg-[#1a1a1a]` active / `bg-white/[0.03]` inactive, submit button `bg-white/[0.10]` (was `bg-[#f2f2f2]`)
+- **MealLogSheet header** — mic button `bg-white/[0.06] text-white/60` (was `style={{ background: '#1a1a1a', color: '#808080' }}`)
+- **LogPeriodSheet** — date input removed `border border-white/[0.08]`, button colors: primary `bg-white/[0.10]` text white, secondary `bg-white/[0.03]`, cancel dot `bg-white/[0.30]` (was `#c0392b` hardcode)
+- **QuickLogSheet** — header close button `text-white/60` (was `text-[#5a5a5a]`), action items `bg-white/[0.03]` inactive / `bg-white/[0.06]` active (was `bg-white/[0.04]`), action icons `text-white/70` (was `text-[#c0392b]` red for cycle), cycle action `bg-white/[0.06]` no red special styling, secondary text `text-white/40` (was `text-[#5a5a5a]`)
+- **Pattern validated** : all sheets now match QuickWaterModal zero-border aesthetic with consistent gray opacity hierarchy across the app
+- **Points de vigilance** : QuickWaterModal still uses deprecated button colors (#2e2e2e, #1a1a1a) but user accepts as overall design superior; all other sheets aligned to pure gray token system; no borders anywhere
+
+### 2026-05-29 — Language Selector — First Question After Password Creation
+
+- `app/client/onboarding/page.tsx` — new Step type includes 'language' between 'password' and 'welcome'
+- Language selector UI: 3 buttons (FR/ES/EN) with flag emojis (🇫🇷 🇪🇸 🇬🇧), radio-style selection indicator
+- `handleLanguageSelect` → calls context's `setLang(langCode)` → atomically updates provider state + localStorage('client_lang')
+- `components/client/ClientI18nProvider.tsx` — exposed `setLang()` in context (updates both state + storage); watches localStorage mutations for cross-tab sync
+- `lib/i18n/clientTranslations.ts` — keys 'onboarding.language.title' + 'onboarding.language.subtitle' added for FR/EN/ES
+- Language preference flows through welcome screens → all content auto-translates via `t()` from context
+- Points de vigilance : localStorage key is 'client_lang' (shared with PreferencesForm); setLang() call immediately updates context (no delay), setTimeout(300ms) ensures visual feedback before transition
 
 ### 2026-05-28 — DS v4.0 PWA Compliance Complete — Color Audit & Systematic Fixes
 

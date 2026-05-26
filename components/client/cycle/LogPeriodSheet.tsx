@@ -128,7 +128,7 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
                 </div>
               ) : mode === 'confirm-conflict' ? (
                 <div className="space-y-3">
-                  <p className="text-[12px] font-barlow text-[#a0a0a0] leading-relaxed px-1">
+                  <p className="text-[12px] font-barlow text-[#808080] leading-relaxed px-1">
                     Un log existe déjà le {conflictDate}. Remplacer ?
                   </p>
                   <button
@@ -137,13 +137,13 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
                       logStart(pickedDate || today, true)
                     }}
                     disabled={loading}
-                    className="w-full h-[52px] rounded-xl bg-[#f2f2f2] text-[#080808] text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50"
+                    className="w-full h-[52px] rounded-xl bg-white/[0.10] text-white text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50"
                   >
                     Confirmer quand même
                   </button>
                   <button
                     onClick={() => setMode('main')}
-                    className="w-full h-[44px] rounded-xl bg-white/[0.04] text-[#a0a0a0] text-[13px] font-barlow active:bg-white/[0.08]"
+                    className="w-full h-[44px] rounded-xl bg-white/[0.03] text-[#808080] text-[13px] font-barlow active:bg-white/[0.06]"
                   >
                     Annuler
                   </button>
@@ -156,18 +156,18 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
                     value={pickedDate}
                     max={today}
                     onChange={e => setPickedDate(e.target.value)}
-                    className="w-full h-[52px] rounded-xl bg-white/[0.06] border border-white/[0.08] text-[#e0e0e0] text-[14px] font-barlow px-4 min-w-0"
+                    className="w-full h-[52px] rounded-xl bg-white/[0.06] text-[#e0e0e0] text-[14px] font-barlow px-4 min-w-0 outline-none"
                   />
                   <button
                     onClick={() => pickedDate && logStart(pickedDate)}
                     disabled={!pickedDate || loading}
-                    className="w-full h-[52px] rounded-xl bg-[#f2f2f2] text-[#080808] text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50"
+                    className="w-full h-[52px] rounded-xl bg-white/[0.10] text-white text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50"
                   >
                     {loading ? 'Enregistrement…' : 'Confirmer'}
                   </button>
                   <button
                     onClick={() => setMode('main')}
-                    className="w-full h-[44px] rounded-xl bg-white/[0.04] text-[#a0a0a0] text-[13px] font-barlow active:bg-white/[0.08]"
+                    className="w-full h-[44px] rounded-xl bg-white/[0.03] text-[#808080] text-[13px] font-barlow active:bg-white/[0.06]"
                   >
                     Retour
                   </button>
@@ -183,15 +183,15 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
                       <button
                         onClick={() => logStart(today)}
                         disabled={loading}
-                        className="w-full h-[52px] rounded-xl bg-[#f2f2f2] text-[#080808] text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full h-[52px] rounded-xl bg-white/[0.10] text-white text-[13px] font-barlow font-bold active:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        <span className="w-3 h-3 rounded-full bg-[#c0392b] shrink-0" />
+                        <span className="w-3 h-3 rounded-full bg-white/[0.30] shrink-0" />
                         Aujourd&apos;hui
                       </button>
                       <button
                         onClick={() => setMode('pick-start-date')}
                         disabled={loading}
-                        className="w-full h-[44px] rounded-xl bg-white/[0.04] text-[#a0a0a0] text-[12px] font-barlow active:bg-white/[0.08]"
+                        className="w-full h-[44px] rounded-xl bg-white/[0.03] text-[#808080] text-[12px] font-barlow active:bg-white/[0.06]"
                       >
                         Choisir une autre date
                       </button>
@@ -208,7 +208,7 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
                         <button
                           onClick={logEnd}
                           disabled={loading}
-                          className="w-full h-[44px] rounded-xl bg-white/[0.04] text-[#e0e0e0] text-[13px] font-barlow active:bg-white/[0.08] disabled:opacity-50"
+                          className="w-full h-[44px] rounded-xl bg-white/[0.03] text-[#e0e0e0] text-[13px] font-barlow active:bg-white/[0.06] disabled:opacity-50"
                         >
                           {loading ? 'Enregistrement…' : 'Mes règles sont terminées'}
                         </button>

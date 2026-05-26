@@ -3,6 +3,20 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-26
+
+DS v4.0 REFACTOR: Align all logger sheets (FreeActivitySheet, MealLogSheet, LogPeriodSheet, QuickLogSheet) to QuickWaterModal zero-border pattern — pure gray hierarchy via bg-white/[0.XX] opacity, button colors bg-[#1a1a1a] active / bg-white/[0.03-0.06] inactive, no borders, no interim gray hardcodes (#2e2e2e, #c0392b cycle icon → white/[0.30])
+DS v4.0 FIX: FreeActivitySheet button colors type selector bg-[#1a1a1a] active / bg-white/[0.03] inactive, submit button bg-white/[0.10]
+DS v4.0 FIX: MealLogSheet mic button bg-white/[0.06] (was #1a1a1a inline style + #808080 text)
+DS v4.0 FIX: LogPeriodSheet date input remove border border-white/[0.08], button colors primary bg-white/[0.10], secondary bg-white/[0.03], cancel dot bg-white/[0.30] (was #c0392b hardcode)
+DS v4.0 FIX: QuickLogSheet header close button text-white/60 (was text-[#5a5a5a]), action button icons text-white/70 (was text-[#c0392b] red), action label secondary text-white/40 (was text-[#5a5a5a]), cycle action bg-white/[0.06] (no red special bg)
+
+## 2026-05-29
+
+FEATURE: Language selector — new 'language' step in onboarding after password creation; displays 3 languages (FR/ES/EN) with flag emojis; stores preference in localStorage + context
+REFACTOR: ClientI18nProvider — expose setLang() function in context; watch localStorage mutations for cross-tab support; setLang updates both state + storage atomically
+FIX: onboarding/page.tsx — language selector stores in 'client_lang' (consistent with provider); uses context setLang() instead of direct localStorage access
+
 ## 2026-05-28
 
 SCHEMA: Add password_set flag to coach_clients — tracks onboarding completion independently from last_sign_in_at

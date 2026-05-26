@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Drop, ForkKnife, Lightning } from "@phosphor-icons/react";
@@ -10,13 +10,14 @@ import type { CycleState } from "@/lib/cycle/cycleEngine";
 const QuickWaterModal   = dynamic(() => import("@/components/client/QuickWaterModal"),           { ssr: false });
 const FreeActivitySheet = dynamic(() => import("@/components/client/smart/FreeActivitySheet"),   { ssr: false });
 const LogPeriodSheet    = dynamic(() => import("@/components/client/cycle/LogPeriodSheet"),      { ssr: false });
+const MealLogSheet      = dynamic(() => import("@/components/client/smart/MealLogSheet"),        { ssr: false });
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-type SubSheet = "water" | "activity" | "cycle" | null;
+type SubSheet = "water" | "activity" | "cycle" | "meal" | null;
 
 const BASE_ACTIONS = [
   {
@@ -40,7 +41,6 @@ const BASE_ACTIONS = [
 ];
 
 export default function QuickLogSheet({ open, onClose }: Props) {
-  const router = useRouter();
   const [sub, setSub] = useState<SubSheet>(null);
   const [cycleState, setCycleState] = useState<CycleState | null>(null);
 
@@ -61,7 +61,7 @@ export default function QuickLogSheet({ open, onClose }: Props) {
     if (key === "water")    { setSub("water"); return; }
     if (key === "activity") { setSub("activity"); return; }
     if (key === "cycle")    { setSub("cycle"); return; }
-    if (key === "meal")     { handleClose(); router.push("/client/nutrition"); }
+    if (key === "meal")     { setSub("meal"); return; }
   }
 
   const actions = [
@@ -109,7 +109,7 @@ export default function QuickLogSheet({ open, onClose }: Props) {
                 </p>
                 <button
                   onClick={handleClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-[#5a5a5a] active:bg-white/[0.08]"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-white/60 active:bg-white/[0.08]"
                 >
                   <X size={15} />
                 </button>
@@ -121,16 +121,16 @@ export default function QuickLogSheet({ open, onClose }: Props) {
                   <button
                     key={key}
                     onClick={() => handleAction(key)}
-                    className="flex items-center gap-4 px-4 h-[60px] rounded-xl bg-white/[0.04] active:bg-white/[0.08] transition-colors text-left"
+                    className="flex items-center gap-4 px-4 h-[60px] rounded-xl bg-white/[0.03] active:bg-white/[0.06] transition-colors text-left"
                   >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${key === "cycle" ? "bg-[#c0392b]/10" : "bg-white/[0.06]"}`}>
-                      <Icon size={18} className={key === "cycle" ? "text-[#c0392b]" : "text-[#e0e0e0]"} />
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${key === "cycle" ? "bg-white/[0.06]" : "bg-white/[0.06]"}`}>
+                      <Icon size={18} className={key === "cycle" ? "text-white/70" : "text-white/70"} />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[14px] font-barlow font-semibold text-[#e0e0e0] leading-tight">
                         {label}
                       </span>
-                      <span className="text-[11px] font-barlow text-[#5a5a5a] leading-tight truncate">
+                      <span className="text-[11px] font-barlow text-white/40 leading-tight truncate">
                         {subLabel}
                       </span>
                     </div>
@@ -157,6 +157,11 @@ export default function QuickLogSheet({ open, onClose }: Props) {
         cycleState={cycleState}
         onClose={() => { setSub(null); onClose(); }}
         onUpdated={(newState) => { setCycleState(newState); setSub(null); onClose(); }}
+      />
+      <MealLogSheet
+        open={sub === "meal"}
+        onClose={() => { setSub(null); onClose(); }}
+        onSuccess={() => { setSub(null); onClose(); }}
       />
     </>
   );
