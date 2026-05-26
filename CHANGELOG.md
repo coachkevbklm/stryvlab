@@ -3,6 +3,12 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-29
+
+FEATURE: Replace SpeechRecognition with Whisper API for voice nutrition logger — fixes "whey"/"Nutri Muscle" homophone errors via sports nutrition vocabulary prompt
+FEATURE: Add /api/client/nutrition/voice-transcribe route — Whisper whisper-1 model, auto language detection, 25MB limit, 10 req/min rate limit
+REFACTOR: Remove lang param from /api/client/nutrition/voice-parse route — language detection now handled by Whisper
+
 ## 2026-05-26
 
 DS v4.0 REFACTOR: Align all logger sheets (FreeActivitySheet, MealLogSheet, LogPeriodSheet, QuickLogSheet) to QuickWaterModal zero-border pattern — pure gray hierarchy via bg-white/[0.XX] opacity, button colors bg-[#1a1a1a] active / bg-white/[0.03-0.06] inactive, no borders, no interim gray hardcodes (#2e2e2e, #c0392b cycle icon → white/[0.30])
@@ -13,9 +19,17 @@ DS v4.0 FIX: QuickLogSheet header close button text-white/60 (was text-[#5a5a5a]
 
 ## 2026-05-29
 
+REFACTOR: Full onboarding copy rewrite — all screens + tour in natural human language; screen0 sets expectations; screen1 "semaine par semaine" explains coach-designed weekly schedule; screen2 "app te guide" explains audio tempo/rest/logging as actions not features; screen3 "simplifiée" explains daily targets + voice logging + adherence; screen4 reframed as "espace de discussion" with morning/evening messages; tour steps rewritten in second person pointing at specific UI elements (ici/là)
+REFACTOR: OnboardingTour copy — all steps simplified to natural language: step0 (Chat with coach), step1 (Your workouts), step2 (Nutrition tracking), step3 (Quick add), step4 (Your body & energy), female cycle; removed jargon (check-ins auto, protocol, tabs, real-time) in favor of plain user-centric language
+FIX: OnboardingTour — remove TopBar step entirely; it had no target element, no spotlight, floated at bottom:120 over random page with wrong text; TopBar context is self-explanatory in use
+FIX: OnboardingTour button hover color — #ffd000 (yellow) → white (DS v3.0 grayscale compliance)
 FEATURE: Language selector — new 'language' step in onboarding after password creation; displays 3 languages (FR/ES/EN) with flag emojis; stores preference in localStorage + context
 REFACTOR: ClientI18nProvider — expose setLang() function in context; watch localStorage mutations for cross-tab support; setLang updates both state + storage atomically
 FIX: onboarding/page.tsx — language selector stores in 'client_lang' (consistent with provider); uses context setLang() instead of direct localStorage access
+FIX: onboarding screen1 French text — "Ton progression" → "Ta progression" (correct feminine noun agreement)
+REFACTOR: onboarding screens 1-2 copy — eliminate redundancy: screen1 = program design (plan structure, variety, progression cycles); screen2 = session execution (tempo guide, RIR feedback, real-time alerts)
+FIX: onboarding screens 3-4 French grammar — screen3 subtitle rewrote "Suivi simple, real-time" → "Suivi real-time", row2 fixed "dérive ton régularité" → "tu dérives de tes objectifs"; screen4 subtitle "Un système d'IA" → "Un coach IA"
+REFACTOR: onboarding screens 2-4 accuracy audit — verified implementation matches copy; screen2: tempo guide + RIR logging truly exist, removed false "instant feedback"; screen3: rewrote to match actual nutrition logging (photo/voice, no realtime recs); screen4: clarified AI coach accesses full history, morning brief + evening summary actually implemented
 
 ## 2026-05-28
 

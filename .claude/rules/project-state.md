@@ -2,7 +2,7 @@
 
 > **Source de vérité tactique.** Lire au début de chaque session.
 > **Historique détaillé** → `project-state-archive.md` (sessions antérieures à 2026-04-27)
-> **Dernière mise à jour : 2026-05-26****
+> **Dernière mise à jour : 2026-05-29****
 
 ---
 
@@ -41,6 +41,13 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-29 — Whisper Voice Transcription — Fix Homophone Errors
+
+- `app/api/client/nutrition/voice-transcribe/route.ts` — nouvelle route : auth + rate limit 10/min + FormData parse + `openai.audio.transcriptions.create` (whisper-1, no language → auto-detect FR/EN/ES, `prompt` sports nutrition biaise le vocabulaire)
+- `app/api/client/nutrition/voice-parse/route.ts` — suppression `lang` du schema Zod (Whisper gère la langue ; réponse GPT reste FR)
+- `components/client/smart/VoiceLogSheet.tsx` — `SpeechRecognition` remplacé par `MediaRecorder` (webm/opus Chrome, mp4 Safari) ; nouveau layer `transcribing` (spinner) entre stop enregistrement et transcript éditable ; live transcript preview supprimé
+- Points de vigilance : `recorder.start(250)` chunks toutes les 250ms — requis pour que `ondataavailable` fire ; `recorder.onstop` déclenché après `stop()` une fois tous les chunks reçus ; MediaRecorder requiert iOS 14.5+ ; WHISPER_PROMPT biais lexical fixes "whey"/"Nutri Muscle" homophones
 
 ### 2026-05-26 — DS v4.0 Sheets Alignment Complete — Zero Borders, Pure Gray Hierarchy
 
