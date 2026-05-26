@@ -103,6 +103,7 @@ type FormState = {
   email: string;
   phone: string;
   notes: string;
+  gender: string;  // 'male' | 'female' | 'other' | 'prefer_not_to_say'
 };
 const EMPTY_FORM: FormState = {
   firstName: "",
@@ -110,6 +111,7 @@ const EMPTY_FORM: FormState = {
   email: "",
   phone: "",
   notes: "",
+  gender: "prefer_not_to_say",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -767,6 +769,21 @@ export default function CoachClientsPage() {
                         className="w-full rounded-xl bg-[#0a0a0a] pl-9 pr-4 py-2.5 text-[13px] text-white placeholder:text-white/20 outline-none resize-none"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1">
+                      Genre
+                    </label>
+                    <select
+                      value={form.gender}
+                      onChange={(e) => setField("gender", e.target.value)}
+                      className="w-full rounded-xl bg-[#0a0a0a] px-4 h-10 text-[13px] text-white outline-none cursor-pointer"
+                    >
+                      <option value="prefer_not_to_say">Préférez ne pas dire</option>
+                      <option value="male">Homme</option>
+                      <option value="female">Femme</option>
+                      <option value="other">Autre</option>
+                    </select>
                   </div>
                   <button
                     type="submit"

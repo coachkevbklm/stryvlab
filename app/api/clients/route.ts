@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { firstName, lastName, email, phone, goal, notes,
+  const { firstName, lastName, email, phone, goal, notes, gender,
           training_goal, fitness_level, sport_practice, weekly_frequency } = body
 
   if (!firstName || !lastName) {
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       phone: phone?.trim() || null,
       goal: goal?.trim() || null,
       notes: notes?.trim() || null,
+      gender: gender || 'prefer_not_to_say',
       training_goal:    training_goal    || null,
       fitness_level:    fitness_level    || null,
       sport_practice:   sport_practice   || null,
