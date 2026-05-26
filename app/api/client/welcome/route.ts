@@ -20,11 +20,17 @@ export async function POST(req: NextRequest) {
   // Récupérer les infos client (user_id = l'utilisateur connecté)
   const { data: clientRow } = await db
     .from('coach_clients')
-    .select('first_name, email, coach_id')
+    .select('first_name, email, coach_id, id')
     .eq('user_id', user.id)
     .single()
 
   if (!clientRow?.email) return NextResponse.json({ ok: true }) // silencieux
+
+  // Mark password as successfully set (prevents magiclink on resend)
+  await db
+    .from('coach_clients')
+    .update({ password_set: true })
+    .eq('id', clientRow.id)
 
   // Récupérer le nom du coach via ses user_metadata Supabase
   let coachName: string | null = null

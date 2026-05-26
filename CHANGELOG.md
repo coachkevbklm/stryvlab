@@ -3,9 +3,16 @@
 > **Format court** — entrées de 1 ligne par changement.
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
+## 2026-05-28
+
+SCHEMA: Add password_set flag to coach_clients — tracks onboarding completion independently from last_sign_in_at
+FIX: invite/route.ts — check password_set instead of last_sign_in_at for second invites (prevents magiclink on abandoned onboarding)
+FIX: welcome/route.ts — set password_set=true when client completes password creation during onboarding
+
 ## 2026-05-27
 
 FIX: mailer.ts + AssessmentForm.tsx — DS v3.0 → DS v4.0 : accent #ffe01e → #f2f2f2, bg #0d0d0d → #080808, card #161616 → #111111, CTA texte #0d0d0d → #080808
+FIX: TempoGuideModal — startRef ancré dans useEffect (performance.now()) — supprime drift ~16ms premier frame RAF
 FIX: PrepTimeModal — DS v3.0 : suppression #FFB800, icon/timer/toggle/CTA en tokens neutres (blanc)
 FIX: TempoGuideModal — diamants : 5 points (0/0.25/0.5/0.75/1), couleurs correctes (vert=creux+montée, bleu=sommet+descente)
 FIX: TempoGuideModal — vitesse balle linéaire pur (ease-in/out quad supprimé), tempo exact respecté
