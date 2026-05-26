@@ -38,7 +38,6 @@ function checkRateLimit(clientId: string): boolean {
 const bodySchema = z.object({
   transcript: z.string().min(3).max(1000),
   physiological_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  lang: z.enum(["fr", "en", "es"]).default("fr"),
 })
 
 export async function POST(req: NextRequest) {
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
   const body = bodySchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { transcript, lang } = body.data
+  const { transcript } = body.data
   const db = service()
 
   // ── Fetch top-20 food items this client uses most ─────────────────────────
@@ -112,6 +111,7 @@ Règles :
 - meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
 - Ne retourne QUE le JSON, aucun texte autour
 - Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
+- Le texte provient de la reconnaissance vocale automatique : il peut contenir des homophones erronés. Interprète toujours dans un contexte alimentaire/nutritionnel (ex: "port" → "porc", "ver" → "verre", "vert" → contexte légume ou couleur, "tain" → "thym", "sel" → "sel", "eau" → "eau", etc.)
 
 ${catalogHint}`
 
