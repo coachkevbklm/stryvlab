@@ -8,6 +8,13 @@
 SCHEMA: Add password_set flag to coach_clients — tracks onboarding completion independently from last_sign_in_at
 FIX: invite/route.ts — check password_set instead of last_sign_in_at for second invites (prevents magiclink on abandoned onboarding)
 FIX: welcome/route.ts — set password_set=true when client completes password creation during onboarding
+REFACTOR: onboarding/page.tsx — phase 1 layout centered on screen 0 (justify-center), spreads content on screens 1-4
+FEATURE: onboarding phase 1 rewrite — 5 screens focus "what/why" not "how": tempo guide, RIR definition, auto-tracking alerts, personalized nutrition, AI coach identity + alerts
+FEATURE: onboarding phase 2 keys added (tour.step0-4) — explains each app page in situ: chat/workout/nutrition/quick-log/metrics
+FEATURE: onboarding topbar context keys — check-in, calories, hydration, program indicators explained
+FEATURE: onboarding female conditional — cycle sync (period phase logging, coach adapts nutrition/training)
+FEATURE: OnboardingTour expansion — step 5 (TopBar indicators), step 6 (Cycle, female-only); isFemaleOnly gating, gender detection from /api/client/profile
+FEATURE: /api/client/profile endpoint — returns authenticated client data (id, first_name, last_name, email, gender, created_at) for tour gender detection
 
 ## 2026-05-27
 
