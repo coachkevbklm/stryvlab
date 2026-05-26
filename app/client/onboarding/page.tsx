@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, Eye, EyeOff, XCircle, ArrowRight, Dumbbell, Activity, TrendingUp, LayoutDashboard, Target, Timer, CheckSquare, BarChart2, MessageSquare, LineChart, Utensils, Camera, ClipboardList, Bell, UserCircle } from 'lucide-react'
+import { Loader2, Eye, EyeOff, XCircle, ArrowRight, Dumbbell, Activity, Target, CheckSquare, BarChart2, MessageSquare, LineChart, Utensils, Bell, UserCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useClientT } from '@/components/client/ClientI18nProvider'
 import type { ClientLang } from '@/lib/i18n/clientTranslations'
@@ -65,13 +65,13 @@ const WELCOME_SCREENS: WelcomeScreen[] = [
     ],
   },
   {
-    icon: LayoutDashboard,
+    icon: MessageSquare,
     titleKey: 'onboarding.screen4.title',
     subtitleKey: 'onboarding.screen4.subtitle',
     rows: [
-      { icon: ClipboardList, textKey: 'onboarding.screen4.row0' },
-      { icon: Bell,          textKey: 'onboarding.screen4.row1' },
-      { icon: UserCircle,    textKey: 'onboarding.screen4.row2' },
+      { icon: Bell,          textKey: 'onboarding.screen4.row0' },
+      { icon: MessageSquare, textKey: 'onboarding.screen4.row1' },
+      { icon: LineChart,     textKey: 'onboarding.screen4.row2' },
     ],
   },
 ]
@@ -222,7 +222,7 @@ function OnboardingFlow() {
     return (
       <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-6">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/images/logo-stryvr.svg" alt="STRYVR" className="w-12 h-12 object-contain" />
+          <img src="/logo/logo-stryvr-silver.png" alt="STRYVR" className="w-12 h-12 object-contain" />
         </div>
 
         <div className="bg-white/[0.02] rounded-xl p-6 w-full max-w-sm">
@@ -243,7 +243,7 @@ function OnboardingFlow() {
                   required
                   minLength={8}
                   autoFocus
-                  className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
+                  className="w-full h-11 px-4 bg-[#222222] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
                 />
                 <button
                   type="button"
@@ -265,7 +265,7 @@ function OnboardingFlow() {
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder={t('onboarding.password.placeholder.confirm')}
                 required
-                className="w-full h-11 px-4 bg-[#0a0a0a] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
+                className="w-full h-11 px-4 bg-[#222222] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
               />
             </div>
 
@@ -278,13 +278,20 @@ function OnboardingFlow() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] disabled:opacity-50 text-[#080808] font-bold rounded-xl transition-all"
+              className="mt-1 h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#ffffff] active:scale-[0.98] disabled:opacity-50 text-[#080808] font-bold rounded-xl transition-all"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
               {loading ? t('onboarding.password.creating') : t('onboarding.password.cta')}
             </button>
           </form>
         </div>
+
+        <a
+          href="/client/login"
+          className="mt-5 block text-center text-[11px] text-white/25 hover:text-white/50 transition-colors"
+        >
+          {t('onboarding.password.alreadyAccount')}
+        </a>
       </div>
     )
   }
@@ -318,12 +325,12 @@ function OnboardingFlow() {
       <div className="min-h-screen bg-[#080808] flex flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center pt-12 pb-6">
-          <img src="/images/logo-stryvr.svg" alt="STRYVR" className="w-8 h-8 object-contain" />
+          <img src="/logo/logo-stryvr-silver.png" alt="STRYVR" className="w-8 h-8 object-contain" />
         </div>
 
-        {/* Content */}
-        <div className="flex-1 flex flex-col px-6 max-w-sm mx-auto w-full">
-          {/* Icon (screens 2-5) */}
+        {/* Content — centered vertically on screen 0, top-aligned on others */}
+        <div className={`flex-1 flex flex-col px-6 max-w-sm mx-auto w-full ${isFirst ? 'justify-center items-center' : ''}`}>
+          {/* Icon (screens 1-4) */}
           {IconComponent && (
             <div className="w-14 h-14 rounded-xl bg-[#f2f2f2]/10 flex items-center justify-center mb-6">
               <IconComponent size={26} className="text-[#f2f2f2]" strokeWidth={1.75} />
@@ -331,16 +338,16 @@ function OnboardingFlow() {
           )}
 
           {/* Title */}
-          <h1 className={`font-black text-white mb-3 leading-tight ${isFirst ? 'text-[28px]' : 'text-[22px]'}`}>
+          <h1 className={`font-black text-white mb-3 leading-tight ${isFirst ? 'text-center text-[28px]' : 'text-[22px]'}`}>
             {titleText}
           </h1>
 
           {/* Subtitle */}
-          <p className="text-[13px] text-white/55 leading-relaxed mb-8">
+          <p className={`text-[13px] text-white/55 leading-relaxed mb-8 ${isFirst ? 'text-center' : ''}`}>
             {t(screen.subtitleKey as Parameters<typeof t>[0])}
           </p>
 
-          {/* Feature rows (screens 2-5) */}
+          {/* Feature rows (screens 1-4) */}
           {screen.rows && (
             <div className="flex flex-col gap-4 mb-8">
               {screen.rows.map((row, i) => (
@@ -369,7 +376,7 @@ function OnboardingFlow() {
           {/* CTA button */}
           <button
             onClick={goNext}
-            className="group w-full h-12 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
+            className="group w-full h-12 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffffff] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
           >
             <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#080808]">
               {isLast ? t('onboarding.welcome.cta.last') : t('onboarding.welcome.cta.next')}
