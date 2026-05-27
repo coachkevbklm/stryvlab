@@ -5,6 +5,8 @@
 
 ## 2026-05-29
 
+FEATURE: Redesign TransformationPhaseWidget — speedometer SVG arc (7 phase segments, Framer Motion stagger, compass angle geometry, optimal segment accent green)
+REFACTOR: Move transformation widgets to dedicated full-width top row (grid-cols-2) on coach client profil page — side-by-side layout
 FEATURE: Add TransformationPhaseWidget to coach client profile — 7-phase recommendation engine (fat_loss/lean_bulk/recomp/competition_prep/competition/maintenance/deload), cascade algorithm using body_fat % + recovery + performance + adherence, matchesCurrent comparison vs training_goal, confidence dots + rationale bullets
 FIX: TransformationScoreWidget — move to left column (half-width) instead of full-width above grid
 FIX: TransformationScoreWidget — tooltip misalignment caused by Framer Motion y-animation overriding Tailwind -translate-x-1/2; replaced with style left:calc(50%-96px)
