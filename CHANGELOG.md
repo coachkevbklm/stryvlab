@@ -5,6 +5,48 @@
 
 ## 2026-05-29
 
+FEATURE: Add Transformation Score widget to coach client profile page — composite 0–100 gauge (adherence + recovery + body progress + performance), SVG speedometer with Framer Motion animation, alert list, 7j/30j toggle
+SCHEMA: coach_clients.score_weights_config JSONB — coach override for dimension weights per client
+
+FIX: SessionLogger — double log : POST /api/session-logs idempotent (retourne draft existant si incomplete log pour même program_session_id+client_id)
+FIX: SessionLogger — logs incomplets dans historique : rawLogs query filtrée par completed_at IS NOT NULL (drafts abandonnés n'apparaissent plus)
+FIX: SessionLogger — exercise_notes jamais persistées : ajout au patchBodySchema Zod + patch object dans PATCH /api/session-logs/[logId]
+FIX: SessionLogger — notes perdues si app fermée : auto-save debounced 1s via PATCH dès que exerciseNotes change
+FIX: SessionLogger — count sets incorrect : pre-insert tous les sets planifiés (uncompleted) au draft init → recap affiche X/total réel du programme
+FIX: POST /api/session-logs setLogSchema — ajout primary_muscles + secondary_muscles pour que pre-insert persiste les données musculaires
+
+## 2026-05-27
+
+FIX: Coach modals z-index — all fixed inset-0 overlays z-50 → z-[70] so they render above NavDock (z-[60]) on all coach pages (assessments, clients, bilans, formules, comptabilite, programs)
+FEATURE: Assessment — Meal Journal field type (meal_journal) : new InputType + MealType/MealEntry interfaces in types/assessment.ts
+FEATURE: Assessment — daily_meal_routine field added to NUTRITION_FIELDS (visible by default)
+FEATURE: Assessment — MealJournalField component: add up to 8 meals (type dropdown + time + description), per-meal GPT kcal estimation, totals row when ≥2 meals analyzed
+FEATURE: Assessment — POST /api/assessments/meal-analyze route: GPT-4o mini nutritional analysis, auth via token or coach session
+CHORE: AssessmentForm buildPayload — meal_journal branch serializes to value_json
+CHORE: MetricField — meal_journal branch dispatches to MealJournalField
+
+## 2026-05-30
+
+FIX: SessionLogger — ExerciseSwapSheet "Utiliser" now works: swappedNames applied to ExerciseBlock exercise prop (both superset + solo renders) + sets.exercise_name patched via handleSwap
+FIX: SessionLogger — addSet creates right+left pair for unilateral exercises instead of bilateral
+FIX: SessionLogger — buildInitialSets unilateral order corrected to right→left (was left→right)
+FIX: ExerciseBlock — exercise name no longer truncated with ellipsis (removed truncate class)
+FIX: recap/page.tsx — header redesigned to match DS v4.0 (sticky top-0 bg-[#080808], removed glass morphism shadow/backdrop-blur/gradient)
+FIX: Client PWA — disable iOS auto-zoom on input focus via maximumScale=1 in client viewport (app/client/layout.tsx)
+FIX: globals.css — remove !important from input font-size baseline so utility classes (text-[26px] in Stepper) render at intended size
+FIX: onboarding.screen2.row0 — remove "audio" (no audio feature), rewrite to describe rhythm/cadence guidance (FR/EN/ES)
+FIX: OnboardingTour female cycle step — add isFAB:true so tooltip anchors to + button with proper dimmer (was: floating, no overlay, broken)
+FEATURE: OnboardingTour — 4 new strip steps (checkin/program/calories/water) after Chat step, tooltip repositions BELOW target for top-of-page elements (arrow flips), remeasures DOM on each step advance
+FEATURE: ChatTodayStrip — add data-tour-strip attributes to 4 pills for OnboardingTour spotlight targeting
+
+REFACTOR: Align all QuickLog sub-sheets to VoiceLogSheet DS pattern — background #080808, absolute handle w-10 h-1 bg-white/[0.10], header px-5 pt-5 pb-4, title text-[15px] barlow-condensed uppercase tracking-[0.12em], close h-8 w-8 rounded-xl bg-white/[0.06], overlay backdrop-blur-[2px], spring stiffness 300 damping 30 — files: QuickLogSheet, FreeActivitySheet, MealLogSheet, LogPeriodSheet
+REFACTOR: Convert QuickWaterModal from floating card to bottom sheet — same DS pattern, remove shadow/scale animation, pill active bg-white/[0.10] inactive bg-white/[0.04], delete button neutral (no red), z-[80]/z-[90] preserved
+
+FIX: CycleArcIndicator never visible — assessment_responses has no client_id column, fix nutrition page.tsx cycle query to join via assessment_submissions
+FIX: /api/client/cycle/status returned null bilanValue — wrong column name assessment_submission_id → submission_id in assessment_responses query
+
+## 2026-05-29
+
 FEATURE: Replace SpeechRecognition with Whisper API for voice nutrition logger — fixes "whey"/"Nutri Muscle" homophone errors via sports nutrition vocabulary prompt
 FEATURE: Add /api/client/nutrition/voice-transcribe route — Whisper whisper-1 model, auto language detection, 25MB limit, 10 req/min rate limit
 REFACTOR: Remove lang param from /api/client/nutrition/voice-parse route — language detection now handled by Whisper

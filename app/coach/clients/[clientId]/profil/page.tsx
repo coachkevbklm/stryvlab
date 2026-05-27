@@ -14,6 +14,7 @@ import {
   Tag, Plus, X, Check, MapPin, User2, StickyNote, PhoneCall,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import TransformationScoreWidget from "@/components/coach/TransformationScoreWidget";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -291,6 +292,9 @@ export default function ProfilPage() {
   return (
     <main className="min-h-screen bg-[#121212]">
       <div className="px-6 pb-24">
+        <div className="mb-4">
+          <TransformationScoreWidget clientId={clientId} />
+        </div>
         <div className="grid grid-cols-2 gap-4 items-start">
 
           {/* ── COLONNE GAUCHE ── */}
