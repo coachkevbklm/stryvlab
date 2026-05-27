@@ -228,8 +228,8 @@ export default function MacroSliders({
                   cursor: pointer;
                   border: 2px solid rgba(255,255,255,0.15);
                   box-shadow: 0 0 0 3px rgba(0,0,0,0.3);
-                  transition: transform 0.1s ease, opacity 0.15s ease;
-                  opacity: ${isManual ? 1 : 0.5};
+                  transition: transform 0.1s ease;
+                  opacity: 1;
                 }
                 .macro-slider-${key}::-moz-range-thumb {
                   width: 13px;
@@ -239,7 +239,7 @@ export default function MacroSliders({
                   cursor: pointer;
                   border: 2px solid rgba(255,255,255,0.15);
                   box-shadow: 0 0 0 3px rgba(0,0,0,0.3);
-                  opacity: ${isManual ? 1 : 0.5};
+                  opacity: 1;
                 }
                 .macro-slider-${key}:active::-webkit-slider-thumb {
                   transform: scale(1.25);
@@ -256,7 +256,6 @@ export default function MacroSliders({
                 className={`macro-slider-${key} w-full h-1.5 rounded-full outline-none appearance-none cursor-pointer`}
                 style={{
                   background: `linear-gradient(to right, ${cfg.color} 0%, ${cfg.color} ${pct}%, rgba(255,255,255,0.06) ${pct}%, rgba(255,255,255,0.06) 100%)`,
-                  opacity: isManual ? 1 : 0.7,
                 }}
               />
               {/* Ghost tick showing calc value when overridden */}
