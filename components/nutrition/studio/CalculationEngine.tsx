@@ -4,20 +4,11 @@ import { useState } from "react";
 import { Info, Droplets, AlertTriangle, CheckCircle2 } from "lucide-react";
 import TdeeWaterfall from "./TdeeWaterfall";
 import CalorieAdjustmentDisplay from "./CalorieAdjustmentDisplay";
-import MacroPercentageDisplay from "./MacroPercentageDisplay";
+import MacroSliders, { type MacroOverrides } from "./MacroSliders";
 import InfoModal from "./InfoModal";
 import { INJECTION_INFO_MODALS } from "@/lib/nutrition/infoModalDefinitions";
 import type { MacroResult, MacroGoal } from "@/lib/formulas/macros";
-import type {
-  CarbCyclingResult,
-  CarbCycleProtocol,
-  CarbCycleGoal,
-  CarbCycleIntensity,
-  CarbCyclePhase,
-  CarbCycleInsulin,
-} from "@/lib/formulas/carbCycling";
 import type { HydrationClimate } from "@/lib/formulas/hydration";
-import type { CarbCyclingConfig } from "./useNutritionStudio";
 import CycleSyncPhaseGrid from "./CycleSyncPhaseGrid";
 import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
 import type { CycleState } from "@/lib/cycle/cycleEngine";
@@ -31,17 +22,17 @@ interface Props {
   onCalorieAdjustChange: (v: number) => void;
   proteinOverride: number | null;
   onProteinOverrideChange: (v: number | null) => void;
+  macroOverrides: MacroOverrides;
+  onMacroOverridesChange: (v: MacroOverrides) => void;
   macroResult: MacroResult | null;
   goalCalories: number | null;
-  carbCycling: CarbCyclingConfig;
-  onCarbCyclingChange: (patch: Partial<CarbCyclingConfig>) => void;
-  ccResult: CarbCyclingResult | null;
   hydrationClimate: HydrationClimate;
   onHydrationClimateChange: (c: HydrationClimate) => void;
   hydrationPhase: number;
   onHydrationPhaseChange: (v: number) => void;
   hydrationLiters: number | null;
   leanMass: number | null;
+  bodyWeight: number | null;
   tdeeAdaptive: number | null;
   tdeeAdaptiveAt: Date | null;
   tdeeDataSource: 'weight_delta' | 'formula_proxy' | null;
@@ -52,26 +43,14 @@ interface Props {
   currentCycleDay?: number | null;
   baseMacrosForCycleSync?: NutritionMacros | null;
   cycleState?: CycleState | null;
+  cycleSyncEnabled?: boolean;
+  onCycleSyncEnabledChange?: (v: boolean) => void;
 }
 
 const GOAL_OPTIONS: { value: MacroGoal; label: string }[] = [
   { value: "deficit", label: "Déficit — Perte de gras" },
   { value: "maintenance", label: "Maintenance" },
   { value: "surplus", label: "Surplus — Prise de muscle" },
-];
-
-const CC_PROTOCOLS: { value: CarbCycleProtocol; label: string }[] = [
-  { value: "2/1", label: "2 hauts / 1 bas" },
-  { value: "3/1", label: "3 hauts / 1 bas" },
-  { value: "4/1", label: "4 hauts / 1 bas" },
-  { value: "5/2", label: "5 hauts / 2 bas" },
-];
-
-const CC_GOALS: { value: CarbCycleGoal; label: string }[] = [
-  { value: "moderate", label: "Perte modérée" },
-  { value: "recomp", label: "Recomposition" },
-  { value: "bulk", label: "Prise de masse" },
-  { value: "performance", label: "Performance" },
 ];
 
 const CLIMATE_OPTIONS: { value: HydrationClimate; label: string }[] = [
@@ -170,17 +149,17 @@ export default function CalculationEngine({
   onCalorieAdjustChange,
   proteinOverride,
   onProteinOverrideChange,
+  macroOverrides,
+  onMacroOverridesChange,
   macroResult,
   goalCalories,
-  carbCycling,
-  onCarbCyclingChange,
-  ccResult,
   hydrationClimate,
   onHydrationClimateChange,
   hydrationPhase,
   onHydrationPhaseChange,
   hydrationLiters,
   leanMass,
+  bodyWeight,
   tdeeAdaptive,
   tdeeAdaptiveAt,
   tdeeDataSource,
@@ -191,8 +170,28 @@ export default function CalculationEngine({
   currentCycleDay,
   baseMacrosForCycleSync,
   cycleState,
+  cycleSyncEnabled = false,
+  onCycleSyncEnabledChange,
 }: Props) {
   const [openInfoModal, setOpenInfoModal] = useState<string | null>(null);
+
+  const anyMacroOverride =
+    macroOverrides.protein_g !== null ||
+    macroOverrides.fat_g !== null ||
+    macroOverrides.carbs_g !== null
+
+  const displayCaloriePct =
+    anyMacroOverride && macroResult
+      ? Math.max(
+          -30,
+          Math.min(
+            30,
+            Math.round(
+              ((macroResult.calories - macroResult.tdee) / macroResult.tdee) * 100,
+            ),
+          ),
+        )
+      : calorieAdjustPct
 
   const actionableSuggestions = (macroResult?.smartProtocol ?? [])
     .filter((s) => ["critical", "high"].includes(s.priority))
@@ -208,7 +207,7 @@ export default function CalculationEngine({
       </div>
 
       {/* ── CONTENU SCROLLABLE ───────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 p-4 pb-8">
+      <div className="flex-1 overflow-y-auto scrollbar-hide space-y-5 p-4 pb-40">
         {/* ── DÉPENSE ÉNERGÉTIQUE ───────────────────────────────────────── */}
         <div>
           <SectionDivider label="Dépense énergétique" />
@@ -322,10 +321,11 @@ export default function CalculationEngine({
           {macroResult && (
             <div className="mt-3">
               <CalorieAdjustmentDisplay
-                value={calorieAdjustPct}
+                value={displayCaloriePct}
                 baseCalories={goalCalories}
                 targetCalories={macroResult.calories}
                 onChange={onCalorieAdjustChange}
+                readOnly={anyMacroOverride}
               />
             </div>
           )}
@@ -335,127 +335,30 @@ export default function CalculationEngine({
         <div>
           <SectionDivider label="Macronutriments" />
           {macroResult ? (
-            <MacroPercentageDisplay
-              proteinG={macroResult.macros.p}
-              fatG={macroResult.macros.f}
-              carbsG={macroResult.macros.c}
-              totalCalories={macroResult.calories}
-              proteinOverride={proteinOverride}
-              onProteinOverrideChange={onProteinOverrideChange}
+            <MacroSliders
+              calcProtein={macroResult.macros.p}
+              calcFat={macroResult.macros.f}
+              calcCarbs={macroResult.macros.c}
+              overrides={macroOverrides}
+              onOverridesChange={onMacroOverridesChange}
+              leanMass={leanMass}
+              bodyWeight={bodyWeight}
+              tdee={macroResult.tdee}
             />
           ) : (
-            <div className="space-y-2.5 animate-pulse">
-              {/* 3 macro rows: label + bar + grams + % */}
+            <div className="space-y-4 animate-pulse">
+              <div className="h-7 w-28 rounded bg-white/[0.06]" />
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-white/[0.08] shrink-0" />
-                  <div className="w-16 h-2.5 rounded bg-white/[0.05]" />
-                  <div className="flex-1 h-[3px] rounded-full bg-white/[0.06]" />
-                  <div className="w-8 h-2.5 rounded bg-white/[0.05]" />
-                  <div className="w-10 h-2.5 rounded bg-white/[0.04]" />
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-white/[0.08] shrink-0" />
+                    <div className="w-16 h-2.5 rounded bg-white/[0.05]" />
+                    <div className="w-10 h-2.5 rounded bg-white/[0.06]" />
+                    <div className="w-8 h-2.5 rounded bg-white/[0.04]" />
+                  </div>
+                  <div className="ml-3.5 h-1.5 w-full rounded-full bg-white/[0.06]" />
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── CARB CYCLING ─────────────────────────────────────────────── */}
-        <div>
-          <div className="flex items-center gap-2 py-1 mb-2">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35 whitespace-nowrap">
-              Carb Cycling
-            </span>
-            <div className="flex-1 h-px bg-white/[0.06]" />
-            <button
-              onClick={() => setOpenInfoModal("carbCyclingToggle")}
-              className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white/80 transition-colors shrink-0"
-            >
-              <Info size={13} />
-            </button>
-          </div>
-
-          {/* ON / OFF toggle — same style as goal buttons */}
-          <div className="flex gap-1.5 flex-wrap mb-3">
-            <button
-              onClick={() => onCarbCyclingChange({ enabled: false })}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                !carbCycling.enabled
-                  ? "bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30"
-                  : "bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70"
-              }`}
-            >
-              Désactivé
-            </button>
-            <button
-              onClick={() => onCarbCyclingChange({ enabled: true })}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                carbCycling.enabled
-                  ? "bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30"
-                  : "bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70"
-              }`}
-            >
-              Activé — Haut / Bas
-            </button>
-          </div>
-
-          {carbCycling.enabled && (
-            <div className="space-y-3">
-              {/* Protocol + Goal selects */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-[9px] text-white/35 mb-1">Protocole</p>
-                  <SelectInput<CarbCycleProtocol>
-                    value={carbCycling.protocol}
-                    options={CC_PROTOCOLS}
-                    onChange={(v) => onCarbCyclingChange({ protocol: v })}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <p className="text-[9px] text-white/35 mb-1">Objectif</p>
-                  <SelectInput<CarbCycleGoal>
-                    value={carbCycling.goal}
-                    options={CC_GOALS}
-                    onChange={(v) => onCarbCyclingChange({ goal: v })}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              {/* High / Low day preview cards */}
-              {ccResult && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-[#1f8a65]/[0.08] border-[0.3px] border-[#1f8a65]/20 p-3">
-                    <p className="text-[9px] text-[#1f8a65] font-semibold mb-1.5">
-                      🔥 JOUR HAUT
-                    </p>
-                    <p className="text-[13px] font-bold text-white">
-                      {ccResult.high.kcal}{" "}
-                      <span className="text-[10px] font-normal text-white/40">
-                        kcal
-                      </span>
-                    </p>
-                    <p className="text-[9px] text-white/50 mt-1">
-                      P{ccResult.high.p} · L{ccResult.high.f} · G
-                      {ccResult.high.c}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-blue-500/[0.08] border-[0.3px] border-blue-500/20 p-3">
-                    <p className="text-[9px] text-blue-400 font-semibold mb-1.5">
-                      🧊 JOUR BAS
-                    </p>
-                    <p className="text-[13px] font-bold text-white">
-                      {ccResult.low.kcal}{" "}
-                      <span className="text-[10px] font-normal text-white/40">
-                        kcal
-                      </span>
-                    </p>
-                    <p className="text-[9px] text-white/50 mt-1">
-                      P{ccResult.low.p} · L{ccResult.low.f} · G{ccResult.low.c}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -596,66 +499,109 @@ export default function CalculationEngine({
         {isFemale && (
           <div>
             <SectionDivider label="Cycle Sync (femme)" />
-            <CycleSyncPhaseGrid
-              baseMacros={baseMacrosForCycleSync}
-              currentCycleDay={currentCycleDay}
-            />
-            <div className="mt-3 space-y-2">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
-                Cycle menstruel — Source de vérité 2
-              </p>
-              {!cycleState ? (
-                <p className="text-[11px] text-white/30 italic">Données de cycle non disponibles.</p>
-              ) : !cycleState.hasActiveCycle ? (
-                <p className="text-[11px] text-white/30">Ménopause / aménorrhée — Cycle sync désactivé.</p>
-              ) : (
-                <div className="rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] p-3 space-y-3">
-                  {cycleState.currentPhase && cycleState.currentCycleDay ? (
-                    <div className="flex items-center justify-between">
-                      <CyclePhasePill
-                        phase={cycleState.currentPhase}
-                        cycleDay={cycleState.currentCycleDay}
-                        confidence={cycleState.confidence}
-                        size="md"
-                      />
-                      {cycleState.nextPhaseIn != null && (
-                        <span className="text-[10px] text-white/30">
-                          Phase suivante dans {cycleState.nextPhaseIn}j
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-white/30 italic">Aucun log de cycle. Client doit logger depuis l&apos;app.</p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[9px] text-white/30 mb-0.5">Cycle moyen</p>
-                      <p className="text-[13px] font-mono text-white/70">{cycleState.avgCycleLengthDays}j</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-white/30 mb-0.5">Précision</p>
-                      <p className="text-[11px] text-white/60">
-                        {cycleState.confidence === 'calibrated' ? '● Calibré' : cycleState.confidence === 'learning' ? '◑ En cours' : '◐ Estimé'}
-                        {' '}({cycleState.logsCount} cycle{cycleState.logsCount !== 1 ? 's' : ''})
-                      </p>
-                    </div>
-                  </div>
-                  {cycleState.currentPhase && (() => {
-                    const adj = getCycleSyncAdjustment(cycleState.currentPhase!)
-                    if (!adj.caloriesDelta && !adj.proteinDelta && !adj.carbsDelta) return null
-                    return (
-                      <div className="border-t border-white/[0.06] pt-2 space-y-1">
-                        <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">Ajustements phase actuelle</p>
-                        {adj.caloriesDelta !== 0 && <p className="text-[11px] text-white/50">{adj.caloriesDelta > 0 ? '+' : ''}{adj.caloriesDelta} kcal/j</p>}
-                        {adj.proteinDelta !== 0 && <p className="text-[11px] text-white/50">{adj.proteinDelta > 0 ? '+' : ''}{adj.proteinDelta}g protéines</p>}
-                        {adj.carbsDelta !== 0 && <p className="text-[11px] text-white/50">{adj.carbsDelta > 0 ? '+' : ''}{adj.carbsDelta}g glucides</p>}
-                        <p className="text-[10px] text-white/35 leading-relaxed">{adj.notes[0]}</p>
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
+
+            {/* Toggle — same style as Carb Cycling */}
+            <div className="flex gap-1.5 mb-3 flex-wrap">
+              <button
+                onClick={() => onCycleSyncEnabledChange?.(false)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  !cycleSyncEnabled
+                    ? 'bg-[#1f8a65]/15 text-[#1f8a65] border-[0.3px] border-[#1f8a65]/30'
+                    : 'bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70'
+                }`}
+              >
+                Désactivé
+              </button>
+              <button
+                onClick={() => onCycleSyncEnabledChange?.(true)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  cycleSyncEnabled
+                    ? 'bg-[#a855f7]/10 text-[#a855f7] border-[0.3px] border-[#a855f7]/30'
+                    : 'bg-white/[0.04] text-white/50 border-[0.3px] border-white/[0.06] hover:text-white/70'
+                }`}
+              >
+                Activé — Ajustement auto
+              </button>
             </div>
+
+            {cycleSyncEnabled && (
+              <div className="flex items-center gap-1.5 mb-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#a855f7]" />
+                <p className="text-[9px] text-[#a855f7]/80 uppercase tracking-[0.14em] font-semibold">
+                  Actif — appliqué automatiquement à la cliente
+                </p>
+              </div>
+            )}
+
+            {cycleSyncEnabled && (
+              <>
+                <CycleSyncPhaseGrid
+                  baseMacros={baseMacrosForCycleSync}
+                  currentCycleDay={currentCycleDay}
+                />
+                <div className="mt-3 space-y-2">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                    Cycle menstruel de la cliente
+                  </p>
+                  {!cycleState ? (
+                    <div className="rounded-xl bg-amber-500/[0.06] border-[0.3px] border-amber-500/20 p-3">
+                      <p className="text-[10px] text-amber-400/80">Données de cycle non disponibles.</p>
+                    </div>
+                  ) : !cycleState.hasActiveCycle ? (
+                    <p className="text-[11px] text-white/30">Ménopause / aménorrhée — Cycle sync désactivé.</p>
+                  ) : (
+                    <div className="rounded-xl bg-white/[0.03] border-[0.3px] border-white/[0.06] p-3 space-y-3">
+                      {cycleState.currentPhase && cycleState.currentCycleDay ? (
+                        <div className="flex items-center justify-between">
+                          <CyclePhasePill
+                            phase={cycleState.currentPhase}
+                            cycleDay={cycleState.currentCycleDay}
+                            confidence={cycleState.confidence}
+                            size="md"
+                          />
+                          {cycleState.nextPhaseIn != null && (
+                            <span className="text-[10px] text-white/30">
+                              Phase suivante dans {cycleState.nextPhaseIn}j
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl bg-amber-500/[0.06] border-[0.3px] border-amber-500/20 p-3 space-y-1">
+                          <p className="text-[10px] text-amber-400/80 font-medium">Aucun log de cycle disponible.</p>
+                          <p className="text-[10px] text-white/40 leading-relaxed">La cliente doit renseigner son cycle depuis l&apos;app → <span className="text-white/60">Profil → Mon Cycle</span>.</p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[9px] text-white/30 mb-0.5">Cycle moyen</p>
+                          <p className="text-[13px] font-mono text-white/70">{cycleState.avgCycleLengthDays}j</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-white/30 mb-0.5">Précision</p>
+                          <p className="text-[11px] text-white/60">
+                            {cycleState.confidence === 'calibrated' ? '● Calibré' : cycleState.confidence === 'learning' ? '◑ En cours' : '◐ Estimé'}
+                            {' '}({cycleState.logsCount} cycle{cycleState.logsCount !== 1 ? 's' : ''})
+                          </p>
+                        </div>
+                      </div>
+                      {cycleState.currentPhase && (() => {
+                        const adj = getCycleSyncAdjustment(cycleState.currentPhase!)
+                        if (!adj.caloriesDelta && !adj.proteinDelta && !adj.carbsDelta) return null
+                        return (
+                          <div className="border-t border-white/[0.06] pt-2 space-y-1">
+                            <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">Ajustements phase actuelle</p>
+                            {adj.caloriesDelta !== 0 && <p className="text-[11px] text-white/50">{adj.caloriesDelta > 0 ? '+' : ''}{adj.caloriesDelta} kcal/j</p>}
+                            {adj.proteinDelta !== 0 && <p className="text-[11px] text-white/50">{adj.proteinDelta > 0 ? '+' : ''}{adj.proteinDelta}g protéines</p>}
+                            {adj.carbsDelta !== 0 && <p className="text-[11px] text-white/50">{adj.carbsDelta > 0 ? '+' : ''}{adj.carbsDelta}g glucides</p>}
+                            <p className="text-[10px] text-white/35 leading-relaxed">{adj.notes[0]}</p>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
