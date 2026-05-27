@@ -5,6 +5,23 @@
 
 ## 2026-05-29
 
+FEATURE: Nutrition Studio — TDEE delta badge in MacroSliders (always visible, BF-stratified color scale red/orange/green)
+FEATURE: Nutrition Studio — calorieAdjustPct now % vs TDEE (slider 0 = TDEE always, not relative to goal factor)
+FEATURE: Nutrition Studio — goal buttons auto-move calorie slider to smart BF-stratified presets (deficit -12%→-30%, surplus +4%→+10%)
+FEATURE: Nutrition Studio — macro slider changes reflect calorie slider position (readOnly display mode when overrides active)
+FEATURE: Nutrition Studio — computeSmartPreset helper exported from lib/formulas/macros.ts (15 Vitest tests PASS)
+FEATURE: TransformationPhaseWidget — 2-column layout: arc left, metric cards right (avg weight, sleep score, performance %); window toggle 7j/30j; transformation-score route enriched with metricCards (avgWeight, sleepScore, avgPerformance, sessionsCount)
+REFACTOR: TransformationPhaseWidget — fix pill geometry (tangential→radial rotation, CY=108 prevents clipping); fat pill capsules (W=34 H=13 rx=6) matching Oura/sleep-score reference; labels full text radially outside pills
+
+## 2026-05-27
+
+REFACTOR: Macro colors alignment — unify all P/L/G color representations to NUTRITION_UI_COLORS (protein #5dba87, fat #ff8660, carbs #ffd15e) across MacroBar, ClientPreviewModal, MacroPercentageDisplay, NutritionMacrosSection, NutritionProtocolTool (day pills, macro bar, macro cards, carb cycling result)
+FEATURE: MacroSliders — protéines : affichage double ratio g/kg LBM + g/kg poids total (2 spans côte à côte, LBM white/30, poids total white/20)
+REFACTOR: Supprimer Carb Cycling du Nutrition Studio — section CC retirée de CalculationEngine, NutritionStudio, ProtocolCanvas, useNutritionStudio (state, callbacks, moteur de calcul) ; lib/formulas/carbCycling.ts conservé pour l'outil public /outils/carb-cycling uniquement
+FEATURE: MacroSliders — nouveau composant remplaçant MacroPercentageDisplay : 3 sliders interactifs P/L/G (couleurs DS nutrition), mode auto (jauge de lecture, source = engine) / mode manuel (override direct, source de vérité → calories recalculées P×4+L×9+G×4), tick fantôme valeur calculée, reset par macro ou reset global, ratio g/kg LBM (protéines) / g/kg poids (lipides/glucides)
+
+## 2026-05-29
+
 FIX: MealLogSheet — align bg to #080808 (was #111111), footer bg fixed, toggle/pills use bg-white/[0.10] pattern matching QuickWaterModal reference
 FIX: TransformationPhaseWidget — arc trop grand → 180° semi-circle max-w-[300px], wave strokeWidth (8→19→8), pathLength stagger animation, drop-shadow sur segment optimal
 FEATURE: Redesign TransformationPhaseWidget — speedometer SVG arc (7 phase segments, Framer Motion stagger, compass angle geometry, optimal segment accent green)
