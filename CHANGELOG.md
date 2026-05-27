@@ -5,6 +5,20 @@
 
 ## 2026-05-29
 
+FEATURE: Add TransformationPhaseWidget to coach client profile — 7-phase recommendation engine (fat_loss/lean_bulk/recomp/competition_prep/competition/maintenance/deload), cascade algorithm using body_fat % + recovery + performance + adherence, matchesCurrent comparison vs training_goal, confidence dots + rationale bullets
+FIX: TransformationScoreWidget — move to left column (half-width) instead of full-width above grid
+FIX: TransformationScoreWidget — tooltip misalignment caused by Framer Motion y-animation overriding Tailwind -translate-x-1/2; replaced with style left:calc(50%-96px)
+REFACTOR: TransformationScoreWidget — replace spinner with shape-matched skeleton (score block + sinusoidal tick bar + 4 pill shapes + alert row)
+FIX: build — syntax error in MeasurementsEntrySheet (unescaped apostrophes in single-quoted FR strings, lines 26/105/115)
+FIX: build — OpenAI client module-level init in meal-analyze route (moved inside handler + force-dynamic)
+FIX: build — add export const dynamic = 'force-dynamic' to 10 client API routes using cookies (deload-status, one-rm-trends, body-data, chat/today-strip, checkin, cycle/status, food-items, nutrition/meals, session-logs, recovery-status)
+FIX: transformation-score API — wrong field key ('weight' → 'weight_kg'), remove coach_id filter and 90-day cap on bilans (use bilan_date order, limit 20) — fixes CORPS showing — when bilans exist
+FEAT: TransformationScoreWidget dimension pills — hover tooltip showing score, weight %, data point count, description per dimension
+REFACTOR: TransformationScoreWidget — replace SVG arc gauge with horizontal colored tick-bar meter (red→amber→green spectrum, 62 ticks, staggered Framer Motion entry), large centered score hero (68px), inline alert list
+FEATURE: Measurements entry sheet — FAB + (white, fixed bottom-right, DS v4.0) on Mensurations tab opens full-screen Framer Motion sheet with all 15 fields (weight + 14 circumferences incl. new Fessiers), real timestamp captured on submit, per-field inline guide accordion (ⓘ icon, animated height) with measurement instructions sourced from assessment bilan helpers
+FEATURE: Add glute_cm (Fessiers) to MEASURE_FIELDS in body-data route
+FIX: body-data entry API — expand Zod schema to all measure fields, replace hardcoded T12:00:00Z with actual submission timestamp
+REFACTOR: MesurationsTab — remove inline editor, FAB and sheet moved to MetricsClientPage
 FEATURE: Add Transformation Score widget to coach client profile page — composite 0–100 gauge (adherence + recovery + body progress + performance), SVG speedometer with Framer Motion animation, alert list, 7j/30j toggle
 SCHEMA: coach_clients.score_weights_config JSONB — coach override for dimension weights per client
 
