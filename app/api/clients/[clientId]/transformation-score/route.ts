@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const { data: clientData } = await db
     .from('coach_clients')
-    .select('id, training_goal, weekly_frequency, score_weights_config')
+    .select('id, training_goal, weekly_frequency, score_weights_config, gender')
     .eq('id', params.clientId)
     .eq('coach_id', user.id)
     .single()
@@ -73,10 +73,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     db.from('assessment_submissions')
       .select('submitted_at, bilan_date, assessment_responses(field_key, value_number)')
       .eq('client_id', params.clientId)
-      .eq('coach_id', user.id)
       .eq('status', 'completed')
-      .gte('submitted_at', new Date(Date.now() - 90 * 86400000).toISOString())
-      .order('submitted_at', { ascending: true }),
+      .order('bilan_date', { ascending: true })
+      .limit(20),
 
     db.from('daily_checkin_configs')
       .select('days_of_week')
@@ -201,11 +200,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     const responses = (sub.assessment_responses ?? []) as { field_key: string; value_number: number | null }[]
     for (const r of responses) {
       if (r.value_number == null) continue
-      if (r.field_key === 'weight')       weightSeries.push({ date, value: r.value_number })
+      if (r.field_key === 'weight_kg')     weightSeries.push({ date, value: r.value_number })
       if (r.field_key === 'body_fat_pct') bodyFatSeries.push({ date, value: r.value_number })
       if (r.field_key === 'lean_mass_kg') leanMassSeries.push({ date, value: r.value_number })
     }
   }
+
+  const latestBodyFat = bodyFatSeries.length > 0
+    ? bodyFatSeries[bodyFatSeries.length - 1].value
+    : null
 
   const bodyData: BodyDataInput = {
     weightSeries,
@@ -214,6 +217,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     trainingGoal,
   }
 
-  const result = computeTransformationScore({ trainingGoal, window: win, checkin, performance, bodyData, weightsOverride })
+  const result = computeTransformationScore({
+    trainingGoal,
+    window: win,
+    checkin,
+    performance,
+    bodyData,
+    weightsOverride,
+    gender: (clientData.gender ?? null) as string | null,
+    latestBodyFat,
+  })
   return NextResponse.json(result)
 }
