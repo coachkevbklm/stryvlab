@@ -293,13 +293,16 @@ export default function ProfilPage() {
   return (
     <main className="min-h-screen bg-[#121212]">
       <div className="px-6 pb-24">
+        {/* ── Widgets transformation — pleine largeur ── */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <TransformationScoreWidget clientId={clientId} />
+          <TransformationPhaseWidget clientId={clientId} />
+        </div>
+
         <div className="grid grid-cols-2 gap-4 items-start">
 
           {/* ── COLONNE GAUCHE ── */}
           <div className="flex flex-col gap-4">
-
-            <TransformationScoreWidget clientId={clientId} />
-            <TransformationPhaseWidget clientId={clientId} />
 
             {/* ── Informations ── */}
             <Card>
