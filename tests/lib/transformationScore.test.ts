@@ -3,8 +3,11 @@ import {
   getScoreLabel,
   DEFAULT_WEIGHTS,
   computeTransformationScore,
+  computeOptimalPhase,
+  GOAL_TO_PHASE,
   type ComputeScoreInput,
   type DimensionWeights,
+  type TransformationScoreResult,
 } from '@/lib/coach/transformationScore'
 
 // ── getScoreLabel ─────────────────────────────────────────────────────────────
@@ -81,6 +84,18 @@ function makeInput(overrides: Partial<ComputeScoreInput> = {}): ComputeScoreInpu
       trainingGoal: 'hypertrophy',
     },
     weightsOverride: null,
+    gender: null,
+    latestBodyFat: null,
+    ...overrides,
+  }
+}
+
+function makeDims(overrides: Partial<TransformationScoreResult['dimensions']> = {}): TransformationScoreResult['dimensions'] {
+  return {
+    adherence:    { score: 80, weight: 0.25, dataPoints: 5 },
+    recovery:     { score: 75, weight: 0.30, dataPoints: 5 },
+    bodyProgress: { score: 60, weight: 0.20, dataPoints: 3, confidence: 'high' as const },
+    performance:  { score: 80, weight: 0.25, dataPoints: 4 },
     ...overrides,
   }
 }
@@ -225,5 +240,96 @@ describe('computeTransformationScore', () => {
         severityOrder[result.alerts[i].severity]
       )
     }
+  })
+})
+
+// ── computeOptimalPhase ───────────────────────────────────────────────────────
+
+describe('computeOptimalPhase', () => {
+  it('returns deload when recovery score < 30', () => {
+    const dims = makeDims({ recovery: { score: 25, weight: 0.30, dataPoints: 5 } })
+    const result = computeOptimalPhase('hypertrophy', dims, null, null)
+    expect(result.phase).toBe('deload')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns deload when recovery < 40 and performance < 40', () => {
+    const dims = makeDims({
+      recovery:    { score: 35, weight: 0.30, dataPoints: 5 },
+      performance: { score: 32, weight: 0.25, dataPoints: 4 },
+    })
+    const result = computeOptimalPhase('hypertrophy', dims, null, null)
+    expect(result.phase).toBe('deload')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns lean_bulk when body_fat < 10% male', () => {
+    const result = computeOptimalPhase('fat_loss', makeDims(), 9.5, 'male')
+    expect(result.phase).toBe('lean_bulk')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns lean_bulk when body_fat < 12% female', () => {
+    const result = computeOptimalPhase('fat_loss', makeDims(), 11.0, 'female')
+    expect(result.phase).toBe('lean_bulk')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns fat_loss when body_fat > 20% male', () => {
+    const result = computeOptimalPhase('hypertrophy', makeDims(), 22.0, 'male')
+    expect(result.phase).toBe('fat_loss')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns fat_loss when body_fat > 28% female', () => {
+    const result = computeOptimalPhase('hypertrophy', makeDims(), 30.0, 'female')
+    expect(result.phase).toBe('fat_loss')
+    expect(result.confidence).toBe('high')
+  })
+
+  it('returns lean_bulk when body_fat 13% male and performance ok', () => {
+    const dims = makeDims({ performance: { score: 70, weight: 0.25, dataPoints: 4 } })
+    const result = computeOptimalPhase('recomp', dims, 13.0, 'male')
+    expect(result.phase).toBe('lean_bulk')
+    expect(result.confidence).toBe('medium')
+  })
+
+  it('returns recomp when body_fat 13% male and performance low', () => {
+    const dims = makeDims({ performance: { score: 35, weight: 0.25, dataPoints: 4 } })
+    const result = computeOptimalPhase('recomp', dims, 13.0, 'male')
+    expect(result.phase).toBe('recomp')
+    expect(result.confidence).toBe('medium')
+  })
+
+  it('returns maintenance when no body_fat and adherence < 60', () => {
+    const dims = makeDims({ adherence: { score: 45, weight: 0.25, dataPoints: 5 } })
+    const result = computeOptimalPhase('hypertrophy', dims, null, null)
+    expect(result.phase).toBe('maintenance')
+  })
+
+  it('returns maintenance when recovery and performance both < 50 (no body_fat)', () => {
+    const dims = makeDims({
+      recovery:    { score: 40, weight: 0.30, dataPoints: 5 },
+      performance: { score: 42, weight: 0.25, dataPoints: 4 },
+    })
+    const result = computeOptimalPhase('hypertrophy', dims, null, null)
+    expect(result.phase).toBe('maintenance')
+  })
+
+  it('matchesCurrent is true when recommendation matches mapped training_goal', () => {
+    // hypertrophy maps to lean_bulk; body_fat < 10% → lean_bulk
+    const result = computeOptimalPhase('hypertrophy', makeDims(), 9.0, 'male')
+    expect(result.phase).toBe('lean_bulk')
+    expect(result.currentMappedPhase).toBe('lean_bulk')
+    expect(result.matchesCurrent).toBe(true)
+  })
+
+  it('matchesCurrent is false when recommendation differs from mapped training_goal', () => {
+    // hypertrophy maps to lean_bulk; recovery < 30 → deload
+    const dims = makeDims({ recovery: { score: 20, weight: 0.30, dataPoints: 5 } })
+    const result = computeOptimalPhase('hypertrophy', dims, null, null)
+    expect(result.phase).toBe('deload')
+    expect(result.currentMappedPhase).toBe('lean_bulk')
+    expect(result.matchesCurrent).toBe(false)
   })
 })

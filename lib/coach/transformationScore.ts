@@ -4,6 +4,19 @@ export type TrainingGoal =
   | 'fat_loss' | 'hypertrophy' | 'strength' | 'recomp'
   | 'maintenance' | 'endurance' | 'athletic'
 
+export type TransformationPhase =
+  | 'fat_loss' | 'lean_bulk' | 'recomp'
+  | 'competition_prep' | 'competition'
+  | 'maintenance' | 'deload'
+
+export interface PhaseRecommendation {
+  phase: TransformationPhase
+  confidence: 'high' | 'medium' | 'low'
+  rationale: string[]   // 2–3 bullets in French
+  matchesCurrent: boolean
+  currentMappedPhase: TransformationPhase
+}
+
 export interface DimensionWeights {
   adherence: number
   recovery: number
@@ -40,6 +53,7 @@ export interface TransformationScoreResult {
   alerts: TransformationAlert[]
   weightsSource: 'default' | 'coach_override'
   insufficientData: boolean
+  phaseRecommendation: PhaseRecommendation
 }
 
 export interface CheckinSummaryInput {
@@ -83,6 +97,8 @@ export interface ComputeScoreInput {
   performance: PerformanceSummaryInput
   bodyData: BodyDataInput
   weightsOverride: DimensionWeights | null
+  gender: 'male' | 'female' | string | null
+  latestBodyFat: number | null
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -349,6 +365,196 @@ function generateAlerts(
   return alerts.sort((a, b) => order[a.severity] - order[b.severity])
 }
 
+// ─── Phase mapping ────────────────────────────────────────────────────────────
+
+export const GOAL_TO_PHASE: Record<TrainingGoal, TransformationPhase> = {
+  fat_loss:    'fat_loss',
+  hypertrophy: 'lean_bulk',
+  strength:    'lean_bulk',
+  recomp:      'recomp',
+  maintenance: 'maintenance',
+  endurance:   'maintenance',
+  athletic:    'maintenance',
+}
+
+export function mapGoalToPhase(goal: TrainingGoal): TransformationPhase {
+  return GOAL_TO_PHASE[goal]
+}
+
+// ─── Optimal phase computation ────────────────────────────────────────────────
+
+export function computeOptimalPhase(
+  trainingGoal: TrainingGoal,
+  dims: TransformationScoreResult['dimensions'],
+  latestBodyFat: number | null,
+  gender: string | null,
+): PhaseRecommendation {
+  const currentMappedPhase = GOAL_TO_PHASE[trainingGoal]
+
+  // Priority 1: Deload — recovery critical
+  if (dims.recovery.dataPoints > 0 && dims.recovery.score < 30) {
+    return {
+      phase: 'deload',
+      confidence: 'high',
+      rationale: [
+        `Récupération critique — score ${dims.recovery.score}/100`,
+        'Réduire le volume d\'entraînement 40–50% pendant 1 semaine',
+        'Reprendre la phase en cours après la décharge',
+      ],
+      matchesCurrent: currentMappedPhase === 'deload',
+      currentMappedPhase,
+    }
+  }
+
+  // Priority 1b: Deload — recovery + performance both low (overreaching proxy)
+  if (
+    dims.recovery.dataPoints > 0 && dims.recovery.score < 40 &&
+    dims.performance.dataPoints > 0 && dims.performance.score < 40
+  ) {
+    return {
+      phase: 'deload',
+      confidence: 'high',
+      rationale: [
+        `Récupération insuffisante — score ${dims.recovery.score}/100`,
+        `Performance en baisse — score ${dims.performance.score}/100`,
+        'Semaine de décharge recommandée avant reprise',
+      ],
+      matchesCurrent: currentMappedPhase === 'deload',
+      currentMappedPhase,
+    }
+  }
+
+  // Priority 2: Body fat driven (requires at least 1 bilan with body_fat_pct)
+  if (latestBodyFat !== null) {
+    const isFemale = gender === 'female'
+    const leanCutoff  = isFemale ? 12 : 10   // below → lean_bulk high
+    const borderUpper = isFemale ? 20 : 15   // 10–15% homme / 12–20% femme
+    const fatLossUpper = isFemale ? 28 : 20  // above → fat_loss high
+
+    if (latestBodyFat < leanCutoff) {
+      return {
+        phase: 'lean_bulk',
+        confidence: 'high',
+        rationale: [
+          `Body fat ${latestBodyFat.toFixed(1)}% — trop faible pour un déficit calorique`,
+          'Fenêtre idéale pour une prise de masse propre',
+          'Surplus modéré de 250–500 kcal recommandé',
+        ],
+        matchesCurrent: currentMappedPhase === 'lean_bulk',
+        currentMappedPhase,
+      }
+    }
+
+    if (latestBodyFat > fatLossUpper) {
+      return {
+        phase: 'fat_loss',
+        confidence: 'high',
+        rationale: [
+          `Body fat ${latestBodyFat.toFixed(1)}% — au-dessus du seuil recommandé`,
+          'Déficit calorique modéré prioritaire (300–500 kcal)',
+          'Charge protéique élevée pour préserver la masse maigre',
+        ],
+        matchesCurrent: currentMappedPhase === 'fat_loss',
+        currentMappedPhase,
+      }
+    }
+
+    if (latestBodyFat < borderUpper) {
+      // 10–15% homme / 12–20% femme — lean_bulk if perf ok, else recomp
+      const phase: TransformationPhase = dims.performance.score >= 50 ? 'lean_bulk' : 'recomp'
+      return {
+        phase,
+        confidence: 'medium',
+        rationale: phase === 'lean_bulk'
+          ? [
+              `Body fat ${latestBodyFat.toFixed(1)}% — dans la fenêtre pour un lean bulk`,
+              `Progression stable (score performance ${dims.performance.score}/100)`,
+              'Surplus modéré pour maximiser la synthèse protéique',
+            ]
+          : [
+              `Body fat ${latestBodyFat.toFixed(1)}% — recomposition envisageable`,
+              `Performance variable (score ${dims.performance.score}/100)`,
+              'Maintien calorique avec entraînement en résistance optimal',
+            ],
+        matchesCurrent: currentMappedPhase === phase,
+        currentMappedPhase,
+      }
+    }
+
+    // 15–20% homme / 20–28% femme — fat_loss if adherence ok, else maintenance
+    const phase: TransformationPhase = dims.adherence.score >= 60 ? 'fat_loss' : 'maintenance'
+    return {
+      phase,
+      confidence: 'medium',
+      rationale: phase === 'fat_loss'
+        ? [
+            `Body fat ${latestBodyFat.toFixed(1)}% — réduction recommandée`,
+            `Adhérence suffisante (${dims.adherence.score}%) pour tenir un déficit`,
+            'Déficit modéré de 300–500 kcal',
+          ]
+        : [
+            `Body fat ${latestBodyFat.toFixed(1)}% — stabilisation avant déficit`,
+            `Adhérence insuffisante (${dims.adherence.score}%) — consolider les habitudes d'abord`,
+            'Phase de maintenance pour construire la régularité',
+          ],
+      matchesCurrent: currentMappedPhase === phase,
+      currentMappedPhase,
+    }
+  }
+
+  // Priority 3: Dimension-driven fallback (no body fat data)
+  if (dims.adherence.dataPoints > 0 && dims.adherence.score < 60) {
+    return {
+      phase: 'maintenance',
+      confidence: 'medium',
+      rationale: [
+        `Adhérence insuffisante — ${dims.adherence.score}%`,
+        'Stabiliser les habitudes avant de changer de phase',
+        'Objectif : atteindre 80%+ d\'adhérence sur 4 semaines',
+      ],
+      matchesCurrent: currentMappedPhase === 'maintenance',
+      currentMappedPhase,
+    }
+  }
+
+  if (
+    dims.recovery.dataPoints > 0 && dims.recovery.score < 50 &&
+    dims.performance.dataPoints > 0 && dims.performance.score < 50
+  ) {
+    return {
+      phase: 'maintenance',
+      confidence: 'medium',
+      rationale: [
+        `Récupération et performance sous les seuils optimaux`,
+        `Score récupération : ${dims.recovery.score}/100 — score performance : ${dims.performance.score}/100`,
+        'Maintien calorique pour consolider la base avant relance',
+      ],
+      matchesCurrent: currentMappedPhase === 'maintenance',
+      currentMappedPhase,
+    }
+  }
+
+  // Fallback: mirror training_goal
+  const insufficientData = dims.adherence.dataPoints < 1 && dims.recovery.dataPoints < 1
+  return {
+    phase: currentMappedPhase,
+    confidence: insufficientData ? 'low' : 'medium',
+    rationale: insufficientData
+      ? [
+          'Données insuffisantes pour une recommandation précise',
+          'Phase actuelle maintenue par défaut',
+          'Planifier des bilans réguliers pour affiner la recommandation',
+        ]
+      : [
+          'Profil conforme à la phase en cours',
+          `Récupération correcte (${dims.recovery.score}/100)`,
+          'Continuer la phase actuelle — surveiller les bilans',
+        ],
+    matchesCurrent: true,
+    currentMappedPhase,
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function computeTransformationScore(input: ComputeScoreInput): TransformationScoreResult {
@@ -384,6 +590,13 @@ export function computeTransformationScore(input: ComputeScoreInput): Transforma
     performance:  { score: performRaw.score,   weight: w.performance,  dataPoints: performRaw.dataPoints   },
   }
 
+  const phaseRecommendation = computeOptimalPhase(
+    input.trainingGoal,
+    dimensions,
+    input.latestBodyFat,
+    input.gender ?? null,
+  )
+
   return {
     score: Math.round(composite),
     label: getScoreLabel(Math.round(composite)),
@@ -392,5 +605,6 @@ export function computeTransformationScore(input: ComputeScoreInput): Transforma
     alerts: generateAlerts(dimensions, input.checkin),
     weightsSource,
     insufficientData: insufficient.length > 0,
+    phaseRecommendation,
   }
 }
