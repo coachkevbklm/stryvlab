@@ -55,14 +55,16 @@ const CONFIDENCE_LABELS: Record<'high' | 'medium' | 'low', string> = {
   low:    'Données insuffisantes',
 }
 
-// ── SVG arc helpers ────────────────────────────────────────────────────────────
+// ── SVG arc geometry ──────────────────────────────────────────────────────────
+// 180° semi-circle: from 270° (left) clockwise through top to 90° (right)
+// ViewBox "0 0 200 120", center (100, 110), radius 80
 
-const CX = 130
-const CY = 150
-const R  = 90
-const START_DEG     = 225
-const SEGMENT_SWEEP = (270 - 3 * 6) / 7   // ≈ 36°
-const STRIDE        = SEGMENT_SWEEP + 3    // ≈ 39°
+const CX           = 100
+const CY           = 110
+const R            = 80
+const START_DEG    = 270
+const SEGMENT_SWEEP = (180 - 3 * 6) / 7   // 162/7 ≈ 23.14°
+const STRIDE        = SEGMENT_SWEEP + 3    // ≈ 26.14°
 
 function compassToXY(deg: number): { x: number; y: number } {
   const rad = (deg * Math.PI) / 180
@@ -72,12 +74,17 @@ function compassToXY(deg: number): { x: number; y: number } {
 function arcD(startDeg: number, endDeg: number): string {
   const s = compassToXY(startDeg)
   const e = compassToXY(endDeg)
-  return `M ${s.x.toFixed(1)} ${s.y.toFixed(1)} A ${R} ${R} 0 0 1 ${e.x.toFixed(1)} ${e.y.toFixed(1)}`
+  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 0 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`
+}
+
+// Wave effect: edge segments are thin (8px), center segment is thickest (19px)
+function strokeW(i: number): number {
+  return Math.round(8 + Math.sin((i / 6) * Math.PI) * 11)
 }
 
 function segmentColor(phase: TransformationPhase, rec: PhaseRecommendation): string {
   if (phase === rec.phase) return '#1f8a65'
-  if (!rec.matchesCurrent && phase === rec.currentMappedPhase) return 'rgba(255,255,255,0.28)'
+  if (!rec.matchesCurrent && phase === rec.currentMappedPhase) return 'rgba(255,255,255,0.30)'
   return 'rgba(255,255,255,0.07)'
 }
 
@@ -123,7 +130,7 @@ export default function TransformationPhaseWidget({ clientId }: Props) {
   return (
     <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl px-6 py-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">
           Phase de transformation
         </p>
@@ -138,7 +145,7 @@ export default function TransformationPhaseWidget({ clientId }: Props) {
       </div>
 
       {loading ? (
-        <div className="h-[180px] flex items-center justify-center">
+        <div className="h-[200px] flex items-center justify-center">
           <div className="w-5 h-5 border-2 border-white/10 border-t-white/40 rounded-full animate-spin" />
         </div>
       ) : rec ? (
@@ -146,63 +153,69 @@ export default function TransformationPhaseWidget({ clientId }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
+          className="flex flex-col"
         >
-          {/* Arc + center text */}
-          <div className="relative">
+          {/* Arc + center overlay */}
+          <div className="relative w-full max-w-[300px] mx-auto">
             <svg
-              viewBox="0 0 260 218"
+              viewBox="0 0 200 120"
               className="w-full"
               aria-hidden="true"
             >
               {PHASES.map((phase, i) => {
                 const startDeg = START_DEG + i * STRIDE
                 const endDeg   = startDeg + SEGMENT_SWEEP
+                const isOptimal = phase === rec.phase
                 return (
                   <motion.path
                     key={phase}
                     d={arcD(startDeg, endDeg)}
                     stroke={segmentColor(phase, rec)}
-                    strokeWidth={20}
+                    strokeWidth={strokeW(i)}
                     fill="none"
                     strokeLinecap="round"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.05, duration: 0.25 }}
+                    style={isOptimal
+                      ? { filter: 'drop-shadow(0 0 5px rgba(31,138,101,0.55))' }
+                      : undefined
+                    }
+                    initial={{ opacity: 0, pathLength: 0 }}
+                    animate={{ opacity: 1, pathLength: 1 }}
+                    transition={{ delay: i * 0.06, duration: 0.35, ease: 'easeOut' }}
                   />
                 )
               })}
             </svg>
 
-            {/* Center text overlay */}
+            {/* Center text — positioned in arc hollow */}
             <div
-              className="absolute flex flex-col items-center gap-1 pointer-events-none"
-              style={{ top: '42%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              className="absolute flex flex-col items-center gap-0.5 pointer-events-none"
+              style={{ top: '54%', left: '50%', transform: 'translate(-50%, -50%)' }}
             >
               {OptimalIcon && (
-                <OptimalIcon className="w-7 h-7 text-white/50 mb-0.5" />
+                <OptimalIcon className="w-5 h-5 text-white/40 mb-1" />
               )}
-              <p className="text-[17px] font-bold text-white leading-none text-center whitespace-nowrap">
+              <p className="text-[16px] font-bold text-white leading-none text-center whitespace-nowrap">
                 {PHASE_LABELS[rec.phase]}
               </p>
               {rec.matchesCurrent ? (
-                <span className="text-[10px] font-bold text-[#1f8a65] tracking-[0.06em] mt-0.5">
+                <span className="text-[9px] font-bold text-[#1f8a65] tracking-[0.08em] mt-1">
                   ✓ Alignée
                 </span>
               ) : (
-                <p className="text-[8px] uppercase tracking-[0.18em] text-white/25 mt-0.5">
+                <p className="text-[8px] uppercase tracking-[0.16em] text-white/25 mt-0.5">
                   Phase optimale
                 </p>
               )}
             </div>
           </div>
 
-          {/* Phase label strip */}
-          <div className="flex justify-between px-1 -mt-5 mb-4">
+          {/* Phase label strip — aligned to arc */}
+          <div className="flex justify-between w-full max-w-[300px] mx-auto px-0.5 -mt-3 mb-5">
             {PHASES.map(phase => (
               <span
                 key={phase}
-                className={`text-[8px] font-bold uppercase tracking-[0.12em] ${
-                  isActiveLabel(phase, rec) ? 'text-white/60' : 'text-white/15'
+                className={`text-[8px] font-bold uppercase tracking-[0.10em] ${
+                  isActiveLabel(phase, rec) ? 'text-white/60' : 'text-white/14'
                 }`}
               >
                 {PHASE_SHORT[phase]}
