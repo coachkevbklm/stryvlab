@@ -398,6 +398,8 @@ export function useNutritionStudio(
       if (!macroOverrides.carbs_g) {
         const remaining = targetCal - result.macros.p * 4 - result.macros.f * 9;
         result.macros.c = Math.max(0, Math.round(remaining / 4));
+        // Recompute from actual rounded macros so MacroSliders and CalorieAdjustmentDisplay are always in sync
+        result.calories = result.macros.p * 4 + result.macros.f * 9 + result.macros.c * 4;
       }
       // Apply macro overrides — each overridden macro becomes source of truth
       // Calories = P×4 + L×9 + G×4 (all effective values)
