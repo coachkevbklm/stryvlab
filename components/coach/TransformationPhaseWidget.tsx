@@ -55,37 +55,47 @@ const CONFIDENCE_LABELS: Record<'high' | 'medium' | 'low', string> = {
   low:    'Données insuffisantes',
 }
 
-// ── SVG arc geometry ──────────────────────────────────────────────────────────
-// 180° semi-circle: from 270° (left) clockwise through top to 90° (right)
-// ViewBox "0 0 200 120", center (100, 110), radius 80
+// ── SVG tick geometry ──────────────────────────────────────────────────────────
+// 21 radial ticks (3 per phase × 7 phases) in 180° arc
+// Arc: 270° (left) → clockwise through 0° (top) → 90° (right)
+// Each tick is a radial line pointing toward center, like clock tick marks
 
-const CX           = 100
-const CY           = 110
-const R            = 80
-const START_DEG    = 270
-const SEGMENT_SWEEP = (180 - 3 * 6) / 7   // 162/7 ≈ 23.14°
-const STRIDE        = SEGMENT_SWEEP + 3    // ≈ 26.14°
+const CX         = 100
+const CY         = 100
+const R_INNER    = 52
+const TICK_COUNT = 21
+const STRIDE     = 180 / (TICK_COUNT - 1)   // 9° between ticks
 
-function compassToXY(deg: number): { x: number; y: number } {
+// Compass → SVG coords (y-axis flipped)
+function cxy(r: number, deg: number): { x: number; y: number } {
   const rad = (deg * Math.PI) / 180
-  return { x: CX + R * Math.sin(rad), y: CY - R * Math.cos(rad) }
+  return { x: CX + r * Math.sin(rad), y: CY - r * Math.cos(rad) }
 }
 
-function arcD(startDeg: number, endDeg: number): string {
-  const s = compassToXY(startDeg)
-  const e = compassToXY(endDeg)
-  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 0 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`
+// Wave height: short at edges (10px), tall at center (28px)
+function tickH(i: number): number {
+  return Math.round(10 + Math.sin((i / (TICK_COUNT - 1)) * Math.PI) * 18)
 }
 
-// Wave effect: edge segments are thin (8px), center segment is thickest (19px)
-function strokeW(i: number): number {
-  return Math.round(8 + Math.sin((i / 6) * Math.PI) * 11)
+// SVG path for tick i — radial line from inner to outer radius
+function tickPath(i: number): string {
+  const angle = 270 + i * STRIDE
+  const h = tickH(i)
+  const p1 = cxy(R_INNER, angle)
+  const p2 = cxy(R_INNER + h, angle)
+  return `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
 }
 
-function segmentColor(phase: TransformationPhase, rec: PhaseRecommendation): string {
+// Which of the 7 phases does tick i belong to?
+function phaseOf(i: number): TransformationPhase {
+  return PHASES[Math.min(Math.floor(i / 3), 6)]
+}
+
+function tickColor(i: number, rec: PhaseRecommendation): string {
+  const phase = phaseOf(i)
   if (phase === rec.phase) return '#1f8a65'
-  if (!rec.matchesCurrent && phase === rec.currentMappedPhase) return 'rgba(255,255,255,0.30)'
-  return 'rgba(255,255,255,0.07)'
+  if (!rec.matchesCurrent && phase === rec.currentMappedPhase) return 'rgba(255,255,255,0.38)'
+  return 'rgba(255,255,255,0.10)'
 }
 
 function isActiveLabel(phase: TransformationPhase, rec: PhaseRecommendation): boolean {
@@ -99,8 +109,7 @@ function ConfidenceDots({ level }: { level: 'high' | 'medium' | 'low' }) {
   return (
     <div className="flex items-center gap-1">
       {[0, 1, 2].map(i => (
-        <div
-          key={i}
+        <div key={i}
           className={`w-1.5 h-1.5 rounded-full ${i < filled ? 'bg-white/60' : 'bg-white/15'}`}
         />
       ))}
@@ -155,45 +164,38 @@ export default function TransformationPhaseWidget({ clientId }: Props) {
           transition={{ duration: 0.3 }}
           className="flex flex-col"
         >
-          {/* Arc + center overlay */}
+          {/* Tick arc + center overlay */}
           <div className="relative w-full max-w-[300px] mx-auto">
-            <svg
-              viewBox="0 0 200 120"
-              className="w-full"
-              aria-hidden="true"
-            >
-              {PHASES.map((phase, i) => {
-                const startDeg = START_DEG + i * STRIDE
-                const endDeg   = startDeg + SEGMENT_SWEEP
-                const isOptimal = phase === rec.phase
+            {/* ViewBox: 200×110. CX=100 CY=100. Arc endpoints at y=100 (left/right). */}
+            <svg viewBox="0 0 200 110" className="w-full" aria-hidden="true">
+              {Array.from({ length: TICK_COUNT }).map((_, i) => {
+                const isOptimal = phaseOf(i) === rec.phase
                 return (
                   <motion.path
-                    key={phase}
-                    d={arcD(startDeg, endDeg)}
-                    stroke={segmentColor(phase, rec)}
-                    strokeWidth={strokeW(i)}
+                    key={i}
+                    d={tickPath(i)}
+                    stroke={tickColor(i, rec)}
+                    strokeWidth={5}
                     fill="none"
                     strokeLinecap="round"
                     style={isOptimal
-                      ? { filter: 'drop-shadow(0 0 5px rgba(31,138,101,0.55))' }
+                      ? { filter: 'drop-shadow(0 0 3px rgba(31,138,101,0.70))' }
                       : undefined
                     }
-                    initial={{ opacity: 0, pathLength: 0 }}
-                    animate={{ opacity: 1, pathLength: 1 }}
-                    transition={{ delay: i * 0.06, duration: 0.35, ease: 'easeOut' }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.025, duration: 0.2, ease: 'easeOut' }}
                   />
                 )
               })}
             </svg>
 
-            {/* Center text — positioned in arc hollow */}
+            {/* Center text in arc hollow — ~62% from top of SVG */}
             <div
               className="absolute flex flex-col items-center gap-0.5 pointer-events-none"
-              style={{ top: '54%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              style={{ top: '62%', left: '50%', transform: 'translate(-50%, -50%)' }}
             >
-              {OptimalIcon && (
-                <OptimalIcon className="w-5 h-5 text-white/40 mb-1" />
-              )}
+              {OptimalIcon && <OptimalIcon className="w-5 h-5 text-white/40 mb-0.5" />}
               <p className="text-[16px] font-bold text-white leading-none text-center whitespace-nowrap">
                 {PHASE_LABELS[rec.phase]}
               </p>
@@ -209,13 +211,13 @@ export default function TransformationPhaseWidget({ clientId }: Props) {
             </div>
           </div>
 
-          {/* Phase label strip — aligned to arc */}
-          <div className="flex justify-between w-full max-w-[300px] mx-auto px-0.5 -mt-3 mb-5">
+          {/* Phase label strip — 7 labels aligned under their 3-tick groups */}
+          <div className="flex justify-between w-full max-w-[300px] mx-auto px-1 -mt-2 mb-5">
             {PHASES.map(phase => (
               <span
                 key={phase}
                 className={`text-[8px] font-bold uppercase tracking-[0.10em] ${
-                  isActiveLabel(phase, rec) ? 'text-white/60' : 'text-white/14'
+                  isActiveLabel(phase, rec) ? 'text-white/60' : 'text-white/15'
                 }`}
               >
                 {PHASE_SHORT[phase]}

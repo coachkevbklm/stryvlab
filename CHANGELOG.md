@@ -5,6 +5,7 @@
 
 ## 2026-05-29
 
+FIX: MealLogSheet — align bg to #080808 (was #111111), footer bg fixed, toggle/pills use bg-white/[0.10] pattern matching QuickWaterModal reference
 FIX: TransformationPhaseWidget — arc trop grand → 180° semi-circle max-w-[300px], wave strokeWidth (8→19→8), pathLength stagger animation, drop-shadow sur segment optimal
 FEATURE: Redesign TransformationPhaseWidget — speedometer SVG arc (7 phase segments, Framer Motion stagger, compass angle geometry, optimal segment accent green)
 REFACTOR: Move transformation widgets to dedicated full-width top row (grid-cols-2) on coach client profil page — side-by-side layout
