@@ -29,8 +29,11 @@
 | **Nutrition Engine v1** | ✅ Macro matrix, TDEE components, weekly decision matrix, guardrails, real-time triggers | 2026-05-25 |
 | **Cycle Sync v2** | ✅ history-based engine, CyclePhasePill, LogPeriodSheet, Profile, ProtocolRationale accordions, Studio | 2026-05-26 |
 | **Cycle Sync Activation** | ✅ coach toggle per protocol, runtime macro adjustment, CycleArcIndicator TopBar, CyclePhaseModal (nutrition/training), check-in phase logging | 2026-05-27 |
+| **Transformation Score Widget** | ✅ composite 0–100 gauge (4 dimensions), SVG speedometer + Framer Motion, alert list, 7j/30j toggle, coach weight override | 2026-05-29 |
+| **Transformation Phase Guide Widget** | ✅ 7-phase cascade algorithm (body fat % + recovery + performance + adherence drivers), matchesCurrent badge, confidence dots, rationale bullets | 2026-05-29 |
 | **Nutrition Protocols** | ✅ Macros, carb cycling, cycle sync | 2026-04-26 |
-| **MorphoPro Bridge** | ✅ Phase 1 complet (galerie + canvas + analyse IA structurée) | 2026-04-28 |
+| **MorphoPro Bridge** | ✅ Phase 2+4 complet — biomechEngine (Gold Standard matching), evolution tracking (deltas + timeline), 5 routes | 2026-05-29 |
+| **Chat Release 1 — Bloc D** | ✅ DB + observabilité — schema, callLLM wrapper, feature flags, coach notifications | 2026-05-29 |
 | **Design System v2.0** | ✅ Dark flat minimal DS-compliant (coach web) | 2026-04-27 |
 | **Design System v4.0** | ✅ Dark gray minimal — zéro accent, zéro border, gray scale #080808→#f2f2f2 | 2026-05-28 ✅ PWA Compliance Complete |
 | **Landing STRYVR** | ✅ `/stryvr` — DA Technogym, waitlist Supabase | 2026-05-16 |
@@ -41,6 +44,56 @@
 ---
 
 ## 🚀 Dernières Avancées
+
+### 2026-05-29 — Chat Release 1 Bloc D — Fondation DB + Observabilité
+
+- `supabase/migrations/20260529_chat_release1_bloc_d.sql` — ALTER chat_messages (+5 cols : parent_message_id, requires_coach_response, coach_response_reason, from_coach_human, trace_id), ALTER coach_profiles (+5 cols AI), 4 nouvelles tables (coach_ai_settings_per_client, coach_llm_budget, llm_traces, coach_notifications), RPC `increment_llm_budget` atomique — **appliquer manuellement via Supabase Dashboard**
+- `lib/llm/types.ts` — CallLLMParams, LLMResult, ProviderParams, ProviderResult, LLMProvider
+- `lib/llm/providers/openai.ts` — provider isolé, timeout 30s, maxRetries 1 (swap futur = 1 fichier)
+- `lib/llm/callLLM.ts` — wrapper centralisé : INSERT llm_traces avant appel, UPDATE après, increment_llm_budget RPC, retourne null si erreur (jamais throw)
+- `lib/email/mailer.ts` — +`sendCoachAlertEmail` (template Resend, sujet urgent si safety)
+- `lib/notifications/sendCoachNotification.ts` — INSERT coach_notifications + email immédiat si category=safety
+- `app/api/client/chat/messages/route.ts` — POST refactoré : feature flag check (has_ai_llm + ai_llm_enabled), callLLM, parent_message_id + trace_id sur botMsg, requires_coach_response si LLM désactivé
+- `app/api/client/ai-coach/chat/route.ts` — deprecate POST → redirect 308 /chat/messages
+- `lib/nutrition/physiological-date.ts` — export PHYSIOLOGICAL_DAY_OFFSET_HOURS = 4
+- Points de vigilance : migration à appliquer manuellement ; llm_traces RLS = aucune policy (service_role only) ; race condition consumed_messages documentée (acceptable R1, fix R2) ; message_type CHECK étendu inclut morning_init/evening_init pour cohérence
+
+### 2026-05-29 — Transformation Phase Guide Widget
+
+- `lib/coach/transformationScore.ts` — +`TransformationPhase` (7 phases), `PhaseRecommendation`, `GOAL_TO_PHASE`, `computeOptimalPhase(trainingGoal, dims, latestBodyFat, gender)` — cascade: deload override (recovery<30 / both<40) → body_fat % drivers (male/female thresholds) → dimension fallbacks → goal mirror
+- `tests/lib/transformationScore.test.ts` — 12 nouveaux tests, total 30 PASS
+- `app/api/clients/[clientId]/transformation-score/route.ts` — +`gender` dans select, `latestBodyFat` extrait de `bodyFatSeries`, tous deux passés à `computeTransformationScore`
+- `components/coach/TransformationPhaseWidget.tsx` — widget coach : layout mismatch (2 boîtes + flèche) vs match (1 boîte + badge vert), ConfidenceDots, rationale bullets, fetch `?window=30` fixe
+- `app/coach/clients/[clientId]/profil/page.tsx` — widget inséré sous `TransformationScoreWidget`
+- Points de vigilance : `computeOptimalPhase` utilise `performance.score < 40` comme proxy pour overreaching (pas accès direct à `global_overreaching` dans les dims) ; `gender` castée depuis DB (string | null) — seule valeur `'female'` déclenche les seuils femmes ; `latestBodyFat` = dernier bilan uniquement (pas une moyenne)
+
+### 2026-05-29 — MorphoPro v2 Phase 2+4 — Moteur Biomécanique + Suivi Longitudinal
+
+- `lib/morpho/biomechEngine.ts` — `deriveMorphoFields` : bridge GPT-v2 analysis → proxy numeric fields (arm_span_height_ratio, femur_tibia_ratio, thoracic_kyphosis_deg, glenohumeral_anteversion_deg, shoulder_external_rotation_deg, pelvic_tilt_anterior_deg, lumbar_neutrality_score, ~25 boolean injury flags depuis text-scan flags+attention_points) ; `evaluateTrigger` : évalue conditions Gold Standard DB (OR/AND logic, unknown fields skipped) ; `generateExerciseRecommendations` : 72 slots × 3 passes (red_flag+risk_tag → trigger → pattern_verdict bonus)
+- `lib/morpho/evolution.ts` — `computeEvolutionReport` : score delta + 5 asymmetry fields + 3 syndrome ordinals + 2 segment ratios + flag diff + pattern verdict changes ; significance heuristics (asymétry: 0.5/1.5cm, score: 3/8pts, syndrome: ordinal jump) ; confidence gate (low × low → inconclusive) ; overall_trend (improving/mixed/worsening/stable via improved/worsened ratio)
+- `app/api/clients/[clientId]/morpho/exercise-map/route.ts` — GET coach-only ; fetch latest v2 analysis ; lazy-compute `generateExerciseRecommendations` + persist dans `exercise_recommendations` ; retourne `{ analysis_id, analysis_date, recommendations, cached }`
+- `app/api/clients/[clientId]/morpho/evolution/route.ts` — GET ; check `morpho_evolutions` cache → compute fresh si absent ; upsert via `onConflict: 'previous_analysis_id,current_analysis_id'`
+- `app/api/clients/[clientId]/morpho/evolution-timeline/route.ts` — GET ; time-series sur tous analyses v2 du client : `series` (9 métriques avec confidence), `events` (analysis/flag_resolved/flag_appeared/pattern_changed), `last_evolution_report`
+- Points de vigilance : `deriveMorphoFields` produit des proxies (GH anteversion depuis upper_crossed severity) — confiance décroît sur fields cliniques ; exercise-map importe le JSON Gold Standard directement (`@/docs/morphopro_gold_standard_v2_complete.json`) — TypeScript cast via `unknown` ; evolution route utilise `onConflict` Supabase sur la paire (previous_analysis_id, current_analysis_id) — migration 20260529_morphopro_v2 doit être appliquée (UNIQUE constraint)
+
+### 2026-05-29 — MorphoPro v2 — Couche Biomécanique Experte
+
+- `lib/morpho/types.ts` — +`Confidence`, `SegmentEstimate`, `BiomechSegments`, `MuscleInsertion`, `PosturalSyndrome`, `BiomechMovementPattern`, `PatternVerdict`, `BiomechProfile`, `MorphoAnalysisResultV2`, `isMorphoV2()` type guard — v1 intact rétrocompat
+- `lib/morpho/buildAnalysisPrompt.ts` — prompt v2 complet : rôle biomécanique expert + 6 axes (proportions segmentaires, insertions musculaires, syndromes posturaux, asymétries fines, pattern verdicts ×10, posturale globale) + garde-fous (no diagnostic, unknown si doute, json strict)
+- `lib/morpho/adjustments.ts` — `MorphoForAdjustment` étendu avec `biomech?` ; 6 nouvelles règles : trunk_to_femur <0.9 (squat ×0.92), >1.1 (×1.05), arm_to_torso >1.05 (hinge ×1.10), upper_crossed mod/marked (vertical_push ×0.85 + horizontal_pull ×1.15), lower_crossed mod/marked (core_anti_flex ×1.15 + hinge ×0.90), posterior_chain underdeveloped (hinge ×1.10) ; règles 3&4 désormais alimentées depuis `biomech.segments` si disponible
+- `app/api/morpho/analyze/route.ts` — v2 aware : `isMorphoV2` détecte format, passe `biomech` à `calculateStimulusAdjustments`, persiste `biomech_profile + prompt_version`, `max_tokens` 1500→3000, retourne `prompt_version` dans le payload
+- `supabase/migrations/20260529_morphopro_v2.sql` — `biomech_profile JSONB`, `exercise_recommendations JSONB`, `prompt_version TEXT DEFAULT 'v1'` sur `morpho_analyses` ; backfill v1 ; table `morpho_evolutions` (unique constraint prev+curr analysis, RLS coach_own) — **appliquer manuellement via Supabase Dashboard**
+- Points de vigilance : `max_tokens 3000` requis pour le payload v2 complet (segments ×9 + insertions ×5 + syndromes ×3 + verdicts ×10) ; `isMorphoV2` check sur `'biomech' in r && 'meta' in r` — GPT peut retourner v1 si prompt mal reçu, la route gère les deux ; `BiomechMovementPattern` (10 patterns) ≠ `MovementPattern` dans adjustments.ts (10 patterns programme engine) — mapping intentionnel : `anti_rotation` biomech → `core_anti_flex` programme engine
+
+### 2026-05-29 — Transformation Score Widget — Coach Client Profile
+
+- `supabase/migrations/20260529_transformation_score.sql` — `score_weights_config JSONB DEFAULT NULL` ajouté à `coach_clients` — **appliquer manuellement via Supabase Dashboard**
+- `lib/coach/transformationScore.ts` — logique pure : 7 `DEFAULT_WEIGHTS` par objectif, `redistributeWeights` (dimensions insuffisantes exclus, poids redistribué proportionnellement), `normalizeRecovery/Adherence/BodyProgress/Performance`, `generateAlerts` (tri high→medium→low), `computeTransformationScore`
+- `tests/lib/transformationScore.test.ts` — 18 tests Vitest PASS
+- `app/api/clients/[clientId]/transformation-score/route.ts` — 5 requêtes parallèles (checkins, sessions+set_logs, progression_events, assessment_submissions 90j, checkin_configs), construit les 3 inputs, retourne `TransformationScoreResult`
+- `components/coach/TransformationScoreWidget.tsx` — jauge SVG arc (START_DEG=225, SWEEP=270), `motion.path` pathLength + `motion.g` rotate, DimensionPills, AlertList, WindowToggle 7j/30j
+- `app/coach/clients/[clientId]/profil/page.tsx` — widget inséré full-width avant la grille 2 colonnes
+- Points de vigilance : migration `20260529_transformation_score` à appliquer manuellement ; bilans sont mensuels → window=7j aura souvent 0 data pour bodyProgress (poids redistribué automatiquement) ; `score_weights_config` shape : `{"adherence":0.3,"recovery":0.25,"bodyProgress":0.3,"performance":0.15}`
 
 ### 2026-05-29 — Whisper Voice Transcription — Fix Homophone Errors
 
@@ -219,6 +272,15 @@
 - [x] Cycle Sync Activation — coach toggle, runtime macro adjustment, CycleArcIndicator, CyclePhaseModal, check-in logging (2026-05-27)
 - [x] Cycle Sync Activation — appliquer migration `20260527_cycle_sync_enabled` manuellement via Supabase Dashboard
 - [x] DS v4.0 PWA Compliance — systematic color audit & fixes (2026-05-28) — all colored accents/badges/trends eliminated
+- [x] Transformation Score Widget — composite gauge, API route, coach weight override, alert list (2026-05-29)
+- [ ] Transformation Score — appliquer migration `20260529_transformation_score` manuellement via Supabase Dashboard
+- [x] Transformation Phase Guide Widget — 7-phase cascade algorithm, coach profil integration (2026-05-29)
+- [x] Chat Release 1 Bloc D — DB + observabilité (2026-05-29)
+- [ ] Chat Release 1 Bloc D — appliquer migration `20260529_chat_release1_bloc_d.sql` manuellement via Supabase Dashboard
+- [ ] Chat Release 1 Bloc A — Urgences comportementales (branche séparée)
+- [ ] Chat Release 1 Bloc C — Escalade silencieuse (branche séparée)
+- [ ] Chat Release 1 Bloc B — Bot scripté enrichi (branche séparée)
+- [ ] Chat Release 1 Bloc E — Workspace coach (branche séparée)
 - [ ] Chat SP3-B : Push Notifications + VAPID, cron par client
 - [ ] Chat SP4 : Metrics / Body Evolution avancée — graphiques poids, composition, historique bilans
 - [ ] E2E test : invite → onboarding → 5 écrans → dashboard

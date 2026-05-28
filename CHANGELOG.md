@@ -1,10 +1,61 @@
 # CHANGELOG — STRYVR
 
 > **Format court** — entrées de 1 ligne par changement.
+
+## 2026-05-29
+
+FEATURE: Add centralized callLLM wrapper with llm_traces observability (lib/llm/callLLM.ts)
+FEATURE: Add coach feature flags — has_ai_llm (coach_profiles) + ai_llm_enabled (coach_ai_settings_per_client)
+SCHEMA: Chat Release 1 Bloc D — ALTER chat_messages (5 cols), ALTER coach_profiles (5 cols), 4 new tables, increment_llm_budget RPC
+FEATURE: sendCoachAlertEmail + notifyCoach utility for coach inbox
+CHORE: Deprecate /api/client/ai-coach/chat — redirect 308 to /chat/messages
+CHORE: Export PHYSIOLOGICAL_DAY_OFFSET_HOURS from physiological-date.ts
+
+## 2026-05-31
+
+
+REFACTOR: TransformationPhaseWidget — replace 62-tick histogram with continuous gradient spectrum bar, dynamic oval thumb with glow, per-phase accent colors, rationale tooltip card with triangle pointer aligned to thumb, metric cards in 3-col horizontal grid
+FIX: morpho photo sync — POSITION_MAP missing side_right/side_left/relaxed/contracted → only front+back were synced from bilans; all 6 positions now mapped
+FEATURE: MorphoPhotoPosition — add 'relaxed' + 'contracted' positions; POSITION_LABELS + gallery filter updated
+FEATURE: MorphoAnalysisDrawer segments — individual segment table (tronc, fémur L/R, tibia L/R, bras L/R, avant-bras L/R) with cm + Court/Moyen/Long classification + confidence dot; ratio cards redesigned as 2-col metric cards
+FEATURE: MorphoPro dashboard — analyses route returns photo_ids + analysis_result + biomech_profile + prompt_version + stimulus_adjustments
+FEATURE: MorphoGallery — fetches analyses in parallel with photos, builds Map<photoId → analyses>, auto-opens drawer after new analysis
+FEATURE: MorphoPhotoCard — "IA" green badge with count if multiple analyses; badge click opens drawer independently of photo selection
+FEATURE: MorphoAnalysisDrawer — Framer Motion right-side panel, full v1+v2: score bar, flags, asymmetries, attention points, recommendations, stimulus adjustments, pattern verdicts, postural syndromes, chain assessment, segments, insertions
+REFACTOR: MorphoPro page — remove ephemeral latestAnalysis state; drawer persists via DB-backed analyses list
+CHORE: lib/morpho/types.ts — add MorphoAnalysisSummary interface
+
+## 2026-05-30
+
+FIX: isMorphoV2 guard — reject null biomech/meta, require prompt_version === 'v2' to prevent null-crash on truncated GPT response
+FIX: biomechEngine deriveMorphoFields — arm_span_height_ratio formula corrected (wingspan = arm_l + arm_r + shoulder_width) to produce values near 1.0 for average morphology
+FIX: biomechEngine deriveMorphoFields — add shoulder_flexion_deg proxy (upper_crossed severity) to unblock 3 Gold Standard triggers that were silently skipping
+FIX: biomechEngine evaluateTrigger — AND logic now requires all conditions to be known-and-true; unknown fields block AND triggers as intended
+FIX: biomechEngine — remove dead SLOT_TO_PATTERN constant
+FIX: evolution route — cache matched on exact (current_analysis_id, previous_analysis_id) pair; stale report no longer returned after 3rd analysis
+FIX: evolution numericDelta — stableThreshold param added; ratio deltas use threshold=0.02 instead of 0.5 to detect real directional change
+REFACTOR: Skeleton profil coach client — 62 ticks meter, InfoCell avec icône, cartes Informations/Profil sportif séparées, Phase widget 2-pane + metric cards, Accès client avec boutons
+
+## 2026-05-29
+
+FEATURE: MorphoPro v2 Phase 2 — biomechEngine.ts: deriveMorphoFields (GPT v2 → proxy morphotype fields), evaluateTrigger, generateExerciseRecommendations (Gold Standard DB × 72 slots → ExerciseAdvantageLevel)
+FEATURE: MorphoPro v2 Phase 4 — evolution.ts: computeEvolutionReport (score + asymétries + syndromes + segments + flags + pattern verdicts, significance heuristics, trend detection avec confidence gate)
+FEATURE: MorphoPro v2 — GET /api/clients/[clientId]/morpho/exercise-map (lazy-compute + cache dans exercise_recommendations)
+FEATURE: MorphoPro v2 — GET /api/clients/[clientId]/morpho/evolution (report ponctuel, upsert morpho_evolutions)
+FEATURE: MorphoPro v2 — GET /api/clients/[clientId]/morpho/evolution-timeline (time-series data contract: score/asymétries/syndromes/ratios/events pour UI)
+FIX: isMorphoV2 type guard — accept any input (was restricted to MorphoAnalysisResult)
+REFACTOR: TransformationPhaseWidget — remplace arc SVG par tick-bar meter identique à TransformationScoreWidget; dégradé rouge→vert→rouge (extrêmes=rouge, maintenance=vert); spectre gauche→droite CO/CP/PG/MN/RQ/PM/RC; layout 2 col (meter+rationale | metric cards); skeleton adapté (tick-bar pulse + 3 metric cards)
+FEATURE: transformation-score route — enrichi avec metricCards (avgWeight, sleepScore, avgPerformance, sessionsCount); window toggle 7j/30j
 > **Archivé** → voir `CHANGELOG.archive.md` pour l'historique complet (< 2026-04)
 
 ## 2026-05-29
 
+FEATURE: MorphoPro v2 — biomech types (BiomechSegments, MuscleInsertion, PosturalSyndrome, PatternVerdict, BiomechProfile, MorphoAnalysisResultV2) in lib/morpho/types.ts
+FEATURE: MorphoPro v2 — v2 system prompt in buildAnalysisPrompt.ts (6 axes: segments, insertions, syndromes, asymétries fines, pattern verdicts, posturale globale)
+FEATURE: MorphoPro v2 — 6 new adjustment rules in adjustments.ts (trunk_to_femur, arm_to_torso, upper/lower crossed, posterior chain) — rules 3&4 now active from v2 segments
+FEATURE: MorphoPro v2 — analyze route persists biomech_profile + prompt_version, detects v2 via isMorphoV2 type guard, max_tokens bumped to 3000
+SCHEMA: MorphoPro v2 — migration 20260529_morphopro_v2.sql: biomech_profile JSONB + exercise_recommendations JSONB + prompt_version TEXT on morpho_analyses; new morpho_evolutions table with RLS
+FIX: NutritionProtocolDashboard — macro colors aligned to DS v4.0 tokens (P #5dba87, L #ff8660, G #ffd15e)
 FEATURE: Nutrition Studio — TDEE delta badge in MacroSliders (always visible, BF-stratified color scale red/orange/green)
 FEATURE: Nutrition Studio — calorieAdjustPct now % vs TDEE (slider 0 = TDEE always, not relative to goal factor)
 FEATURE: Nutrition Studio — goal buttons auto-move calorie slider to smart BF-stratified presets (deficit -12%→-30%, surplus +4%→+10%)
@@ -12,6 +63,7 @@ FEATURE: Nutrition Studio — macro slider changes reflect calorie slider positi
 FEATURE: Nutrition Studio — computeSmartPreset helper exported from lib/formulas/macros.ts (15 Vitest tests PASS)
 FEATURE: TransformationPhaseWidget — 2-column layout: arc left, metric cards right (avg weight, sleep score, performance %); window toggle 7j/30j; transformation-score route enriched with metricCards (avgWeight, sleepScore, avgPerformance, sessionsCount)
 REFACTOR: TransformationPhaseWidget — fix pill geometry (tangential→radial rotation, CY=108 prevents clipping); fat pill capsules (W=34 H=13 rx=6) matching Oura/sleep-score reference; labels full text radially outside pills
+REFACTOR: TransformationPhaseWidget — full SVG arc rebuild: elongated varying-size petals (22→44→22px radial, sin curve), no text labels on arc, scale anchors below (Sèche/Équilibre/Masse), center overlay inside bowl, opacity-only stagger animation
 
 ## 2026-05-27
 
