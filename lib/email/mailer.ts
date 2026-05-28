@@ -25,14 +25,14 @@ async function sendMail(options: {
 
 // ─── Brand tokens (DS v2.0) ───────────────────────────────────────────────────
 
-const FROM = `STRYV <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`
+const FROM = `STRYVR <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://stryvlab.com'
 
 const DS = {
-  bg: '#121212',
-  card: '#181818',
-  accent: '#1f8a65',
-  accentMuted: 'rgba(31,138,101,0.12)',
+  bg: '#080808',
+  card: '#111111',
+  accent: '#f2f2f2',
+  accentText: '#080808',
   white: '#ffffff',
   textMuted: 'rgba(255,255,255,0.60)',
   textVeryMuted: 'rgba(255,255,255,0.40)',
@@ -51,7 +51,7 @@ function emailTemplate({ body, senderLabel }: { body: string; senderLabel?: stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark" />
   <meta name="supported-color-schemes" content="dark" />
-  <title>STRYV</title>
+  <title>STRYVR</title>
   <style>
     :root { color-scheme: dark; }
     /* Prevent email clients from auto-inverting our dark design in dark mode */
@@ -64,15 +64,15 @@ function emailTemplate({ body, senderLabel }: { body: string; senderLabel?: stri
   <div style="max-width:520px;margin:0 auto;">
 
     <!-- Header -->
-    <div style="background:${DS.bg};border-radius:16px 16px 0 0;padding:24px 36px;border-bottom:1px solid ${DS.border};">
+    <div style="background:${DS.bg};border-radius:16px 16px 0 0;padding:20px 36px;border-bottom:1px solid ${DS.border};">
       <table style="width:100%;border-collapse:collapse;">
         <tr>
           <td style="vertical-align:middle;">
-            <span style="font-size:18px;font-weight:800;color:${DS.white};letter-spacing:-0.3px;">STRYV</span>
-            ${senderLabel ? `<span style="font-size:11px;color:${DS.textVeryMuted};margin-left:10px;font-weight:500;">${senderLabel}</span>` : ''}
+            <img src="${SITE_URL}/logo/logo-stryvr-silver.png" alt="STRYVR" width="32" height="32" style="display:inline-block;vertical-align:middle;width:32px;height:32px;object-fit:contain;" />
+            ${senderLabel ? `<span style="font-size:11px;color:${DS.textVeryMuted};margin-left:10px;font-weight:500;vertical-align:middle;">${senderLabel}</span>` : ''}
           </td>
           <td style="text-align:right;vertical-align:middle;">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${DS.accent};"></span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${DS.textVeryMuted};">STRYVR</span>
           </td>
         </tr>
       </table>
@@ -85,7 +85,7 @@ function emailTemplate({ body, senderLabel }: { body: string; senderLabel?: stri
 
     <!-- Footer -->
     <p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.20);margin:20px 0 0;line-height:1.6;">
-      © ${new Date().getFullYear()} STRYV —
+      © ${new Date().getFullYear()} STRYVR —
       <a href="${SITE_URL}" style="color:rgba(255,255,255,0.25);text-decoration:none;">stryvlab.com</a>
     </p>
 
@@ -98,7 +98,7 @@ function emailTemplate({ body, senderLabel }: { body: string; senderLabel?: stri
 
 function ctaButton(href: string, label: string): string {
   return `<a href="${href}"
-    style="display:inline-block;background:${DS.accent};color:${DS.white};text-decoration:none;
+    style="display:inline-block;background:${DS.accent};color:${DS.accentText};text-decoration:none;
            font-weight:700;font-size:14px;padding:13px 28px;border-radius:10px;
            margin-bottom:24px;letter-spacing:0.01em;">
     ${label} →
@@ -134,6 +134,11 @@ function hint(text: string): string {
 
 function separator(): string {
   return `<div style="height:1px;background:${DS.separator};margin:20px 0;"></div>`
+}
+
+function coachSignature(coachName: string | null): string {
+  if (!coachName) return ''
+  return `<p style="font-size:13px;color:rgba(255,255,255,0.45);margin:20px 0 0;">— Coach ${coachName}</p>`
 }
 
 function directLink(url: string): string {
@@ -249,6 +254,7 @@ export async function sendBilanEmail(params: SendBilanEmailParams) {
         ${hint(`Ce lien expire le ${expiryFormatted}. Si vous ne souhaitez pas remplir ce bilan, ignorez ce message.`)}
         ${separator()}
         ${directLink(bilanUrl)}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -264,12 +270,12 @@ export async function sendAccessLinkEmail(params: SendAccessLinkEmailParams) {
   })
 
   const intro = coachName
-    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> vous invite à accéder à votre espace personnel STRYV.`
-    : `Votre coach vous invite à accéder à votre espace personnel STRYV.`
+    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> vous invite à accéder à votre espace personnel STRYVR.`
+    : `Votre coach vous invite à accéder à votre espace personnel STRYVR.`
 
   const subject = coachName
-    ? `${coachName} vous invite sur STRYV`
-    : 'Votre accès à STRYV est prêt'
+    ? `${coachName} vous invite sur STRYVR`
+    : 'Votre accès à STRYVR est prêt'
 
   await sendMail({
     from: FROM,
@@ -285,6 +291,7 @@ export async function sendAccessLinkEmail(params: SendAccessLinkEmailParams) {
         ${hint(`Ce lien expire le ${expiryFormatted}. Ne partagez pas cet email.`)}
         ${separator()}
         ${directLink(accessUrl)}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -342,6 +349,7 @@ export async function sendPaymentReceiptEmail(params: SendPaymentReceiptEmailPar
         ${bodyText(intro)}
         ${infoTable(rows)}
         ${hint('Conservez cet email comme reçu de paiement. Pour toute question, contactez votre coach directement.')}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -374,6 +382,7 @@ export async function sendPaymentReminderEmail(params: SendPaymentReminderEmailP
         ${bodyText(`Votre coach <strong style="color:${DS.white};">${coachName}</strong> vous rappelle qu'un paiement est attendu pour votre formule <strong style="color:${DS.white};">${formulaName}</strong>.`)}
         ${infoTable(rows)}
         ${hint('Pour toute question, répondez directement à cet email ou contactez votre coach.')}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -394,6 +403,7 @@ export async function sendInvoiceEmail(params: SendInvoiceEmailParams) {
         ${greeting(clientFirstName)}
         ${bodyText(`Veuillez trouver ci-joint votre reçu de paiement <strong style="color:${DS.white};">${invoiceNumber}</strong> d'un montant de <strong style="color:${DS.white};">${amount.toFixed(2)} €</strong>.`)}
         ${hint('Pour toute question, contactez votre coach directement.')}
+        ${coachSignature(coachName)}
       `,
     }),
     attachments: [{
@@ -410,12 +420,12 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, clientFirstName, coachName, setupPasswordUrl } = params
 
   const intro = coachName
-    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> vous a créé un espace personnel sur STRYV. Définissez votre mot de passe pour accéder à vos bilans et votre programme.`
-    : `Votre coach vous a créé un espace personnel sur STRYV. Définissez votre mot de passe pour y accéder.`
+    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> vous a créé un espace personnel sur STRYVR. Définissez votre mot de passe pour accéder à vos bilans et votre programme.`
+    : `Votre coach vous a créé un espace personnel sur STRYVR. Définissez votre mot de passe pour y accéder.`
 
   const subject = coachName
-    ? `${coachName} vous invite sur STRYV — Créez votre accès`
-    : 'Créez votre accès STRYV'
+    ? `${coachName} vous invite sur STRYVR — Créez votre accès`
+    : 'Créez votre accès STRYVR'
 
   await sendMail({
     from: FROM,
@@ -430,6 +440,7 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
         ${hint('Ce lien est valable 1 heure. Si vous n\'avez pas demandé cet accès, ignorez ce message.')}
         ${separator()}
         ${directLink(setupPasswordUrl)}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -448,12 +459,12 @@ export async function sendReactivationEmail(params: SendReactivationEmailParams)
   const { to, clientFirstName, coachName, loginUrl } = params
 
   const intro = coachName
-    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> a restauré votre accès à STRYV. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
-    : `Votre accès à STRYV a été restauré. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
+    ? `Votre coach <strong style="color:${DS.white};">${coachName}</strong> a restauré votre accès à STRYVR. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
+    : `Votre accès à STRYVR a été restauré. Vous pouvez vous reconnecter avec votre email et votre mot de passe habituel.`
 
   const subject = coachName
-    ? `${coachName} a restauré votre accès STRYV`
-    : 'Votre accès STRYV est restauré'
+    ? `${coachName} a restauré votre accès STRYVR`
+    : 'Votre accès STRYVR est restauré'
 
   await sendMail({
     from: FROM,
@@ -466,6 +477,7 @@ export async function sendReactivationEmail(params: SendReactivationEmailParams)
         ${bodyText(intro)}
         ${ctaButton(loginUrl, 'Se connecter')}
         ${hint('Si vous avez oublié votre mot de passe, utilisez la page de connexion pour le réinitialiser.')}
+        ${coachSignature(coachName)}
       `,
     }),
   })
@@ -484,13 +496,13 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
   const { to, clientFirstName, coachName, loginUrl } = params
 
   const intro = coachName
-    ? `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel configuré par <strong style="color:${DS.white};">${coachName}</strong> est maintenant accessible.`
-    : `Votre mot de passe a bien été créé. Bienvenue sur STRYV — votre espace personnel est maintenant accessible.`
+    ? `Votre mot de passe a bien été créé. Bienvenue sur STRYVR — votre espace personnel configuré par <strong style="color:${DS.white};">${coachName}</strong> est maintenant accessible.`
+    : `Votre mot de passe a bien été créé. Bienvenue sur STRYVR — votre espace personnel est maintenant accessible.`
 
   await sendMail({
     from: FROM,
     to,
-    subject: 'Bienvenue sur STRYV — ton accès est actif',
+    subject: 'Bienvenue sur STRYVR — ton accès est actif',
     html: emailTemplate({
       senderLabel: coachName ?? undefined,
       body: `
@@ -500,7 +512,56 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams) {
         ${hint('Conserve ce lien pour te reconnecter à tout moment.')}
         ${separator()}
         ${directLink(loginUrl)}
+        ${coachSignature(coachName)}
       `,
     }),
   })
 }
+
+// ─── 10. Alerte coach — message client requiert intervention ──────────────────
+
+export interface SendCoachAlertEmailParams {
+  to: string
+  coachFirstName: string
+  clientFirstName: string
+  category: 'safety' | 'out_of_scope' | 'pattern_inquiry' | 'engagement' | 'weight_off_track'
+  messageExcerpt: string  // déjà tronqué à 200 chars par l'appelant
+  inboxUrl: string
+}
+
+const CATEGORY_LABELS: Record<SendCoachAlertEmailParams['category'], string> = {
+  safety: 'Sécurité — message urgent',
+  out_of_scope: 'Hors périmètre — à traiter',
+  pattern_inquiry: 'Question de comportement',
+  engagement: 'Client inactif',
+  weight_off_track: 'Poids hors objectif',
+}
+
+export async function sendCoachAlertEmail(params: SendCoachAlertEmailParams) {
+  const { to, coachFirstName, clientFirstName, category, messageExcerpt, inboxUrl } = params
+
+  const isSafety = category === 'safety'
+  const subjectPrefix = isSafety ? '🚨 [Urgent] ' : '⚡ Action requise — '
+  const subject = `${subjectPrefix}${clientFirstName} vous a envoyé un message`
+
+  const categoryLabel = CATEGORY_LABELS[category]
+
+  await sendMail({
+    from: FROM,
+    to,
+    subject,
+    html: emailTemplate({
+      body: `
+        ${greeting(coachFirstName)}
+        ${bodyText(`<strong style="color:${DS.white};">${clientFirstName}</strong> vous a envoyé un message qui demande votre attention.`)}
+        ${infoTable([
+          { label: 'Catégorie', value: categoryLabel, accent: isSafety },
+          { label: 'Extrait', value: `"${messageExcerpt}"` },
+        ])}
+        ${ctaButton(inboxUrl, 'Voir dans l\'espace coach')}
+        ${hint('Ce message a été automatiquement signalé par le système STRYVR. Répondez depuis votre espace coach.')}
+      `,
+    }),
+  })
+}
+
