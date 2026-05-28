@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
-import OpenAI from 'openai'
+import { callLLM } from '@/lib/llm/callLLM'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { determineFlow } from '@/lib/client/checkin/checkinEngine'
@@ -18,11 +18,7 @@ function service() {
 
 const DAILY_LIMIT = 20
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
-  return new OpenAI({ apiKey })
-}
+
 
 async function ensureAutomatedChatMessages(db: ReturnType<typeof service>, clientId: string) {
   const now = new Date()
@@ -192,14 +188,15 @@ export async function GET() {
   return NextResponse.json({ messages: messages ?? [] })
 }
 
-// POST — envoie message user → LLM → sauvegarde les deux → retourne les deux
+// POST — envoie message user → feature flag → (LLM ou escalade) → sauvegarde → retourne
 export async function POST(req: NextRequest) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = service()
-  const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name')
+  // Inclure coach_id pour le feature flag check
+  const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name, coach_id')
   if (!cc) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
   const body = await req.json()
@@ -209,8 +206,8 @@ export async function POST(req: NextRequest) {
     : 'text'
   if (!content) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
 
-  // Rate limit via ai_coach_daily_usage
-  const today = new Date().toISOString().split('T')[0]
+  // Rate limit via ai_coach_daily_usage (existant — conserver)
+  const today = computePhysiologicalDate(new Date())
   const { data: usage } = await db
     .from('ai_coach_daily_usage')
     .select('message_count')
@@ -223,14 +220,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Daily limit reached', remaining: 0 }, { status: 429 })
   }
 
-  // Sauvegarde message utilisateur
+  // Sauvegarder message utilisateur
   const { data: userMsg } = await db
     .from('chat_messages')
     .insert({ client_id: cc.id, role: 'user', content, message_type })
     .select('id, role, content, message_type, metadata, created_at')
     .single()
 
-  // Historique récent pour contexte LLM (20 derniers messages actifs)
+  // ── Feature flag check ──────────────────────────────────────────────────────
+  const coachId = (cc as any).coach_id as string | null
+  let llmEnabled = false
+
+  if (coachId) {
+    const [{ data: coachProfile }, { data: clientSettings }] = await Promise.all([
+      db.from('coach_profiles')
+        .select('has_ai_llm')
+        .eq('coach_id', coachId)
+        .maybeSingle(),
+      db.from('coach_ai_settings_per_client')
+        .select('ai_llm_enabled')
+        .eq('coach_id', coachId)
+        .eq('client_id', cc.id)
+        .maybeSingle(),
+    ])
+    llmEnabled = (coachProfile?.has_ai_llm ?? false) && (clientSettings?.ai_llm_enabled ?? false)
+  }
+
+  if (!llmEnabled) {
+    // Marquer message comme requérant intervention coach
+    if (userMsg) {
+      await db
+        .from('chat_messages')
+        .update({ requires_coach_response: true, coach_response_reason: 'llm_disabled' })
+        .eq('id', userMsg.id)
+    }
+    return NextResponse.json({ userMessage: userMsg, botMessage: null, llmDisabled: true })
+  }
+
+  // ── Appel LLM via wrapper centralisé ────────────────────────────────────────
   const { data: history } = await db
     .from('chat_messages')
     .select('role, content')
@@ -241,28 +268,36 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = await buildSystemPrompt(cc.id)
 
-  const completion = await getOpenAIClient().chat.completions.create({
-    model: 'gpt-4o-mini',
-    max_tokens: 300,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...(history ?? []).reverse().map((m: any) => ({
-        role: m.role as 'user' | 'assistant',
-        content: String(m.content),
-      })),
-    ],
+  const llmResult = await callLLM({
+    systemPrompt,
+    userMessage: content,
+    conversationHistory: (history ?? [])
+      .reverse()
+      .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: String(m.content) })),
+    clientId: cc.id,
+    coachId: coachId ?? undefined,
+    chatMessageId: userMsg?.id,
+    maxTokens: 300,
   })
 
-  const botContent = completion.choices[0]?.message?.content ?? ''
+  let botMsg = null
+  if (llmResult) {
+    const { data: inserted } = await db
+      .from('chat_messages')
+      .insert({
+        client_id: cc.id,
+        role: 'assistant',
+        content: llmResult.content,
+        message_type: 'text',
+        parent_message_id: userMsg?.id ?? null,
+        trace_id: llmResult.traceId || null,
+      })
+      .select('id, role, content, message_type, metadata, created_at')
+      .single()
+    botMsg = inserted
+  }
 
-  // Sauvegarde réponse bot
-  const { data: botMsg } = await db
-    .from('chat_messages')
-    .insert({ client_id: cc.id, role: 'assistant', content: botContent, message_type: 'text' })
-    .select('id, role, content, message_type, metadata, created_at')
-    .single()
-
-  // Upsert usage
+  // Upsert usage (conserver comportement existant)
   await db.from('ai_coach_daily_usage').upsert(
     { client_id: cc.id, date: today, message_count: count + 1 },
     { onConflict: 'client_id,date' }
