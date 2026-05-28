@@ -1,6 +1,6 @@
 import type { MealType } from "@/lib/nutrition/food-items"
 
-const DAY_RESET_HOUR = 4
+export const PHYSIOLOGICAL_DAY_OFFSET_HOURS = 4
 
 function pad(value: number): string {
   return String(value).padStart(2, "0")
@@ -20,7 +20,7 @@ export function computePhysiologicalDate(input: Date): string {
     throw new Error("Invalid date passed to computePhysiologicalDate")
   }
 
-  if (date.getHours() < DAY_RESET_HOUR) {
+  if (date.getHours() < PHYSIOLOGICAL_DAY_OFFSET_HOURS) {
     date.setDate(date.getDate() - 1)
   }
 
