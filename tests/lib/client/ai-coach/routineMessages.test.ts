@@ -19,8 +19,8 @@ describe('buildRoutineMessage', () => {
     expect(message.content).toContain('Sam')
     expect(message.content).toContain('Push A')
     expect(message.content).toContain('check-in du matin')
-    // D6 waking order: BPM before sleep quality
-    expect(message.content.indexOf('fréquence cardiaque')).toBeLessThan(message.content.indexOf('qualité de sommeil'))
+    // D6: CTA emphasizes the FIRST waking action (BPM), not the full list
+    expect(message.content).toContain('fréquence cardiaque')
     expect(message.metadata?.key).toBe('checkin_ready')
     expect(message.metadata?.flow_type).toBe('morning')
   })
@@ -39,12 +39,12 @@ describe('buildRoutineMessage', () => {
     expect(message.metadata).toBeNull()
   })
 
-  it('builds the morning preparation reminder in waking-priority order (D6)', () => {
+  it('reminder emphasizes the first waking action (D6: BPM before getting up)', () => {
     const reminder = buildMorningPreparationReminder(['sleep_hours', 'weight_kg', 'rhr_morning'])
 
     expect(reminder).toContain('demain matin')
-    // BPM first, then sleep duration, weight last
-    expect(reminder.indexOf('fréquence cardiaque')).toBeLessThan(reminder.indexOf('durée de sommeil'))
-    expect(reminder.indexOf('durée de sommeil')).toBeLessThan(reminder.indexOf('poids'))
+    // First waking action = BPM; mentioned with the "before getting up" hint
+    expect(reminder).toContain('fréquence cardiaque')
+    expect(reminder).toMatch(/sortir du lit/)
   })
 })

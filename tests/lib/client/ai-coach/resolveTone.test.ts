@@ -14,10 +14,15 @@ describe('resolveTone', () => {
   it('ignores invalid tone strings', () => {
     expect(resolveTone('garbage', null)).toBe('bienveillant')
   })
-  it('matrix covers all 4 tones with opener+closer', () => {
+  it('matrix covers all 4 tones with distinct openers per moment + closers', () => {
     for (const t of ['strict', 'bienveillant', 'motivant', 'neutre'] as Tone[]) {
-      expect(TONE_MATRIX[t].opener('Kev').length).toBeGreaterThan(0)
-      expect(TONE_MATRIX[t].closerEvening.length).toBeGreaterThan(0)
+      const m = TONE_MATRIX[t]
+      expect(m.openerMorning('Kev').length).toBeGreaterThan(0)
+      expect(m.openerEvening('Kev').length).toBeGreaterThan(0)
+      expect(m.openerClosing('Kev').length).toBeGreaterThan(0)
+      expect(m.closerEvening.length).toBeGreaterThan(0)
+      // morning and evening openers must differ
+      expect(m.openerMorning('Kev')).not.toBe(m.openerEvening('Kev'))
     }
   })
 })

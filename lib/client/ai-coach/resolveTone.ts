@@ -9,38 +9,50 @@ export function resolveTone(perClient: string | null, global: string | null): To
 }
 
 export type ToneStyle = {
-  opener: (name: string) => string
+  /** Distinct opener per moment — avoids repeating the same line everywhere. */
+  openerMorning: (name: string) => string
+  openerEvening: (name: string) => string
+  openerClosing: (name: string) => string
   closerMorning: string
   closerEvening: string
-  /** firmness multiplier for trend escalation wording */
   firmness: 'soft' | 'plain' | 'firm'
 }
 
-const n = (name: string) => (name?.trim() ? `${name.trim()}, ` : '')
+// "Kev" + "X, foo" / "Foo" -> "Kev, foo" ; "" -> "Foo" (capitalized standalone)
+const lead = (name: string, withName: string, withoutName: string) =>
+  name?.trim() ? `${name.trim()}, ${withName}` : withoutName
 
 export const TONE_MATRIX: Record<Tone, ToneStyle> = {
   strict: {
-    opener: (name) => `${name ? name.trim() + '.' : 'Bien.'} On fait le point.`,
-    closerMorning: 'On exécute, sans négocier.',
-    closerEvening: 'Repos correct ce soir, demain on tient la ligne.',
+    openerMorning: (n) => lead(n, 'on démarre la journée.', 'On démarre la journée.'),
+    openerEvening: (n) => lead(n, 'bilan de ta journée.', 'Bilan de ta journée.'),
+    openerClosing: (n) => lead(n, 'voilà ton récap.', 'Voilà ton récap.'),
+    closerMorning: 'Reste concentré, exécution propre.',
+    closerEvening: 'Récupère bien, on garde le cap.',
     firmness: 'firm',
   },
   bienveillant: {
-    opener: (name) => `Salut ${n(name)}on regarde ta journée ensemble.`,
+    openerMorning: (n) => (n?.trim() ? `Salut ${n.trim()}, j'espère que tu as bien dormi.` : "J'espère que tu as bien dormi."),
+    openerEvening: (n) => (n?.trim() ? `Bonsoir ${n.trim()}, on regarde ta journée ensemble.` : 'On regarde ta journée ensemble.'),
+    openerClosing: (n) => `Voilà le récap de ta journée${n?.trim() ? `, ${n.trim()}` : ''}.`,
     closerMorning: 'On avance tranquillement, étape par étape.',
     closerEvening: 'Récupère bien ce soir, tu as fait ta part.',
     firmness: 'plain',
   },
   motivant: {
-    opener: (name) => `Allez ${n(name)}on fait le bilan !`,
-    closerMorning: 'On garde le cap, à fond mais propre.',
+    openerMorning: (n) => (n?.trim() ? `Allez ${n.trim()}, nouvelle journée, on y va !` : 'Nouvelle journée, on y va !'),
+    openerEvening: (n) => lead(n, 'on fait le bilan de la journée !', 'On fait le bilan de la journée !'),
+    openerClosing: (n) => `Le récap du jour${n?.trim() ? `, ${n.trim()}` : ''} :`,
+    closerMorning: 'On garde le rythme, à fond mais propre.',
     closerEvening: 'Bonne récup, demain on repart fort.',
     firmness: 'plain',
   },
   neutre: {
-    opener: (name) => `${name ? name.trim() + ' — ' : ''}point du jour.`,
-    closerMorning: 'On lance la journée.',
-    closerEvening: 'Priorité récupération ce soir.',
+    openerMorning: (n) => `${n?.trim() ? n.trim() + ' — ' : ''}point du matin.`,
+    openerEvening: (n) => `${n?.trim() ? n.trim() + ' — ' : ''}point du soir.`,
+    openerClosing: (n) => `${n?.trim() ? n.trim() + ' — ' : ''}récap du jour.`,
+    closerMorning: 'Bonne journée.',
+    closerEvening: 'Bonne soirée, priorité à la récupération.',
     firmness: 'soft',
   },
 }

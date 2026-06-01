@@ -41,10 +41,17 @@ export type ClosingInput = {
 export function composeClosingMessage(input: ClosingInput): string {
   const style = TONE_MATRIX[input.tone]
   const facts = [sessionFact(input.facts), nutritionFact(input.facts), secondaryFact(input.facts)].filter(Boolean) as string[]
-  const numbered = facts.map((s, i) => `${i + 1}. ${s}`).join('\n')
+  const numbered = facts.map((line, i) => `${i + 1}. ${line}`).join('\n')
   const actions = input.tips.length > 0 ? '\n\n' + input.tips.join('\n') : ''
   const closer = input.flow === 'evening' ? style.closerEvening : style.closerMorning
-  return `${style.opener(input.name ?? '')}\n${numbered}${actions}\n\n${closer}`.trim()
+  return `${style.openerClosing(input.name ?? '')}\n${numbered}${actions}\n\n${closer}`.trim()
+}
+
+/** First action to do on waking (D6), with a contextual hint for BPM. */
+function firstWakingAction(fields: string[]): { label: string; isRhr: boolean } | null {
+  const first = orderedByWaking(fields)[0]
+  if (!first) return null
+  return { label: first.label, isRhr: first.key === 'rhr_morning' }
 }
 
 export type MorningGreetingInput = {
@@ -57,16 +64,15 @@ export type MorningGreetingInput = {
 
 export function composeMorningGreeting(input: MorningGreetingInput): string {
   const style = TONE_MATRIX[input.tone]
-  const ordered = orderedByWaking(input.enabledFields)
-  const firstActions = ordered.map((f) => f.label)
-  const ctaList = firstActions.length > 0
-    ? `Si tu le fais maintenant, commence par ${firstActions.join(', ')}.`
+  const first = firstWakingAction(input.enabledFields)
+  const ctaList = first
+    ? `Si tu le fais maintenant, commence par ${first.label}${first.isRhr ? ', avant même de sortir du lit' : ''}.`
     : ''
   const context = input.hasTrainingToday
-    ? `Aujourd’hui : ${input.trainingName ?? 'séance prévue'}.`
+    ? `Aujourd’hui : ${input.trainingName?.trim() || 'séance prévue'}.`
     : 'Pas de séance prévue aujourd’hui.'
   return [
-    style.opener(input.name),
+    style.openerMorning(input.name),
     context,
     'Prêt pour ton check-in du matin ?',
     ctaList,
@@ -95,7 +101,7 @@ export function composeEveningGreeting(input: EveningGreetingInput): string {
   const ctaLine = labels.length > 0
     ? `Prêt pour ton check-in du soir ? On y regardera ${labels.join(', ')}.`
     : 'Prêt pour ton check-in du soir ?'
-  return [style.opener(input.name), sessionLine, ctaLine, style.closerEvening]
+  return [style.openerEvening(input.name), sessionLine, ctaLine, style.closerEvening]
     .filter(Boolean)
     .join('\n')
 }
@@ -103,11 +109,14 @@ export function composeEveningGreeting(input: EveningGreetingInput): string {
 export type EveningReminderInput = { tone: Tone; enabledMorningFields: string[] }
 
 export function composeEveningReminder(input: EveningReminderInput): string {
-  const ordered = orderedByWaking(input.enabledMorningFields)
-  const first = ordered[0]?.label ?? 'les mesures que ton coach suit'
-  const rest = ordered.slice(1).map((f) => f.label)
-  const tail = rest.length > 0 ? `, puis ${rest.join(', ')}` : ''
-  return `Petit rappel pour demain matin : au réveil, commence par ${first}${tail}, avant même de sortir du lit pour les mesures qui le demandent.`
+  const first = firstWakingAction(input.enabledMorningFields)
+  if (!first) {
+    return 'Petit rappel pour demain matin : au réveil, prends d’abord les mesures que ton coach suit.'
+  }
+  const suffix = first.isRhr
+    ? ', avant même de sortir du lit pour qu’elle soit fiable'
+    : ', dès le réveil'
+  return `Petit rappel pour demain matin : commence par ${first.label}${suffix}.`
 }
 
 export { orderedByWaking, getFieldsForFlow }
