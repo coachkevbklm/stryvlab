@@ -4,7 +4,7 @@
 
 ## 2026-06-02
 
-FEATURE: Vercel Cron backup `/api/cron/chat-checkin-init` (*/15) — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué)
+FEATURE: Route HTTP `/api/cron/chat-checkin-init` — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué) ; appelable Inngest/cron externe (Hobby = pas de */15 Vercel)
 CHORE: ancienne page check-ins config — clés de champs canoniques (anti re-drift)
 CHORE: remap prod des clés legacy daily_checkin_configs.moments[].fields → canoniques
 

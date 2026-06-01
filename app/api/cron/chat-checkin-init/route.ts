@@ -5,10 +5,12 @@ import { runChatCheckinInitForFlow } from '@/lib/inngest/chatCheckinInitCron'
 export const dynamic = 'force-dynamic'
 
 // ─── /api/cron/chat-checkin-init ──────────────────────────────────────────────
-// Vercel Cron backup for the chat morning/evening init (Inngest crons unreliable
-// in this deployment). Runs every 15 min; each flow is gated to the client's
-// local window (morning 06:00–07:00, evening ≈21:00). Idempotent: a same-day init
-// already present is skipped. Protected by CRON_SECRET.
+// Plain HTTP trigger for the chat morning/evening init, independent of Inngest.
+// Call every ~15 min from any scheduler: Inngest, a free external cron
+// (cron-job.org, GitHub Actions), or a Vercel Cron (Pro plan only — Hobby is
+// daily-max). Each flow is gated to the client's local window (morning 06:00–07:00,
+// evening ≈21:00). Idempotent: a same-day init already present is skipped.
+// Protected by CRON_SECRET (sent as "Authorization: Bearer <secret>" or "x-cron-secret").
 
 function serviceClient() {
   return createServiceClient(
