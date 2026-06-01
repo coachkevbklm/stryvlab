@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   composeClosingMessage,
   composeMorningGreeting,
+  composeEveningGreeting,
   composeEveningReminder,
 } from '@/lib/client/ai-coach/messageComposer'
 import type { DailyFacts } from '@/lib/client/ai-coach/dailyFacts'
@@ -42,6 +43,14 @@ describe('composeMorningGreeting', () => {
     const idxEnergy = msg.indexOf('énergie')
     expect(idxBpm).toBeGreaterThan(-1)
     expect(idxBpm).toBeLessThan(idxEnergy === -1 ? Infinity : idxEnergy)
+  })
+})
+
+describe('composeEveningGreeting', () => {
+  it('asks for the evening check-in and lists enabled evening fields', () => {
+    const msg = composeEveningGreeting({ name: 'Kev', tone: 'strict', enabledEveningFields: ['stress_level', 'daily_steps'], hasTrainingToday: false, trainingName: null })
+    expect(msg).toMatch(/check-in du soir/i)
+    expect(msg).toMatch(/stress/i)
   })
 })
 

@@ -6,8 +6,20 @@ import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
 import { callLLM } from '@/lib/llm/callLLM'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
-import { determineFlow } from '@/lib/client/checkin/checkinEngine'
+import { shouldProactiveInitNow } from '@/lib/client/checkin/checkinEngine'
+import { resolveClientTimezone, buildCheckinReadyMetadata, isCheckinDeferred } from '@/lib/client/checkin/resolveClientTimezone'
+import { findExistingInitMessageForDate } from '@/lib/client/checkin/initMessages'
+import {
+  addDaysToDateKey,
+  computePhysiologicalDateInTimezone,
+  getLocalTimeParts,
+  getLocalWeekday,
+  utcRangeForLocalDate,
+  utcRangeForPhysiologicalDate,
+} from '@/lib/client/checkin/timeWindows'
 import { computeNutritionAlerts } from '@/lib/client/smart/nutritionAlerts'
+import { evaluateSilentEscalation } from '@/lib/client/ai-coach/classifier'
+import { sendCoachAlertEmail } from '@/lib/email/mailer'
 
 function service() {
   return createServiceClient(
@@ -20,30 +32,45 @@ const DAILY_LIMIT = 20
 
 
 
-async function ensureAutomatedChatMessages(db: ReturnType<typeof service>, clientId: string) {
+async function ensureAutomatedChatMessages(
+  db: ReturnType<typeof service>,
+  clientId: string,
+  firstName?: string | null,
+) {
   const now = new Date()
-  const today = computePhysiologicalDate(now)
-  const currentHour = now.getHours()
-  const todayStart = `${today}T00:00:00Z`
+  const timezone = await resolveClientTimezone(db, clientId)
+  const today = computePhysiologicalDateInTimezone(now, timezone)
+  const yesterday = addDaysToDateKey(today, -1)
+  const localNow = getLocalTimeParts(now, timezone)
+  const localYesterday = addDaysToDateKey(localNow.dateKey, -1)
+  const { start: messageWindowStart } = utcRangeForLocalDate(localYesterday, timezone)
+  const { start: physiologicalStart, end: physiologicalEnd } = utcRangeForPhysiologicalDate(today, timezone)
+  const currentHour = localNow.hour
 
   const [
-    { data: chatSessions },
+    { data: checkinRows },
     { data: initMessages },
+    { data: todaySessions },
     { data: protocol },
     { data: composerMeals },
     { data: legacyMeals },
     { data: waterRows },
     { data: alertMessages },
   ] = await Promise.all([
-    db.from('chat_sessions')
-      .select('flow_type, completed_at')
+    db.from('client_daily_checkins')
+      .select('flow_type, date')
       .eq('client_id', clientId)
-      .eq('date', today),
+      .in('date', [yesterday, today]),
     db.from('chat_messages')
-      .select('message_type')
+      .select('id, message_type, metadata, created_at')
       .eq('client_id', clientId)
-      .gte('created_at', todayStart)
+      .gte('created_at', messageWindowStart.toISOString())
       .in('message_type', ['morning_init', 'evening_init']),
+    db.from('program_sessions')
+      .select('name, day_of_week, days_of_week, programs!inner(status, client_id)')
+      .eq('programs.client_id', clientId)
+      .eq('programs.status', 'active')
+      .or(`day_of_week.eq.${getLocalWeekday(now, timezone)},days_of_week.cs.{${getLocalWeekday(now, timezone)}}`),
     db.from('nutrition_protocols')
       .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', clientId)
@@ -58,41 +85,93 @@ async function ensureAutomatedChatMessages(db: ReturnType<typeof service>, clien
     db.from('meal_logs')
       .select('meal_type, estimated_macros')
       .eq('client_id', clientId)
-      .gte('logged_at', `${today}T04:00:00.000Z`)
-      .lt('logged_at', `${today}T23:59:59.999Z`)
+      .gte('logged_at', physiologicalStart.toISOString())
+      .lt('logged_at', new Date(physiologicalEnd.getTime() + 1).toISOString())
       .eq('ai_status', 'done'),
     db.from('client_water_logs')
       .select('amount_ml')
       .eq('client_id', clientId)
-      .gte('logged_at', `${today}T00:00:00Z`)
-      .lte('logged_at', `${today}T23:59:59Z`),
+      .gte('logged_at', physiologicalStart.toISOString())
+      .lte('logged_at', physiologicalEnd.toISOString()),
     db.from('chat_messages')
       .select('metadata')
       .eq('client_id', clientId)
       .eq('message_type', 'nutrition_alert_auto')
-      .gte('created_at', todayStart),
+      .gte('created_at', messageWindowStart.toISOString()),
   ])
 
-  const sessionRows = (chatSessions ?? []) as { flow_type: string; completed_at: string | null }[]
-  const initTypes = new Set((initMessages ?? []).map((m: any) => m.message_type))
-  const flow = determineFlow(currentHour, sessionRows)
-  const flowType = flow === 'morning' ? 'morning_init' : flow === 'evening' ? 'evening_init' : null
+  const sessionRows = ((checkinRows ?? []) as Array<{ flow_type: string; date: string }>).map((row) => ({
+    flow_type: row.flow_type,
+    date: row.date,
+    completed_at: 'done',
+  }))
+  const todaySessionList = (todaySessions ?? []) as Array<{ name?: string | null }>
+  const primarySessionName = todaySessionList[0]?.name ?? null
+  const initRows = (initMessages ?? []) as {
+    id: string
+    message_type: string
+    created_at: string
+    metadata?: Record<string, unknown>
+  }[]
 
-  if (flowType && !initTypes.has(flowType)) {
-    const isMorning = flowType === 'morning_init'
+  // Tone + configured fields — personalize the greeting (canonical fields, coach tone)
+  const { data: ccRow } = await db.from('coach_clients').select('coach_id').eq('id', clientId).maybeSingle()
+  const coachIdForTone = (ccRow as { coach_id?: string } | null)?.coach_id ?? null
+  const [{ data: perClientAi }, { data: coachProfileTone }, { data: cfgRow }] = await Promise.all([
+    db.from('coach_ai_settings_per_client').select('ai_tone').eq('client_id', clientId).maybeSingle(),
+    coachIdForTone
+      ? db.from('coach_profiles').select('ai_tone').eq('coach_id', coachIdForTone).maybeSingle()
+      : Promise.resolve({ data: null }),
+    db.from('daily_checkin_configs').select('moments').eq('client_id', clientId).maybeSingle(),
+  ])
+  const perClientTone = (perClientAi as { ai_tone?: string | null } | null)?.ai_tone ?? null
+  const globalTone = (coachProfileTone as { ai_tone?: string | null } | null)?.ai_tone ?? null
+  const cfgMoments = ((cfgRow as { moments?: Array<{ moment?: string; fields?: string[] }> } | null)?.moments) ?? []
+  const fieldsForFlow = (flow: 'morning' | 'evening'): string[] =>
+    cfgMoments.find((m) => m.moment === flow)?.fields ?? []
+  const toneOpts = (flow: 'morning' | 'evening') => ({
+    tone: perClientTone, globalTone, enabledFields: fieldsForFlow(flow),
+  })
+
+  for (const flow of ['morning', 'evening'] as const) {
+    const messageType = flow === 'morning' ? 'morning_init' : 'evening_init'
+    const existing = findExistingInitMessageForDate(initRows, messageType, timezone, today)
+
+    if (existing) {
+      if (isCheckinDeferred(existing.metadata)) continue
+      const meta = existing.metadata ?? {}
+      const wasDeferred = typeof meta.deferred_until === 'string' && meta.deferred_until
+      if (
+        wasDeferred
+        && shouldProactiveInitNow(now, timezone, flow, sessionRows)
+      ) {
+        const readyMeta = buildCheckinReadyMetadata(flow, firstName, {
+          hasTrainingToday: todaySessionList.length > 0,
+          trainingName: primarySessionName,
+        }, toneOpts(flow))
+        await db
+          .from('chat_messages')
+          .update({
+            content: String(readyMeta.greeting),
+            metadata: readyMeta,
+          })
+          .eq('id', existing.id)
+      }
+      continue
+    }
+
+    if (!shouldProactiveInitNow(now, timezone, flow, sessionRows)) continue
+
+    const readyMeta = buildCheckinReadyMetadata(flow, firstName, {
+      hasTrainingToday: todaySessionList.length > 0,
+      trainingName: primarySessionName,
+    }, toneOpts(flow))
     await db.from('chat_messages').insert({
       client_id: clientId,
       role: 'assistant',
-      content: isMorning
-        ? "Bonjour. C'est l'heure de ton check-in matin."
-        : "Bonsoir. C'est l'heure de ton check-in soir.",
-      message_type: flowType,
-      metadata: {
-        component: 'chips',
-        key: 'trigger_checkin',
-        question: isMorning ? 'Prêt pour ton check-in matin ?' : 'Prêt pour ton check-in soir ?',
-        options: [{ label: 'Commencer le check-in', value: 1 }],
-      },
+      content: String(readyMeta.greeting),
+      message_type: messageType,
+      metadata: readyMeta,
     })
   }
 
@@ -173,14 +252,14 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = service()
-  const cc = await resolveClientFromUser(user.id, user.email, db, 'id')
+  const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name')
   if (!cc) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-  await ensureAutomatedChatMessages(db, cc.id as string)
+  await ensureAutomatedChatMessages(db, cc.id as string, (cc as { first_name?: string }).first_name)
 
   const { data: messages } = await db
     .from('chat_messages')
-    .select('id, role, content, message_type, metadata, created_at')
+    .select('id, role, content, message_type, metadata, seen_at, created_at')
     .eq('client_id', cc.id)
     .is('archived_at', null)
     .order('created_at', { ascending: true })
@@ -207,7 +286,8 @@ export async function POST(req: NextRequest) {
   if (!content) return NextResponse.json({ error: 'Empty message' }, { status: 400 })
 
   // Rate limit via ai_coach_daily_usage (existant — conserver)
-  const today = computePhysiologicalDate(new Date())
+  const timezone = await resolveClientTimezone(db, cc.id)
+  const today = computePhysiologicalDate(new Date(), timezone)
   const { data: usage } = await db
     .from('ai_coach_daily_usage')
     .select('message_count')
@@ -220,15 +300,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Daily limit reached', remaining: 0 }, { status: 429 })
   }
 
+  const metadata = body.metadata || null
+  const coachId = (cc as any).coach_id as string | null
+
   // Sauvegarder message utilisateur
   const { data: userMsg } = await db
     .from('chat_messages')
-    .insert({ client_id: cc.id, role: 'user', content, message_type })
+    .insert({ client_id: cc.id, role: 'user', content, message_type, metadata })
     .select('id, role, content, message_type, metadata, created_at')
     .single()
 
+  // ── Mode Enquête : Interception pattern_reply ───────────────────────────────
+  if (metadata?.key === 'pattern_reply') {
+    const isPredefined = metadata.value !== 99 // 99 = 'Autre (écrire)'
+
+    if (coachId) {
+      // Notifier le coach
+      await db.from('coach_notifications').insert({
+        coach_id: coachId,
+        client_id: cc.id,
+        chat_message_id: userMsg?.id,
+        category: 'pattern_inquiry',
+        status: 'pending',
+        priority: 3
+      })
+    }
+
+    if (isPredefined) {
+      // Si réponse prédéfinie, on s'arrête là et on renvoie un message scripté (pas de LLM)
+      const botResponse = "Merci pour ce retour. Je le partage avec ton coach."
+      const { data: botMsg } = await db
+        .from('chat_messages')
+        .insert({
+          client_id: cc.id,
+          role: 'assistant',
+          content: botResponse,
+          message_type: 'text',
+          parent_message_id: userMsg?.id ?? null,
+        })
+        .select('id, role, content, message_type, metadata, created_at')
+        .single()
+      
+      return NextResponse.json({ userMessage: userMsg, botMessage: botMsg, llmDisabled: true })
+    }
+  }
+
   // ── Feature flag check ──────────────────────────────────────────────────────
-  const coachId = (cc as any).coach_id as string | null
   let llmEnabled = false
 
   if (coachId) {
@@ -253,8 +370,61 @@ export async function POST(req: NextRequest) {
         .from('chat_messages')
         .update({ requires_coach_response: true, coach_response_reason: 'llm_disabled' })
         .eq('id', userMsg.id)
+
+      if (coachId) {
+        await db.from('coach_notifications').insert({
+          coach_id: coachId,
+          client_id: cc.id,
+          chat_message_id: userMsg.id,
+          category: 'out_of_scope',
+          status: 'pending',
+          priority: 2
+        })
+      }
     }
     return NextResponse.json({ userMessage: userMsg, botMessage: null, llmDisabled: true })
+  }
+
+  // ── Escalade Silencieuse (Pré-LLM) ──────────────────────────────────────────
+  const escalation = evaluateSilentEscalation(content)
+  if (escalation.shouldEscalate) {
+    if (userMsg) {
+      await db
+        .from('chat_messages')
+        .update({ requires_coach_response: true, coach_response_reason: escalation.reason })
+        .eq('id', userMsg.id)
+
+      const isSafety = escalation.reason === 'safety_health' || escalation.reason === 'safety_mental'
+      const priority = isSafety ? 1 : 2
+      const notificationCategory = isSafety ? 'safety' : 'out_of_scope'
+
+      if (coachId) {
+        await db.from('coach_notifications').insert({
+          coach_id: coachId,
+          client_id: cc.id,
+          chat_message_id: userMsg.id,
+          category: notificationCategory,
+          status: 'pending',
+          priority
+        })
+
+        if (isSafety) {
+          // Send urgent email
+          const { data: coachProfileExt } = await db.from('user_profiles').select('email, first_name').eq('id', coachId).single()
+          if (coachProfileExt?.email) {
+            await sendCoachAlertEmail({
+              to: coachProfileExt.email,
+              coachFirstName: coachProfileExt.first_name || 'Coach',
+              clientFirstName: cc.first_name || 'Client',
+              category: 'safety',
+              messageExcerpt: content.slice(0, 200),
+              inboxUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://stryvlab.com'}/coach/inbox`
+            }).catch(e => console.error('[sendCoachAlertEmail] error:', e))
+          }
+        }
+      }
+    }
+    return NextResponse.json({ userMessage: userMsg, botMessage: null, escalated: true })
   }
 
   // ── Appel LLM via wrapper centralisé ────────────────────────────────────────

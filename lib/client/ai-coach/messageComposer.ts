@@ -22,9 +22,11 @@ function nutritionFact(f: DailyFacts): string | null {
   return `Nutrition dans la cible (${nu.pctKcal}%).`
 }
 
+const LOW_STEPS = 6000
+
 function secondaryFact(f: DailyFacts): string | null {
   if (f.hydration.pct < 60) return `Hydratation à ${f.hydration.pct}%.`
-  if (f.steps != null && f.steps > 0) return `${f.steps} pas.`
+  if (f.steps != null && f.steps > 0 && f.steps < LOW_STEPS) return `Pas en dessous de la cible (${f.steps}).`
   return null
 }
 
@@ -33,6 +35,7 @@ export type ClosingInput = {
   tips: string[]
   tone: Tone
   flow: 'morning' | 'evening'
+  name?: string
 }
 
 export function composeClosingMessage(input: ClosingInput): string {
@@ -41,7 +44,7 @@ export function composeClosingMessage(input: ClosingInput): string {
   const numbered = facts.map((s, i) => `${i + 1}. ${s}`).join('\n')
   const actions = input.tips.length > 0 ? '\n\n' + input.tips.join('\n') : ''
   const closer = input.flow === 'evening' ? style.closerEvening : style.closerMorning
-  return `${style.opener('')}\n${numbered}${actions}\n\n${closer}`.trim()
+  return `${style.opener(input.name ?? '')}\n${numbered}${actions}\n\n${closer}`.trim()
 }
 
 export type MorningGreetingInput = {
@@ -68,6 +71,34 @@ export function composeMorningGreeting(input: MorningGreetingInput): string {
     'Prêt pour ton check-in du matin ?',
     ctaList,
     style.closerMorning,
+  ].filter(Boolean).join('\n')
+}
+
+export type EveningGreetingInput = {
+  name: string
+  tone: Tone
+  enabledEveningFields: string[]
+  hasTrainingToday: boolean
+  trainingName: string | null
+}
+
+export function composeEveningGreeting(input: EveningGreetingInput): string {
+  const style = TONE_MATRIX[input.tone]
+  const labels = input.enabledEveningFields
+    .map((k) => getFieldsForFlow('evening').find((f) => f.key === k)?.label)
+    .filter(Boolean) as string[]
+  const checklist = labels.length > 0
+    ? `Pour le point du soir, on regardera ${labels.join(', ')}.`
+    : ''
+  const context = input.hasTrainingToday
+    ? `Si tu as un retour sur ${input.trainingName ?? 'ta séance'}, ta récup ou ta nutrition, c’est le moment.`
+    : 'On débriefe ta journée avant de couper.'
+  return [
+    style.opener(input.name),
+    context,
+    'Prêt pour ton check-in du soir ?',
+    checklist,
+    style.closerEvening,
   ].filter(Boolean).join('\n')
 }
 
