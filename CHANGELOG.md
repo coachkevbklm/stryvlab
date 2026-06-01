@@ -4,6 +4,22 @@
 
 ## 2026-06-01
 
+FEATURE: Add canonical check-in field registry (fieldRegistry) — source unique clé/label/colonne DB/ordre-réveil (expose enfin BPM + poids)
+FEATURE: Add legacy->canonical field remap (legacyFieldMap) + one-time migration script (mood->stress_level)
+FEATURE: Add deterministic DailyFacts core (computeDailyFacts + computeDayKind) — day-kind aware (training/rest/cancelled/skipped), nutrition honnête (over/under/on_track), plus de fausse louange
+SCHEMA: morpho_photos position CHECK étendu (+relaxed, +contracted) — cause racine : photos bilan relaxed/contracted violaient la contrainte → upsert batch entier échouait → left/right jamais insérées (seules front/back passaient)
+FIX: morpho sync rétroactif — 21 photos bilan (left/right/contracted/relaxed) re-mappées et insérées via SQL one-shot
+FIX: morpho sync route — fallback upsert ligne-par-ligne si batch échoue (résilience, plus de perte totale sur 1 ligne invalide) + retour skipped[]
+FIX: MorphoUploadModal "erreur réseau" — compression client (canvas, max 2000px, JPEG q0.85) avant upload pour rester sous la limite body 4.5MB Vercel; message d'erreur HTTP explicite; positions relaxed/contracted ajoutées au modal
+CHORE: upload route maxDuration=30
+
+FIX: MorphoCanvas zoom — native wheel listener {passive:false} + Point import; pinch/scroll zoom to pointer, bloque le zoom navigateur (était cassé : fc.constructor.Point inexistant)
+FIX: MorphoCanvas crayon — PencilBrush initialisé (manquait en Fabric v6 → freepath ne dessinait rien)
+FIX: MorphoCanvas undo/redo — flag isRestoringRef anti-réentrance + toJSON(['isBackground']); historique ne se corrompt plus au loadFromJSON, boutons fonctionnels
+FEATURE: MorphoCanvas — indicateur d'angle dynamique sur les lignes (vs horizontale, 0°=sol), label live pendant tracé, ligne+angle groupés (déplaçables ensemble)
+FEATURE: MorphoCanvas — raccourcis clavier (V/L/P/R/C/T/E outils, ⌘Z/⌘⇧Z undo/redo, Suppr supprime sélection, Espace+glisser = pan); sidebar élargie avec badges kbd
+PERF: MorphoPro fetch centralisé — analyses chargées 1× au niveau page (était 2× : Summary limit=1 + Gallery limit=100), partagées en props; MorphoBiomechSummary reçoit latestAnalysis (plus de fetch); MorphoGallery dérive analysisMap via useMemo (plus de state/refetch); nouvelle analyse = prepend mémoire sans refetch
+PERF: MorphoPhotoCard mémoïsé (React.memo) + toggleSelect useCallback + EMPTY_ANALYSES const — évite re-render des 24 cartes/images à chaque sélection
 FEATURE: Add /client/nutrition/compose — Smart Nutrition Compose page with live simulation hero (split-fixed layout, DS v4)
 FEATURE: DS v4 simulation color #818cf8 — arc calories, barres macro, bouton Sauver; seul Valider reste en #ffe01e
 FEATURE: SmartNutritionHero simulationMode — dot grid, badge SIMULATION pulsant, date nav masquée
