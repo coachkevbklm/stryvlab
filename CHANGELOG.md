@@ -4,6 +4,11 @@
 
 ## 2026-06-01
 
+FEATURE: Add resolveTone + 4-tone phrasing matrix (strict/bienveillant/motivant/neutre)
+FEATURE: Add curated advice rules — freedom-gated lifestyle tips + silent coach_alerts, zero program-touching (D9/D10/D11/D12/D13)
+FEATURE: Add messageComposer — numbered honest facts closing + morning greeting + evening reminder (waking-order BPM-first)
+FEATURE: Wire greeting path (buildCheckinReadyMetadata + routineMessages) onto composer — tone-driven, canonical fields, no false praise; messages GET fetches tone+fields
+FIX: System prompt — AI is the coach (no deflection D10), tone-driven, no program-touching, no false praise; closing prompt honesty-constrained
 FEATURE: Add canonical check-in field registry (fieldRegistry) — source unique clé/label/colonne DB/ordre-réveil (expose enfin BPM + poids)
 FEATURE: Add legacy->canonical field remap (legacyFieldMap) + one-time migration script (mood->stress_level)
 FEATURE: Add deterministic DailyFacts core (computeDailyFacts + computeDayKind) — day-kind aware (training/rest/cancelled/skipped), nutrition honnête (over/under/on_track), plus de fausse louange
