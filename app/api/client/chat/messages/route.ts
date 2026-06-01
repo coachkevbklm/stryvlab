@@ -7,7 +7,7 @@ import { callLLM } from '@/lib/llm/callLLM'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { shouldProactiveInitNow } from '@/lib/client/checkin/checkinEngine'
-import { resolveClientTimezone, buildCheckinReadyMetadata, isCheckinDeferred } from '@/lib/client/checkin/resolveClientTimezone'
+import { resolveClientTimezone, buildCheckinReadyMetadata } from '@/lib/client/checkin/resolveClientTimezone'
 import { findExistingInitMessageForDate } from '@/lib/client/checkin/initMessages'
 import {
   addDaysToDateKey,
@@ -140,28 +140,10 @@ async function ensureAutomatedChatMessages(
     const messageType = flow === 'morning' ? 'morning_init' : 'evening_init'
     const existing = findExistingInitMessageForDate(initRows, messageType, timezone, today)
 
-    if (existing) {
-      if (isCheckinDeferred(existing.metadata)) continue
-      const meta = existing.metadata ?? {}
-      const wasDeferred = typeof meta.deferred_until === 'string' && meta.deferred_until
-      if (
-        wasDeferred
-        && shouldProactiveInitNow(now, timezone, flow, sessionRows)
-      ) {
-        const readyMeta = buildCheckinReadyMetadata(flow, firstName, {
-          hasTrainingToday: todaySessionList.length > 0,
-          trainingName: primarySessionName,
-        }, toneOpts(flow))
-        await db
-          .from('chat_messages')
-          .update({
-            content: String(readyMeta.greeting),
-            metadata: readyMeta,
-          })
-          .eq('id', existing.id)
-      }
-      continue
-    }
+    // An init message already exists for this day → respect it, including a deferred
+    // "Plus tard". Never regenerate or overwrite: the check-in stays reachable via the
+    // top-bar button + unread badge. (Prevents the 1am re-nag that rewrote the message.)
+    if (existing) continue
 
     if (!shouldProactiveInitNow(now, timezone, flow, sessionRows)) continue
 

@@ -4,6 +4,7 @@
 
 ## 2026-06-02
 
+FIX: "Plus tard" sur check-in respecté — le message d'init n'est plus régénéré/écrasé à l'expiration du defer (plus de re-nag à 1h du matin) ; check-in via bouton top-bar + badge
 FIX: init chat utilise le weekday du jour PHYSIOLOGIQUE (pas calendaire) — corrige la séance erronée référencée après minuit avant cutoff 05:00 (ex: check-in soir de lundi rouvert à 01:24 mardi montrait la séance de mardi)
 FIX: copy greeting soir — nom de séance isolé entre parenthèses + flow resserré (les virgules du nom ne cassent plus la phrase)
 FEATURE: Route HTTP `/api/cron/chat-checkin-init` — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué) ; appelable Inngest/cron externe (Hobby = pas de */15 Vercel)
