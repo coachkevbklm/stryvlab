@@ -4,6 +4,10 @@
 
 ## 2026-06-01
 
+SCHEMA: coach_ai_settings_per_client.coaching_freedom (none/safe/extended, défaut safe) + coach_notifications.category élargi (program_signal/nutrition_trend/recovery_flag)
+FEATURE: Coach — slider "Liberté de coaching IA" (AiCoachSettingsWidget) + persistance ai-settings
+FEATURE: Coach — CheckinConfigWidget canonique (expose BPM + poids) relocalisé dans la section IA du profil client
+FEATURE: loadDailyCoachContext lit coaching_freedom ; closing route émet les vraies catégories coach_alert
 FEATURE: Add resolveTone + 4-tone phrasing matrix (strict/bienveillant/motivant/neutre)
 FEATURE: Add curated advice rules — freedom-gated lifestyle tips + silent coach_alerts, zero program-touching (D9/D10/D11/D12/D13)
 FEATURE: Add messageComposer — numbered honest facts closing + morning greeting + evening reminder (waking-order BPM-first)

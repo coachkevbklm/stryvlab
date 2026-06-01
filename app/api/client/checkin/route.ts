@@ -303,18 +303,12 @@ export async function POST(req: NextRequest) {
     })
 
     // Silent coach alerts (D10) — back-end only, never shown to the client.
-    // Map to existing coach_notifications.category CHECK values (dedicated categories added in Plan 3).
-    const ALERT_CATEGORY: Record<string, string> = {
-      program_signal: 'out_of_scope',
-      recovery_flag: 'out_of_scope',
-      nutrition_trend: 'weight_off_track',
-    }
     if (ctx.coachId && coachAlerts.length > 0) {
       await db.from('coach_notifications').insert(
         coachAlerts.map((a) => ({
           coach_id: ctx.coachId,
           client_id: cc.id,
-          category: ALERT_CATEGORY[a.category] ?? 'out_of_scope',
+          category: a.category,
           status: 'pending',
           priority: a.priority,
         })),

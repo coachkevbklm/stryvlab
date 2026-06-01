@@ -56,7 +56,7 @@ export async function loadDailyCoachContext(
     db.from('client_session_logs').select('id').eq('client_id', clientId).not('completed_at', 'is', null).gte('completed_at', start.toISOString()).lte('completed_at', end.toISOString()).limit(1),
     db.from('client_workout_skips').select('program_session_id').eq('client_id', clientId).eq('scheduled_date', date),
     db.from('nutrition_meals').select('physiological_date, total_calories, total_protein_g').eq('client_id', clientId).gte('physiological_date', threeDaysAgo).lte('physiological_date', yesterday),
-    db.from('coach_ai_settings_per_client').select('ai_tone, coach_id').eq('client_id', clientId).maybeSingle(),
+    db.from('coach_ai_settings_per_client').select('ai_tone, coach_id, coaching_freedom').eq('client_id', clientId).maybeSingle(),
     db.from('daily_checkin_configs').select('moments').eq('client_id', clientId).maybeSingle(),
   ])
 
@@ -126,6 +126,9 @@ export async function loadDailyCoachContext(
   const cfgMoments = ((cfgRow as { moments?: Array<{ moment?: string; fields?: string[] }> } | null)?.moments) ?? []
   const enabledMorningFields = cfgMoments.find((m) => m.moment === 'morning')?.fields ?? []
 
+  const rawFreedom = (perClientAi as { coaching_freedom?: string | null } | null)?.coaching_freedom ?? 'safe'
+  const freedom: Freedom = rawFreedom === 'none' || rawFreedom === 'extended' ? rawFreedom : 'safe'
+
   const facts = computeDailyFacts({
     dayKind,
     sessionStatus,
@@ -144,7 +147,7 @@ export async function loadDailyCoachContext(
     facts,
     trend: { kcalOverDays, proteinShortDays },
     tone,
-    freedom: 'safe', // coaching_freedom column added in Plan 3; default safe
+    freedom,
     enabledMorningFields,
     coachId,
   }

@@ -15,7 +15,15 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransformationScoreWidget from "@/components/coach/TransformationScoreWidget";
-import TransformationPhaseWidget from "@/components/coach/TransformationPhaseWidget";
+import PhaseOptimizationWidget from "@/components/coach/PhaseOptimizationWidget";
+import AiCoachSettingsWidget from "@/components/coach/AiCoachSettingsWidget";
+import CheckinConfigWidget from "@/components/coach/CheckinConfigWidget";
+import {
+  TRANSFORMATION_PHASE_OPTIONS,
+  getTransformationPhaseLabel,
+  transformationPhaseToFamily,
+  transformationPhaseToMacroGoal,
+} from "@/lib/coach/transformationPhase";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +36,11 @@ const TRAINING_GOALS = [
   { value: "maintenance", label: "Maintenance" },
   { value: "athletic", label: "Athlétique" },
 ];
+const TRANSFORMATION_PHASES = TRANSFORMATION_PHASE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+  description: option.description,
+}));
 const FITNESS_LEVELS = [
   { value: "beginner", label: "Débutant" },
   { value: "intermediate", label: "Intermédiaire" },
@@ -133,7 +146,10 @@ export default function ProfilPage() {
   const [editingSport, setEditingSport] = useState(false);
   const [savingSport, setSavingSport] = useState(false);
   const [saveErrorSport, setSaveErrorSport] = useState("");
+  const [savingPhase, setSavingPhase] = useState(false);
+  const [saveErrorPhase, setSaveErrorPhase] = useState("");
   const [sportDraft, setSportDraft] = useState({
+    transformation_phase: client.transformation_phase ?? "",
     training_goal: client.training_goal ?? "",
     fitness_level: client.fitness_level ?? "",
     sport_practice: client.sport_practice ?? "",
@@ -141,6 +157,26 @@ export default function ProfilPage() {
     equipment_category: client.equipment_category ?? "",
     notes: client.notes ?? "",
   });
+
+  useEffect(() => {
+    setSportDraft({
+      transformation_phase: client.transformation_phase ?? "",
+      training_goal: client.training_goal ?? "",
+      fitness_level: client.fitness_level ?? "",
+      sport_practice: client.sport_practice ?? "",
+      weekly_frequency: client.weekly_frequency?.toString() ?? "",
+      equipment_category: client.equipment_category ?? "",
+      notes: client.notes ?? "",
+    });
+  }, [
+    client.transformation_phase,
+    client.training_goal,
+    client.fitness_level,
+    client.sport_practice,
+    client.weekly_frequency,
+    client.equipment_category,
+    client.notes,
+  ]);
 
   // CRM editing
   const [editingCrm, setEditingCrm] = useState(false);
@@ -222,6 +258,29 @@ export default function ProfilPage() {
     }
   }
 
+  async function saveTransformationPhase() {
+    setSavingPhase(true);
+    setSaveErrorPhase("");
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transformation_phase: sportDraft.transformation_phase || null,
+        }),
+      });
+      if (!res.ok) {
+        setSaveErrorPhase("Erreur lors de la sauvegarde de la phase");
+        return;
+      }
+      await refetch();
+    } catch {
+      setSaveErrorPhase("Erreur réseau");
+    } finally {
+      setSavingPhase(false);
+    }
+  }
+
   // CRM save
   async function saveCrm() {
     setSavingCrm(true);
@@ -287,22 +346,141 @@ export default function ProfilPage() {
     { label: "Disponibilité", value: client.weekly_frequency ? `${client.weekly_frequency}j/sem.` : null },
     { label: "Catégorie", value: EQUIPMENT_CATEGORIES.find(e => e.value === client.equipment_category)?.label },
   ].filter(f => f.value);
+  const activePhaseMeta = TRANSFORMATION_PHASES.find(
+    (phase) => phase.value === sportDraft.transformation_phase,
+  );
+  const phaseDirty =
+    (sportDraft.transformation_phase || "") !==
+    (client.transformation_phase || "");
+  const phaseDirection = transformationPhaseToMacroGoal(
+    activePhaseMeta?.value,
+  );
+  const phaseFamily = transformationPhaseToFamily(activePhaseMeta?.value);
 
   const unassignedTags = allTags.filter(t => !clientTags.some(ct => ct.id === t.id));
 
   return (
     <main className="min-h-screen bg-[#121212]">
       <div className="px-6 pb-24">
-        {/* ── Widgets transformation — pleine largeur ── */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <TransformationScoreWidget clientId={clientId} />
-          <TransformationPhaseWidget clientId={clientId} />
-        </div>
+        <div className="grid grid-cols-2 items-start gap-4">
 
-        <div className="grid grid-cols-2 gap-4 items-start">
-
-          {/* ── COLONNE GAUCHE ── */}
+          {/* ── COLONNE GAUCHE : score + fiche client ── */}
           <div className="flex flex-col gap-4">
+            <TransformationScoreWidget clientId={clientId} />
+
+            <Card>
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Phase actuelle</SectionLabel>
+                <div className="flex items-center gap-2 -mt-3">
+                  <button
+                    onClick={() =>
+                      setSportDraft((draft) => ({
+                        ...draft,
+                        transformation_phase: client.transformation_phase ?? "",
+                      }))
+                    }
+                    disabled={!phaseDirty || savingPhase}
+                    className="text-[11px] text-white/40 hover:text-white transition-colors disabled:opacity-30"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={saveTransformationPhase}
+                    disabled={!phaseDirty || savingPhase}
+                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {savingPhase ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <Save size={11} />
+                    )}
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+
+              {saveErrorPhase && (
+                <p className="text-[11px] text-red-400/80 mb-3">
+                  {saveErrorPhase}
+                </p>
+              )}
+
+              <p className="text-[12px] leading-relaxed text-white/60 mb-4">
+                Décision stratégique du coach pour la phase actuelle du client.
+                Elle aligne Nutrition Studio, Phase Optimization et la direction
+                des ajustements.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {TRANSFORMATION_PHASES.map((phase) => {
+                  const isActive = sportDraft.transformation_phase === phase.value;
+                  return (
+                    <button
+                      key={phase.value}
+                      onClick={() =>
+                        setSportDraft((draft) => ({
+                          ...draft,
+                          transformation_phase: phase.value,
+                        }))
+                      }
+                      className={`rounded-xl border px-3 py-3 text-left transition-all ${
+                        isActive
+                          ? "border-[#1f8a65]/35 bg-[#1f8a65]/12"
+                          : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <p
+                        className={`text-[12px] font-semibold ${
+                          isActive ? "text-[#7fe0b8]" : "text-white/85"
+                        }`}
+                      >
+                        {phase.label}
+                      </p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-white/42">
+                        {phase.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Phase active
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {activePhaseMeta?.label ?? "Non définie"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Direction nutrition
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {phaseDirection === "deficit"
+                      ? "Déficit"
+                      : phaseDirection === "surplus"
+                        ? "Surplus"
+                        : "Maintenance"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Famille de phase
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {phaseFamily === "cut"
+                      ? "Sèche"
+                      : phaseFamily === "bulk"
+                        ? "Prise de masse"
+                        : phaseFamily === "maintenance"
+                          ? "Maintenance"
+                          : "Recomposition"}
+                  </p>
+                </div>
+              </div>
+            </Card>
 
             {/* ── Informations ── */}
             <Card>
@@ -478,7 +656,7 @@ export default function ProfilPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">Objectif</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">Objectif entraînement</label>
                     <select value={sportDraft.training_goal} onChange={e => setSportDraft(d => ({ ...d, training_goal: e.target.value }))} className={selectCls}>
                       <option value="">—</option>
                       {TRAINING_GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -542,10 +720,17 @@ export default function ProfilPage() {
                 Supprimer ou archiver →
               </button>
             </div>
+
+            {/* Paramètres IA Coach */}
+            <AiCoachSettingsWidget clientId={clientId} />
+
+            {/* Configuration check-in quotidien */}
+            <CheckinConfigWidget clientId={clientId} />
           </div>
 
-          {/* ── COLONNE DROITE ── */}
+          {/* ── COLONNE DROITE : phase + accès & billing ── */}
           <div className="flex flex-col gap-4">
+            <PhaseOptimizationWidget clientId={clientId} />
 
             {/* Accès client */}
             <Card>
