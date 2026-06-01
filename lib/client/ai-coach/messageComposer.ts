@@ -87,19 +87,17 @@ export function composeEveningGreeting(input: EveningGreetingInput): string {
   const labels = input.enabledEveningFields
     .map((k) => getFieldsForFlow('evening').find((f) => f.key === k)?.label)
     .filter(Boolean) as string[]
-  const checklist = labels.length > 0
-    ? `Pour le point du soir, on regardera ${labels.join(', ')}.`
-    : ''
-  const context = input.hasTrainingToday
-    ? `Si tu as un retour sur ${input.trainingName ?? 'ta séance'}, ta récup ou ta nutrition, c’est le moment.`
-    : 'On débriefe ta journée avant de couper.'
-  return [
-    style.opener(input.name),
-    context,
-    'Prêt pour ton check-in du soir ?',
-    checklist,
-    style.closerEvening,
-  ].filter(Boolean).join('\n')
+  // Session name can contain commas ("épaules, dos, pectoraux") — isolate in parens
+  // so it never breaks the sentence.
+  const sessionLine = input.hasTrainingToday
+    ? `Un mot sur ta séance du jour (${input.trainingName?.trim() || 'séance'}), ta récup ou ta nutrition si besoin.`
+    : 'On débriefe ta journée si tu veux.'
+  const ctaLine = labels.length > 0
+    ? `Prêt pour ton check-in du soir ? On y regardera ${labels.join(', ')}.`
+    : 'Prêt pour ton check-in du soir ?'
+  return [style.opener(input.name), sessionLine, ctaLine, style.closerEvening]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export type EveningReminderInput = { tone: Tone; enabledMorningFields: string[] }

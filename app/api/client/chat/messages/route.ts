@@ -46,6 +46,9 @@ async function ensureAutomatedChatMessages(
   const { start: messageWindowStart } = utcRangeForLocalDate(localYesterday, timezone)
   const { start: physiologicalStart, end: physiologicalEnd } = utcRangeForPhysiologicalDate(today, timezone)
   const currentHour = localNow.hour
+  // Weekday of the PHYSIOLOGICAL day (not calendar `now`): after midnight but before the
+  // 05:00 cutoff we are still debriefing the previous day → its session, not tomorrow's.
+  const physioWeekday = getLocalWeekday(new Date(`${today}T12:00:00.000Z`), timezone)
 
   const [
     { data: checkinRows },
@@ -70,7 +73,7 @@ async function ensureAutomatedChatMessages(
       .select('name, day_of_week, days_of_week, programs!inner(status, client_id)')
       .eq('programs.client_id', clientId)
       .eq('programs.status', 'active')
-      .or(`day_of_week.eq.${getLocalWeekday(now, timezone)},days_of_week.cs.{${getLocalWeekday(now, timezone)}}`),
+      .or(`day_of_week.eq.${physioWeekday},days_of_week.cs.{${physioWeekday}}`),
     db.from('nutrition_protocols')
       .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
       .eq('client_id', clientId)
