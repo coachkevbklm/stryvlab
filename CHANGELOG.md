@@ -2,8 +2,61 @@
 
 > **Format court** — entrées de 1 ligne par changement.
 
+## 2026-06-01
+
+FEATURE: Add /client/nutrition/compose — Smart Nutrition Compose page with live simulation hero (split-fixed layout, DS v4)
+FEATURE: DS v4 simulation color #818cf8 — arc calories, barres macro, bouton Sauver; seul Valider reste en #ffe01e
+FEATURE: SmartNutritionHero simulationMode — dot grid, badge SIMULATION pulsant, date nav masquée
+FEATURE: compose-advisor mealFraction cap (40% normal / 80% completion mode) via suggestQuantityForItem
+FEATURE: compose-advisor completion mode min-grams algo — évite overflow macro sur dernier repas
+FEATURE: NutritionLogContent forwardRef handle (saveMeal/savePrep/clearDrafts) + hideActions + onDraftsChange
+FEATURE: Inline ~Xg suggestion chips sur items aliments en mode composer
+FEATURE: Cohérence exercice↔morpho Niveau 2 — lib/morpho/morphoTraits.ts (extractMorphoTraits: insertions normalisées, leviers moyennés G/D, frame, ratios); moteur de 16 règles (insertions biceps/mollets/pec/quad/deltoïde, leviers fémur/humérus/tronc, angles valgus coude/genoux, frame clavicules/bassin); computeCoherence combine N1 pattern + N2 règles, score ordinal, tri raisons par actionnabilité
+FEATURE: Cohérence exercice↔morpho Niveau 1 — lib/morpho/exerciseCoherence.ts (mapping catalog movement_pattern → biomech pattern, computeCoherence depuis pattern_verdicts); MorphoCoherenceBadge (pastille verte/ambre/grise + tooltip multi-raisons colorées); badge injecté dans ExerciseCard à côté du nom; EditorPane fetch verdicts+traits 1×/client
+FEATURE: MorphoBiomechIndicators v2 — 4 jauges header (Clavicules, Bassin, Fémur, Bras) + popover détail (Tibia, Tronc, Thorax, valgus coude, genoux, grille insertions); fémur/bras dérivés des segments (moyenne G/D ordinale); close-on-outside-click; variant full pour réutilisation
+SCHEMA: BiomechFrame — ajout elbow_carrying_angle (valgus coude); MuscleInsertion.muscle élargi (pec_sternal/clavicular, gastrocnemius, quad_sweep, deltoid_anterior), value élargi (wide/narrow)
+FEATURE: prompt v3 — axe insertions marqué PRIORITAIRE; ajout évaluation valgus coude + alignement genoux dans frame avec implications prescription (barre EZ si valgus marqué)
+FIX: MorphoAnalysisDrawer — frame section affiche valgus coude + genoux, filtre 'unknown', labels FR valgus/varus normaux
+FEATURE: MorphoBiomechSummary — carte résumé en haut de page: score ring, chips structure osseuse (clavicules/bassin/thorax), chips prescriptions clés (squat+deadlift), lien vers drawer
+FEATURE: MorphoEvolutionPanel — panel longitudinal: overall trend badge, score delta, flags résolus/nouveaux, meilleure amélioration + plus forte régression (lazy, 404 géré)
+FEATURE: MorphoAnalysisDrawer — section "Exercices recommandés" lazy-fetchée depuis /morpho/exercise-map, groupée par muscle (12 groupes), triée par niveau avantage, substitution si contre-indiqué; prop clientId ajouté
+FIX: evolution route + exercise-map route — acceptent désormais prompt_version v2 ET v3 (étaient filtrés v2 uniquement)
+
+
+FIX: ProgrammeClientPage — skip card "Séance annulée" + accents corrects, badge "Repos" (DS v3.0 neutral), sheet bg-[#161616], bouton "Confirmer", texte "journée de repos"
+FIX: nutrition/page.tsx — dayTypeLabel "Jour off" → "Journée de repos"
+FIX: today-strip API — filtrage des sessions skippées (client_workout_skips), target calorique bascule sur protocole repos si day_override kind=off
+FIX: programme/page.tsx — todayDow utilise getLocalWeekday (heure locale) au lieu de la date physiologique → session correcte affichée après minuit
+
+## 2026-05-28
+
+FEATURE: MorphoPro v3 prompt — French enforcement on all text fields, 8 analysis axes, frame structure (biacromial/bi-iliac/thorax/skeletal_frame), setup prescriptions (squat stance+variation, deadlift variation, bench_grip, OHP implement, pull_grip + rationale), expanded insertions (pec_sternal, pec_clavicular, lats, gastrocnemius, quad_sweep, deltoid_anterior), humerus_to_forearm_ratio
+FEATURE: lib/morpho/types.ts — BiomechFrame + SetupPrescriptions types; BiomechProfile extended with frame? + setup_prescriptions?; isMorphoV2 guard accepts v2+v3; meta.prompt_version typed as 'v2'|'v3'
+FIX: MorphoAnalysisDrawer — flag zones translated FR (shoulders→Épaules, pelvis→Bassin, spine→Rachis); INSERTION_LABELS extended for v3 muscles; undefined frame fields filtered; stimulus keys use PATTERN_LABELS
+FIX: analyze route — prompt_version saved from meta.prompt_version directly (v1/v2/v3)
+FIX: Chat scroll — add overscroll-contain on ChatConversation to prevent parent page scroll-through on PWA
+FIX: Chat message menu — replace group-hover with tap-to-open (mobile PWA), close on pointerdown outside, dropdown repositioned below bubble
+FIX: Nutrition — "Ajouter des aliments" from logged meal now opens MealLogSheet (not router.push to log page)
+FIX: Nutrition — remove duplicate "+" icon from addIngredients button (label already contains "+")
+FIX: Nutrition — MealLogSheet calls router.refresh() on success for immediate UI update
+REFACTOR: NutritionLogContent accepts mealId prop (overrides ?meal_id searchParam) for embedded sheet use
+REFACTOR: NutritionMealsList accepts onAddMore(mealId) callback; MealLogSheet accepts mealId prop
+
 ## 2026-05-29
 
+FEATURE: Check-in TZ windows (soir 21h–04h30, matin 04h35–17h), max 2 backlog 24h, top-bar + chat sync
+FEATURE: Proactive coach check-in — greeting + Oui/Plus tard (defer 1h) before flow; evening daily_steps in chat
+FEATURE: Inngest morning/evening init — cron */15 with per-client timezone (06:30 / 21:00 local)
+SCHEMA: client_daily_checkins.daily_steps + rolling 7d average in nutrition-data
+
+FEATURE: Phase Optimization Engine — 2-axis physiological steering (energetic direction × adaptive state)
+FEATURE: Phase Optimization v2 — ghost trail 30j, coach manual override, persisted phase_preferences
+FEATURE: Phase Optimization v3 — FR/EN copy bundles (?locale=), coach prefs sliders UI, animated ghost trail
+UI: PhaseOptimizationWidget polish — quadrant presence, optimal zone, density, metric cards, detailed analysis link
+SCHEMA: phase_optimization_history + coach_clients.phase_override / phase_preferences
+FEATURE: PhaseOptimizationWidget — 2D quadrant SVG, animated points, micro-copy, decision trace, trail + override panel
+REFACTOR: Remove computeOptimalPhase, GOAL_TO_PHASE, phaseRecommendation from transformationScore.ts
+CHORE: Delete TransformationPhaseWidget.tsx
 FEATURE: Add centralized callLLM wrapper with llm_traces observability (lib/llm/callLLM.ts)
 FEATURE: Add coach feature flags — has_ai_llm (coach_profiles) + ai_llm_enabled (coach_ai_settings_per_client)
 SCHEMA: Chat Release 1 Bloc D — ALTER chat_messages (5 cols), ALTER coach_profiles (5 cols), 4 new tables, increment_llm_budget RPC
