@@ -1,5 +1,9 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
+import { resolveClientTimezone } from '@/lib/client/checkin/resolveClientTimezone'
+import { utcRangeForPhysiologicalDate } from '@/lib/client/checkin/timeWindows'
+import { computeDailySignals } from '@/lib/client/ai-coach/chatSignals'
+import { resolveTone } from '@/lib/client/ai-coach/resolveTone'
 
 function svc() {
   return createServiceClient(
@@ -21,16 +25,13 @@ function fmtDate(date: string): string {
 
 export async function buildSystemPrompt(clientId: string): Promise<string> {
   const db = svc()
-  const today = computePhysiologicalDate(new Date())
-  const dayStart = `${today}T00:00:00Z`
-  const dayEnd   = `${today}T23:59:59Z`
+  const timezone = await resolveClientTimezone(db, clientId)
+  const today = computePhysiologicalDate(new Date(), timezone)
+  const { start: physiologicalStart, end: physiologicalEnd } = utcRangeForPhysiologicalDate(today, timezone)
+  const dayStart = physiologicalStart.toISOString()
+  const dayEnd   = physiologicalEnd.toISOString()
   const nowTime  = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-
-  const nextPhysioDay = (() => {
-    const d = new Date(`${today}T00:00:00`)
-    d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
-  })()
+  const nextPhysioStart = new Date(physiologicalEnd.getTime() + 1).toISOString()
 
   const threeDaysAgo = (() => {
     const d = new Date(`${today}T00:00:00`)
@@ -64,6 +65,8 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
     nutritionTrendsResult,
     checkinsResult,
     activeProgramResult,
+    perClientToneResult,
+    globalToneResult,
   ] = await Promise.allSettled([
     coachId
       ? db.from('user_profiles').select('first_name, last_name').eq('id', coachId).single()
@@ -85,8 +88,8 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
     db.from('meal_logs')
       .select('estimated_macros, logged_at, meal_name')
       .eq('client_id', clientId)
-      .gte('logged_at', `${today}T04:00:00.000Z`)
-      .lt('logged_at', `${nextPhysioDay}T04:00:00.000Z`)
+      .gte('logged_at', physiologicalStart.toISOString())
+      .lt('logged_at', nextPhysioStart)
       .eq('ai_status', 'done'),
     db.from('client_water_logs')
       .select('amount_ml')
@@ -126,11 +129,12 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
       .gte('physiological_date', threeDaysAgo)
       .lt('physiological_date', today)
       .order('physiological_date', { ascending: false }),
-    // Today's check-ins
+    // Check-ins of the past 3 days
     db.from('client_daily_checkins')
-      .select('flow_type, sleep_hours, sleep_quality, energy_level, stress_level, weight_kg, hunger_level, muscle_soreness')
+      .select('date, flow_type, sleep_hours, sleep_quality, energy_level, stress_level, weight_kg, hunger_level, muscle_soreness')
       .eq('client_id', clientId)
-      .eq('date', today),
+      .gte('date', threeDaysAgo)
+      .lte('date', today),
     // Active program with sessions
     db.from('programs')
       .select('name, weeks, frequency, program_sessions(id, name, day_of_week, days_of_week)')
@@ -139,7 +143,23 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Tone — per-client override + coach global
+    db.from('coach_ai_settings_per_client').select('ai_tone').eq('client_id', clientId).maybeSingle(),
+    coachId
+      ? db.from('coach_profiles').select('ai_tone').eq('coach_id', coachId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
+
+  // ── Tone (D5) ──────────────────────────────────────────────────────────────
+  const perClientTone = perClientToneResult.status === 'fulfilled' ? (perClientToneResult.value as any)?.data?.ai_tone ?? null : null
+  const globalTone = globalToneResult.status === 'fulfilled' ? (globalToneResult.value as any)?.data?.ai_tone ?? null : null
+  const tone = resolveTone(perClientTone, globalTone)
+  const TONE_DIRECTIVE: Record<typeof tone, string> = {
+    strict: 'Ton strict, direct, sans complaisance. Pas de flatterie.',
+    bienveillant: 'Ton bienveillant et direct. Encourageant sans flatterie.',
+    motivant: 'Ton motivant et énergique. Pas de flatterie creuse.',
+    neutre: 'Ton neutre et factuel. Sobre.',
+  }
 
   // ── Coach identity ─────────────────────────────────────────────────────────
   const coachProfile = coachProfileResult.status === 'fulfilled' ? (coachProfileResult.value as any)?.data : null
@@ -289,8 +309,9 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
 
   // ── Check-ins du jour ─────────────────────────────────────────────────────
   const checkins       = checkinsResult.status === 'fulfilled' ? (checkinsResult.value.data ?? []) : []
-  const morningCheckin = checkins.find((c: any) => c.flow_type === 'morning')
-  const eveningCheckin = checkins.find((c: any) => c.flow_type === 'evening')
+  const todayCheckins  = checkins.filter((c: any) => c.date === today)
+  const morningCheckin = todayCheckins.find((c: any) => c.flow_type === 'morning')
+  const eveningCheckin = todayCheckins.find((c: any) => c.flow_type === 'evening')
 
   const QUALITY_LABELS: Record<number, string> = { 1: 'Mauvais', 2: 'Moyen', 3: 'Bien', 4: 'Excellent' }
   const ENERGY_LABELS:  Record<number, string> = { 1: 'Épuisé', 2: 'Fatigué', 3: 'Normal', 4: 'Chargé', 5: 'Top' }
@@ -339,53 +360,63 @@ Nom: ${activeProgram.name} | ${activeProgram.frequency ?? '?'} séances/semaine 
 ${plannedSessionLine}`
   }
 
-  // ── System prompt ─────────────────────────────────────────────────────────
-  const identityBlock = `Tu es l'assistant de ${coachName}, coach certifié personnel de ${firstName}.
-${coachName} a créé le programme d'entraînement de ${firstName}, établi ses objectifs nutritionnels et suit sa progression.
-Tu parles EN SON NOM, comme son prolongement direct.
+  // ── Signals ───────────────────────────────────────────────────────────────
+  const signals = computeDailySignals({
+    targetKcal,
+    targetProtein,
+    targetWaterMl,
+    totalKcal,
+    totalProtein,
+    totalWaterMl,
+    bilans,
+    checkinsPast3Days: checkinsResult.status === 'fulfilled' ? (checkinsResult.value.data ?? []) : [], // Wait, the checkins query is only for today. Let's fix this.
+    session,
+  })
 
-RÈGLES DE COMPORTEMENT — NON NÉGOCIABLES:
-- Réponds en 2-3 phrases MAXIMUM. Sois direct et affirmatif.
-- Ne donne JAMAIS de conseils nutritionnels génériques — ${coachName} a déjà calculé les macros et les calories.
-- Ne propose JAMAIS d'ajuster les macros, les calories ou le programme — c'est la responsabilité de ${coachName}.
-- Ne dis JAMAIS "tu pourrais essayer" ou "une option serait" — affirme ce que les données montrent.
-- Réfère-toi au programme comme "le programme que ${coachName} t'a préparé".
-- Si une donnée manque, dis-le en une phrase et demande-la directement.
-- Ne donne jamais de conseils médicaux. Langue : français uniquement.`
+  // ── System prompt ─────────────────────────────────────────────────────────
+  const identityBlock = `Tu ES ${coachName}, le coach de ${firstName} (assistant qui parle en son nom, jamais une entité séparée).
+RÈGLES STRICTES :
+1. Pas d'hallucinations : base-toi UNIQUEMENT sur les signaux ci-dessous. Ne mentionne pas de symptômes ou de données que le client n'a pas.
+2. Tu ne renvoies JAMAIS le client vers le coach ("vois ça avec ton coach" est interdit) — tu ES le coach. Si un sujet dépasse ton périmètre (programme, médical), reste neutre et factuel ; le coach est alerté en arrière-plan.
+3. Tu ne touches JAMAIS à la programmation (ne dis pas "baisse la charge", "décale ta séance", "repose-toi", "reprogramme"). Conseils = tips lifestyle uniquement, sans présumer d'habitudes inconnues.
+4. Honnêteté : jamais de fausse louange. Nomme les faits tels qu'ils sont (séance non faite, dépassement calorique, etc.).
+5. Le prénom du client est ${firstName}. Ne l'appelle JAMAIS "le client". S'il n'est pas renseigné, dis "toi".
+6. Ne modifie pas les macros cibles. Ne dis pas "le programme que ton coach t'a préparé", dis "ton programme".
+7. Réponses courtes, 2 à 3 phrases maximum. ${TONE_DIRECTIVE[tone]}`
+
+  let checkinMatinSentences = "Le check-in du matin n'a pas encore été fait."
+  if (morningCheckin) {
+    const s = []
+    if (morningCheckin.sleep_hours != null) s.push(`a dormi ${morningCheckin.sleep_hours}h`)
+    if (morningCheckin.energy_level != null) s.push(`a une énergie de niveau ${morningCheckin.energy_level}/5`)
+    checkinMatinSentences = `Ce matin, ${firstName} ` + s.join(' et ') + '.'
+  }
+
+  let checkinSoirSentences = "Le check-in du soir n'a pas encore été fait."
+  if (eveningCheckin) {
+    const s = []
+    if (eveningCheckin.stress_level != null) s.push(`un stress de niveau ${eveningCheckin.stress_level}/5`)
+    if (eveningCheckin.muscle_soreness != null) s.push(`des courbatures à ${eveningCheckin.muscle_soreness}/4`)
+    if (eveningCheckin.energy_level != null) s.push(`une énergie à ${eveningCheckin.energy_level}/5`)
+    checkinSoirSentences = `Ce soir, ${firstName} signale ` + s.join(', ') + '.'
+  }
+
+  let weightSignal = ""
+  if (signals.weightDelta7d !== null) {
+    weightSignal = `Le poids a ${signals.weightDelta7d > 0 ? 'augmenté' : 'baissé'} de ${Math.abs(signals.weightDelta7d)}kg par rapport au début du suivi.`
+  }
 
   return `${identityBlock}
 
-[PROFIL CLIENT]
-Prénom: ${firstName}
-Objectif: ${goal} | TDEE: ${tdee} kcal
-Niveau: ${fitnessLevel}
-Restrictions physiques: ${restrictionsLine}
+SIGNAUX CLIENT (pour ta compréhension, ne répète pas tout bêtement) :
+- Objectif : ${goal} (Niveau: ${fitnessLevel})
+- Restrictions : ${restrictionsLine}
+- Nutrition du jour : ${signals.caloriesPct}% des calories atteintes, ${signals.proteinPct}% des protéines.
+- Hydratation : ${signals.hydrationPct}% de l'objectif atteint.
+- ${weightSignal}
+- Séance : ${session ? "Séance complétée aujourd'hui." : "Pas de séance complétée aujourd'hui."}
 
-${programBlock ? programBlock + '\n\n' : ''}[PROTOCOLE NUTRITIONNEL]
-Cible: ${targetKcal} kcal | P ${targetProtein}g | L ${targetFat}g | G ${targetCarbs}g | Eau ${(targetWaterMl / 1000).toFixed(1)}L
-
-[ÉVOLUTION CORPORELLE COMPLÈTE]
-${bodyCompLines}
-
-[TENDANCES NUTRITION — 3 derniers jours]
-${trendBlock}
-
-[CHECK-INS DU JOUR]
-Matin: ${morningLine}
-Soir: ${eveningLine}
-
-[JOURNÉE DU ${fmtDate(today)} — ${nowTime}]
-Nutrition: ${Math.round(totalKcal)} kcal / ${targetKcal} cible (${pct(totalKcal, targetKcal)})
-  Protéines: ${Math.round(totalProtein)}g / ${targetProtein}g
-  Lipides: ${Math.round(totalFat)}g / ${targetFat}g
-  Glucides: ${Math.round(totalCarbs)}g / ${targetCarbs}g
-Repas:
-${mealsLines}
-
-Eau: ${totalWaterMl}ml / ${targetWaterMl}ml (${pct(totalWaterMl, targetWaterMl)})
-
-Séance: ${sessionLine}
-
-Activités libres:
-${activitiesLine}`
+${checkinMatinSentences}
+${checkinSoirSentences}
+`
 }

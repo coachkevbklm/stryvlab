@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
@@ -6,8 +8,11 @@ import OpenAI from 'openai'
 import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
 import { buildDailyBrief } from '@/lib/client/ai-coach/buildDailyBrief'
+import { buildMorningPreparationReminder } from '@/lib/client/ai-coach/routineMessages'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
+import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
+import type { CycleLog } from '@/lib/cycle/cycleEngine'
 
 function svc() {
   return createServiceClient(
@@ -25,9 +30,11 @@ const checkinSchema = z.object({
     energy_level:    z.number().int().min(1).max(5).optional(),
     stress_level:    z.number().int().min(1).max(5).optional(),
     weight_kg:       z.number().min(20).max(300).optional(),
+    daily_steps:     z.number().int().min(0).max(200000).optional(),
     hunger_level:    z.number().int().min(1).max(4).optional(),
     muscle_soreness: z.number().int().min(1).max(4).optional(),
-    notes:           z.string().max(500).optional(),
+    rhr_morning:   z.number().int().min(30).max(200).optional(),
+
   }),
   summary: z.string().max(500),
 })
@@ -50,10 +57,12 @@ async function projectCheckinToAssessment(
     energy_level?: number
     stress_level?: number
     weight_kg?: number
+    daily_steps?: number
   },
 ) {
   const fields: Array<{ field_key: string; value_number: number | null }> = [
     { field_key: 'weight_kg', value_number: data.weight_kg ?? null },
+    { field_key: 'daily_steps', value_number: data.daily_steps ?? null },
     { field_key: 'sleep_duration_h', value_number: data.sleep_hours ?? null },
     { field_key: 'sleep_quality', value_number: data.sleep_quality ?? null },
     { field_key: 'energy_level', value_number: data.energy_level ?? null },
@@ -142,7 +151,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = svc()
-  const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name')
+  const cc = await resolveClientFromUser(user.id, user.email, db, 'id, first_name, timezone')
   if (!cc) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
   // Fetch data for daily brief in parallel with checkin processing (best-effort)
@@ -168,7 +177,7 @@ export async function POST(req: NextRequest) {
       const activeProgram = programRes.status === 'fulfilled' ? (programRes.value as any)?.data : null
       const protocol      = protocolRes.status === 'fulfilled' ? (protocolRes.value as any)?.data : null
       const protocolDay   = resolveProtocolDayByDate(
-        computePhysiologicalDate(new Date()),
+        computePhysiologicalDate(new Date(), cc.timezone),
         protocol?.schedule_start_date ?? null,
         protocol?.nutrition_protocol_days ?? [],
         protocol?.nutrition_protocol_schedule_slots ?? [],
@@ -200,6 +209,19 @@ export async function POST(req: NextRequest) {
   }
   const { flow_type, date, data, summary } = parsed.data
 
+  const configuredMorningFieldsPromise = (async () => {
+    if (flow_type !== 'evening') return [] as string[]
+    const { data: config } = await db
+      .from('daily_checkin_configs')
+      .select('moments')
+      .eq('client_id', cc.id)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    const moments = (config?.moments ?? []) as Array<{ moment?: string; fields?: string[] }>
+    return moments.find((moment) => moment.moment === 'morning')?.fields ?? []
+  })()
+
   // Upsert check-in data
   const { error: checkinError } = await db
     .from('client_daily_checkins')
@@ -210,6 +232,30 @@ export async function POST(req: NextRequest) {
   if (checkinError) {
     return NextResponse.json({ error: 'Failed to save check-in' }, { status: 500 })
   }
+
+  // Log cycle phase for historical analytics — best-effort, non-blocking
+  ;(async () => {
+    try {
+      const { data: cycleLogs } = await db
+        .from('menstrual_cycle_logs')
+        .select('period_start_date, period_end_date, computed_cycle_length_days')
+        .eq('client_id', cc.id)
+        .order('period_start_date', { ascending: false })
+        .limit(7)
+
+      const cs = getCycleStateFromLogs((cycleLogs ?? []) as CycleLog[], null)
+      if (cs.currentPhase && cs.currentCycleDay) {
+        await db
+          .from('client_daily_checkins')
+          .update({ cycle_phase: cs.currentPhase, cycle_day: cs.currentCycleDay })
+          .eq('client_id', cc.id)
+          .eq('date', date)
+          .eq('flow_type', flow_type)
+      }
+    } catch {
+      // non-blocking — checkin already saved
+    }
+  })()
 
   // Mirror latest check-in metrics into assessment responses (best-effort).
   try {
@@ -241,13 +287,28 @@ export async function POST(req: NextRequest) {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `${summary}\n\nGénère un message de clôture court (2-3 lignes max) personnalisé basé sur ces données. Sois direct et positif.`,
+          content: `${summary}\n\nGénère un message de clôture court (2-3 lignes max) basé UNIQUEMENT sur ces données. Nomme les faits honnêtement, sans fausse louange ni flatterie. Aucun conseil touchant la programmation (charge, repos, reprogrammation). Termine par une action lifestyle concrète si pertinent.`,
         },
       ],
     })
     closingMessage = completion.choices[0]?.message?.content ?? closingMessage
   } catch {
     // Non-blocking — fallback to default message
+  }
+
+  if (flow_type === 'evening') {
+    try {
+      const morningFields = await configuredMorningFieldsPromise
+      const reminder = buildMorningPreparationReminder(morningFields)
+      if (!closingMessage.includes('demain matin')) {
+        closingMessage = `${closingMessage}\n\n${reminder}`
+      }
+    } catch {
+      const reminder = buildMorningPreparationReminder()
+      if (!closingMessage.includes('demain matin')) {
+        closingMessage = `${closingMessage}\n\n${reminder}`
+      }
+    }
   }
 
   // Persist closing message to chat_messages
@@ -259,7 +320,7 @@ export async function POST(req: NextRequest) {
       content: closingMessage,
       message_type: 'text',
     })
-    .select('id, role, content, message_type, metadata, created_at')
+    .select('id, role, content, message_type, metadata, seen_at, created_at')
     .single()
 
   // Daily brief — structured day summary after check-in (non-blocking)
@@ -288,7 +349,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Update rate limit counter
-  const today = computePhysiologicalDate(new Date())
+  const today = computePhysiologicalDate(new Date(), cc.timezone)
   const { data: usage } = await db
     .from('ai_coach_daily_usage')
     .select('message_count')
