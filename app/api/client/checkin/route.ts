@@ -9,6 +9,9 @@ import { resolveClientFromUser } from '@/lib/client/resolve-client'
 import { buildSystemPrompt } from '@/lib/client/ai-coach/buildSystemPrompt'
 import { buildDailyBrief } from '@/lib/client/ai-coach/buildDailyBrief'
 import { buildMorningPreparationReminder } from '@/lib/client/ai-coach/routineMessages'
+import { loadDailyCoachContext } from '@/lib/client/ai-coach/loadDailyFacts'
+import { composeClosingMessage } from '@/lib/client/ai-coach/messageComposer'
+import { selectAdvice } from '@/lib/client/ai-coach/adviceRules'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
@@ -272,28 +275,53 @@ export async function POST(req: NextRequest) {
       { onConflict: 'client_id,date,flow_type' }
     )
 
-  // Build system prompt + LLM closing message (non-blocking on failure)
+  // Deterministic, honest closing built on DailyFacts (no false praise, no program-touching).
   let closingMessage = flow_type === 'morning'
     ? 'Check-in matin enregistré ✓'
     : 'Check-in soir enregistré ✓'
 
   try {
-    const openai = getOpenAIClient()
-    const systemPrompt = await buildSystemPrompt(cc.id as string)
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      max_tokens: 150,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: `${summary}\n\nGénère un message de clôture court (2-3 lignes max) basé UNIQUEMENT sur ces données. Nomme les faits honnêtement, sans fausse louange ni flatterie. Aucun conseil touchant la programmation (charge, repos, reprogrammation). Termine par une action lifestyle concrète si pertinent.`,
-        },
-      ],
+    const checkinSignals = {
+      sleepHours: data.sleep_hours,
+      sleepQuality: data.sleep_quality,
+      energy: data.energy_level,
+      stress: data.stress_level,
+      soreness: data.muscle_soreness,
+      rhr: data.rhr_morning,
+      weight: data.weight_kg,
+    }
+    const ctx = await loadDailyCoachContext(
+      db, cc.id as string, date, (cc.timezone as string) || 'Europe/Paris', checkinSignals, data.daily_steps ?? null,
+    )
+    const { tips, coachAlerts } = selectAdvice({ facts: ctx.facts, trend: ctx.trend, freedom: ctx.freedom })
+    closingMessage = composeClosingMessage({
+      facts: ctx.facts,
+      tips,
+      tone: ctx.tone,
+      flow: flow_type,
+      name: (cc as { first_name?: string }).first_name ?? '',
     })
-    closingMessage = completion.choices[0]?.message?.content ?? closingMessage
+
+    // Silent coach alerts (D10) — back-end only, never shown to the client.
+    // Map to existing coach_notifications.category CHECK values (dedicated categories added in Plan 3).
+    const ALERT_CATEGORY: Record<string, string> = {
+      program_signal: 'out_of_scope',
+      recovery_flag: 'out_of_scope',
+      nutrition_trend: 'weight_off_track',
+    }
+    if (ctx.coachId && coachAlerts.length > 0) {
+      await db.from('coach_notifications').insert(
+        coachAlerts.map((a) => ({
+          coach_id: ctx.coachId,
+          client_id: cc.id,
+          category: ALERT_CATEGORY[a.category] ?? 'out_of_scope',
+          status: 'pending',
+          priority: a.priority,
+        })),
+      )
+    }
   } catch {
-    // Non-blocking — fallback to default message
+    // Non-blocking — fallback to default ack message
   }
 
   if (flow_type === 'evening') {
