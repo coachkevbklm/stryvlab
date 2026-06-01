@@ -4,6 +4,8 @@
 
 ## 2026-06-02
 
+FIX: CheckinConfigWidget — méthode POST (la route checkin-config n'a pas de PUT) → corrige "Erreur de sauvegarde" rouge à chaque toggle de champ coach
+FIX: message defer check-in — pointe vers le bouton Check-in "en haut à gauche" (top-bar) au lieu de "juste au-dessus"
 FIX: "Plus tard" sur check-in respecté — le message d'init n'est plus régénéré/écrasé à l'expiration du defer (plus de re-nag à 1h du matin) ; check-in via bouton top-bar + badge
 FIX: init chat utilise le weekday du jour PHYSIOLOGIQUE (pas calendaire) — corrige la séance erronée référencée après minuit avant cutoff 05:00 (ex: check-in soir de lundi rouvert à 01:24 mardi montrait la séance de mardi)
 FIX: copy greeting soir — nom de séance isolé entre parenthèses + flow resserré (les virgules du nom ne cassent plus la phrase)

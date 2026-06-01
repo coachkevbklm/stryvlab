@@ -72,8 +72,8 @@ export function buildCheckinReadyMetadata(
     })
 
   const deferMessage = flowType === 'morning'
-    ? "Très bien, prends ton temps. Quand tu es prêt, clique sur le bouton Check-in juste au-dessus et on le fera ensemble."
-    : "Très bien, prends ton temps. Quand tu es prêt, clique sur le bouton Check-in juste au-dessus et on fera le point sur ta journée."
+    ? "Très bien, prends ton temps. Quand tu veux, lance ton check-in via le bouton Check-in en haut à gauche et on le fait ensemble."
+    : "Très bien, prends ton temps. Quand tu veux, lance ton check-in via le bouton Check-in en haut à gauche et on fait le point sur ta journée."
 
   return {
     greeting,
