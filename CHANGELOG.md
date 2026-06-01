@@ -2,6 +2,12 @@
 
 > **Format court** — entrées de 1 ligne par changement.
 
+## 2026-06-02
+
+FEATURE: Vercel Cron backup `/api/cron/chat-checkin-init` (*/15) — lance morning+evening init, indépendant d'Inngest (crons Inngest morts en prod, diagnostiqué)
+CHORE: ancienne page check-ins config — clés de champs canoniques (anti re-drift)
+CHORE: remap prod des clés legacy daily_checkin_configs.moments[].fields → canoniques
+
 ## 2026-06-01
 
 SCHEMA: coach_ai_settings_per_client.coaching_freedom (none/safe/extended, défaut safe) + coach_notifications.category élargi (program_signal/nutrition_trend/recovery_flag)

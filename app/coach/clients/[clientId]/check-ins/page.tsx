@@ -36,16 +36,23 @@ type Summary = {
 
 const DAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
+// Canonical keys (aligned with lib/client/checkin/fieldRegistry) to prevent re-drift.
+// Note: the canonical config now lives in the client profile (CheckinConfigWidget);
+// this page is kept for analytics — its editor writes canonical keys.
 const MORNING_FIELDS = [
-  { key: "sleep_duration", label: "Durée sommeil (h)" },
+  { key: "rhr_morning", label: "Fréquence cardiaque repos" },
+  { key: "sleep_hours", label: "Durée sommeil (h)" },
   { key: "sleep_quality", label: "Qualité sommeil" },
-  { key: "energy", label: "Énergie" },
+  { key: "energy_level", label: "Énergie" },
+  { key: "weight_kg", label: "Poids" },
 ];
 
 const EVENING_FIELDS = [
-  { key: "energy_evening", label: "Énergie fin de journée" },
-  { key: "stress", label: "Stress" },
-  { key: "mood", label: "Humeur" },
+  { key: "energy_level", label: "Énergie fin de journée" },
+  { key: "stress_level", label: "Stress" },
+  { key: "muscle_soreness", label: "Courbatures" },
+  { key: "hunger_level", label: "Faim" },
+  { key: "daily_steps", label: "Pas" },
 ];
 
 const LEVEL_LABELS: Record<string, { label: string; color: string }> = {
