@@ -7,6 +7,7 @@
 FEATURE: Add resolveTone + 4-tone phrasing matrix (strict/bienveillant/motivant/neutre)
 FEATURE: Add curated advice rules — freedom-gated lifestyle tips + silent coach_alerts, zero program-touching (D9/D10/D11/D12/D13)
 FEATURE: Add messageComposer — numbered honest facts closing + morning greeting + evening reminder (waking-order BPM-first)
+FIX: ChatPage refetch messages + today-strip on visibilitychange/focus — fixe l'état matin périmé au resume PWA (greeting absent + check-in "déjà validé")
 FEATURE: Add loadDailyCoachContext loader (DailyFacts + 3-day trend + tone + freedom) — source unique côté serveur
 FEATURE: Post-check-in closing now deterministic (composeClosingMessage + selectAdvice) — faits honnêtes, plus de LLM/fausse louange; coach_alerts silencieux → coach_notifications
 FEATURE: Wire greeting path (buildCheckinReadyMetadata + routineMessages) onto composer — tone-driven, canonical fields, no false praise; messages GET fetches tone+fields
