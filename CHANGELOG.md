@@ -4,6 +4,7 @@
 
 ## 2026-06-02
 
+FEATURE: rappel léger ~1h après "Plus tard" sur check-in — nouveau message chat (sans écraser l'init) + push (si activé), idempotent (metadata.defer_reminded), seulement dans la fenêtre du moment. Inngest checkin-defer-reminder (*/15)
 FIX: crash page nutrition PWA ("undefined is not an object 'd.map'") — SmartNutritionPrepList exigeait scenarioOptions/activeScenarioKey/onScenarioChange non passés par NutritionClientPage → props rendues optionnelles avec défauts + slot prep blindé
 FIX: on-demand init (GET /messages) respecte la config coach (actif + jour + moment configuré) — n'offre plus un check-in non activé ; champs déjà tirés de la config (jamais codés en dur)
 FIX: CheckinConfigWidget — méthode POST (la route checkin-config n'a pas de PUT) → corrige "Erreur de sauvegarde" rouge à chaque toggle de champ coach

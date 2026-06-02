@@ -9,6 +9,7 @@ import { adaptiveTdeeFunction } from '@/lib/inngest/functions/adaptive-tdee'
 import { chatArchiveFunction } from '@/lib/inngest/functions/chat-archive'
 import { chatMorningBriefFunction } from '@/lib/inngest/functions/chat-morning-brief'
 import { chatEveningBriefFunction } from '@/lib/inngest/functions/chat-evening-brief'
+import { checkinDeferReminderFunction } from '@/lib/inngest/functions/checkin-defer-reminder'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -22,5 +23,6 @@ export const { GET, POST, PUT } = serve({
     chatArchiveFunction,
     chatMorningBriefFunction,
     chatEveningBriefFunction,
+    checkinDeferReminderFunction,
   ],
 })
