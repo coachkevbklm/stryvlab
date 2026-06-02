@@ -12,6 +12,7 @@ import { buildMorningPreparationReminder } from '@/lib/client/ai-coach/routineMe
 import { loadDailyCoachContext } from '@/lib/client/ai-coach/loadDailyFacts'
 import { composeClosingMessage } from '@/lib/client/ai-coach/messageComposer'
 import { selectAdvice } from '@/lib/client/ai-coach/adviceRules'
+import { inngest } from '@/lib/inngest/client'
 import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
@@ -226,14 +227,36 @@ export async function POST(req: NextRequest) {
   })()
 
   // Upsert check-in data
-  const { error: checkinError } = await db
+  const { data: savedCheckin, error: checkinError } = await db
     .from('client_daily_checkins')
     .upsert(
       { client_id: cc.id, date, flow_type, ...data },
       { onConflict: 'client_id,date,flow_type' }
     )
+    .select('id')
+    .single()
   if (checkinError) {
     return NextResponse.json({ error: 'Failed to save check-in' }, { status: 500 })
+  }
+
+  // Streak + points (PWA/chat check-in path — mirrors checkin/respond). Non-blocking.
+  try {
+    const { data: streakCfg } = await db
+      .from('daily_checkin_configs')
+      .select('days_of_week')
+      .eq('client_id', cc.id)
+      .maybeSingle()
+    await inngest.send({
+      name: 'checkin/streak.evaluate',
+      data: {
+        client_id: cc.id,
+        response_id: savedCheckin?.id ?? `${cc.id}:${date}:${flow_type}`,
+        is_late: false,
+        days_of_week: (streakCfg?.days_of_week as number[] | null) ?? [],
+      },
+    })
+  } catch {
+    // Non-blocking — streak/points must not fail the check-in save
   }
 
   // Log cycle phase for historical analytics — best-effort, non-blocking
