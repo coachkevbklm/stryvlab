@@ -42,7 +42,7 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
   // Sequential first: need coach_id before running parallel queries
   const { data: profileData } = await db
     .from('coach_clients')
-    .select('first_name, goal, tdee, fitness_level, coach_id')
+    .select('first_name, goal, tdee, fitness_level, coach_id, display_lang')
     .eq('id', clientId)
     .single()
 
@@ -51,6 +51,7 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
   const tdee         = profileData?.tdee          ?? 0
   const fitnessLevel = profileData?.fitness_level ?? 'intermédiaire'
   const coachId      = profileData?.coach_id      ?? null
+  const clientDisplayLang = (profileData?.display_lang ?? 'fr') as 'fr' | 'es' | 'en'
 
   const [
     coachProfileResult,
@@ -144,7 +145,7 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
       .limit(1)
       .maybeSingle(),
     // Tone — per-client override + coach global
-    db.from('coach_ai_settings_per_client').select('ai_tone').eq('client_id', clientId).maybeSingle(),
+    db.from('coach_ai_settings_per_client').select('ai_tone, ai_chat_lang').eq('client_id', clientId).maybeSingle(),
     coachId
       ? db.from('coach_profiles').select('ai_tone').eq('coach_id', coachId).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -159,6 +160,17 @@ export async function buildSystemPrompt(clientId: string): Promise<string> {
     bienveillant: 'Ton bienveillant et direct. Encourageant sans flatterie.',
     motivant: 'Ton motivant et énergique. Pas de flatterie creuse.',
     neutre: 'Ton neutre et factuel. Sobre.',
+  }
+
+  // ── Chat language ─────────────────────────────────────
+  const perClientSettings = perClientToneResult.status === 'fulfilled' ? (perClientToneResult.value as any)?.data : null
+  const coachLangOverride = perClientSettings?.ai_chat_lang as 'fr' | 'es' | 'en' | null ?? null
+  const chatLang: 'fr' | 'es' | 'en' = coachLangOverride ?? clientDisplayLang
+
+  const LANG_DIRECTIVE: Record<'fr' | 'es' | 'en', string> = {
+    fr: "Tu réponds TOUJOURS en français, quelle que soit la langue utilisée par le client.",
+    es: "Respondes SIEMPRE en español, sin importar el idioma que use el cliente.",
+    en: "You ALWAYS reply in English, regardless of the language used by the client.",
   }
 
   // ── Coach identity ─────────────────────────────────────────────────────────
@@ -418,5 +430,7 @@ SIGNAUX CLIENT (pour ta compréhension, ne répète pas tout bêtement) :
 
 ${checkinMatinSentences}
 ${checkinSoirSentences}
+
+${LANG_DIRECTIVE[chatLang]}
 `
 }
