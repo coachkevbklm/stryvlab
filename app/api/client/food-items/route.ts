@@ -1,13 +1,87 @@
+
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
+import { recommendFoodCategory } from "@/lib/nutrition/food-profile"
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .trim()
+}
+
+function scoreFoodSearchMatch(name: string, normalizedQuery: string): number | null {
+  if (!normalizedQuery) return 0
+
+  const normalizedName = normalizeSearchText(name)
+  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean)
+  const nameTokens = normalizedName.split(/[\s'’()-]+/).filter(Boolean)
+
+  if (normalizedName === normalizedQuery) return 0
+  if (normalizedName.startsWith(normalizedQuery)) return 1
+  if (nameTokens.some(token => token.startsWith(normalizedQuery))) return 2
+
+  if (queryTokens.length > 1) {
+    const allTokensStartWords = queryTokens.every(queryToken =>
+      nameTokens.some(nameToken => nameToken.startsWith(queryToken))
+    )
+    if (allTokensStartWords) return 3
+  }
+
+  return null
+}
 
 function service() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+}
+
+function resolveLocalizedName(
+  item: { name_fr: string; food_item_translations?: Array<{ lang: string; name: string }> | null },
+  lang: "fr" | "en" | "es"
+): string {
+  if (lang === "fr") return item.name_fr
+  return item.food_item_translations?.find(t => t.lang === lang)?.name ?? item.name_fr
+}
+
+function normalizeFoodCategoryInput(input: {
+  id?: string
+  name_fr: string
+  category_l1: "proteins" | "carbs" | "vegetables" | "fruits" | "fats" | "drinks" | "extras"
+  category_l2?: string | null
+  kcal_per_100g: number
+  protein_per_100g: number
+  carbs_per_100g: number
+  fat_per_100g: number
+  fiber_per_100g: number
+}) {
+  const recommended = recommendFoodCategory({
+    id: input.id ?? "temp",
+    name_fr: input.name_fr,
+    category_l1: input.category_l1,
+    category_l2: input.category_l2 ?? null,
+    item_key: "temp",
+    kcal_per_100g: input.kcal_per_100g,
+    protein_per_100g: input.protein_per_100g,
+    carbs_per_100g: input.carbs_per_100g,
+    fat_per_100g: input.fat_per_100g,
+    fiber_per_100g: input.fiber_per_100g,
+    source: "user",
+    is_verified: false,
+  })
+
+  return {
+    ...input,
+    category_l1: recommended,
+  }
 }
 
 async function resolveClientId(userId: string): Promise<string | null> {
@@ -21,46 +95,105 @@ async function resolveClientId(userId: string): Promise<string | null> {
 
 // GET /api/client/food-items?category=proteins&subcategory=viandes&q=poulet&limit=50&mine=true
 export async function GET(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const category = searchParams.get("category")
   const subcategory = searchParams.get("subcategory")
   const q = searchParams.get("q")?.trim()
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100)
+  const normalizedQuery = q ? normalizeSearchText(q) : ""
+  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 300)
   const mineOnly = searchParams.get("mine") === "true"
+  const lang = (searchParams.get("lang") ?? req.headers.get("x-client-lang") ?? "fr") as "fr" | "en" | "es"
 
   const db = service()
+  const clientId = await resolveClientId(user.id)
+  if (!clientId) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
-  // For "mine" filter, need clientId
-  let clientId: string | null = null
-  if (mineOnly) {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    clientId = await resolveClientId(user.id)
-  }
+  const allowedScopeClause = `and(source.eq.internal,is_verified.eq.true),client_id.eq.${clientId}`
+
+  const fetchLimit = q
+    ? 5000
+    : category
+      ? 1000
+      : limit
 
   let query = db
     .from("food_items")
-    .select("id, name_fr, category_l1, category_l2, item_key, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g, source, client_id")
+    .select(`
+      id, name_fr, category_l1, category_l2, item_key,
+      kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g,
+      source, client_id,
+      food_item_translations!food_item_translations_food_item_id_fkey(lang, name)
+    `)
     .order("name_fr")
-    .limit(limit)
+    .limit(fetchLimit)
 
-  if (mineOnly && clientId) {
+  if (mineOnly) {
     query = query.eq("client_id", clientId)
   } else {
-    // Default: internal + user's own custom items
-    // is_verified filter only on internal items
-    if (!q) query = query.eq("is_verified", true)
+    query = query.or(allowedScopeClause)
   }
 
   if (category) query = query.eq("category_l1", category)
   if (subcategory) query = query.eq("category_l2", subcategory)
-  if (q) query = query.ilike("name_fr", `%${q}%`)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ data: data ?? [], total: data?.length ?? 0 })
+  const scopedItems = (data ?? []) as Array<{
+    id: string
+    name_fr: string
+    category_l1: string
+    category_l2: string | null
+    item_key: string
+    kcal_per_100g: number
+    protein_per_100g: number
+    carbs_per_100g: number
+    fat_per_100g: number
+    fiber_per_100g: number
+    source: string
+    client_id: string | null
+  }>
+
+  const filteredItems = normalizedQuery
+    ? scopedItems
+        .map((item) => ({
+          item,
+          score: scoreFoodSearchMatch(item.name_fr, normalizedQuery),
+        }))
+        .filter((entry): entry is { item: (typeof scopedItems)[number]; score: number } => entry.score !== null)
+        .sort((a, b) => {
+          if (a.score !== b.score) return a.score - b.score
+          return a.item.name_fr.localeCompare(b.item.name_fr, "fr", { sensitivity: "base" })
+        })
+        .map(entry => entry.item)
+        .slice(0, limit)
+    : scopedItems.slice(0, fetchLimit)
+
+  return NextResponse.json({
+    data: filteredItems.map((item) => ({
+      id: item.id,
+      name_fr: item.name_fr,
+      name: resolveLocalizedName(item, lang),
+      category_l1: recommendFoodCategory({
+        ...item,
+        is_verified: item.source === "internal",
+      }),
+      category_l2: item.category_l2,
+      item_key: item.item_key,
+      kcal_per_100g: item.kcal_per_100g,
+      protein_per_100g: item.protein_per_100g,
+      carbs_per_100g: item.carbs_per_100g,
+      fat_per_100g: item.fat_per_100g,
+      fiber_per_100g: item.fiber_per_100g,
+      source: item.source,
+      client_id: item.client_id,
+    })),
+    total: filteredItems.length,
+  })
 }
 
 const createCustomSchema = z.object({
@@ -72,6 +205,10 @@ const createCustomSchema = z.object({
   carbs_per_100g: z.number().min(0).max(100),
   fat_per_100g: z.number().min(0).max(100),
   fiber_per_100g: z.number().min(0).max(100).default(0),
+})
+
+const updateCustomSchema = createCustomSchema.extend({
+  id: z.string().uuid(),
 })
 
 // POST /api/client/food-items — créer un aliment personnalisé
@@ -86,7 +223,8 @@ export async function POST(req: NextRequest) {
   const body = createCustomSchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-  const { name_fr, category_l1, category_l2, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g } = body.data
+  const normalized = normalizeFoodCategoryInput(body.data)
+  const { name_fr, category_l1, category_l2, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g } = normalized
 
   // Slug stable : nom normalisé + client_id suffix pour éviter les conflits
   const slug = name_fr
@@ -123,6 +261,53 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ data }, { status: 201 })
+}
+
+// PATCH /api/client/food-items — modifier un aliment personnalisé
+export async function PATCH(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const clientId = await resolveClientId(user.id)
+  if (!clientId) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+
+  const body = updateCustomSchema.safeParse(await req.json())
+  if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
+
+  const normalized = normalizeFoodCategoryInput(body.data)
+  const { id, name_fr, category_l1, category_l2, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g } = normalized
+
+  const { data: existing, error: fetchError } = await service()
+    .from("food_items")
+    .select("id")
+    .eq("id", id)
+    .eq("client_id", clientId)
+    .maybeSingle()
+
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+  if (!existing) return NextResponse.json({ error: "Food item not found" }, { status: 404 })
+
+  const { data, error } = await service()
+    .from("food_items")
+    .update({
+      name_fr: name_fr.trim(),
+      category_l1,
+      category_l2: category_l2 ?? null,
+      kcal_per_100g,
+      protein_per_100g,
+      carbs_per_100g,
+      fat_per_100g,
+      fiber_per_100g,
+    })
+    .eq("id", id)
+    .eq("client_id", clientId)
+    .select("id, name_fr, category_l1, category_l2, item_key, kcal_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, fiber_per_100g")
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ data }, { status: 200 })
 }
 
 // DELETE /api/client/food-items?id=xxx — supprimer un aliment personnalisé
