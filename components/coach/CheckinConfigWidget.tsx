@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarCheck, Loader2, Moon, Sunrise } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, CalendarCheck, Flame, Loader2, Moon, Sunrise } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFieldsForFlow } from "@/lib/client/checkin/fieldRegistry";
 import { canonicalizeFields } from "@/lib/client/checkin/legacyFieldMap";
@@ -29,6 +30,7 @@ export default function CheckinConfigWidget({ clientId }: { clientId: string }) 
   const [isActive, setIsActive] = useState(false);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
   const [moments, setMoments] = useState<Moment[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`/api/clients/${clientId}/checkin-config`)
@@ -209,6 +211,92 @@ export default function CheckinConfigWidget({ clientId }: { clientId: string }) 
           <MomentBlock flow="evening" Icon={Moon} title="Soir" />
         </div>
       )}
+
+      {isActive && (
+        <div className="mt-3 pt-3 border-t border-white/[0.05] space-y-3">
+          <CheckinPreview clientId={clientId} />
+          <button
+            type="button"
+            onClick={() => router.push(`/coach/clients/${clientId}/data/checkins`)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border-[0.3px] border-white/[0.06] bg-white/[0.02] py-2 text-[11px] font-semibold text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white"
+          >
+            Voir le détail
+            <ArrowRight size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CheckinPreview({ clientId }: { clientId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<{
+    response_rate: number | null;
+    streak: Record<string, unknown> | null;
+    heatmap: Record<string, { morning?: boolean; evening?: boolean; late?: boolean }>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/clients/${clientId}/checkin-summary?days=7`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (!cancelled) {
+          setData(d);
+          setLoading(false);
+        }
+      })
+      .catch(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
+
+  if (loading) return <Skeleton className="h-12 w-full rounded-xl" />;
+  if (!data) return null;
+
+  const last7: string[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    last7.push(d.toISOString().slice(0, 10));
+  }
+  const streak = Number(
+    (data.streak?.current_streak ?? data.streak?.current ?? data.streak?.streak ?? 0) as number,
+  ) || 0;
+
+  return (
+    <div className="rounded-xl bg-[#0a0a0a] border-[0.3px] border-white/[0.06] p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Aperçu 7 jours</p>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-[10px] text-white/50">
+            <Flame size={11} className="text-[#1f8a65]" />
+            {streak}j
+          </span>
+          <span className="text-[10px] text-white/50">
+            {data.response_rate != null ? `${data.response_rate}%` : "—"}
+          </span>
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        {last7.map((date) => {
+          const cell = data.heatmap?.[date];
+          const responded = cell && (cell.morning || cell.evening);
+          const late = cell?.late;
+          return (
+            <div
+              key={date}
+              title={date}
+              className={`h-6 flex-1 rounded-md ${
+                responded && !late ? "bg-[#1f8a65]/60" : late ? "bg-amber-500/50" : "bg-white/[0.05]"
+              }`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
