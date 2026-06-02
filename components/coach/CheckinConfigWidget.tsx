@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarCheck, Flame, Loader2, Moon, Sunrise } from "lucide-react";
+import { ArrowRight, CalendarCheck, ChevronDown, Flame, Loader2, Moon, Sunrise } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFieldsForFlow } from "@/lib/client/checkin/fieldRegistry";
 import { canonicalizeFields } from "@/lib/client/checkin/legacyFieldMap";
@@ -30,6 +30,7 @@ export default function CheckinConfigWidget({ clientId }: { clientId: string }) 
   const [isActive, setIsActive] = useState(false);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
   const [moments, setMoments] = useState<Moment[]>([]);
+  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -161,13 +162,15 @@ export default function CheckinConfigWidget({ clientId }: { clientId: string }) 
   return (
     <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 flex-1 text-left">
           <CalendarCheck size={14} className="text-[#1f8a65]" />
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Check-in quotidien</p>
-        </div>
+          <ChevronDown size={13} className={`text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
         {saving && <Loader2 size={12} className="animate-spin text-white/40" />}
       </div>
 
+      {open && (<>
       {error && <p className="text-[11px] text-red-400 mb-3">{error}</p>}
 
       <div className="flex items-start justify-between gap-4 mb-4">
@@ -211,6 +214,7 @@ export default function CheckinConfigWidget({ clientId }: { clientId: string }) 
           <MomentBlock flow="evening" Icon={Moon} title="Soir" />
         </div>
       )}
+      </>)}
 
       {isActive && (
         <div className="mt-3 pt-3 border-t border-white/[0.05] space-y-3">

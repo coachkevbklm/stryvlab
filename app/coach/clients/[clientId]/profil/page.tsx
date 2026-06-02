@@ -179,6 +179,7 @@ export default function ProfilPage() {
   const [accessStatus, setAccessStatus] = useState(client.status ?? "inactive");
   useEffect(() => { setAccessStatus(client.status ?? "inactive"); }, [client.status]);
   const needsInvite = accessStatus !== "active" && accessStatus !== "suspended";
+  const [phaseOpen, setPhaseOpen] = useState(false);
   const scrollToAccess = useCallback(() => {
     accessSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
@@ -423,36 +424,46 @@ export default function ProfilPage() {
             <TransformationScoreWidget clientId={clientId} />
 
             <Card>
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Phase actuelle</SectionLabel>
-                <div className="flex items-center gap-2 -mt-3">
-                  <button
-                    onClick={() =>
-                      setSportDraft((draft) => ({
-                        ...draft,
-                        transformation_phase: client.transformation_phase ?? "",
-                      }))
-                    }
-                    disabled={!phaseDirty || savingPhase}
-                    className="text-[11px] text-white/40 hover:text-white transition-colors disabled:opacity-30"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={saveTransformationPhase}
-                    disabled={!phaseDirty || savingPhase}
-                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                  >
-                    {savingPhase ? (
-                      <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                      <Save size={11} />
-                    )}
-                    Enregistrer
-                  </button>
-                </div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setPhaseOpen((o) => !o)}
+                  className="flex items-center gap-2 flex-1 text-left"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Phase actuelle</span>
+                  <ChevronDown size={13} className={`text-white/30 transition-transform ${phaseOpen ? "rotate-180" : ""}`} />
+                </button>
+                {phaseOpen && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setSportDraft((draft) => ({
+                          ...draft,
+                          transformation_phase: client.transformation_phase ?? "",
+                        }))
+                      }
+                      disabled={!phaseDirty || savingPhase}
+                      className="text-[11px] text-white/40 hover:text-white transition-colors disabled:opacity-30"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={saveTransformationPhase}
+                      disabled={!phaseDirty || savingPhase}
+                      className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {savingPhase ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : (
+                        <Save size={11} />
+                      )}
+                      Enregistrer
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {phaseOpen && (<>
               {saveErrorPhase && (
                 <p className="text-[11px] text-red-400/80 mb-3">
                   {saveErrorPhase}
@@ -497,6 +508,7 @@ export default function ProfilPage() {
                   );
                 })}
               </div>
+              </>)}
 
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { ElementType } from "react";
-import { Brain, Loader2, Moon, Sunrise } from "lucide-react";
+import { Brain, ChevronDown, Loader2, Moon, Sunrise } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type CoachingFreedom = "none" | "safe" | "extended";
@@ -28,6 +28,7 @@ export default function AiCoachSettingsWidget({ clientId }: { clientId: string }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/clients/${clientId}/ai-settings`)
@@ -123,15 +124,17 @@ export default function AiCoachSettingsWidget({ clientId }: { clientId: string }
   return (
     <div className="bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 flex-1 text-left">
           <Brain size={14} className="text-[#1f8a65]" />
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
             IA Coach
           </p>
-        </div>
+          <ChevronDown size={13} className={`text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
         {saving && <Loader2 size={12} className="animate-spin text-white/40" />}
       </div>
 
+      {open && (<>
       {error && <p className="text-[11px] text-red-400 mb-3">{error}</p>}
 
       {!globalAiEnabled && (
@@ -242,6 +245,7 @@ export default function AiCoachSettingsWidget({ clientId }: { clientId: string }
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 }
