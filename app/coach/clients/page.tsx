@@ -21,13 +21,19 @@ import {
   List,
   Tag,
   CreditCard,
+  ArrowRight,
   TrendingUp,
   ChevronDown,
   BarChart3,
+  MessageSquareWarning,
 } from "lucide-react";
 import { useDockActions } from "@/components/layout/NavDock";
 import { useDock } from "@/components/layout/DockContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getTransformationPhaseLabel,
+  TRANSFORMATION_PHASE_OPTIONS,
+} from "@/lib/coach/transformationPhase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,6 +54,7 @@ type Client = {
   goal: string | null;
   notes: string | null;
   status: "active" | "inactive" | "archived";
+  transformation_phase: string | null;
   training_goal: string | null;
   fitness_level: string | null;
   created_at: string;
@@ -60,15 +67,10 @@ type Client = {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const TRAINING_GOALS = [
-  { value: "hypertrophy", label: "Hypertrophie" },
-  { value: "strength", label: "Force" },
-  { value: "fat_loss", label: "Perte de gras" },
-  { value: "endurance", label: "Endurance" },
-  { value: "recomp", label: "Recomposition" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "athletic", label: "Athletic" },
-];
+const TRANSFORMATION_PHASE_FILTERS = TRANSFORMATION_PHASE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+}));
 const GOAL_LABELS: Record<string, string> = {
   hypertrophy: "Hypertrophie",
   strength: "Force",
@@ -120,6 +122,10 @@ function getInitials(c: Client) {
   return `${c.first_name[0] ?? ""}${c.last_name[0] ?? ""}`.toUpperCase();
 }
 
+function getPhaseText(client: Client) {
+  return getTransformationPhaseLabel(client.transformation_phase);
+}
+
 function avatarColor(id: string) {
   const colors = [
     "#6366f1",
@@ -143,6 +149,7 @@ export default function CoachClientsPage() {
 
   const [clients, setClients] = useState<Client[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [pendingNotifs, setPendingNotifs] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
@@ -158,7 +165,7 @@ export default function CoachClientsPage() {
   // Filters
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterGoal, setFilterGoal] = useState<string>("all");
+  const [filterPhase, setFilterPhase] = useState<string>("all");
   const [filterTag, setFilterTag] = useState<string>("all");
   const [filterSub, setFilterSub] = useState<string>("all"); // 'all' | 'with_sub' | 'no_sub'
   const [showFilters, setShowFilters] = useState(false);
@@ -176,16 +183,20 @@ export default function CoachClientsPage() {
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
-    const [clientsRes, tagsRes] = await Promise.all([
+    const [clientsRes, tagsRes, notifsRes] = await Promise.all([
       fetch("/api/clients"),
       fetch("/api/tags"),
+      fetch("/api/coach/inbox?summary=true"),
     ]);
 
     const clientsData = clientsRes.ok
       ? await clientsRes.json()
       : { clients: [] };
     const tagsData = tagsRes.ok ? await tagsRes.json() : { tags: [] };
+    const notifsData = notifsRes.ok ? await notifsRes.json() : { pending: {} };
+    
     setAllTags(tagsData.tags ?? []);
+    setPendingNotifs(notifsData.pending ?? {});
 
     const baseClients: Client[] = clientsData.clients ?? [];
 
@@ -226,7 +237,7 @@ export default function CoachClientsPage() {
     )
       return false;
     if (filterStatus !== "all" && c.status !== filterStatus) return false;
-    if (filterGoal !== "all" && c.training_goal !== filterGoal) return false;
+    if (filterPhase !== "all" && c.transformation_phase !== filterPhase) return false;
     if (filterTag !== "all" && !c.tags?.some((t) => t.id === filterTag))
       return false;
     if (
@@ -250,6 +261,7 @@ export default function CoachClientsPage() {
     withSub: clients.filter((c) =>
       c.subscriptions?.some((s) => s.status === "active"),
     ).length,
+    pending: Object.values(pendingNotifs).reduce((a, b) => a + b, 0),
   };
 
   // ── Form ───────────────────────────────────────────────────────────────────
@@ -299,7 +311,7 @@ export default function CoachClientsPage() {
 
   const activeFiltersCount = [
     filterStatus !== "all",
-    filterGoal !== "all",
+    filterPhase !== "all",
     filterTag !== "all",
     filterSub !== "all",
   ].filter(Boolean).length;
@@ -311,7 +323,7 @@ export default function CoachClientsPage() {
       <div className="p-6 max-w-[1200px] mx-auto">
         {/* STATS STRIP */}
         <div
-          className={`grid grid-cols-3 gap-4 mb-6 transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          className={`grid grid-cols-4 gap-4 mb-6 transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         >
           {[
             {
@@ -331,6 +343,12 @@ export default function CoachClientsPage() {
               label: "Avec formule",
               value: stats.withSub,
               accent: false,
+            },
+            {
+              icon: MessageSquareWarning,
+              label: "En attente",
+              value: stats.pending,
+              accent: stats.pending > 0,
             },
           ].map(({ icon: Icon, label, value, accent }) => (
             <div
@@ -438,12 +456,12 @@ export default function CoachClientsPage() {
                     ],
                   },
                   {
-                    label: "Objectif",
-                    value: filterGoal,
-                    onChange: setFilterGoal,
+                    label: "Phase",
+                    value: filterPhase,
+                    onChange: setFilterPhase,
                     options: [
                       ["all", "Tous"],
-                      ...TRAINING_GOALS.map((g) => [g.value, g.label]),
+                      ...TRANSFORMATION_PHASE_FILTERS.map((phase) => [phase.value, phase.label]),
                     ],
                   },
                   {
@@ -553,6 +571,7 @@ export default function CoachClientsPage() {
                 key={client.id}
                 client={client}
                 index={i}
+                pendingCount={pendingNotifs[client.id] || 0}
                 onClick={() => {
                   openClient({ id: client.id, firstName: client.first_name, lastName: client.last_name });
                   router.push(`/coach/clients/${client.id}`);
@@ -572,7 +591,7 @@ export default function CoachClientsPage() {
                     Contact
                   </th>
                   <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 hidden lg:table-cell">
-                    Objectif / Niveau
+                    Phase / objectif / niveau
                   </th>
                   <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
                     Formule
@@ -592,6 +611,7 @@ export default function CoachClientsPage() {
                     key={client.id}
                     client={client}
                     index={i}
+                    pendingCount={pendingNotifs[client.id] || 0}
                     onClick={() => {
                       openClient({ id: client.id, firstName: client.first_name, lastName: client.last_name });
                       router.push(`/coach/clients/${client.id}`);
@@ -612,7 +632,7 @@ export default function CoachClientsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-md z-50"
+              className="fixed inset-0 bg-black/40 backdrop-blur-md z-[70]"
               onClick={() => !submitting && setShowModal(false)}
             />
             <motion.div
@@ -620,7 +640,7 @@ export default function CoachClientsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-[#181818] border-subtle rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
@@ -816,15 +836,18 @@ export default function CoachClientsPage() {
 function ClientCard({
   client,
   index,
+  pendingCount,
   onClick,
 }: {
   client: Client;
   index: number;
+  pendingCount?: number;
   onClick: () => void;
 }) {
   const activeSub = client.subscriptions?.find((s) => s.status === "active");
   const color = avatarColor(client.id);
   const statusCfg = STATUS_CONFIG[client.status] ?? STATUS_CONFIG.active;
+  const phaseText = getPhaseText(client);
   const [entering, setEntering] = useState(false);
 
   function handleClick() {
@@ -852,20 +875,27 @@ function ClientCard({
     >
       {/* Avatar + name + status */}
       <div className="flex items-start gap-3 mb-4">
-        {client.profile_photo_url ? (
-          <img
-            src={client.profile_photo_url}
-            alt={`${client.first_name} ${client.last_name}`}
-            className="w-11 h-11 rounded-xl object-cover shrink-0"
-          />
-        ) : (
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
-            style={{ backgroundColor: color }}
-          >
-            {getInitials(client)}
-          </div>
-        )}
+        <div className="relative">
+          {client.profile_photo_url ? (
+            <img
+              src={client.profile_photo_url}
+              alt={`${client.first_name} ${client.last_name}`}
+              className="w-11 h-11 rounded-xl object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+              style={{ backgroundColor: color }}
+            >
+              {getInitials(client)}
+            </div>
+          )}
+          {!!pendingCount && pendingCount > 0 && (
+            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-[#181818]">
+              {pendingCount}
+            </div>
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-white text-sm truncate">
             {client.first_name} {client.last_name}
@@ -876,6 +906,12 @@ function ClientCard({
             >
               {statusCfg.label}
             </span>
+            {phaseText && (
+              <span className="text-[10px] text-[#7fe0b8] font-semibold">
+                {phaseText}
+              </span>
+            )}
+            {phaseText && client.training_goal && <span className="text-white/15">·</span>}
             {client.training_goal && (
               <span className="text-[10px] text-white/35 font-medium">
                 {GOAL_LABELS[client.training_goal] ?? client.training_goal}
@@ -952,6 +988,15 @@ function ClientCard({
           {new Date(client.created_at).toLocaleDateString("fr-FR")}
         </p>
       </div>
+
+      {client.status === "inactive" && (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#1f8a65]/15 border border-[#1f8a65]/30 px-3 py-2">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#7fe2bf]">
+            <Mail size={12} /> Accès STRYVR à envoyer
+          </span>
+          <ArrowRight size={13} className="text-[#7fe2bf]" />
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -959,16 +1004,19 @@ function ClientCard({
 function ClientRow({
   client,
   index,
+  pendingCount,
   onClick,
 }: {
   client: Client;
   index: number;
+  pendingCount?: number;
   onClick: () => void;
 }) {
   const activeSubs =
     client.subscriptions?.filter((s) => s.status === "active") ?? [];
   const color = avatarColor(client.id);
   const statusCfg = STATUS_CONFIG[client.status] ?? STATUS_CONFIG.active;
+  const phaseText = getPhaseText(client);
   const [entering, setEntering] = useState(false);
 
   function handleClick() {
@@ -987,20 +1035,27 @@ function ClientRow({
     >
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
-          {client.profile_photo_url ? (
-            <img
-              src={client.profile_photo_url}
-              alt={`${client.first_name} ${client.last_name}`}
-              className="w-8 h-8 rounded-lg object-cover shrink-0"
-            />
-          ) : (
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs shrink-0"
-              style={{ backgroundColor: color }}
-            >
-              {getInitials(client)}
-            </div>
-          )}
+          <div className="relative">
+            {client.profile_photo_url ? (
+              <img
+                src={client.profile_photo_url}
+                alt={`${client.first_name} ${client.last_name}`}
+                className="w-8 h-8 rounded-lg object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs shrink-0"
+                style={{ backgroundColor: color }}
+              >
+                {getInitials(client)}
+              </div>
+            )}
+            {!!pendingCount && pendingCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center border-[1.5px] border-[#181818]">
+                {pendingCount > 1 ? pendingCount : ""}
+              </div>
+            )}
+          </div>
           <span className="font-semibold text-white text-sm">
             {client.first_name} {client.last_name}
           </span>
@@ -1020,6 +1075,11 @@ function ClientRow({
       </td>
       <td className="px-4 py-3 hidden lg:table-cell">
         <div className="space-y-0.5">
+          {phaseText && (
+            <p className="text-xs text-[#7fe0b8] font-semibold">
+              {phaseText}
+            </p>
+          )}
           {client.training_goal && (
             <p className="text-xs text-white font-medium">
               {GOAL_LABELS[client.training_goal]}

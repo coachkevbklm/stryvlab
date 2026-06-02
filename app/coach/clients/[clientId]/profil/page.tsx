@@ -1,7 +1,7 @@
 // app/coach/clients/[clientId]/profil/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import ClientAccessToken from "@/components/clients/ClientAccessToken";
@@ -139,8 +139,29 @@ type TagObj = { id: string; name: string; color: string };
 
 export default function ProfilPage() {
   const { client, clientId, refetch } = useClient();
-  useClientTopBar("Profil");
   const router = useRouter();
+
+  // ── Access onboarding cue: new client (not yet active/suspended) needs an invite ──
+  const accessSectionRef = useRef<HTMLDivElement>(null);
+  const [accessStatus, setAccessStatus] = useState(client.status ?? "inactive");
+  useEffect(() => { setAccessStatus(client.status ?? "inactive"); }, [client.status]);
+  const needsInvite = accessStatus !== "active" && accessStatus !== "suspended";
+  const scrollToAccess = useCallback(() => {
+    accessSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
+  useClientTopBar(
+    "Profil",
+    needsInvite ? (
+      <button
+        type="button"
+        onClick={scrollToAccess}
+        className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+      >
+        <Mail size={12} /> Envoyer l'accès
+      </button>
+    ) : undefined,
+  );
 
   // Sport profile editing
   const [editingSport, setEditingSport] = useState(false);
@@ -733,14 +754,29 @@ export default function ProfilPage() {
             <PhaseOptimizationWidget clientId={clientId} />
 
             {/* Accès client */}
-            <Card>
-              <SectionLabel>Accès client</SectionLabel>
-              <ClientAccessToken
-                clientId={clientId}
-                clientStatus={client.status ?? "inactive"}
-                clientEmail={client.email ?? null}
-              />
-            </Card>
+            <div
+              ref={accessSectionRef}
+              className={`rounded-2xl transition-[box-shadow,border-color] ${
+                needsInvite ? "ring-1 ring-[#1f8a65]/50 rounded-2xl" : ""
+              }`}
+            >
+              <Card>
+                <div className="flex items-center justify-between mb-1">
+                  <SectionLabel>Accès client</SectionLabel>
+                  {needsInvite && (
+                    <span className="flex items-center gap-1 rounded-full bg-[#1f8a65]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7fe2bf]">
+                      Action requise
+                    </span>
+                  )}
+                </div>
+                <ClientAccessToken
+                  clientId={clientId}
+                  clientStatus={client.status ?? "inactive"}
+                  clientEmail={client.email ?? null}
+                  onStatusChange={setAccessStatus}
+                />
+              </Card>
+            </div>
 
             {/* Formules & abonnement */}
             <Card>

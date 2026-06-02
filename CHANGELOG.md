@@ -4,6 +4,7 @@
 
 ## 2026-06-02
 
+FEATURE: onboarding nouveau client (P1) — CTA vert "Envoyer l'accès" dans la top-bar du profil (scroll+highlight section Accès) + ring/badge "Action requise" sur la section Accès quand non invité (status synchro via callback) + bandeau vert "Accès STRYVR à envoyer" sur la carte client (page Coach Clients)
 FIX: check-in PWA/chat (checkin/route) émet checkin/streak.evaluate (streak + points) — le streak restait à 0 car seul checkin/respond l'émettait
 FEATURE: CheckinHub — page check-in coach (data/checkins) refondue niveau Data Performance (Skeleton, période 30/60/90j, stat tiles, heatmap régularité, moyennes ressenti, historique drill-down, empty states)
 FEATURE: profil CheckinConfigWidget — mini-aperçu 7 jours (strip matin/soir + streak + taux) + bouton "Voir le détail →" vers data/checkins

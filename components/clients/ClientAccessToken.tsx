@@ -12,13 +12,20 @@ interface Props {
   clientId: string;
   clientStatus: string;
   clientEmail: string | null;
+  /** Notifies the parent when access status changes (keeps top-bar CTA / border in sync). */
+  onStatusChange?: (status: string) => void;
 }
 
 type Template = { id: string; name: string };
 
-export default function ClientAccessToken({ clientId, clientStatus, clientEmail }: Props) {
+export default function ClientAccessToken({ clientId, clientStatus, clientEmail, onStatusChange }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(clientStatus);
+
+  function updateStatus(next: string) {
+    setStatus(next);
+    onStatusChange?.(next);
+  }
   const [inviting, setInviting] = useState(false);
   const [invited, setInvited] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -50,7 +57,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
       setError(d.error ?? "Erreur lors de l'envoi.");
     } else {
       setInvited(true);
-      setStatus("active");
+      updateStatus("active");
       setTimeout(() => setInvited(false), 4000);
     }
     setInviting(false);
@@ -61,7 +68,7 @@ export default function ClientAccessToken({ clientId, clientStatus, clientEmail 
     setError(null);
     const res = await fetch(`/api/clients/${clientId}/access`, { method: "DELETE" });
     if (res.ok) {
-      setStatus("suspended");
+      updateStatus("suspended");
     } else {
       const d = await res.json();
       setError(d.error ?? "Erreur lors de la révocation.");
