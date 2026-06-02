@@ -9,6 +9,7 @@ import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { shouldProactiveInitNow } from '@/lib/client/checkin/checkinEngine'
 import { resolveClientTimezone, buildCheckinReadyMetadata } from '@/lib/client/checkin/resolveClientTimezone'
 import { findExistingInitMessageForDate } from '@/lib/client/checkin/initMessages'
+import { isCheckinMomentConfiguredToday } from '@/lib/inngest/chatCheckinInitCron'
 import {
   addDaysToDateKey,
   computePhysiologicalDateInTimezone,
@@ -125,7 +126,7 @@ async function ensureAutomatedChatMessages(
     coachIdForTone
       ? db.from('coach_profiles').select('ai_tone').eq('coach_id', coachIdForTone).maybeSingle()
       : Promise.resolve({ data: null }),
-    db.from('daily_checkin_configs').select('moments').eq('client_id', clientId).maybeSingle(),
+    db.from('daily_checkin_configs').select('client_id, is_active, days_of_week, moments').eq('client_id', clientId).maybeSingle(),
   ])
   const perClientTone = (perClientAi as { ai_tone?: string | null } | null)?.ai_tone ?? null
   const globalTone = (coachProfileTone as { ai_tone?: string | null } | null)?.ai_tone ?? null
@@ -144,6 +145,11 @@ async function ensureAutomatedChatMessages(
     // "Plus tard". Never regenerate or overwrite: the check-in stays reachable via the
     // top-bar button + unread badge. (Prevents the 1am re-nag that rewrote the message.)
     if (existing) continue
+
+    // Respect coach config: only prompt a check-in if this moment is active + configured
+    // for today (active flag, day of week, moment enabled). Aligns the on-demand path
+    // with the cron — never offer a check-in the coach hasn't enabled.
+    if (!isCheckinMomentConfiguredToday(cfgRow ?? undefined, flow, physioWeekday)) continue
 
     if (!shouldProactiveInitNow(now, timezone, flow, sessionRows)) continue
 
