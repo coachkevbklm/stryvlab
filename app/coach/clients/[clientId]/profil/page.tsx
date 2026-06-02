@@ -731,17 +731,6 @@ export default function ProfilPage() {
               <RestrictionsWidget clientId={clientId} section="equipment" />
             </Card>
 
-            {/* Zone dangereuse */}
-            <div className="bg-red-950/20 border-[0.3px] border-red-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400/60">Zone dangereuse</p>
-              <button
-                onClick={() => setShowDelete(true)}
-                className="text-[12px] text-red-400/60 hover:text-red-400 transition-colors font-medium"
-              >
-                Supprimer ou archiver →
-              </button>
-            </div>
-
             {/* Paramètres IA Coach */}
             <AiCoachSettingsWidget clientId={clientId} />
 
@@ -875,6 +864,17 @@ export default function ProfilPage() {
                 </div>
               )}
             </Card>
+
+            {/* Zone dangereuse — toujours tout en bas de la colonne droite */}
+            <div className="bg-red-950/20 border-[0.3px] border-red-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400/60">Zone dangereuse</p>
+              <button
+                onClick={() => setShowDelete(true)}
+                className="text-[12px] text-red-400/60 hover:text-red-400 transition-colors font-medium"
+              >
+                Supprimer ou archiver →
+              </button>
+            </div>
           </div>
         </div>
       </div>
