@@ -41,7 +41,7 @@ export async function GET(
 
   const { data: settings } = await db
     .from('coach_ai_settings_per_client')
-    .select('ai_llm_enabled, ai_tone, monthly_quota, ai_morning_routine_enabled, ai_evening_routine_enabled, coaching_freedom')
+    .select('ai_llm_enabled, ai_tone, monthly_quota, ai_morning_routine_enabled, ai_evening_routine_enabled, coaching_freedom, ai_chat_lang')
     .eq('coach_id', user.id)
     .eq('client_id', params.clientId)
     .maybeSingle()
@@ -56,6 +56,7 @@ export async function GET(
       ai_morning_routine_enabled: true,
       ai_evening_routine_enabled: true,
       coaching_freedom:     'safe',
+      ai_chat_lang:         null,
     }
   })
 }
@@ -67,6 +68,7 @@ const putSchema = z.object({
   ai_morning_routine_enabled: z.boolean().optional(),
   ai_evening_routine_enabled: z.boolean().optional(),
   coaching_freedom: z.enum(['none', 'safe', 'extended']).optional(),
+  ai_chat_lang: z.enum(['fr', 'es', 'en']).nullable().optional(),
 })
 
 // PUT /api/clients/[clientId]/ai-settings

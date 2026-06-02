@@ -14,6 +14,7 @@ type AiSettings = {
   ai_morning_routine_enabled: boolean;
   ai_evening_routine_enabled: boolean;
   coaching_freedom: CoachingFreedom;
+  ai_chat_lang: 'fr' | 'es' | 'en' | null;
 };
 
 const FREEDOM_OPTIONS: { value: CoachingFreedom; label: string; hint: string }[] = [
@@ -201,6 +202,42 @@ export default function AiCoachSettingsWidget({ clientId }: { clientId: string }
             </div>
             <p className="mt-1.5 text-[9px] leading-relaxed text-white/30">
               Ne touche jamais à la programmation. Gère uniquement le volume de tips lifestyle.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 mb-1.5">
+              Langue du chat IA
+            </label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {([
+                { value: null,  label: 'Auto',     hint: 'Langue du client' },
+                { value: 'fr',  label: 'Français', hint: 'Toujours FR' },
+                { value: 'es',  label: 'Español',  hint: 'Toujours ES' },
+                { value: 'en',  label: 'English',  hint: 'Toujours EN' },
+              ] as Array<{ value: 'fr' | 'es' | 'en' | null; label: string; hint: string }>).map((opt) => {
+                const active = (settings.ai_chat_lang ?? null) === opt.value
+                return (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => updateSettings({ ai_chat_lang: opt.value })}
+                    className={`rounded-xl border-[0.3px] px-2 py-2 text-left transition-colors ${
+                      active
+                        ? 'border-[#1f8a65]/40 bg-[#1f8a65]/[0.08]'
+                        : 'border-white/[0.06] bg-[#0a0a0a] hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <p className={`text-[11px] font-semibold ${active ? 'text-[#1f8a65]' : 'text-white/70'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="mt-0.5 text-[9px] leading-snug text-white/35">{opt.hint}</p>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1.5 text-[9px] leading-relaxed text-white/30">
+              "Auto" utilise la langue choisie par le client dans ses préférences.
             </p>
           </div>
 
