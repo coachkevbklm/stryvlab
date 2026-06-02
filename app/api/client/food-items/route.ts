@@ -174,24 +174,37 @@ export async function GET(req: NextRequest) {
     : scopedItems.slice(0, fetchLimit)
 
   return NextResponse.json({
-    data: filteredItems.map((item) => ({
-      id: item.id,
-      name_fr: item.name_fr,
-      name: resolveLocalizedName(item, lang),
-      category_l1: recommendFoodCategory({
-        ...item,
+    data: filteredItems.map((item) => {
+      const itemForRecommend = {
+        id: item.id,
+        name_fr: item.name_fr,
+        category_l1: item.category_l1,
+        category_l2: item.category_l2,
+        item_key: item.item_key,
+        kcal_per_100g: item.kcal_per_100g,
+        protein_per_100g: item.protein_per_100g,
+        carbs_per_100g: item.carbs_per_100g,
+        fat_per_100g: item.fat_per_100g,
+        fiber_per_100g: item.fiber_per_100g,
+        source: item.source,
         is_verified: item.source === "internal",
-      }),
-      category_l2: item.category_l2,
-      item_key: item.item_key,
-      kcal_per_100g: item.kcal_per_100g,
-      protein_per_100g: item.protein_per_100g,
-      carbs_per_100g: item.carbs_per_100g,
-      fat_per_100g: item.fat_per_100g,
-      fiber_per_100g: item.fiber_per_100g,
-      source: item.source,
-      client_id: item.client_id,
-    })),
+      }
+      return {
+        id: item.id,
+        name_fr: item.name_fr,
+        name: resolveLocalizedName(item, lang),
+        category_l1: recommendFoodCategory(itemForRecommend),
+        category_l2: item.category_l2,
+        item_key: item.item_key,
+        kcal_per_100g: item.kcal_per_100g,
+        protein_per_100g: item.protein_per_100g,
+        carbs_per_100g: item.carbs_per_100g,
+        fat_per_100g: item.fat_per_100g,
+        fiber_per_100g: item.fiber_per_100g,
+        source: item.source,
+        client_id: item.client_id,
+      }
+    }),
     total: filteredItems.length,
   })
 }
