@@ -59,7 +59,7 @@ export function buildRoutineMessage(input: RoutineMessageInput): {
         hasTrainingToday: Boolean(input.hasTrainingToday),
         trainingName: input.trainingName ?? null,
       })
-      : standaloneMorning(name, tone)
+      : standaloneMorning(name, tone, Boolean(input.hasTrainingToday), input.trainingName ?? null)
     return { content, metadata }
   }
 
@@ -71,7 +71,7 @@ export function buildRoutineMessage(input: RoutineMessageInput): {
       hasTrainingToday: Boolean(input.hasTrainingToday),
       trainingName: input.trainingName ?? null,
     })
-    : standaloneEvening(name, tone)
+    : standaloneEvening(name, tone, Boolean(input.hasTrainingToday), input.trainingName ?? null)
 
   const reminder = buildMorningPreparationReminder(
     getFieldsForFlow('morning').map((f) => f.key),
@@ -79,18 +79,32 @@ export function buildRoutineMessage(input: RoutineMessageInput): {
   return { content: `${eveningGreeting}\n\n${reminder}`, metadata }
 }
 
-function standaloneMorning(name: string, tone: ReturnType<typeof resolveTone>): string {
+function standaloneMorning(
+  name: string,
+  tone: ReturnType<typeof resolveTone>,
+  hasTrainingToday: boolean,
+  trainingName: string | null,
+): string {
   const greeting = composeMorningGreeting({
-    name, tone, enabledFields: [], hasTrainingToday: false, trainingName: null,
+    name, tone, enabledFields: [], hasTrainingToday, trainingName,
   })
-  // Drop the check-in CTA line for the no-checkin variant.
-  return greeting.replace('Prêt pour ton check-in du matin ?\n', '')
-    .replace('Prêt pour ton check-in du matin ?', 'Si tu as une question ou quelque chose à me signaler, écris-le ici.')
+  return greeting
+    .split('\n')
+    .map((line) => line === 'Prêt pour ton check-in du matin ?'
+      ? 'Si tu as une question ou quelque chose à me signaler, écris-le ici.'
+      : line)
+    .filter(Boolean)
+    .join('\n')
 }
 
-function standaloneEvening(name: string, tone: ReturnType<typeof resolveTone>): string {
+function standaloneEvening(
+  name: string,
+  tone: ReturnType<typeof resolveTone>,
+  hasTrainingToday: boolean,
+  trainingName: string | null,
+): string {
   const greeting = composeEveningGreeting({
-    name, tone, enabledEveningFields: [], hasTrainingToday: false, trainingName: null,
+    name, tone, enabledEveningFields: [], hasTrainingToday, trainingName,
   })
   return greeting.replace('Prêt pour ton check-in du soir ?', 'Si tu as un commentaire important pour aujourd’hui, laisse-le ici.')
 }

@@ -8,7 +8,7 @@ import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { shouldProactiveInitNow } from '@/lib/client/checkin/checkinEngine'
 import { resolveClientTimezone, buildCheckinReadyMetadata } from '@/lib/client/checkin/resolveClientTimezone'
-import { findExistingInitMessageForDate } from '@/lib/client/checkin/initMessages'
+import { findExistingInitMessageForDate, shouldUpgradeInitMessageToInteractiveCheckin } from '@/lib/client/checkin/initMessages'
 import { isCheckinMomentConfiguredToday } from '@/lib/inngest/chatCheckinInitCron'
 import {
   addDaysToDateKey,
@@ -140,6 +140,23 @@ async function ensureAutomatedChatMessages(
   for (const flow of ['morning', 'evening'] as const) {
     const messageType = flow === 'morning' ? 'morning_init' : 'evening_init'
     const existing = findExistingInitMessageForDate(initRows, messageType, timezone, today)
+    const isConfiguredToday = isCheckinMomentConfiguredToday(cfgRow ?? undefined, flow, physioWeekday)
+    const shouldPromptCheckin = isConfiguredToday && shouldProactiveInitNow(now, timezone, flow, sessionRows)
+
+    // Self-heal: if a same-day init already exists but was created as a routine-only
+    // message while a check-in is actually pending, upgrade it to the interactive
+    // check-in version instead of leaving the client stuck all day with no CTA.
+    if (existing && shouldUpgradeInitMessageToInteractiveCheckin(existing, shouldPromptCheckin)) {
+        const readyMeta = buildCheckinReadyMetadata(flow, firstName, {
+          hasTrainingToday: todaySessionList.length > 0,
+          trainingName: primarySessionName,
+        }, toneOpts(flow))
+        await db.from('chat_messages').update({
+          content: String(readyMeta.greeting),
+          metadata: readyMeta,
+        }).eq('id', existing.id)
+      continue
+    }
 
     // An init message already exists for this day → respect it, including a deferred
     // "Plus tard". Never regenerate or overwrite: the check-in stays reachable via the
@@ -149,9 +166,9 @@ async function ensureAutomatedChatMessages(
     // Respect coach config: only prompt a check-in if this moment is active + configured
     // for today (active flag, day of week, moment enabled). Aligns the on-demand path
     // with the cron — never offer a check-in the coach hasn't enabled.
-    if (!isCheckinMomentConfiguredToday(cfgRow ?? undefined, flow, physioWeekday)) continue
+    if (!isConfiguredToday) continue
 
-    if (!shouldProactiveInitNow(now, timezone, flow, sessionRows)) continue
+    if (!shouldPromptCheckin) continue
 
     const readyMeta = buildCheckinReadyMetadata(flow, firstName, {
       hasTrainingToday: todaySessionList.length > 0,

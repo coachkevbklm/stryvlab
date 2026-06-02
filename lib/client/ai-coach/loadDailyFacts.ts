@@ -5,6 +5,7 @@ import type { Freedom, AdviceTrend } from '@/lib/client/ai-coach/adviceRules'
 import { resolveProtocolDayByDate, resolveRestProtocolDay } from '@/lib/nutrition/protocol-schedule'
 import { fetchClientDayOverride } from '@/lib/client/day-kind'
 import { utcRangeForPhysiologicalDate, addDaysToDateKey, getLocalWeekday } from '@/lib/client/checkin/timeWindows'
+import { filterSessionsForJsWeekday } from '@/lib/client/plannedSessions'
 
 const OVER_KCAL = 200
 const PROTEIN_SHORT_RATIO = 0.8
@@ -52,7 +53,7 @@ export async function loadDailyCoachContext(
     db.from('meal_logs').select('estimated_macros').eq('client_id', clientId).gte('logged_at', start.toISOString()).lt('logged_at', new Date(end.getTime() + 1).toISOString()).eq('ai_status', 'done'),
     db.from('client_water_logs').select('amount_ml').eq('client_id', clientId).gte('logged_at', start.toISOString()).lte('logged_at', end.toISOString()),
     db.from('nutrition_protocols').select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, hydration_ml, name, carb_cycle_type), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)').eq('client_id', clientId).eq('status', 'shared').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    db.from('program_sessions').select('id, name, programs!inner(status, client_id)').eq('programs.client_id', clientId).eq('programs.status', 'active').eq('day_of_week', weekday),
+    db.from('program_sessions').select('id, name, day_of_week, days_of_week, programs!inner(status, client_id)').eq('programs.client_id', clientId).eq('programs.status', 'active'),
     db.from('client_session_logs').select('id').eq('client_id', clientId).not('completed_at', 'is', null).gte('completed_at', start.toISOString()).lte('completed_at', end.toISOString()).limit(1),
     db.from('client_workout_skips').select('program_session_id').eq('client_id', clientId).eq('scheduled_date', date),
     db.from('nutrition_meals').select('physiological_date, total_calories, total_protein_g').eq('client_id', clientId).gte('physiological_date', threeDaysAgo).lte('physiological_date', yesterday),
@@ -91,7 +92,10 @@ export async function loadDailyCoachContext(
   const proteinTarget = Number(protocolDay?.protein_g ?? 0)
   const hydrationTargetMl = Number(protocolDay?.hydration_ml ?? 2500)
 
-  const plannedList = (plannedSessions ?? []) as Array<{ id: string; name?: string | null }>
+  const plannedList = filterSessionsForJsWeekday(
+    (plannedSessions ?? []) as Array<{ id: string; name?: string | null; day_of_week?: number | null; days_of_week?: number[] | null }>,
+    weekday,
+  )
   const plannedSessionName = plannedList[0]?.name ?? null
   const completed = ((completedSessions ?? []) as any[]).length > 0
   const skipped = ((skips ?? []) as any[]).length > 0

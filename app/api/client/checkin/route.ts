@@ -17,6 +17,8 @@ import { computePhysiologicalDate } from '@/lib/nutrition/physiological-date'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
 import type { CycleLog } from '@/lib/cycle/cycleEngine'
+import { computePhysiologicalDateInTimezone, getLocalWeekday } from '@/lib/client/checkin/timeWindows'
+import { filterSessionsForJsWeekday } from '@/lib/client/plannedSessions'
 
 function svc() {
   return createServiceClient(
@@ -180,21 +182,17 @@ export async function POST(req: NextRequest) {
 
       const activeProgram = programRes.status === 'fulfilled' ? (programRes.value as any)?.data : null
       const protocol      = protocolRes.status === 'fulfilled' ? (protocolRes.value as any)?.data : null
+      const todayPhysio = computePhysiologicalDateInTimezone(new Date(), cc.timezone ?? 'Europe/Paris')
+      const todayDow = getLocalWeekday(new Date(`${todayPhysio}T12:00:00.000Z`), cc.timezone ?? 'Europe/Paris')
       const protocolDay   = resolveProtocolDayByDate(
-        computePhysiologicalDate(new Date(), cc.timezone),
+        todayPhysio,
         protocol?.schedule_start_date ?? null,
         protocol?.nutrition_protocol_days ?? [],
         protocol?.nutrition_protocol_schedule_slots ?? [],
       ) as any
 
-      const todayDow = new Date().getDay()
       const sessions: any[] = activeProgram?.program_sessions ?? []
-      const todaySession = sessions.find((s: any) => {
-        const dows: number[] = Array.isArray(s.days_of_week) && s.days_of_week.length > 0
-          ? s.days_of_week
-          : s.day_of_week != null ? [s.day_of_week] : []
-        return dows.includes(todayDow)
-      })
+      const todaySession = filterSessionsForJsWeekday(sessions, todayDow)[0]
 
       return {
         sessionName:   todaySession?.name    ?? null,
