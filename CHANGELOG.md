@@ -4,6 +4,7 @@
 
 ## 2026-06-02
 
+FIX: crash page nutrition PWA ("undefined is not an object 'd.map'") — SmartNutritionPrepList exigeait scenarioOptions/activeScenarioKey/onScenarioChange non passés par NutritionClientPage → props rendues optionnelles avec défauts + slot prep blindé
 FIX: on-demand init (GET /messages) respecte la config coach (actif + jour + moment configuré) — n'offre plus un check-in non activé ; champs déjà tirés de la config (jamais codés en dur)
 FIX: CheckinConfigWidget — méthode POST (la route checkin-config n'a pas de PUT) → corrige "Erreur de sauvegarde" rouge à chaque toggle de champ coach
 FIX: message defer check-in — pointe vers le bouton Check-in "en haut à gauche" (top-bar) au lieu de "juste au-dessus"
