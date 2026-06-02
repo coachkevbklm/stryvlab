@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { ct, type ClientLang } from "@/lib/i18n/clientTranslations"
 import ChatTodayStrip from "./ChatTodayStrip"
 import ChatConversation from "./ChatConversation"
 import ChatInputBar from "./ChatInputBar"
@@ -11,6 +12,12 @@ import { MORNING_FLOW, EVENING_FLOW, type CheckinData } from "@/lib/client/check
 import { determineSlotForClick } from "@/lib/client/checkin/checkinEngine"
 import { getPendingSlots, type PendingSlot } from "@/lib/client/checkin/pendingCheckins"
 import { emitClientInboxUpdated } from "@/lib/client/inboxEvents"
+import {
+  clearCheckinDraft,
+  loadCheckinDraft,
+  saveCheckinDraft,
+  type CheckinDraftState,
+} from "@/lib/client/checkin/draftStorage"
 
 function CoachAvatarHero({ url, initial }: { url?: string | null; initial: string }) {
   const [photoReady, setPhotoReady] = useState(false)
@@ -42,16 +49,11 @@ function CoachAvatarHero({ url, initial }: { url?: string | null; initial: strin
   )
 }
 
-const QUICK_SUGGESTIONS = [
-  "Comment je récupère après ma séance ?",
-  "Aide-moi avec ma nutrition",
-  "Programme pour aujourd'hui",
-]
-
 interface ChatPageProps {
   coachAvatarUrl?: string | null
   coachInitial?: string | null
   clientFirstName?: string | null
+  lang?: ClientLang
 }
 
 type TodayData = {
@@ -68,7 +70,13 @@ type TodayData = {
   water: { logged: number; target: number }
 }
 
-export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitial: initialCoachInitial, clientFirstName }: ChatPageProps) {
+export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitial: initialCoachInitial, clientFirstName, lang = 'fr' }: ChatPageProps) {
+  const QUICK_SUGGESTIONS = [
+    ct(lang, 'chat.qs1'),
+    ct(lang, 'chat.qs2'),
+    ct(lang, 'chat.qs3'),
+  ]
+
   // Client-side fetch overrides SSR props — ensures fresh signed URL and avoids stale data
   const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(initialAvatarUrl ?? null)
   const [coachInitial, setCoachInitial] = useState<string | null>(initialCoachInitial ?? null)
@@ -90,9 +98,15 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
   const [initialized, setInitialized] = useState(false)
   const [todayData, setTodayData] = useState<TodayData | null>(null)
   const [activeSlot, setActiveSlot] = useState<PendingSlot | null>(null)
+  const [draftProgress, setDraftProgress] = useState<CheckinDraftState | null>(null)
   const [flowKey, setFlowKey] = useState(0)
   const [flowHandle, setFlowHandle] = useState<CheckinFlowHandle | null>(null)
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null)
+  const activeSlotRef = useRef<PendingSlot | null>(null)
+
+  useEffect(() => {
+    activeSlotRef.current = activeSlot
+  }, [activeSlot])
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages(prev => [...prev, msg])
@@ -112,6 +126,8 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
     slotDate: string,
   ) => {
     setActiveSlot(null)
+    setDraftProgress(null)
+    clearCheckinDraft()
     setIsLoading(true)
 
     try {
@@ -172,9 +188,14 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
   // Fixes stale morning state on resume: GET /messages re-runs the proactive init
   // server-side (creates the morning greeting) and today-strip reflects real pending state.
   useEffect(() => {
+    const draft = loadCheckinDraft()
+    if (draft) {
+      setActiveSlot(draft.slot)
+      setDraftProgress(draft)
+    }
     refreshChatData()
     const onVisible = () => {
-      if (document.visibilityState === 'visible') refreshChatData()
+      if (document.visibilityState === 'visible' && !activeSlotRef.current) refreshChatData()
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)
@@ -186,6 +207,13 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
 
   const startCheckinSlot = useCallback((slot: PendingSlot) => {
     setActiveSlot(slot)
+    const draft = {
+      slot,
+      collected: {},
+      stepIndex: 0,
+    } satisfies CheckinDraftState
+    setDraftProgress(draft)
+    saveCheckinDraft(draft)
     setFlowKey(k => k + 1)
   }, [])
 
@@ -392,12 +420,24 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
           flow={activeSlot.flow_type === 'morning' ? MORNING_FLOW : EVENING_FLOW}
           hasSessionToday={hasSessionToday}
           clientFirstName={clientFirstName}
+          initialProgress={draftProgress?.slot.date === activeSlot.date && draftProgress?.slot.flow_type === activeSlot.flow_type
+            ? { collected: draftProgress.collected, stepIndex: draftProgress.stepIndex }
+            : null}
           onAddMessage={addMessage}
           onUpdateMessage={updateMessage}
           onComplete={(data, summary, flowType) =>
             handleFlowComplete(data, summary, flowType, activeSlot.date)
           }
           onHandle={setFlowHandle}
+          onProgress={(progress) => {
+            const nextDraft = {
+              slot: activeSlot,
+              collected: progress.collected,
+              stepIndex: progress.stepIndex,
+            } satisfies CheckinDraftState
+            setDraftProgress(nextDraft)
+            saveCheckinDraft(nextDraft)
+          }}
         />
       )}
 
@@ -423,10 +463,12 @@ export default function ChatPage({ coachAvatarUrl: initialAvatarUrl, coachInitia
             className="text-center"
           >
             <p className="text-[17px] font-barlow font-semibold text-white leading-snug">
-              {clientFirstName ? `Bonjour ${clientFirstName} 👋` : "Bonjour 👋"}
+              {clientFirstName
+                ? ct(lang, 'chat.greeting', { name: clientFirstName })
+                : ct(lang, 'chat.greetingAnon')}
             </p>
             <p className="text-[13px] text-[#5a5a5a] font-barlow mt-1">
-              Pose-moi une question ou fais ton check-in.
+              {ct(lang, 'chat.subtitle')}
             </p>
           </motion.div>
 
