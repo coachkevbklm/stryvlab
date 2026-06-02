@@ -4,6 +4,7 @@
 
 ## 2026-06-02
 
+FEATURE: profil coach (P2) — sections "Informations" et "Profil sportif" en accordéons repliés par défaut (corps monté = état d'édition préservé ; contrôles edit visibles seulement déplié) ; Transformation/Phase/Phase actuelle restent ouverts
 CHORE: profil coach — zone dangereuse (supprimer/archiver) déplacée en bas de la colonne droite (sous Tags), plus au milieu
 FEATURE: onboarding nouveau client (P1) — CTA vert "Envoyer l'accès" dans la top-bar du profil (scroll+highlight section Accès) + ring/badge "Action requise" sur la section Accès quand non invité (status synchro via callback) + bandeau vert "Accès STRYVR à envoyer" sur la carte client (page Coach Clients)
 FIX: check-in PWA/chat (checkin/route) émet checkin/streak.evaluate (streak + points) — le streak restait à 0 car seul checkin/respond l'émettait

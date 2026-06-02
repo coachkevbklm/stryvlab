@@ -11,7 +11,7 @@ import DeleteClientModal from "@/components/clients/DeleteClientModal";
 import { useRouter } from "next/navigation";
 import {
   Mail, Phone, Calendar, Edit2, Save, Loader2, User,
-  Tag, Plus, X, Check, MapPin, User2, StickyNote, PhoneCall,
+  Tag, Plus, X, Check, MapPin, User2, StickyNote, PhoneCall, ChevronDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransformationScoreWidget from "@/components/coach/TransformationScoreWidget";
@@ -97,6 +97,39 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
     <div className={`bg-white/[0.02] border-[0.3px] border-white/[0.06] rounded-2xl p-4 ${className}`}>
       {children}
     </div>
+  );
+}
+
+// Collapsible section. Body stays mounted (hidden when closed) so edit state is
+// preserved; the header-right slot (edit/save controls) only shows when open to
+// avoid editing a collapsed section.
+function CollapsibleCard({
+  title,
+  defaultOpen = false,
+  headerRight,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">{title}</span>
+          <ChevronDown size={13} className={`text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && headerRight}
+      </div>
+      <div className={open ? "" : "hidden"}>{children}</div>
+    </Card>
   );
 }
 
@@ -504,33 +537,31 @@ export default function ProfilPage() {
             </Card>
 
             {/* ── Informations ── */}
-            <Card>
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Informations</SectionLabel>
-                {!editingCrm ? (
-                  <button
-                    onClick={() => { setCrmDraft({ ...crm }); setEditingCrm(true); }}
-                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors -mt-3"
-                  >
-                    <Edit2 size={11} /> Modifier
+            <CollapsibleCard
+              title="Informations"
+              headerRight={!editingCrm ? (
+                <button
+                  onClick={() => { setCrmDraft({ ...crm }); setEditingCrm(true); }}
+                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <Edit2 size={11} /> Modifier
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditingCrm(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
+                    Annuler
                   </button>
-                ) : (
-                  <div className="flex items-center gap-2 -mt-3">
-                    <button onClick={() => setEditingCrm(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
-                      Annuler
-                    </button>
-                    <button
-                      onClick={saveCrm}
-                      disabled={savingCrm}
-                      className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                    >
-                      {savingCrm ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                      Enregistrer
-                    </button>
-                  </div>
-                )}
-              </div>
-
+                  <button
+                    onClick={saveCrm}
+                    disabled={savingCrm}
+                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {savingCrm ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                    Enregistrer
+                  </button>
+                </div>
+              )}
+            >
               {/* Contact fields (always read-only) */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {client.email && <InfoCell icon={Mail} label="Email" value={client.email} />}
@@ -622,36 +653,34 @@ export default function ProfilPage() {
                   </div>
                 </div>
               )}
-            </Card>
+            </CollapsibleCard>
 
             {/* ── Profil sportif + équipement + restrictions ── */}
-            <Card>
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Profil sportif</SectionLabel>
-                {!editingSport ? (
-                  <button
-                    onClick={() => setEditingSport(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors -mt-3"
-                  >
-                    <Edit2 size={11} /> Modifier
+            <CollapsibleCard
+              title="Profil sportif"
+              headerRight={!editingSport ? (
+                <button
+                  onClick={() => setEditingSport(true)}
+                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <Edit2 size={11} /> Modifier
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditingSport(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
+                    Annuler
                   </button>
-                ) : (
-                  <div className="flex items-center gap-2 -mt-3">
-                    <button onClick={() => setEditingSport(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
-                      Annuler
-                    </button>
-                    <button
-                      onClick={saveSport}
-                      disabled={savingSport}
-                      className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                    >
-                      {savingSport ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                      Enregistrer
-                    </button>
-                  </div>
-                )}
-              </div>
-
+                  <button
+                    onClick={saveSport}
+                    disabled={savingSport}
+                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {savingSport ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                    Enregistrer
+                  </button>
+                </div>
+              )}
+            >
               {saveErrorSport && <p className="text-[11px] text-red-400/80 mb-3">{saveErrorSport}</p>}
 
               {/* Restrictions — toujours visibles en haut */}
@@ -729,7 +758,7 @@ export default function ProfilPage() {
               <div className="mt-4 mb-1 h-px bg-white/[0.05]" />
               <SubSectionLabel>Équipement disponible</SubSectionLabel>
               <RestrictionsWidget clientId={clientId} section="equipment" />
-            </Card>
+            </CollapsibleCard>
 
             {/* Paramètres IA Coach */}
             <AiCoachSettingsWidget clientId={clientId} />
