@@ -1,3 +1,10 @@
+## 2026-06-02
+
+FEATURE: Full Spanish (ES) translation — UI strings, food item database, AI coach language config
+SCHEMA: food_item_translations table with FR backfill + ES/EN seed via LLM batch
+SCHEMA: ai_chat_lang column on coach_ai_settings_per_client
+FEATURE: Coach can configure per-client AI chat language (fr/es/en/auto)
+
 # CHANGELOG — STRYVR
 
 > **Format court** — entrées de 1 ligne par changement.
