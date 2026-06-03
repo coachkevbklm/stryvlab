@@ -46,7 +46,7 @@ export default function SupersetContextMenu({
               {item(<ArrowLeftRight size={16} />, 'Dissocier le superset', onDissolve)}
               {item(<Clock size={16} />, 'Temps de repos', onRest)}
               <div className="pt-1">
-                {item(<Trash2 size={16} />, 'Supprimer le superset', onDelete, true)}
+                {item(<Trash2 size={16} />, t('ui.delete.superset'), onDelete, true)}
               </div>
             </div>
           </motion.div>

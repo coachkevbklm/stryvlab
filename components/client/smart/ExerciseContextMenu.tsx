@@ -46,12 +46,12 @@ export default function ExerciseContextMenu({
           >
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.12]" />
             <div className="pt-4 divide-y divide-white/[0.05]">
-              {item(<RefreshCw size={16} />, "Changer l'exercice", onSwap)}
+              {item(<RefreshCw size={16} />, t('ui.change.exercise'), onSwap)}
               {item(<Clock size={16} />, 'Temps de repos', onRest)}
-              {item(<MessageSquare size={16} />, 'Ajouter une note', onNote)}
+              {item(<MessageSquare size={16} />, t('ui.add.note'), onNote)}
               {hasTempo && item(<Play size={16} />, 'Tempo guide', onTempo)}
               <div className="pt-1">
-                {item(<Trash2 size={16} />, "Supprimer l'exercice", onDelete, true)}
+                {item(<Trash2 size={16} />, t('ui.delete.exercise'), onDelete, true)}
               </div>
             </div>
           </motion.div>

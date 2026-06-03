@@ -52,7 +52,7 @@ export default function BodyDataTab({ data }: Props) {
     <div className="space-y-3">
       {latest && (
         <MetricCard
-          label="Poids"
+          label={t('nutrition.weight')}
           value={`${latest.value} kg`}
           series={data.weightSeries}
           unit=" kg"

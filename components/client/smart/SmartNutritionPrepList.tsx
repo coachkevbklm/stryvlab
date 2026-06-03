@@ -187,7 +187,7 @@ function PrepCard({ prep, onLogged, onDeleted, onEdit, onToggleActive }: {
                 className="flex-1 h-9 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] flex items-center justify-center gap-1.5 disabled:opacity-40 active:scale-[0.98] transition-all"
               >
                 <Check size={13} />
-                {busy === "log" ? "Validation..." : "Valider"}
+                {busy === "log" ? t('ui.validating') : t('ui.validate')}
               </button>
               <button
                 onClick={deletePrep}
@@ -211,6 +211,7 @@ export default function SmartNutritionPrepList({
   activeScenarioKey = 'default',
   onScenarioChange = () => {},
   scenarioOptions = [{ key: 'default', label: 'Scénario principal' }],
+  showScenarioChips = true,
 }: {
   initialPreps: SmartNutritionPrep[]
   onEdit?: (prep: SmartNutritionPrep) => void
@@ -218,6 +219,7 @@ export default function SmartNutritionPrepList({
   activeScenarioKey?: string
   onScenarioChange?: (scenarioKey: string) => void
   scenarioOptions?: Array<{ key: string; label: string }>
+  showScenarioChips?: boolean
 }) {
   const router = useRouter()
   const [preps, setPreps] = useState(initialPreps)
@@ -275,25 +277,27 @@ export default function SmartNutritionPrepList({
 
   return (
     <section className="space-y-2">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {scenarioOptions.map((scenario) => {
-          const active = scenario.key === activeScenarioKey
-          const displayLabel = scenario.label === "Aujourd'hui" ? "Scénario principal" : scenario.label
-          return (
-            <button
-              key={scenario.key}
-              onClick={() => onScenarioChange(scenario.key)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.14em] transition-all ${
-                active
-                  ? 'bg-[#818cf8]/16 text-[#818cf8]'
-                  : 'bg-[#111114] text-white/42 hover:text-white/72'
-              }`}
-            >
-              {displayLabel}
-            </button>
-          )
-        })}
-      </div>
+      {showScenarioChips && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {scenarioOptions.map((scenario) => {
+            const active = scenario.key === activeScenarioKey
+            const displayLabel = scenario.label === "Aujourd'hui" ? "Scénario principal" : scenario.label
+            return (
+              <button
+                key={scenario.key}
+                onClick={() => onScenarioChange(scenario.key)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.14em] transition-all ${
+                  active
+                    ? 'bg-[#818cf8]/16 text-[#818cf8]'
+                    : 'bg-[#111114] text-white/42 hover:text-white/72'
+                }`}
+              >
+                {displayLabel}
+              </button>
+            )
+          })}
+        </div>
+      )}
       {!compact && (
         <div className="flex items-center justify-between px-1">
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/25">Prépa meals</p>

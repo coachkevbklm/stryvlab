@@ -4,20 +4,24 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Drop, ForkKnife, Lightning } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { CycleState } from "@/lib/cycle/cycleEngine";
 
 const QuickWaterModal   = dynamic(() => import("@/components/client/QuickWaterModal"),           { ssr: false });
 const FreeActivitySheet = dynamic(() => import("@/components/client/smart/FreeActivitySheet"),   { ssr: false });
 const LogPeriodSheet    = dynamic(() => import("@/components/client/cycle/LogPeriodSheet"),      { ssr: false });
+const MealMethodSheet   = dynamic(() => import("@/components/client/smart/MealMethodSheet"),     { ssr: false });
 const MealLogSheet      = dynamic(() => import("@/components/client/smart/MealLogSheet"),        { ssr: false });
+const VoiceLogSheet     = dynamic(() => import("@/components/client/smart/VoiceLogSheet"),       { ssr: false });
+import type { MealMethodAction } from "@/components/client/smart/MealMethodSheet";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-type SubSheet = "water" | "activity" | "cycle" | "meal" | null;
+type SubSheet = "water" | "activity" | "cycle" | "meal-method" | "meal-compose" | "meal-voice" | null;
 
 const BASE_ACTIONS = [
   {
@@ -30,7 +34,7 @@ const BASE_ACTIONS = [
     key: "meal" as const,
     Icon: ForkKnife,
     label: "Repas",
-    sub: "Ajouter un repas ou aliment",
+    sub: t('ui.add.meal'),
   },
   {
     key: "activity" as const,
@@ -41,7 +45,11 @@ const BASE_ACTIONS = [
 ];
 
 export default function QuickLogSheet({ open, onClose }: Props) {
+  const router = useRouter();
   const [sub, setSub] = useState<SubSheet>(null);
+  const [quickInputMode, setQuickInputMode] = useState<"voice" | "text">("voice");
+  const [mealComposerMode, setMealComposerMode] = useState<"standard" | "guide" | "simulation">("standard");
+  const [mealEntryMode, setMealEntryMode] = useState<"default" | "search" | "favorites" | "categories">("default");
   const [cycleState, setCycleState] = useState<CycleState | null>(null);
 
   useEffect(() => {
@@ -54,6 +62,9 @@ export default function QuickLogSheet({ open, onClose }: Props) {
 
   function handleClose() {
     setSub(null);
+    setQuickInputMode("voice");
+    setMealComposerMode("standard");
+    setMealEntryMode("default");
     onClose();
   }
 
@@ -61,7 +72,34 @@ export default function QuickLogSheet({ open, onClose }: Props) {
     if (key === "water")    { setSub("water"); return; }
     if (key === "activity") { setSub("activity"); return; }
     if (key === "cycle")    { setSub("cycle"); return; }
-    if (key === "meal")     { setSub("meal"); return; }
+    if (key === "meal")     { setSub("meal-method"); return; }
+  }
+
+  function handleMealMethod(method: MealMethodAction) {
+    if (method === "track_voice_text") {
+      setQuickInputMode("voice");
+      setSub("meal-voice");
+      return;
+    }
+    if (method === "compose_guide" || method === "compose_simulation") {
+      handleClose();
+      router.push("/client/nutrition/compose");
+      return;
+    }
+    if (method === "track_search") {
+      setMealEntryMode("search");
+      setMealComposerMode("standard");
+    } else if (method === "track_favorites") {
+      setMealEntryMode("favorites");
+      setMealComposerMode("standard");
+    } else if (method === "track_categories") {
+      setMealEntryMode("categories");
+      setMealComposerMode("standard");
+    } else {
+      setMealEntryMode("default");
+      setMealComposerMode("standard");
+    }
+    setSub("meal-compose");
   }
 
   const actions = [
@@ -82,7 +120,7 @@ export default function QuickLogSheet({ open, onClose }: Props) {
           <>
             <motion.div
               key="overlay"
-              className="fixed inset-0 z-[60] bg-black/50"
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -90,26 +128,22 @@ export default function QuickLogSheet({ open, onClose }: Props) {
             />
             <motion.div
               key="sheet"
-              className="fixed left-0 right-0 bottom-0 z-[70] rounded-t-2xl bg-[#111111] pb-safe"
-              style={{ paddingBottom: "max(env(safe-area-inset-bottom), 16px)" }}
+              className="fixed left-0 right-0 bottom-0 z-[70] rounded-t-2xl"
+              style={{ background: '#080808', maxHeight: '88vh', display: 'flex', flexDirection: 'column', paddingBottom: "max(env(safe-area-inset-bottom), 16px)" }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 380, damping: 34 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-8 h-[3px] rounded-full bg-white/[0.12]" />
-              </div>
-
               {/* Header */}
-              <div className="flex items-center justify-between px-5 pt-2 pb-4">
-                <p className="text-[13px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[#e0e0e0]">
+              <div className="relative flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.10]" />
+                <p className="text-[15px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-white">
                   Logger
                 </p>
                 <button
                   onClick={handleClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-white/60 active:bg-white/[0.08]"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 active:bg-white/[0.08]"
                 >
                   <X size={15} />
                 </button>
@@ -158,10 +192,24 @@ export default function QuickLogSheet({ open, onClose }: Props) {
         onClose={() => { setSub(null); onClose(); }}
         onUpdated={(newState) => { setCycleState(newState); setSub(null); onClose(); }}
       />
+      <MealMethodSheet
+        open={sub === "meal-method"}
+        onClose={() => setSub(null)}
+        onSelect={handleMealMethod}
+      />
       <MealLogSheet
-        open={sub === "meal"}
+        open={sub === "meal-compose"}
+        composerMode={mealComposerMode}
+        entryMode={mealEntryMode}
+        intent={mealComposerMode === "standard" ? "track" : "compose"}
+        onClose={() => { setSub(null); setMealComposerMode("standard"); setMealEntryMode("default"); onClose(); }}
+        onSuccess={() => { setSub(null); setMealComposerMode("standard"); setMealEntryMode("default"); onClose(); }}
+      />
+      <VoiceLogSheet
+        open={sub === "meal-voice"}
         onClose={() => { setSub(null); onClose(); }}
         onSuccess={() => { setSub(null); onClose(); }}
+        initialInputMode={quickInputMode}
       />
     </>
   );

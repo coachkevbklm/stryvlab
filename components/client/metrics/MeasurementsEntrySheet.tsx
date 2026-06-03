@@ -133,7 +133,7 @@ export default function MeasurementsEntrySheet({ open, onClose, onSaved }: Props
               <button
                 onClick={onClose}
                 className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 active:bg-white/[0.10] transition-colors"
-                aria-label="Fermer"
+                aria-label={t('ui.close')}
               >
                 <X size={15} />
               </button>
