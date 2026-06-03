@@ -1,5 +1,6 @@
 'use client'
 
+import { useClientT } from '@/components/client/ClientI18nProvider'
 import VitalityScoreHero from './VitalityScoreHero'
 import MetricCard from './MetricCard'
 import type { VitalityResponse } from '@/app/api/client/vitality/route'
@@ -8,11 +9,11 @@ interface Props {
   data: VitalityResponse
 }
 
-const VITALITY_CONFIG = [
-  { key: 'energy'   as const, label: 'Énergie',    unit: ' / 5', positiveIsUp: true  },
-  { key: 'sleep'    as const, label: 'Sommeil',     unit: ' / 4', positiveIsUp: true  },
-  { key: 'stress'   as const, label: 'Stress',      unit: ' / 5', positiveIsUp: false },
-  { key: 'soreness' as const, label: 'Courbatures', unit: ' / 4', positiveIsUp: false },
+const VITALITY_CONFIG_KEYS = [
+  { key: 'energy'   as const, iKey: 'nutrition.energy',    unit: ' / 5', positiveIsUp: true  },
+  { key: 'sleep'    as const, iKey: 'vitality.sleep',      unit: ' / 4', positiveIsUp: true  },
+  { key: 'stress'   as const, iKey: 'nutrition.stress',    unit: ' / 5', positiveIsUp: false },
+  { key: 'soreness' as const, iKey: 'vitality.soreness',   unit: ' / 4', positiveIsUp: false },
 ]
 
 type VitalKey = 'energy' | 'sleep' | 'stress' | 'soreness'
@@ -44,6 +45,12 @@ function vitalDelta(
 }
 
 export default function VitalityTab({ data }: Props) {
+  const { t } = useClientT()
+  const VITALITY_CONFIG = VITALITY_CONFIG_KEYS.map(cfg => ({
+    ...cfg,
+    label: t(cfg.iKey as any),
+  }))
+
   return (
     <div className="space-y-3">
       <VitalityScoreHero score={data.score} checkinCount={data.checkinCount} />
