@@ -1,5 +1,17 @@
 ## 2026-06-03
 
+FEATURE: PWA i18n 100% Espagnol — 14 components wired (35+ keys added), 594 alimentos ES seeded, seed EN in progress
+REFACTOR: NutritionWidget, SmartNutritionHero, RemainingBreakdown, BodyDataTab, MetricsClientPage, MeasurementsEntrySheet, DeloadAlertBanner, VoiceEntryFab, ExerciseContextMenu, SupersetContextMenu, ProtocolRationale, SmartNutritionPrepList, VolumeCoverageWidget, VitalityTab — all component labels/aria/messages to useClientT()
+
+FIX: volume-targets.ts — avant_bras dissocié comme groupe volume indépendant (brachioradialis + tous slugs avant-bras redirigés, MEV/MAV/MRV propres)
+FIX: volume-targets.ts — slugs manquants dans MUSCLE_TO_VOLUME_GROUP (rear_delts, external_rotators, rotator_cuff, upper_back, scapula, upper_chest, shoulders, deltoids, shoulder_complex) — fix invisibilité epaules_post
+FIX: catalog-utils.ts — getPrimaryMuscleFromCatalog + getBiomechData tombent en heuristique si nom exact introuvable
+FIX: catalog-utils.ts — heuristiques pour variantes rear delt fly (élévation arrière, oiseau, pec deck inversé, face pull)
+
+FEATURE: ProtocolRationale — add weekly schedule visualization (DOW chips H/M/B colored by carb cycle type) and coach recommendations per day; pass scheduleSlots from page through NutritionClientPage
+FEATURE: ProtocolRationale — global phase summary (Surplus/Déficit/Maintenance) + avg kcal/j delta vs TDEE computed from weighted schedule
+REFACTOR: ProtocolRationale — rewrite from numbered steps to clean label/value rows with section headers (Dépense / Objectif calorique / Macronutriments / Cycle); header badge shows carb cycle type + surplus/déficit label; remove useClientT dependency
+
 FEATURE: PWA i18n wiring Phases 2–3 complete — 6 components fully wired to useClientT() hook
 FEATURE: Add 20+ missing i18n keys: sleep_duration scales, common scales, measurement sections/errors, cycle success, protocol descriptions
 REFACTOR: CheckinModal, MeasurementsEntrySheet, LogPeriodSheet, ProfilePhotoUpload, ProtocolRationale, QuickWaterModal — all use dynamic i18n
