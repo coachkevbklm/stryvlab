@@ -891,6 +891,8 @@ export const clientDict = {
   'cycle.action.log_end':        { fr: 'Mes règles sont terminées', en: 'My period has ended', es: 'Mi período ha terminado' },
   'cycle.modal.loading':         { fr: 'Enregistrement…', en: 'Saving…', es: 'Guardando…' },
   'cycle.action.retour':         { fr: 'Retour', en: 'Back', es: 'Atrás' },
+  'cycle.success.start':         { fr: 'Cycle mis à jour · Phase : {phase}', en: 'Cycle updated · Phase: {phase}', es: 'Ciclo actualizado · Fase: {phase}' },
+  'cycle.success.end':           { fr: 'Fin de règles enregistrée', en: 'Period end recorded', es: 'Final del período registrado' },
 
   // ── Profile Photo ──
   'profile.photo.add':          { fr: 'Ajouter une photo', en: 'Add a photo', es: 'Añadir una foto' },

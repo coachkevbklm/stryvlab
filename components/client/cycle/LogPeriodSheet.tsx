@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
+import { useClientT } from '../ClientI18nProvider'
 import type { CycleState } from '@/lib/cycle/cycleEngine'
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 type Mode = 'main' | 'pick-start-date' | 'confirm-conflict'
 
 export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }: Props) {
+  const { t } = useClientT()
   const [mode, setMode] = useState<Mode>('main')
   const [pickedDate, setPickedDate] = useState('')
   const [conflictDate, setConflictDate] = useState('')
@@ -45,7 +47,7 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
       const data = await res.json()
       onUpdated(data.cycleState)
       const phaseName = data.cycleState.currentPhase ?? ''
-      setSuccessMsg(`Cycle mis à jour · Phase : ${phaseName}`)
+      setSuccessMsg(t('cycle.success.start', { phase: phaseName }))
       setTimeout(() => { setSuccessMsg(null); onClose() }, 2000)
     } catch {
       setLoading(false)
@@ -67,7 +69,7 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       onUpdated(data.cycleState)
-      setSuccessMsg('Fin de règles enregistrée')
+      setSuccessMsg(t('cycle.success.end'))
       setTimeout(() => { setSuccessMsg(null); onClose() }, 2000)
     } catch {
       // silent
@@ -92,30 +94,26 @@ export default function LogPeriodSheet({ open, cycleState, onClose, onUpdated }:
         <>
           <motion.div
             key="overlay"
-            className="fixed inset-0 z-[80] bg-black/50"
+            className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-[2px]"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={handleClose}
           />
           <motion.div
             key="sheet"
-            className="fixed left-0 right-0 bottom-0 z-[90] rounded-t-2xl bg-[#111111]"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 24px)' }}
+            className="fixed left-0 right-0 bottom-0 z-[90] rounded-t-2xl"
+            style={{ background: '#080808', paddingBottom: 'max(env(safe-area-inset-bottom), 24px)' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-8 h-[3px] rounded-full bg-white/[0.12]" />
-            </div>
-
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-2 pb-4">
-              <p className="text-[13px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[#e0e0e0]">
+            <div className="relative flex items-center justify-between px-5 pt-5 pb-4">
+              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/[0.10]" />
+              <p className="text-[15px] font-barlow-condensed font-bold uppercase tracking-[0.12em] text-white">
                 Cycle
               </p>
               <button
                 onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.04] text-[#5a5a5a] active:bg-white/[0.08]"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.06] text-white/40 active:bg-white/[0.08]"
               >
                 <X size={15} />
               </button>

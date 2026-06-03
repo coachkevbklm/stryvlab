@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, Loader2, Trash2 } from "lucide-react";
+import { useClientT } from "../ClientI18nProvider";
 
 interface Props {
   currentUrl: string | null;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function ProfilePhotoUpload({ currentUrl, initials, compact = false }: Props) {
+  const { t } = useClientT()
   const [url, setUrl] = useState<string | null>(currentUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +20,11 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
-      setError("Format non supporté (JPEG, PNG, WebP uniquement)");
+      setError(t('profile.photo.error.format'));
       return;
     }
     if (file.size > 30 * 1024 * 1024) {
-      setError("Fichier trop lourd (max 30 Mo)");
+      setError(t('profile.photo.error.size'));
       return;
     }
 
@@ -39,7 +41,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error ?? "Erreur lors de l'upload");
+      setError(data.error ?? t('profile.photo.error.upload'));
     } else {
       setUrl(data.url);
     }
@@ -51,7 +53,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
     setError(null);
     const res = await fetch("/api/client/profile/photo", { method: "DELETE" });
     if (res.ok) setUrl(null);
-    else setError("Erreur lors de la suppression");
+    else setError(t('profile.photo.error.delete'));
     setLoading(false);
   }
 
@@ -60,7 +62,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
       <div className="relative shrink-0">
         <div className="w-14 h-14 rounded-full overflow-hidden bg-[#f2f2f2]/10 flex items-center justify-center">
           {url ? (
-            <Image src={url} alt="Photo de profil" fill className="object-cover" />
+            <Image src={url} alt={t('profile.photo.alt')} fill className="object-cover" />
           ) : (
             <span className="text-[16px] font-bold text-[#f2f2f2]">{initials}</span>
           )}
@@ -94,7 +96,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
           {url ? (
             <Image
               src={url}
-              alt="Photo de profil"
+              alt={t('profile.photo.alt')}
               fill
               className="object-cover"
             />
@@ -135,7 +137,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
           disabled={loading}
           className="text-xs text-accent font-medium hover:underline disabled:opacity-50"
         >
-          {url ? "Changer la photo" : "Ajouter une photo"}
+          {url ? t('profile.photo.change') : t('profile.photo.add')}
         </button>
         {url && (
           <>
@@ -146,7 +148,7 @@ export default function ProfilePhotoUpload({ currentUrl, initials, compact = fal
               className="text-xs text-red-500 font-medium hover:underline disabled:opacity-50 flex items-center gap-1"
             >
               <Trash2 size={11} />
-              Supprimer
+              {t('profile.photo.delete')}
             </button>
           </>
         )}
