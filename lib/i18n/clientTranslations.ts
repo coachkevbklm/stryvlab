@@ -915,6 +915,9 @@ export const clientDict = {
   'protocol.label.cut':         { fr: 'Perte de masse grasse', en: 'Cut', es: 'Pérdida de grasa' },
   'protocol.label.maintenance': { fr: 'Maintenance', en: 'Maintenance', es: 'Mantenimiento' },
   'protocol.label.tdee':        { fr: 'Dépense énergétique estimée', en: 'Estimated energy expenditure', es: 'Gasto energético estimado' },
+  'protocol.desc.bulk':         { fr: 'Surplus calorique — favorise la construction musculaire et la récupération.', en: 'Caloric surplus — promotes muscle building and recovery.', es: 'Superávit calórico — favorece la construcción muscular y recuperación.' },
+  'protocol.desc.cut':          { fr: 'Déficit calorique — permet de réduire la masse grasse en préservant le muscle.', en: 'Caloric deficit — reduces fat while preserving muscle.', es: 'Déficit calórico — reduce grasa mientras preserva el músculo.' },
+  'protocol.desc.protein':      { fr: 'Préservent la masse musculaire et favorisent la récupération.', en: 'Preserve muscle mass and promote recovery.', es: 'Preservan la masa muscular y promueven la recuperación.' },
 
   // ── Common Modal / Error Messages ──
   'modal.loading':           { fr: 'Chargement…', en: 'Loading…', es: 'Cargando…' },

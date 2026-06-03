@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useClientT } from '../ClientI18nProvider'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 import { getCycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
 import type { CycleState } from '@/lib/cycle/cycleEngine'
@@ -23,20 +24,10 @@ interface Props {
   bodyWeightKg?: number | null
   activeDayName?: string | null
   cycleState?: CycleState | null
+  cycleSyncEnabled?: boolean
   // Legacy single-day support (backwards compat)
   target?: { kcal: number; protein_g: number; carbs_g: number; fat_g: number }
   dayName?: string | null
-}
-
-const CARB_CYCLE_LABELS: Record<string, string> = {
-  high:   'Glucides élevés (jour entraînement) — glycogène musculaire maximisé.',
-  low:    'Glucides réduits (jour repos) — mobilisation des graisses favorisée.',
-  medium: 'Glucides modérés — équilibre énergie / récupération.',
-}
-
-const TDEE_SOURCE_LABELS: Record<string, string> = {
-  formula_proxy: 'Estimé depuis ton programme',
-  adaptive:      'Calibré depuis tes pesées (14 jours)',
 }
 
 function DayAccordion({
@@ -45,6 +36,7 @@ function DayAccordion({
   tdeeSource,
   bodyWeightKg,
   cycleState,
+  cycleSyncEnabled,
   defaultOpen,
 }: {
   day: ProtocolDay
@@ -52,15 +44,17 @@ function DayAccordion({
   tdeeSource: string | null
   bodyWeightKg?: number | null
   cycleState?: CycleState | null
+  cycleSyncEnabled?: boolean
   defaultOpen: boolean
 }) {
+  const { t } = useClientT()
   const [open, setOpen] = useState(defaultOpen)
 
   const delta = tdee != null && tdee > 0 ? day.kcal - tdee : null
   const goalLabel =
-    delta == null ? 'Objectif calorique' :
-    delta > 100 ? 'Prise de masse' :
-    delta < -100 ? 'Perte de masse grasse' : 'Maintenance'
+    delta == null ? t('protocol.label.caloric_target') :
+    delta > 100 ? t('protocol.label.bulk') :
+    delta < -100 ? t('protocol.label.cut') : t('protocol.label.maintenance')
 
   const gPerKg = bodyWeightKg && bodyWeightKg > 0
     ? (day.protein_g / bodyWeightKg).toFixed(2)
@@ -72,30 +66,31 @@ function DayAccordion({
   const carbPct = totalMacroCal > 0 ? Math.round((carbKcal / totalMacroCal) * 100) : 0
   const fatPct  = totalMacroCal > 0 ? Math.round((fatKcal  / totalMacroCal) * 100) : 0
 
-  const showCycle = !!(cycleState?.hasActiveCycle && cycleState.currentPhase)
+  const showCycle = !!(cycleSyncEnabled && cycleState?.hasActiveCycle && cycleState.currentPhase)
   const cycleAdj = showCycle ? getCycleSyncAdjustment(cycleState!.currentPhase!) : null
 
   const steps: Array<{ title: string; value: string; valueColor: string; body: string }> = []
 
   if (tdee != null && tdee > 0) {
+    const sourceKey = tdeeSource === 'formula_proxy' ? 'protocol.tdee.formula' : 'protocol.tdee.adaptive'
     steps.push({
-      title: 'Dépense énergétique estimée',
+      title: t('protocol.label.tdee'),
       value: `${Math.round(tdee).toLocaleString('fr-FR')} kcal`,
       valueColor: '#4a90e2',
-      body: `${TDEE_SOURCE_LABELS[tdeeSource ?? ''] ?? 'Estimé'}. Base de calcul de tes objectifs caloriques.`,
+      body: `${t(sourceKey as any)}. Base de calcul de tes objectifs caloriques.`,
     })
   }
 
   if (day.kcal > 0) {
+    let body = t('protocol.maint.desc')
+    if (delta != null && Math.abs(delta) > 100) {
+      body = delta > 0 ? t('protocol.desc.bulk') : t('protocol.desc.cut')
+    }
     steps.push({
       title: goalLabel,
       value: `${Math.round(day.kcal).toLocaleString('fr-FR')} kcal${delta != null ? (delta > 0 ? ` (+${Math.round(delta)})` : ` (${Math.round(delta)})`) : ''}`,
       valueColor: NUTRITION_UI_COLORS.carbs,
-      body: delta != null && Math.abs(delta) > 100
-        ? delta > 0
-          ? 'Surplus calorique — favorise la construction musculaire et la récupération.'
-          : 'Déficit calorique — permet de réduire la masse grasse en préservant le muscle.'
-        : 'Maintenance — préserve ta composition corporelle actuelle.',
+      body,
     })
   }
 
@@ -104,34 +99,55 @@ function DayAccordion({
       title: 'Protéines cibles',
       value: `${Math.round(day.protein_g)}g${gPerKg ? ` · ${gPerKg} g/kg` : ''}`,
       valueColor: NUTRITION_UI_COLORS.protein,
-      body: `Préservent la masse musculaire et favorisent la récupération.${gPerKg ? ` Ratio ${gPerKg} g/kg adapté à ton objectif.` : ''}`,
+      body: `${t('protocol.desc.protein')}${gPerKg ? ` Ratio ${gPerKg} g/kg adapté à ton objectif.` : ''}`,
     })
   }
 
   if (day.fat_g > 0 && day.carbs_g > 0) {
+    const cycleKey = day.carb_cycle_type === 'high' ? 'protocol.carb_cycle.high' :
+                      day.carb_cycle_type === 'low' ? 'protocol.carb_cycle.low' :
+                      day.carb_cycle_type === 'medium' ? 'protocol.carb_cycle.medium' : null
     steps.push({
       title: 'Répartition glucides / lipides',
       value: `${Math.round(day.carbs_g)}g G · ${Math.round(day.fat_g)}g L`,
       valueColor: NUTRITION_UI_COLORS.fat,
-      body: day.carb_cycle_type
-        ? (CARB_CYCLE_LABELS[day.carb_cycle_type] ?? `Glucides ${carbPct}% · Lipides ${fatPct}%.`)
+      body: cycleKey
+        ? t(cycleKey as any)
         : `Glucides ${carbPct}% — carburant. Lipides ${fatPct}% — régulation hormonale.`,
     })
   }
 
   if (showCycle && cycleAdj) {
+    const PHASE_COLORS: Record<string, string> = {
+      follicular: '#22c55e',
+      ovulatory:  '#fbbf24',
+      luteal:     '#a855f7',
+      menstrual:  '#ef4444',
+    }
     const PHASE_NAMES: Record<string, string> = { menstrual: 'Menstruation', follicular: 'Folliculaire', ovulatory: 'Ovulation', luteal: 'Lutéale' }
-    const phaseName = PHASE_NAMES[cycleState!.currentPhase!] ?? cycleState!.currentPhase!
-    const deltaStr = [
-      cycleAdj.caloriesDelta !== 0 ? `${cycleAdj.caloriesDelta > 0 ? '+' : ''}${cycleAdj.caloriesDelta} kcal` : null,
-      cycleAdj.proteinDelta !== 0  ? `${cycleAdj.proteinDelta > 0 ? '+' : ''}${cycleAdj.proteinDelta}g P`    : null,
-      cycleAdj.carbsDelta !== 0    ? `${cycleAdj.carbsDelta > 0 ? '+' : ''}${cycleAdj.carbsDelta}g G`        : null,
-    ].filter(Boolean).join(' · ') || 'Ajustements neutres'
+    const phase = cycleState!.currentPhase!
+    const phaseName = PHASE_NAMES[phase] ?? phase
+    const phaseColor = PHASE_COLORS[phase] ?? '#a855f7'
+
+    const hasDeltas = cycleAdj.caloriesDelta !== 0 || cycleAdj.proteinDelta !== 0 || cycleAdj.carbsDelta !== 0
+    const deltaStr = hasDeltas
+      ? [
+          cycleAdj.caloriesDelta !== 0 ? `${cycleAdj.caloriesDelta > 0 ? '+' : ''}${cycleAdj.caloriesDelta} kcal` : null,
+          cycleAdj.proteinDelta !== 0  ? `${cycleAdj.proteinDelta > 0 ? '+' : ''}${cycleAdj.proteinDelta}g P`    : null,
+          cycleAdj.carbsDelta !== 0    ? `${cycleAdj.carbsDelta > 0 ? '+' : ''}${cycleAdj.carbsDelta}g G`        : null,
+        ].filter(Boolean).join(' · ')
+      : 'Aucun ajustement cette phase'
+
+    const adjustedKcal = day.kcal + cycleAdj.caloriesDelta
+    const nextPhaseLabel = cycleState!.nextPhaseIn != null
+      ? ` — phase suivante dans ${cycleState!.nextPhaseIn}j`
+      : ''
+
     steps.push({
-      title: `Ajustement phase ${phaseName} ●`,
-      value: deltaStr,
-      valueColor: '#9a8038',
-      body: cycleAdj.notes[0] ?? '',
+      title: `Cycle — Phase ${phaseName}`,
+      value: hasDeltas ? `${deltaStr} → ${Math.round(adjustedKcal)} kcal` : deltaStr,
+      valueColor: phaseColor,
+      body: `${cycleAdj.notes[0] ?? ''}${nextPhaseLabel}`,
     })
   }
 
@@ -196,6 +212,7 @@ export default function ProtocolRationale({
   bodyWeightKg,
   activeDayName,
   cycleState,
+  cycleSyncEnabled,
   target,
   dayName,
 }: Props) {
@@ -224,6 +241,7 @@ export default function ProtocolRationale({
           tdeeSource={tdeeSource}
           bodyWeightKg={bodyWeightKg}
           cycleState={cycleState}
+          cycleSyncEnabled={cycleSyncEnabled}
           defaultOpen={day.name === (activeDayName ?? dayName)}
         />
       ))}
