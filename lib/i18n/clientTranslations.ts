@@ -986,11 +986,13 @@ export const clientDict = {
   'ui.validate':               { fr: 'Valider', en: 'Validate', es: 'Validar' },
   'ui.validating':             { fr: 'Validation...', en: 'Validating...', es: 'Validando...' },
 
-  // ── Nutrition labels ──
+  // ── Nutrition/Vitality labels ──
   'nutrition.protein':         { fr: 'Protéines', en: 'Protein', es: 'Proteína' },
   'nutrition.energy':          { fr: 'Énergie', en: 'Energy', es: 'Energía' },
   'nutrition.weight':          { fr: 'Poids', en: 'Weight', es: 'Peso' },
   'nutrition.stress':          { fr: 'Stress', en: 'Stress', es: 'Estrés' },
+  'vitality.sleep':            { fr: 'Sommeil', en: 'Sleep', es: 'Sueño' },
+  'vitality.soreness':         { fr: 'Courbatures', en: 'Soreness', es: 'Dolor muscular' },
 
   // ── Protocol/Goal labels ──
   'goal.deficit':              { fr: 'Déficit', en: 'Deficit', es: 'Déficit' },
