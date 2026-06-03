@@ -970,6 +970,39 @@ export const clientDict = {
   'meas.section.measurements': { fr: 'Circonférences', en: 'Measurements', es: 'Medidas' },
   'meas.error.empty':          { fr: 'Remplis au moins une valeur.', en: 'Fill in at least one value.', es: 'Completa al menos un valor.' },
   'meas.error.save':           { fr: "Erreur lors de l'enregistrement.", en: 'Error saving.', es: 'Error al guardar.' },
+
+  // ── UI action labels (component hardcodes) ──
+  'ui.add':                    { fr: 'Ajouter', en: 'Add', es: 'Añadir' },
+  'ui.add.measurements':       { fr: 'Ajouter des mensurations', en: 'Add measurements', es: 'Añadir medidas' },
+  'ui.add.meal':               { fr: 'Ajouter un repas ou aliment', en: 'Add meal or food', es: 'Añadir comida o alimento' },
+  'ui.add.note':               { fr: 'Ajouter une note', en: 'Add note', es: 'Añadir nota' },
+  'ui.change':                 { fr: 'Changer', en: 'Change', es: 'Cambiar' },
+  'ui.change.exercise':        { fr: "Changer l'exercice", en: 'Change exercise', es: 'Cambiar ejercicio' },
+  'ui.delete':                 { fr: 'Supprimer', en: 'Delete', es: 'Eliminar' },
+  'ui.delete.exercise':        { fr: "Supprimer l'exercice", en: 'Delete exercise', es: 'Eliminar ejercicio' },
+  'ui.delete.superset':        { fr: 'Supprimer le superset', en: 'Delete superset', es: 'Eliminar superset' },
+  'ui.close':                  { fr: 'Fermer', en: 'Close', es: 'Cerrar' },
+  'ui.close.alert':            { fr: "Fermer l'alerte", en: 'Close alert', es: 'Cerrar alerta' },
+  'ui.validate':               { fr: 'Valider', en: 'Validate', es: 'Validar' },
+  'ui.validating':             { fr: 'Validation...', en: 'Validating...', es: 'Validando...' },
+
+  // ── Nutrition labels ──
+  'nutrition.protein':         { fr: 'Protéines', en: 'Protein', es: 'Proteína' },
+  'nutrition.energy':          { fr: 'Énergie', en: 'Energy', es: 'Energía' },
+  'nutrition.weight':          { fr: 'Poids', en: 'Weight', es: 'Peso' },
+  'nutrition.stress':          { fr: 'Stress', en: 'Stress', es: 'Estrés' },
+
+  // ── Protocol/Goal labels ──
+  'goal.deficit':              { fr: 'Déficit', en: 'Deficit', es: 'Déficit' },
+  'goal.deficit.desc':         { fr: 'Déficit calorique', en: 'Caloric deficit', es: 'Déficit calórico' },
+  'goal.no.adjustment':        { fr: 'Aucun ajustement', en: 'No adjustment', es: 'Sin ajuste' },
+
+  // ── Messages ──
+  'msg.goals.reached':         { fr: 'Objectifs atteints pour aujourd\'hui.', en: 'Goals reached for today.', es: 'Objetivos alcanzados para hoy.' },
+  'msg.session':               { fr: 'séance', en: 'session', es: 'sesión' },
+  'msg.sessions':              { fr: 'séances', en: 'sessions', es: 'sesiones' },
+  'msg.no.session':            { fr: 'Aucune séance', en: 'No session', es: 'Sin sesión' },
+  'msg.no.series.completed':   { fr: 'Aucune série complétée cette semaine', en: 'No series completed this week', es: 'Sin series completadas esta semana' },
 } satisfies Record<string, { fr: string | string[]; en: string | string[]; es: string | string[] }>
 
 export type ClientDictKey = keyof typeof clientDict
