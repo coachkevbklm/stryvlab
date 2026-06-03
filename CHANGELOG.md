@@ -1,3 +1,22 @@
+## 2026-06-03
+
+FIX: NutritionAlignModal — DOW convention mismatch (DB uses ISO 1–7, modal used JS 0–6); Sunday (DOW 7) now correctly detected as training day
+FIX: nutritionAlign.buildScheduleSlots — loop now iterates 1..7 (ISO) not 0..6
+
+FIX: volume-targets.ts — add missing muscle slugs to MUSCLE_TO_VOLUME_GROUP (rear_delts, external_rotators, rotator_cuff, upper_back, scapula, upper_chest, shoulders, deltoids, shoulder_complex) fixing epaules_post/trapezes/pectoraux_haut invisibility
+FIX: catalog-utils.ts — getPrimaryMuscleFromCatalog and getBiomechData now fall back to heuristics when exercise name has no exact catalog match
+FIX: catalog-utils.ts — add heuristics for rear delt fly variants (élévation arrière, oiseau, pec deck inversé, face pull)
+
+FEATURE: NutritionAlignModal — modal proposing to align nutrition schedule when publishing a training program (from builder save or eye toggle)
+FEATURE: nutritionAlign.ts — pure logic for day-role heuristic detection, schedule_slots builder, macro delta computation
+REFACTOR: ClientProgramsList — add onRequestAlign prop to intercept visibility activation before API call
+
+FIX: Move session data-loss warning from PrepTimeModal to hydration intro modal (correct placement at session start)
+FIX: SessionLogger — coaching cues suppressed for warmup/cooldown sets (no intensity feedback on échauffements)
+FIX: SessionLogger — "trop facile" no longer fires when client achieves the coach-prescribed RIR target
+FIX: exercises PUT route — is_unilateral now saved on bulk replace (was silently dropped, always reset to false)
+FIX: SessionLogger — unilateral rest timer: rest only starts after both sides (D+G) complete, not after each side
+
 ## 2026-06-02
 
 FEATURE: Full Spanish (ES) translation — UI strings, food item database, AI coach language config

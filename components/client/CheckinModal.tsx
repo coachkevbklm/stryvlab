@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle } from 'lucide-react'
+import { useClientT } from './ClientI18nProvider'
 
-const FIELD_META: Record<string, { label: string; emoji: string; min: number; max: number; step: number; lowLabel: string; highLabel: string }> = {
-  sleep_duration: { label: 'Durée du sommeil', emoji: '🌙', min: 0, max: 14, step: 0.5, lowLabel: '0h', highLabel: '14h' },
-  sleep_quality:  { label: 'Qualité du sommeil', emoji: '😴', min: 1, max: 5, step: 1, lowLabel: 'Mauvaise', highLabel: 'Excellente' },
-  energy:         { label: "Niveau d'énergie", emoji: '⚡', min: 1, max: 5, step: 1, lowLabel: 'Épuisé', highLabel: 'Au top' },
-  stress:         { label: 'Niveau de stress', emoji: '🧘', min: 1, max: 5, step: 1, lowLabel: 'Serein', highLabel: 'Très stressé' },
-  mood:           { label: 'Humeur', emoji: '😊', min: 1, max: 5, step: 1, lowLabel: 'Bas', highLabel: 'Excellent' },
+const FIELD_CONFIG: Record<string, { emoji: string; min: number; max: number; step: number }> = {
+  sleep_duration: { emoji: '🌙', min: 0, max: 14, step: 0.5 },
+  sleep_quality:  { emoji: '😴', min: 1, max: 5, step: 1 },
+  energy:         { emoji: '⚡', min: 1, max: 5, step: 1 },
+  stress:         { emoji: '🧘', min: 1, max: 5, step: 1 },
+  mood:           { emoji: '😊', min: 1, max: 5, step: 1 },
 }
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function CheckinModal({ moment, open, onClose, onSuccess }: Props) {
+  const { t } = useClientT()
   const [loading, setLoading] = useState(true)
   const [configId, setConfigId] = useState('')
   const [fields, setFields] = useState<string[]>([])
@@ -29,6 +31,31 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
   const [done, setDone] = useState(false)
   const [points, setPoints] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const scaleMap: Record<string, { low: string; high: string }> = {
+    sleep_duration: { low: 'checkin.scale.sleep_duration.low', high: 'checkin.scale.sleep_duration.high' },
+    sleep_quality: { low: 'checkin.scale.sleep_quality.bad', high: 'checkin.scale.sleep_quality.excellent' },
+    energy: { low: 'checkin.scale.energy.exhausted', high: 'checkin.scale.energy.top' },
+    stress: { low: 'checkin.scale.stress.calm', high: 'checkin.scale.stress.very_stressed' },
+    mood: { low: 'checkin.scale.mood.bad', high: 'checkin.scale.mood.excellent' },
+  }
+
+  const buildFieldMeta = () => {
+    const result: Record<string, { label: string; emoji: string; min: number; max: number; step: number; lowLabel: string; highLabel: string }> = {}
+    for (const [key, config] of Object.entries(FIELD_CONFIG)) {
+      const scales = scaleMap[key] || { low: 'common.low', high: 'common.high' }
+      result[key] = {
+        label: t(`checkin.field.${key}` as any),
+        emoji: config.emoji,
+        min: config.min,
+        max: config.max,
+        step: config.step,
+        lowLabel: t(scales.low as any),
+        highLabel: t(scales.high as any),
+      }
+    }
+    return result
+  }
 
   useEffect(() => {
     if (!open) return
@@ -46,8 +73,9 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
         const activeFields: string[] = current?.fields ?? []
         setFields(activeFields)
         const defaults: Record<string, number> = {}
+        const meta = buildFieldMeta()
         for (const f of activeFields) {
-          defaults[f] = FIELD_META[f]?.min ?? 1
+          defaults[f] = meta[f]?.min ?? 1
         }
         setValues(defaults)
         setLoading(false)
@@ -63,7 +91,8 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
   }, [open, onClose])
 
   const currentField = fields[step]
-  const meta = currentField ? (FIELD_META[currentField] ?? { label: currentField, emoji: '📋', min: 1, max: 5, step: 1, lowLabel: 'Bas', highLabel: 'Haut' }) : null
+  const fieldMeta = buildFieldMeta()
+  const meta = currentField ? (fieldMeta[currentField] ?? { label: currentField, emoji: '📋', min: 1, max: 5, step: 1, lowLabel: t('common.low'), highLabel: t('common.high') }) : null
   const isLast = step >= fields.length - 1
   const pct = meta
     ? (((values[currentField] ?? meta.min) - meta.min) / (meta.max - meta.min)) * 100
@@ -88,7 +117,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
       }
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        setError(body?.error ?? 'Erreur lors de la soumission. Réessaie.')
+        setError(body?.error ?? t('checkin.modal.error.submit'))
         return
       }
       const data = await res.json().catch(() => null)
@@ -96,13 +125,13 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
       setDone(true)
       setTimeout(() => { onSuccess?.(); onClose() }, 1800)
     } catch {
-      setError('Pas de connexion. Vérifie ton réseau.')
+      setError(t('checkin.modal.error.network'))
     } finally {
       setSubmitting(false)
     }
   }
 
-  const momentLabel = moment === 'morning' ? 'Check-in matin' : 'Check-in soir'
+  const momentLabel = t(moment === 'morning' ? 'checkin.label.matin' : 'checkin.label.soir')
 
   return (
     <AnimatePresence>
@@ -130,7 +159,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
             <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
               <div>
                 <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.22em] text-white/40 leading-none mb-1">
-                  {moment === 'morning' ? 'MATIN' : 'SOIR'}
+                  {t(moment === 'morning' ? 'checkin.label.matin' : 'checkin.label.soir').toUpperCase()}
                 </p>
                 <p className="text-[18px] font-barlow-condensed font-bold uppercase tracking-[0.08em] text-white leading-tight">
                   {momentLabel}
@@ -162,10 +191,10 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
 
             <div className="px-5 pb-8 flex-1 overflow-y-auto">
               {loading ? (
-                <div className="py-8 text-center text-white/40 text-[13px]">Chargement...</div>
+                <div className="py-8 text-center text-white/40 text-[13px]">{t('checkin.modal.loading')}</div>
               ) : !fields.length ? (
                 <div className="py-8 text-center">
-                  <p className="text-[13px] text-white/50">Aucun check-in configuré.</p>
+                  <p className="text-[13px] text-white/50">{t('checkin.modal.empty')}</p>
                 </div>
               ) : done ? (
                 <motion.div
@@ -177,7 +206,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
                     <CheckCircle size={28} className="text-[#080808]" />
                   </div>
                   <p className="text-[15px] font-barlow-condensed font-bold uppercase tracking-[0.1em] text-white">
-                    Check-in validé
+                    {t('checkin.modal.success')}
                   </p>
                   {points && (
                     <p className="text-[28px] font-black text-[#f2f2f2] font-mono">
@@ -248,7 +277,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
                           onClick={() => setStep(s => s - 1)}
                           className="h-12 px-5 rounded-xl bg-white/[0.06] text-white/70 text-[12px] font-bold uppercase tracking-[0.1em] transition-colors hover:bg-white/[0.10]"
                         >
-                          Retour
+                          {t('checkin.modal.action.back')}
                         </button>
                       )}
                       {isLast ? (
@@ -258,7 +287,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
                           className="flex-1 h-12 rounded-xl font-bold text-[13px] uppercase tracking-[0.1em] transition-opacity disabled:opacity-50"
                           style={{ background: '#f2f2f2', color: '#0d0d0d' }}
                         >
-                          {submitting ? '...' : 'Valider'}
+                          {submitting ? '...' : t('checkin.modal.action.submit')}
                         </button>
                       ) : (
                         <button
@@ -266,7 +295,7 @@ export default function CheckinModal({ moment, open, onClose, onSuccess }: Props
                           className="flex-1 h-12 rounded-xl font-bold text-[13px] uppercase tracking-[0.1em]"
                           style={{ background: '#f2f2f2', color: '#0d0d0d' }}
                         >
-                          Suivant
+                          {t('checkin.modal.action.next')}
                         </button>
                       )}
                     </div>

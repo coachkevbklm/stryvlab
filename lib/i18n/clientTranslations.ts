@@ -852,6 +852,119 @@ export const clientDict = {
   'access.invalid.title':   { fr: 'Lien invalide', en: 'Invalid link', es: 'Enlace inválido' },
   'access.invalid.desc':    { fr: "Ce lien d'accès n'existe pas ou a été révoqué par ton coach.", en: 'This access link does not exist or has been revoked by your coach.', es: 'Este enlace de acceso no existe o ha sido revocado por tu coach.' },
   'access.login.manual':    { fr: 'Se connecter manuellement', en: 'Sign in manually', es: 'Iniciar sesión manualmente' },
+
+  // ── Checkin Modal ──
+  'checkin.field.sleep_duration': { fr: 'Durée du sommeil', en: 'Sleep duration', es: 'Duración del sueño' },
+  'checkin.field.sleep_quality':  { fr: 'Qualité du sommeil', en: 'Sleep quality', es: 'Calidad del sueño' },
+  'checkin.field.energy':         { fr: "Niveau d'énergie", en: 'Energy level', es: 'Nivel de energía' },
+  'checkin.field.stress':         { fr: 'Niveau de stress', en: 'Stress level', es: 'Nivel de estrés' },
+  'checkin.field.mood':           { fr: 'Humeur', en: 'Mood', es: 'Humor' },
+  'checkin.scale.sleep_duration.low':  { fr: '0h', en: '0h', es: '0h' },
+  'checkin.scale.sleep_duration.high': { fr: '14h', en: '14h', es: '14h' },
+  'checkin.scale.sleep_quality.bad':    { fr: 'Mauvaise', en: 'Bad', es: 'Mala' },
+  'checkin.scale.sleep_quality.excellent': { fr: 'Excellente', en: 'Excellent', es: 'Excelente' },
+  'checkin.scale.energy.exhausted':     { fr: 'Épuisé', en: 'Exhausted', es: 'Agotado' },
+  'checkin.scale.energy.top':           { fr: 'Au top', en: 'Top', es: 'En la cima' },
+  'checkin.scale.stress.calm':          { fr: 'Serein', en: 'Calm', es: 'Tranquilo' },
+  'checkin.scale.stress.very_stressed': { fr: 'Très stressé', en: 'Very stressed', es: 'Muy estresado' },
+  'checkin.scale.mood.bad':             { fr: 'Bas', en: 'Bad', es: 'Bajo' },
+  'checkin.scale.mood.excellent':       { fr: 'Excellent', en: 'Excellent', es: 'Excelente' },
+  'checkin.modal.loading':   { fr: 'Chargement...', en: 'Loading...', es: 'Cargando...' },
+  'checkin.modal.empty':     { fr: 'Aucun check-in configuré.', en: 'No check-in configured.', es: 'Sin check-in configurado.' },
+  'checkin.modal.success':   { fr: 'Check-in validé', en: 'Check-in validated', es: 'Check-in validado' },
+  'checkin.modal.error.submit':  { fr: 'Erreur lors de la soumission. Réessaie.', en: 'Error submitting. Try again.', es: 'Error al enviar. Inténtalo de nuevo.' },
+  'checkin.modal.error.network': { fr: 'Pas de connexion. Vérifie ton réseau.', en: 'No connection. Check your network.', es: 'Sin conexión. Verifica tu red.' },
+  'checkin.modal.action.back':   { fr: 'Retour', en: 'Back', es: 'Atrás' },
+  'checkin.modal.action.next':   { fr: 'Suivant', en: 'Next', es: 'Siguiente' },
+  'checkin.modal.action.submit': { fr: 'Valider', en: 'Validate', es: 'Validar' },
+  'checkin.label.matin':   { fr: 'MATIN', en: 'MORNING', es: 'MAÑANA' },
+  'checkin.label.soir':    { fr: 'SOIR', en: 'EVENING', es: 'NOCHE' },
+
+  // ── Cycle Modal ──
+  'cycle.modal.conflict':        { fr: 'Un log existe déjà le {date}. Remplacer ?', en: 'A log already exists on {date}. Replace?', es: 'Ya existe un registro el {date}. ¿Reemplazar?' },
+  'cycle.action.confirm_anyway': { fr: 'Confirmer quand même', en: 'Confirm anyway', es: 'Confirmar de todos modos' },
+  'cycle.label.start_date':      { fr: 'Premier jour de règles :', en: 'First day of period:', es: 'Primer día del período:' },
+  'cycle.action.today':          { fr: "Aujourd'hui", en: 'Today', es: 'Hoy' },
+  'cycle.action.choose_date':    { fr: 'Choisir une autre date', en: 'Choose another date', es: 'Elegir otra fecha' },
+  'cycle.section.start':         { fr: 'Début de règles', en: 'Period start', es: 'Inicio del período' },
+  'cycle.section.end':           { fr: 'Fin de règles', en: 'Period end', es: 'Final del período' },
+  'cycle.action.log_end':        { fr: 'Mes règles sont terminées', en: 'My period has ended', es: 'Mi período ha terminado' },
+  'cycle.modal.loading':         { fr: 'Enregistrement…', en: 'Saving…', es: 'Guardando…' },
+  'cycle.action.retour':         { fr: 'Retour', en: 'Back', es: 'Atrás' },
+
+  // ── Profile Photo ──
+  'profile.photo.add':          { fr: 'Ajouter une photo', en: 'Add a photo', es: 'Añadir una foto' },
+  'profile.photo.change':       { fr: 'Changer la photo', en: 'Change photo', es: 'Cambiar foto' },
+  'profile.photo.delete':       { fr: 'Supprimer', en: 'Delete', es: 'Eliminar' },
+  'profile.photo.error.format': { fr: 'Format non supporté (JPEG, PNG, WebP uniquement)', en: 'Unsupported format (JPEG, PNG, WebP only)', es: 'Formato no compatible (solo JPEG, PNG, WebP)' },
+  'profile.photo.error.size':   { fr: 'Fichier trop lourd (max 30 Mo)', en: 'File too large (max 30 MB)', es: 'Archivo demasiado grande (máx. 30 MB)' },
+  'profile.photo.error.upload': { fr: "Erreur lors de l'upload", en: 'Upload error', es: 'Error de carga' },
+  'profile.photo.error.delete': { fr: 'Erreur lors de la suppression', en: 'Delete error', es: 'Error al eliminar' },
+  'profile.photo.alt':          { fr: 'Photo de profil', en: 'Profile photo', es: 'Foto de perfil' },
+
+  // ── Protocol Rationale ──
+  'protocol.carb_cycle.high':   { fr: 'Glucides élevés (jour entraînement) — glycogène musculaire maximisé.', en: 'High carbs (training day) — muscle glycogen maximized.', es: 'Carbohidratos altos (día de entrenamiento) — glucógeno muscular maximizado.' },
+  'protocol.carb_cycle.low':    { fr: 'Glucides réduits (jour repos) — mobilisation des graisses favorisée.', en: 'Low carbs (rest day) — fat mobilization favored.', es: 'Carbohidratos reducidos (día de descanso) — movilización de grasas favorecida.' },
+  'protocol.carb_cycle.medium': { fr: 'Glucides modérés — équilibre énergie / récupération.', en: 'Moderate carbs — energy/recovery balance.', es: 'Carbohidratos moderados — equilibrio energía/recuperación.' },
+  'protocol.tdee.formula':      { fr: 'Estimé depuis ton programme', en: 'Estimated from your program', es: 'Estimado desde tu programa' },
+  'protocol.tdee.adaptive':     { fr: 'Calibré depuis tes pesées (14 jours)', en: 'Calibrated from your weigh-ins (14 days)', es: 'Calibrado desde tus pesadas (14 días)' },
+  'protocol.label.caloric_target': { fr: 'Objectif calorique', en: 'Caloric target', es: 'Objetivo calórico' },
+  'protocol.label.bulk':        { fr: 'Prise de masse', en: 'Bulk', es: 'Ganancia de peso' },
+  'protocol.label.cut':         { fr: 'Perte de masse grasse', en: 'Cut', es: 'Pérdida de grasa' },
+  'protocol.label.maintenance': { fr: 'Maintenance', en: 'Maintenance', es: 'Mantenimiento' },
+  'protocol.label.tdee':        { fr: 'Dépense énergétique estimée', en: 'Estimated energy expenditure', es: 'Gasto energético estimado' },
+
+  // ── Common Modal / Error Messages ──
+  'modal.loading':           { fr: 'Chargement…', en: 'Loading…', es: 'Cargando…' },
+  'modal.error.submit':      { fr: 'Erreur lors de la soumission', en: 'Submit error', es: 'Error al enviar' },
+  'modal.error.network':     { fr: 'Erreur réseau', en: 'Network error', es: 'Error de red' },
+  'modal.error.generic':     { fr: 'Une erreur est survenue', en: 'An error occurred', es: 'Ocurrió un error' },
+  'modal.action.back':       { fr: 'Retour', en: 'Back', es: 'Atrás' },
+  'modal.action.close':      { fr: 'Fermer', en: 'Close', es: 'Cerrar' },
+  'modal.action.retry':      { fr: 'Réessayer', en: 'Retry', es: 'Reintentar' },
+
+  // ── Exercise / Deload warnings ──
+  'deload.banner.title':     { fr: 'Vous êtes dans une période de "déload"', en: 'You are in a deload period', es: 'Estás en un período de descarga' },
+  'deload.banner.dismiss':   { fr: "Fermer l'alerte", en: 'Dismiss alert', es: 'Descartar alerta' },
+  'exercise.context.note':   { fr: 'Ajouter une note', en: 'Add a note', es: 'Añadir una nota' },
+
+  // ── Voice & Activity ──
+  'voice.error.microphone':  { fr: 'Microphone inaccessible', en: 'Microphone unavailable', es: 'Micrófono no disponible' },
+  'voice.error.category':    { fr: 'Choisissez une catégorie et une sous-catégorie pour chaque nouvel aliment', en: 'Choose a category and subcategory for each new food', es: 'Elige una categoría y subcategoría para cada alimento nuevo' },
+
+  // ── Nutrition / Meal logging ──
+  'nutrition.error.generic': { fr: 'Impossible de charger les données', en: 'Unable to load data', es: 'No se pudieron cargar los datos' },
+  'nutrition.error.save':    { fr: 'Erreur lors de l\'enregistrement.', en: 'Error saving.', es: 'Error al guardar.' },
+  'nutrition.error.meal.add':{ fr: 'Ajouter un aliment à tester', en: 'Add a food to test', es: 'Añadir un alimento a probar' },
+  'nutrition.log.submit':    { fr: 'Valider ce repas', en: 'Validate meal', es: 'Validar comida' },
+  'nutrition.log.save_now':  { fr: 'Valider maintenant', en: 'Validate now', es: 'Validar ahora' },
+
+  // ── Programme / Session ──
+  'programme.error.skip':    { fr: 'Impossible de passer cette séance.', en: 'Cannot skip this session.', es: 'No se puede saltar esta sesión.' },
+
+  // ── OneRM / Performance ──
+  'performance.error.load':  { fr: 'Impossible de charger les données', en: 'Unable to load data', es: 'No se pudieron cargar los datos' },
+
+  // ── Activity logging ──
+  'activity.error.generic':  { fr: 'Erreur', en: 'Error', es: 'Error' },
+  'activity.error.network':  { fr: 'Erreur réseau pendant la mise à jour.', en: 'Network error during update.', es: 'Error de red durante la actualización.' },
+  'activity.error.delete':   { fr: 'Erreur réseau pendant la suppression.', en: 'Network error during deletion.', es: 'Error de red durante la eliminación.' },
+  'activity.error.update':   { fr: 'Impossible de mettre à jour cet aliment.', en: 'Unable to update this food.', es: 'No se pudo actualizar este alimento.' },
+  'activity.error.delete.permanent': { fr: 'Impossible de supprimer cet aliment pour le moment.', en: 'Unable to delete this food at this time.', es: 'No se puede eliminar este alimento en este momento.' },
+
+  // ── ProtocolRationale maintenance label ──
+  'protocol.maint.label':    { fr: 'Maintenance', en: 'Maintenance', es: 'Mantenimiento' },
+  'protocol.maint.desc':     { fr: 'Maintenance — préserve ta composition corporelle actuelle.', en: 'Maintenance — preserves your current body composition.', es: 'Mantenimiento — preserva tu composición corporal actual.' },
+
+  // ── Common ──
+  'common.low':  { fr: 'Bas', en: 'Low', es: 'Bajo' },
+  'common.high': { fr: 'Haut', en: 'High', es: 'Alto' },
+
+  // ── Measurements sections ──
+  'meas.section.weight':       { fr: 'Poids', en: 'Weight', es: 'Peso' },
+  'meas.section.measurements': { fr: 'Circonférences', en: 'Measurements', es: 'Medidas' },
+  'meas.error.empty':          { fr: 'Remplis au moins une valeur.', en: 'Fill in at least one value.', es: 'Completa al menos un valor.' },
+  'meas.error.save':           { fr: "Erreur lors de l'enregistrement.", en: 'Error saving.', es: 'Error al guardar.' },
 } satisfies Record<string, { fr: string | string[]; en: string | string[]; es: string | string[] }>
 
 export type ClientDictKey = keyof typeof clientDict
