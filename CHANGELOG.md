@@ -1,5 +1,12 @@
 ## 2026-06-03
 
+FEATURE: PWA i18n wiring Phase 2 — CheckinModal, MeasurementsEntrySheet, LogPeriodSheet, ProfilePhotoUpload now use useClientT() hook for dynamic language switching
+FEATURE: Add missing i18n keys: sleep_duration scales, common.low/high, measurement sections/errors, cycle success messages
+REFACTOR: CheckinModal.tsx — build FIELD_META dynamically from i18n with scale mapping
+REFACTOR: MeasurementsEntrySheet.tsx — introduce buildFields() helper for dynamic labels and section headers
+REFACTOR: LogPeriodSheet.tsx — wire cycle.success.* keys with phase placeholder support
+REFACTOR: ProfilePhotoUpload.tsx — wire all error messages and action buttons to i18n
+
 FIX: NutritionAlignModal — DOW convention mismatch (DB uses ISO 1–7, modal used JS 0–6); Sunday (DOW 7) now correctly detected as training day
 FIX: nutritionAlign.buildScheduleSlots — loop now iterates 1..7 (ISO) not 0..6
 
