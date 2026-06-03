@@ -1,11 +1,14 @@
 ## 2026-06-03
 
-FEATURE: PWA i18n wiring Phase 2 — CheckinModal, MeasurementsEntrySheet, LogPeriodSheet, ProfilePhotoUpload now use useClientT() hook for dynamic language switching
-FEATURE: Add missing i18n keys: sleep_duration scales, common.low/high, measurement sections/errors, cycle success messages
-REFACTOR: CheckinModal.tsx — build FIELD_META dynamically from i18n with scale mapping
-REFACTOR: MeasurementsEntrySheet.tsx — introduce buildFields() helper for dynamic labels and section headers
-REFACTOR: LogPeriodSheet.tsx — wire cycle.success.* keys with phase placeholder support
-REFACTOR: ProfilePhotoUpload.tsx — wire all error messages and action buttons to i18n
+FEATURE: PWA i18n wiring Phases 2–3 complete — 6 components fully wired to useClientT() hook
+FEATURE: Add 20+ missing i18n keys: sleep_duration scales, common scales, measurement sections/errors, cycle success, protocol descriptions
+REFACTOR: CheckinModal, MeasurementsEntrySheet, LogPeriodSheet, ProfilePhotoUpload, ProtocolRationale, QuickWaterModal — all use dynamic i18n
+REFACTOR: CheckinModal — build FIELD_META dynamically with scale mapping (sleep_duration→0h/14h, scales 1–5)
+REFACTOR: MeasurementsEntrySheet — buildFields() helper; dynamic labels (meas.weight, meas.neck, etc.) and section headers
+REFACTOR: LogPeriodSheet — cycle.success.* keys with phase placeholder ({phase})
+REFACTOR: ProfilePhotoUpload — all error/action messages wired to i18n
+REFACTOR: ProtocolRationale — carb_cycle labels, TDEE source, bulk/cut/maint descriptions, protocol label titles
+REFACTOR: QuickWaterModal — error handling fallback to i18n
 
 FIX: NutritionAlignModal — DOW convention mismatch (DB uses ISO 1–7, modal used JS 0–6); Sunday (DOW 7) now correctly detected as training day
 FIX: nutritionAlign.buildScheduleSlots — loop now iterates 1..7 (ISO) not 0..6
