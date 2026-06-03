@@ -3,6 +3,7 @@ import { computeNutritionBalance } from '@/lib/nutrition/balance'
 import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
 import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { useClientT } from '../ClientI18nProvider'
 
 type DeltaCard = {
   key: 'protein' | 'carbs' | 'fat' | 'water'
@@ -18,27 +19,27 @@ function formatValue(value: number, unit: 'g' | 'L'): string {
   return unit === 'L' ? `${value.toFixed(1)} ${unit}` : `${Math.round(value)}${unit}`
 }
 
-function buildHeadline(cards: DeltaCard[], remainingCaloriesNet: number): string {
+function buildHeadline(cards: DeltaCard[], remainingCaloriesNet: number, t: (key: any) => string): string {
   const activeRemaining = cards.filter(card => card.remaining > 0)
   const activeOverflow = cards.filter(card => card.overflow > 0)
 
   if (activeOverflow.length === 0 && activeRemaining.length === 0 && remainingCaloriesNet <= 0) {
-    return 'Objectifs atteints pour aujourd’hui.'
+    return t("nutrition.goals.reached")
   }
 
   if (activeOverflow.length > 0) {
-    const names = activeOverflow.map(card => card.shortLabel.toLowerCase()).join(', ')
-    return `On évite surtout d’ajouter ${names} maintenant.`
+    const names = activeOverflow.map(card => card.shortLabel.toLowerCase()).join(", ")
+    return t("nutrition.overflow.msg").replace("{names}", names)
   }
 
   const primary = activeRemaining.sort((a, b) => b.remaining - a.remaining)[0]
   if (!primary) {
     return remainingCaloriesNet > 0
-      ? `${Math.round(remainingCaloriesNet)} kcal encore disponibles.`
-      : 'La journée est bien calibrée.'
+      ? t("nutrition.calories.available").replace("{n}", String(Math.round(remainingCaloriesNet)))
+      : t("nutrition.day.calibrated")
   }
 
-  return `${primary.label} en priorité pour finir la journée proprement.`
+  return t("nutrition.macro.priority").replace("{macro}", primary.label)
 }
 
 export default function RemainingBreakdown({
@@ -54,6 +55,7 @@ export default function RemainingBreakdown({
   bodyWeightKg?: number | null
   onCompose?: () => void
 }) {
+  const { t } = useClientT()
   const informativeBalance = computeNutritionBalance(consumed, target)
   const actionable = computeActionableRemaining({
     target,
@@ -82,8 +84,8 @@ export default function RemainingBreakdown({
   const cards: DeltaCard[] = [
     {
       key: 'protein',
-      label: 'Protéines',
-      shortLabel: 'Protéines',
+      label: t('nutrition.protein'),
+      shortLabel: t('nutrition.protein'),
       remaining: remaining.protein_g,
       overflow: overflow.protein_g,
       unit: 'g',
@@ -91,8 +93,8 @@ export default function RemainingBreakdown({
     },
     {
       key: 'carbs',
-      label: 'Glucides',
-      shortLabel: 'Glucides',
+      label: t('nutrition.carbs'),
+      shortLabel: t('nutrition.carbs'),
       remaining: remaining.carbs_g,
       overflow: overflow.carbs_g,
       unit: 'g',
@@ -100,8 +102,8 @@ export default function RemainingBreakdown({
     },
     {
       key: 'fat',
-      label: 'Lipides',
-      shortLabel: 'Lipides',
+      label: t('nutrition.fat'),
+      shortLabel: t('nutrition.fat'),
       remaining: remaining.fat_g,
       overflow: overflow.fat_g,
       unit: 'g',
@@ -109,8 +111,8 @@ export default function RemainingBreakdown({
     },
     {
       key: 'water',
-      label: 'Hydratation',
-      shortLabel: 'Eau',
+      label: t('nutrition.hydration'),
+      shortLabel: t('nutrition.hydration'),
       remaining: remaining.water_ml / 1000,
       overflow: overflow.water_ml / 1000,
       unit: 'L',
@@ -125,7 +127,7 @@ export default function RemainingBreakdown({
   const overflowCards = activeCards
     .filter(card => card.overflow > 0)
     .sort((a, b) => b.overflow - a.overflow)
-  const headline = buildHeadline(cards, actionable.actionableRemaining.calories)
+  const headline = buildHeadline(cards, actionable.actionableRemaining.calories, t)
 
   return (
     <div className="bg-[#111111] rounded-2xl p-4">
@@ -165,7 +167,7 @@ export default function RemainingBreakdown({
           <div className="col-span-2 rounded-2xl bg-[#111111] p-3">
             <div className="text-[10px] uppercase tracking-[0.12em] text-[#e0e0e0] font-bold">Bonne zone</div>
             <div className="mt-1 text-[13px] text-white/75 leading-relaxed">
-              Aucun macro n’est réellement en retard pour le moment.
+              {t("nutrition.nomacro.lag")}
             </div>
           </div>
         )}

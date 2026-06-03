@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
 import { getCycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
 import type { CycleState } from '@/lib/cycle/cycleEngine'
+import { useClientT } from '../ClientI18nProvider'
 
 interface ProtocolDay {
   name: string
@@ -167,6 +168,7 @@ function DayAccordion({
   cycleSyncEnabled?: boolean
   defaultOpen: boolean
 }) {
+  const { t } = useClientT()
   const [open, setOpen] = useState(defaultOpen)
 
   const delta     = tdee != null && tdee > 0 ? Math.round(day.kcal - tdee) : null
@@ -174,7 +176,7 @@ function DayAccordion({
   const goalLabel =
     delta == null ? null :
     delta >  100  ? 'Surplus' :
-    delta < -100  ? t('goal.deficit') : 'Maintenance'
+    delta < -100  ? t('goal.deficit_calorique') : t('goal.maintenance')
 
   const gPerKg = bodyWeightKg && bodyWeightKg > 0
     ? (day.protein_g / bodyWeightKg).toFixed(2)
@@ -306,10 +308,10 @@ function DayAccordion({
                       cycleAdj.proteinDelta   !== 0 ? `${cycleAdj.proteinDelta > 0 ? '+' : ''}${cycleAdj.proteinDelta}g P`    : null,
                       cycleAdj.carbsDelta     !== 0 ? `${cycleAdj.carbsDelta > 0 ? '+' : ''}${cycleAdj.carbsDelta}g G`        : null,
                     ].filter(Boolean).join(' · ')
-                  : t('msg.no.adjustment')
+                  : t('msg.no.adjustment' as any)
                 const adjustedKcal = Math.round(day.kcal + cycleAdj.caloriesDelta)
                 const nextLabel    = cycleState!.nextPhaseIn != null
-                  ? `Phase suivante dans ${cycleState!.nextPhaseIn}j`
+                  ? t('cycle.next.phase' as any).replace('{days}', String(cycleState!.nextPhaseIn))
                   : undefined
                 return (
                   <>
@@ -343,6 +345,7 @@ export default function ProtocolRationale({
   target,
   dayName,
 }: Props) {
+  const { t } = useClientT()
   const days: ProtocolDay[] = protocolDays?.length
     ? protocolDays
     : target
@@ -372,7 +375,7 @@ export default function ProtocolRationale({
   const globalPhase  =
     avgDelta == null ? null :
     avgDelta >  100  ? 'Surplus calorique' :
-    avgDelta < -100  ? 'Déficit calorique' : 'Maintenance'
+    avgDelta < -100  ? t('goal.deficit_calorique') : t('goal.maintenance')
   const avgDeltaStr  = avgDelta != null
     ? (avgDelta >= 0 ? `+${avgDelta}` : `${avgDelta}`) + ' kcal/j en moyenne vs TDEE'
     : null

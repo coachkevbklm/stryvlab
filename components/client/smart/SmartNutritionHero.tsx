@@ -9,6 +9,7 @@ import { getRemainingNutritionTargets } from '@/lib/nutrition/remaining-targets'
 import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { useClientT } from '../ClientI18nProvider'
 
 type Props = {
   date: string
@@ -32,10 +33,10 @@ const ARC_R   = 76
 const ARC_D   = `M 44.2,148 A ${ARC_R},${ARC_R} 0 1,1 175.8,148`
 const ARC_LEN = 2 * Math.PI * ARC_R * (240 / 360)  // ≈ 319
 
-const MACROS = [
-  { key: 'protein_g' as const, label: 'Protéines', color: NUTRITION_UI_COLORS.protein },
-  { key: 'carbs_g'   as const, label: 'Glucides',  color: NUTRITION_UI_COLORS.carbs   },
-  { key: 'fat_g'     as const, label: 'Lipides',   color: NUTRITION_UI_COLORS.fat     },
+const MACRO_KEYS = [
+  { key: 'protein_g' as const, iKey: 'nutrition.protein' as const, color: NUTRITION_UI_COLORS.protein },
+  { key: 'carbs_g'   as const, iKey: 'nutrition.carbs' as const,   color: NUTRITION_UI_COLORS.carbs   },
+  { key: 'fat_g'     as const, iKey: 'nutrition.fat' as const,     color: NUTRITION_UI_COLORS.fat     },
 ]
 
 const SIMULATION_COLOR = '#818cf8'
@@ -77,9 +78,11 @@ export default function SmartNutritionHero({
   micro = false,
   showSimulationBadge = true,
 }: Props) {
+  const { t } = useClientT()
   const prev = shiftDate(date, -1)
   const next = shiftDate(date, 1)
   const balance = computeNutritionBalance(consumed, target)
+  const MACROS = MACRO_KEYS.map(m => ({ ...m, label: t(m.iKey as any) }))
   const rawRemaining = getRemainingNutritionTargets({
     dailyTargets: target,
     consumedToday: consumed,
