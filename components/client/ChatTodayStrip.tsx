@@ -108,7 +108,7 @@ export default function ChatTodayStrip({ onCheckinClick }: ChatTodayStripProps) 
               {(data.water.logged / 1000).toFixed(1)}<span className="text-[#5a5a5a]">L / {data.water.target / 1000}L</span>
             </span>
             <div className="w-8 h-1 bg-[#2e2e2e] rounded-full overflow-hidden">
-              <div className="h-full bg-[#b0b0b0] rounded-full transition-all" style={{ width: `${waterPct * 100}%` }} />
+              <div className="h-full rounded-full transition-all" style={{ width: `${waterPct * 100}%`, backgroundColor: 'var(--data-petrol)' }} />
             </div>
           </button>
 
