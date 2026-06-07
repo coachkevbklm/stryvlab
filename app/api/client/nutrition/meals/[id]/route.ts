@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { computePhysiologicalDate } from "@/lib/nutrition/physiological-date"
 
 function service() {
   return createServiceClient(
@@ -23,7 +22,6 @@ async function resolveClientId(userId: string): Promise<string | null> {
 const patchMealSchema = z.object({
   title: z.string().max(80).nullable().optional(),
   meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
-  logged_at: z.string().datetime().optional(),
   notes: z.string().max(500).nullable().optional(),
   photo_url: z.string().url().optional(),
 })
@@ -57,11 +55,6 @@ export async function PATCH(
   const patch: Record<string, unknown> = {}
   if ("title" in body.data) patch.title = body.data.title?.trim() || null
   if (body.data.meal_type) patch.meal_type = body.data.meal_type
-  if (body.data.logged_at) {
-    const dt = new Date(body.data.logged_at)
-    patch.logged_at = dt.toISOString()
-    patch.physiological_date = computePhysiologicalDate(dt)
-  }
   if ("notes" in body.data) patch.notes = body.data.notes?.trim() || null
   if (body.data.photo_url) {
     const photos = Array.isArray(existing.photo_urls) ? existing.photo_urls : []

@@ -38,13 +38,6 @@ function checkRateLimit(clientId: string): boolean {
 const bodySchema = z.object({
   transcript: z.string().min(3).max(1000),
   physiological_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-<<<<<<< ours
-  lang: z.enum(["fr", "en", "es"]).default("fr"),
-  client_hour: z.number().int().min(0).max(23).optional(),
-||||||| base
-  lang: z.enum(["fr", "en", "es"]).default("fr"),
-=======
->>>>>>> theirs
 })
 
 export async function POST(req: NextRequest) {
@@ -62,13 +55,7 @@ export async function POST(req: NextRequest) {
   const body = bodySchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
-<<<<<<< ours
-  const { transcript, lang, client_hour } = body.data
-||||||| base
-  const { transcript, lang } = body.data
-=======
   const { transcript } = body.data
->>>>>>> theirs
   const db = service()
 
   // ── Fetch top-20 food items this client uses most ─────────────────────────
@@ -90,30 +77,21 @@ export async function POST(req: NextRequest) {
     .slice(0, 20)
     .map(f => `${f.name} (id: ${f.id})`)
 
-  const currentHour = client_hour ?? new Date().getHours() // prefer client local time
+  const currentHour = new Date().getHours()
   const catalogHint = topFoods.length
-    ? `Aliments fréquents du client (pour résolution d'ID uniquement — ne PAS s'en servir pour renommer un aliment du transcript) :\n${topFoods.join('\n')}`
+    ? `Catalogue préféré du client :\n${topFoods.join('\n')}`
     : ""
 
   // ── GPT-4o mini call ──────────────────────────────────────────────────────
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-  const systemPrompt = `Tu es un assistant nutritionnel. Extrais les aliments et quantités du transcript ci-dessous. Retourne UNIQUEMENT un JSON valide.
+  const systemPrompt = `Tu es un assistant nutritionnel. Analyse ce texte et retourne UNIQUEMENT un JSON valide.
 
-RÈGLE ABSOLUE — NOM DES ALIMENTS :
-Utilise le nom tel qu'il est dit dans le transcript. Ne jamais renommer, paraphraser ni substituer.
-- "beurre de baratte" → "Beurre de baratte" (PAS "beurre de cacahuète")
-- "flocons d'avoine" → "Flocons d'avoine" (PAS "porridge")
-- "riz basmati" → "Riz basmati" (PAS "riz blanc")
-Exception UNIQUEMENT si le terme est un non-mot ou un nom de marque clairement déformé :
-- "proutimuscle", "prunty", "nutrimuscle protimuscle" → "Whey protéine" (générique)
-- Si la marque est reconnaissable (Danone, Activia, etc.), conserve-la.
-
-Format JSON :
+Format de réponse :
 {
   "items": [
     {
-      "name": "nom de l'aliment issu du transcript",
+      "name": "nom de l'aliment en français",
       "quantity_g": 150,
       "kcal": 248,
       "protein_g": 31.5,
@@ -126,28 +104,14 @@ Format JSON :
   "meal_type": "lunch"
 }
 
-Autres règles :
+Règles :
 - Identifie chaque aliment distinct mentionné
-<<<<<<< ours
-- Si quantité non précisée, estime une portion standard
-- confidence: "high" si quantité ET aliment explicites, "medium" si estimés, "low" si très incertain
-- meal_type : breakfast | lunch | dinner | snack — selon contexte ou heure (${currentHour}h)
-- Valeurs nutritionnelles = pour la quantité indiquée (pas pour 100g)
-- Ne retourne QUE le JSON
-||||||| base
-- Si la quantité n'est pas précisée, estime une portion standard
-- confidence: "high" si quantité explicite, "medium" si estimée, "low" si très incertain
-- meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
-- Ne retourne QUE le JSON, aucun texte autour
-- Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
-=======
 - Si la quantité n'est pas précisée, estime une portion standard
 - confidence: "high" si quantité explicite, "medium" si estimée, "low" si très incertain
 - meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
 - Ne retourne QUE le JSON, aucun texte autour
 - Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
 - Le texte provient de la reconnaissance vocale automatique : il peut contenir des homophones erronés. Interprète toujours dans un contexte alimentaire/nutritionnel (ex: "port" → "porc", "ver" → "verre", "vert" → contexte légume ou couleur, "tain" → "thym", "sel" → "sel", "eau" → "eau", etc.)
->>>>>>> theirs
 
 ${catalogHint}`
 
@@ -159,9 +123,9 @@ ${catalogHint}`
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Transcript vocal :\n${transcript}` },
+          { role: "user", content: transcript },
         ],
-        temperature: 0.1,
+        temperature: 0.2,
         max_tokens: 800,
         response_format: { type: "json_object" },
       })

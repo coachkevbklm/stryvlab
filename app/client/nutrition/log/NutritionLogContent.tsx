@@ -21,7 +21,7 @@ import { useClientT } from "@/components/client/ClientI18nProvider"
 import { NUTRITION_UI_COLORS } from "@/lib/nutrition/ui-colors"
 import { computeNutritionBalance } from "@/lib/nutrition/balance"
 import { evaluateFoodCompatibility, suggestQuantityForItem } from "@/lib/nutrition/compose-advisor"
-import { getRemainingNutritionTargets } from "@/lib/nutrition/remaining-targets"
+import { computeActionableRemaining } from "@/lib/nutrition/actionable-remaining"
 import RemainingNutritionSummary from "@/components/client/nutrition/RemainingNutritionSummary"
 import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget"
 
@@ -190,6 +190,7 @@ function NutritionLogContent({
   const [searchQ, setSearchQ] = useState("")
   const [qMode, setQMode] = useState<"grams" | "portion">("grams")
   const [quantityG, setQuantityG] = useState<number>(100)
+  const [quantityInput, setQuantityInput] = useState("100")
   const [selectedPortion, setSelectedPortion] = useState<number>(0)
   const [portionMult, setPortionMult] = useState<number>(1)
   const [scalingProfile, setScalingProfile] = useState<PortionScalingProfile | null>(null)
@@ -263,14 +264,19 @@ function NutritionLogContent({
   function goTo(next: Layer, dir: number) { setDirection(dir); setLayer(next) }
   function selectCategory(cat: CategoryL1) { setSelectedCategory(cat); setSelectedSubcategory(null); goTo("subcategory", 1) }
   function selectSubcategory(sub: string) { setSelectedSubcategory(sub); setSearchQ(""); goTo("item", 1) }
+  function applyQuantity(next: number) {
+    const normalized = Math.max(0, Number.isFinite(next) ? next : 0)
+    setQuantityG(normalized)
+    setQuantityInput(normalized === 0 ? "" : String(normalized))
+  }
   function selectItem(item: FoodItem) {
     setSelectedItem(item)
     const suggested = macroBalance ? suggestQuantityForItem(item, macroBalance.remaining) : null
     if (composerMode === "guide" && suggested) {
-      setQuantityG(suggested.grams)
+      applyQuantity(suggested.grams)
       setDidAutoAdjust(true)
     } else {
-      setQuantityG(100)
+      applyQuantity(100)
       setDidAutoAdjust(false)
     }
     setSelectedPortion(0)
@@ -328,12 +334,12 @@ function NutritionLogContent({
 
   function applyPortion(idx: number, mult: number = portionMult) {
     setSelectedPortion(idx)
-    setQuantityG(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
+    applyQuantity(getScaledPortionG(PORTION_SIZES[idx], scalingProfile, mult))
   }
 
   function applyMultiplier(mult: number) {
     setPortionMult(mult)
-    if (qMode === "portion") setQuantityG(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
+    if (qMode === "portion") applyQuantity(getScaledPortionG(PORTION_SIZES[selectedPortion], scalingProfile, mult))
   }
 
   function addToMeal() {
@@ -502,11 +508,20 @@ function NutritionLogContent({
   const macroBalance = effectiveConsumed && balanceContext
     ? computeNutritionBalance(effectiveConsumed, balanceContext.target)
     : null
-  const remainingTargets = effectiveConsumed && balanceContext
-    ? getRemainingNutritionTargets({
-        dailyTargets: balanceContext.target,
-        consumedToday: effectiveConsumed,
+  const actionableRemaining = effectiveConsumed && balanceContext
+    ? computeActionableRemaining({
+        target: balanceContext.target,
+        consumed: effectiveConsumed,
       })
+    : null
+  const remainingTargets = actionableRemaining?.actionableRemaining ?? null
+  const remainingOverflow = actionableRemaining
+    ? {
+        calories: Math.max(0, effectiveConsumed.kcal - balanceContext.target.kcal),
+        protein: actionableRemaining.overflow.protein_g,
+        carbs: actionableRemaining.overflow.carbs_g,
+        fat: actionableRemaining.overflow.fat_g,
+      }
     : null
   const quantitySuggestion = selectedItem && macroBalance
     ? suggestQuantityForItem(selectedItem, macroBalance.remaining)
@@ -530,10 +545,10 @@ function NutritionLogContent({
         balanceContext.target,
       )
     : null
-  const previewRemainingTargets = selectedMacros && effectiveConsumed && balanceContext
-    ? getRemainingNutritionTargets({
-        dailyTargets: balanceContext.target,
-        consumedToday: {
+  const previewActionableRemaining = selectedMacros && effectiveConsumed && balanceContext
+    ? computeActionableRemaining({
+        target: balanceContext.target,
+        consumed: {
           kcal: effectiveConsumed.kcal + selectedMacros.calories_kcal,
           protein_g: effectiveConsumed.protein_g + selectedMacros.protein_g,
           carbs_g: effectiveConsumed.carbs_g + selectedMacros.carbs_g,
@@ -541,6 +556,7 @@ function NutritionLogContent({
         },
       })
     : null
+  const previewRemainingTargets = previewActionableRemaining?.actionableRemaining ?? null
   const layerTitle =
     layer === "category" ? t('log.title') :
     layer === "subcategory" ? (CATEGORY_LABELS_T[selectedCategory!] ?? "") :
@@ -633,7 +649,7 @@ function NutritionLogContent({
                     </p>
                   </div>
                 )}
-                {remainingTargets && <RemainingNutritionSummary remaining={remainingTargets} />}
+                {remainingTargets && <RemainingNutritionSummary remaining={remainingTargets} overflow={remainingOverflow ?? undefined} />}
 
                 {/* Repas habituels / favoris */}
                 {showFavoritesBlock && (
@@ -662,27 +678,6 @@ function NutritionLogContent({
                   </div>
                 )}
 
-<<<<<<< ours
-                <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
-                    <button
-                      key={cat}
-                      onClick={() => selectCategory(cat)}
-                      className="flex items-center gap-3 bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3.5 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left"
-                    >
-                      <span className="h-9 w-9 rounded-xl bg-white/[0.08] flex items-center justify-center text-[18px] shrink-0">
-                        {CATEGORY_ICONS[cat]}
-                      </span>
-                      <span className="text-[12px] font-semibold text-white/85 leading-tight">{label}</span>
-||||||| base
-                <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold mb-4">{t('log.chooseCategory')}</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.entries(CATEGORY_LABELS_T) as [CategoryL1, string][]).map(([cat, label]) => (
-                    <button key={cat} onClick={() => selectCategory(cat)} className="flex flex-col items-center gap-2 bg-[#111111] rounded-xl p-4 active:scale-95 transition-all hover:bg-white/[0.06]">
-                      <span className="text-2xl">{CATEGORY_ICONS[cat]}</span>
-                      <span className="text-[11px] font-semibold text-white/80">{label}</span>
-=======
                 {isTrackFavoritesOnly && favorites.length === 0 && !loadingFavorites && (
                   <div className="rounded-2xl bg-white/[0.04] px-4 py-8 text-center">
                     <p className="text-[13px] font-semibold text-white">Aucun favori pour le moment</p>
@@ -734,7 +729,6 @@ function NutritionLogContent({
                     >
                       <Pencil size={13} />
                       {t('log.createCustom')}
->>>>>>> theirs
                     </button>
                     <button
                       onClick={() => {
@@ -780,29 +774,6 @@ function NutritionLogContent({
 
             {/* Layer 2: Subcategories */}
             {layer === "subcategory" && selectedCategory && (
-<<<<<<< ours
-              <div className="p-4 space-y-2">
-                {SUBCATEGORIES[selectedCategory].map(sub => (
-                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{SUBCATEGORY_ICONS[sub] ?? "•"}</span>
-                      <span className="text-[13px] font-medium text-white">{SUBCATEGORY_LABELS_T[sub] ?? sub}</span>
-                    </div>
-                    <ChevronLeft size={14} className="text-white/30 rotate-180" />
-                  </button>
-                ))}
-||||||| base
-              <div className="p-4 space-y-2">
-                {SUBCATEGORIES[selectedCategory].map(sub => (
-                  <button key={sub} onClick={() => selectSubcategory(sub)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{SUBCATEGORY_ICONS[sub] ?? "•"}</span>
-                      <span className="text-[13px] font-medium text-white">{SUBCATEGORY_LABELS_T[sub] ?? sub}</span>
-                    </div>
-                    <ChevronLeft size={14} className="text-white/30 rotate-180" />
-                  </button>
-                ))}
-=======
               <div className="p-4">
                 <div className="bg-white/[0.04] rounded-2xl overflow-hidden">
                   {SUBCATEGORIES[selectedCategory].map((sub, i) => (
@@ -819,26 +790,15 @@ function NutritionLogContent({
                     </button>
                   ))}
                 </div>
->>>>>>> theirs
               </div>
             )}
 
             {/* Layer 3: Items */}
             {layer === "item" && (
               <div className="p-4">
-<<<<<<< ours
-                <div className="relative mb-3">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#121212] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
-||||||| base
-                <div className="relative mb-3">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-9 pr-3 bg-[#111111] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none " />
-=======
                 <div className="bg-white/[0.04] rounded-xl mb-3 flex items-center px-3">
                   <Search size={14} className="text-white/30 shrink-0" />
                   <input type="text" placeholder={t('log.searchPlaceholder2')} value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full h-10 pl-2 pr-3 bg-transparent text-[13px] text-white placeholder:text-white/20 outline-none" />
->>>>>>> theirs
                 </div>
                 {loadingItems ? (
                   <div className="space-y-1 bg-white/[0.04] rounded-2xl overflow-hidden p-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-white/[0.06] rounded-xl animate-pulse" />)}</div>
@@ -855,13 +815,7 @@ function NutritionLogContent({
                         ? suggestQuantityForItem(item, macroBalance.remaining)
                         : null
                       return (
-<<<<<<< ours
-                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#121212] border border-white/[0.08] rounded-2xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
-||||||| base
-                        <button key={item.id} onClick={() => selectItem(item)} className="w-full flex items-center justify-between bg-[#111111] rounded-xl px-4 py-3 active:scale-[0.98] transition-all hover:bg-white/[0.06] text-left">
-=======
                         <button key={item.id} onClick={() => selectItem(item)} className={`w-full flex items-center justify-between px-4 py-3 active:scale-[0.99] transition-all hover:bg-white/[0.04] text-left ${i < items.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
->>>>>>> theirs
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-white">{item.name_fr}</p>
                             <div className="flex items-center gap-2 mt-1">
@@ -875,7 +829,7 @@ function NutritionLogContent({
                             </div>
                           </div>
                           {chipSuggestion ? (
-                            <span className="text-[10px] font-bold text-[#818cf8] shrink-0 ml-2 tabular-nums">~{chipSuggestion.grams}g</span>
+                            <span className="text-[10px] font-bold text-white/65 shrink-0 ml-2 tabular-nums">~{chipSuggestion.grams}g</span>
                           ) : (
                             <span className="text-white/20 text-[11px] shrink-0 ml-2">/ 100g</span>
                           )}
@@ -890,30 +844,13 @@ function NutritionLogContent({
             {/* Layer 4: Quantity */}
             {layer === "quantity" && selectedItem && (
               <div className="p-4 space-y-5">
-                  <div className="flex gap-1 bg-white/[0.04] border border-white/[0.08] rounded-xl p-0.5">
+                <div className="flex gap-1 bg-white/[0.04] rounded-xl p-0.5">
                   {(["grams", "portion"] as const).map(m => (
                     <button key={m} onClick={() => setQMode(m)} className={`flex-1 h-8 text-[11px] font-semibold rounded-xl transition-all ${qMode === m ? "bg-white/[0.10] text-white" : "text-white/40"}`}>
                       {m === "grams" ? t('log.gramsMode') : t('log.portionMode')}
                     </button>
                   ))}
                 </div>
-<<<<<<< ours
-                {qMode === "grams" ? (
-                  <div className="space-y-3">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#121212] border border-white/[0.08] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
-                      <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
-||||||| base
-                {qMode === "grams" ? (
-                  <div className="space-y-3">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/30 font-semibold">{t('log.quantityLabel')}</p>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setQuantityG(q => Math.max(5, q - 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Minus size={16} /></button>
-                      <input type="text" inputMode="decimal" min="1" max="2000" value={quantityG} onChange={e => setQuantityG(Math.max(1, parseInt(e.target.value) || 1))} onFocus={e => e.target.select()} className="flex-1 h-10 text-center bg-[#111111] rounded-xl text-[18px] font-bold text-white outline-none  min-w-0" />
-                      <button onClick={() => setQuantityG(q => Math.min(2000, q + 10))} className="h-10 w-10 flex items-center justify-center bg-white/[0.06] rounded-xl text-white active:scale-95"><Plus size={16} /></button>
-=======
                 <div className="space-y-3">
                   {composerMode === "guide" && quantitySuggestion && (
                     <div className="bg-white/[0.05] rounded-2xl p-3 space-y-3">
@@ -932,14 +869,13 @@ function NutritionLogContent({
                       </div>
                       <button
                         onClick={() => {
-                          setQuantityG(quantitySuggestion.grams)
+                          applyQuantity(quantitySuggestion.grams)
                           setDidAutoAdjust(true)
                         }}
                         className="w-full h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
                       >
                         Appliquer la suggestion
                       </button>
->>>>>>> theirs
                     </div>
                   )}
 
@@ -995,7 +931,7 @@ function NutritionLogContent({
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <button
                           onClick={() => {
-                            setQuantityG(quantitySuggestion.grams)
+                            applyQuantity(quantitySuggestion.grams)
                             setDidAutoAdjust(true)
                           }}
                           className="col-span-2 h-10 rounded-xl bg-[#f2f2f2] text-[#080808] text-[11px] font-bold uppercase tracking-[0.1em] active:scale-[0.98] transition-all"
@@ -1091,21 +1027,36 @@ function NutritionLogContent({
                         <p className="text-[10px] uppercase tracking-[0.12em] text-white/30 font-semibold mb-2">Quantite en grammes</p>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setQuantityG(v => Math.max(0, v - 5))}
+                            onClick={() => applyQuantity(quantityG - 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Minus size={14} />
                           </button>
                           <input
-                            type="number"
-                            min={0}
-                            step={5}
-                            value={quantityG}
-                            onChange={e => setQuantityG(Math.max(0, Number(e.target.value || 0)))}
+                            type="text"
+                            inputMode="numeric"
+                            value={quantityInput}
+                            onChange={e => {
+                              const nextValue = e.target.value
+                              if (!/^\d*([.,]\d*)?$/.test(nextValue)) return
+                              setQuantityInput(nextValue)
+                              if (!nextValue.trim()) {
+                                setQuantityG(0)
+                                return
+                              }
+                              const parsed = Number(nextValue.replace(",", "."))
+                              if (Number.isFinite(parsed)) {
+                                setQuantityG(Math.max(0, parsed))
+                              }
+                            }}
+                            onBlur={() => {
+                              if (!quantityInput.trim()) return
+                              applyQuantity(quantityG)
+                            }}
                             className="flex-1 h-10 bg-white/[0.06] rounded-xl text-center text-[16px] font-bold text-white outline-none"
                           />
                           <button
-                            onClick={() => setQuantityG(v => v + 5)}
+                            onClick={() => applyQuantity(quantityG + 5)}
                             className="h-10 w-10 rounded-xl bg-white/[0.06] text-white/70 flex items-center justify-center"
                           >
                             <Plus size={14} />

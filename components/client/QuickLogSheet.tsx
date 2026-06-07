@@ -107,52 +107,10 @@ export default function QuickLogSheet({ open, onClose }: Props) {
     ...(cycleState?.hasActiveCycle ? [{
       key: "cycle" as const,
       Icon: Drop,
-<<<<<<< ours
-      label: "Eau",
-      sub: "Logger ma consommation d'eau",
-      onClick: () => setSub("water"),
-    },
-    {
-      key: "meal",
-      Icon: ForkKnife,
-      label: "Repas",
-      sub: "Ajouter un repas ou aliment",
-      onClick: () => { handleClose(); router.push("/client/nutrition?addMeal=1"); },
-    },
-    {
-      key: "activity",
-      Icon: Lightning,
-      label: "Activité",
-      sub: "Course, marche, sport libre…",
-      onClick: () => setSub("activity"),
-    },
-  ] as const;
-||||||| base
-      label: "Eau",
-      sub: "Logger ma consommation d'eau",
-      onClick: () => setSub("water"),
-    },
-    {
-      key: "meal",
-      Icon: ForkKnife,
-      label: "Repas",
-      sub: "Ajouter un repas ou aliment",
-      onClick: () => { handleClose(); router.push("/client/nutrition"); },
-    },
-    {
-      key: "activity",
-      Icon: Lightning,
-      label: "Activité",
-      sub: "Course, marche, sport libre…",
-      onClick: () => setSub("activity"),
-    },
-  ] as const;
-=======
       label: "Cycle",
       sub: "Début ou fin de règles",
     }] : []),
   ];
->>>>>>> theirs
 
   return (
     <>

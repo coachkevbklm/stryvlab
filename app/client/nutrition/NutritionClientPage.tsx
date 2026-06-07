@@ -1,51 +1,3 @@
-<<<<<<< ours
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
-import ClientTopBar from "@/components/client/ClientTopBar";
-import SmartNutritionHero from "@/components/client/smart/SmartNutritionHero";
-import SmartAlertsFeed, {
-  type GenericAlert,
-} from "@/components/client/smart/SmartAlertsFeed";
-import RemainingBreakdown from "@/components/client/smart/RemainingBreakdown";
-import MacroWeekGrid from "@/components/client/smart/MacroWeekGrid";
-import ProtocolRationale from "@/components/client/smart/ProtocolRationale";
-import NutritionMealsList from "@/components/client/smart/NutritionMealsList";
-import NutritionStreakCard from "@/components/client/smart/NutritionStreakCard";
-import TdeeChart from "@/components/client/smart/TdeeChart";
-import VoiceEntryFab from "@/components/client/smart/VoiceEntryFab";
-import {
-  ct,
-  type ClientLang,
-  type ClientDictKey,
-} from "@/lib/i18n/clientTranslations";
-import type { NutritionMacros } from "@/components/client/smart/SmartNutritionWidget";
-import type { NutritionMeal } from "@/lib/nutrition/food-items";
-
-const MealLogSheet = dynamic(
-  () => import("@/components/client/smart/MealLogSheet"),
-  { ssr: false },
-);
-||||||| base
-'use client'
-
-import { useState } from 'react'
-import ClientTopBar from '@/components/client/ClientTopBar'
-import SmartNutritionHero from '@/components/client/smart/SmartNutritionHero'
-import SmartAlertsFeed, { type GenericAlert } from '@/components/client/smart/SmartAlertsFeed'
-import RemainingBreakdown from '@/components/client/smart/RemainingBreakdown'
-import MacroWeekGrid from '@/components/client/smart/MacroWeekGrid'
-import ProtocolRationale from '@/components/client/smart/ProtocolRationale'
-import NutritionMealsList from '@/components/client/smart/NutritionMealsList'
-import NutritionStreakCard from '@/components/client/smart/NutritionStreakCard'
-import TdeeChart from '@/components/client/smart/TdeeChart'
-import VoiceEntryFab from '@/components/client/smart/VoiceEntryFab'
-import { ct, type ClientLang, type ClientDictKey } from '@/lib/i18n/clientTranslations'
-import type { NutritionMacros } from '@/components/client/smart/SmartNutritionWidget'
-import type { NutritionMeal } from '@/lib/nutrition/food-items'
-=======
 'use client'
 
 import { useState, useCallback } from 'react'
@@ -76,55 +28,26 @@ const MealMethodSheet   = dynamic(() => import('@/components/client/smart/MealMe
 const MealLogSheet    = dynamic(() => import('@/components/client/smart/MealLogSheet'), { ssr: false })
 const QuickWaterModal = dynamic(() => import('@/components/client/QuickWaterModal'),    { ssr: false })
 const VoiceLogSheet    = dynamic(() => import('@/components/client/smart/VoiceLogSheet'), { ssr: false })
->>>>>>> theirs
 
 type DayPoint = {
-  date: string;
-  consumed: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  target: number;
-  targetProtein: number;
-  targetCarbs: number;
-  targetFat: number;
-};
+  date: string
+  consumed: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  target: number
+  targetProtein: number
+  targetCarbs: number
+  targetFat: number
+}
 
-type Tab = "aujourd_hui" | "tendances" | "protocole";
+type Tab = 'aujourd_hui' | 'tendances' | 'protocole'
 
 interface Props {
-<<<<<<< ours
-  date: string;
-  target: NutritionMacros;
-  consumed: NutritionMacros;
-  meals: NutritionMeal[];
-  alerts: GenericAlert[];
-  trend: DayPoint[];
-  loggedDates: Set<string>;
-  tdeeAdaptive: number | null;
-  tdeeDataSource: string | null;
-  bodyWeightKg: number | null;
-  protocolDay: { name?: string } | null;
-  lang: ClientLang;
-  dayTypeBadge: React.ReactNode;
-||||||| base
   date: string
   target: NutritionMacros
   consumed: NutritionMacros
-  meals: NutritionMeal[]
-  alerts: GenericAlert[]
-  trend: DayPoint[]
-  loggedDates: Set<string>
-  tdeeAdaptive: number | null
-  tdeeDataSource: string | null
-  bodyWeightKg: number | null
-  protocolDay: { name?: string } | null
-  lang: ClientLang
-  dayTypeBadge: React.ReactNode
-=======
-  date: string
-  target: NutritionMacros
-  consumed: NutritionMacros
+  planningConsumed: NutritionMacros
   meals: NutritionMeal[]
   preps: SmartNutritionPrep[]
   alerts: GenericAlert[]
@@ -149,86 +72,22 @@ interface Props {
   cycleDay?: number | null
   cycleState?: CycleState | null
   cycleSyncEnabled?: boolean
->>>>>>> theirs
 }
 
 const TABS: { id: Tab; labelKey: ClientDictKey }[] = [
-  { id: "aujourd_hui", labelKey: "nutrition.tab.aujourd_hui" },
-  { id: "tendances", labelKey: "nutrition.tab.tendances" },
-  { id: "protocole", labelKey: "nutrition.tab.protocole" },
-];
+  { id: 'aujourd_hui', labelKey: 'nutrition.tab.aujourd_hui' },
+  { id: 'tendances',   labelKey: 'nutrition.tab.tendances'   },
+  { id: 'protocole',   labelKey: 'nutrition.tab.protocole'   },
+]
 
 export default function NutritionClientPage({
-<<<<<<< ours
-  date,
-  target,
-  consumed,
-  meals: initialMeals,
-  alerts,
-  trend,
-  loggedDates,
-  tdeeAdaptive,
-  tdeeDataSource,
-  bodyWeightKg,
-  protocolDay,
-  lang,
-  dayTypeBadge,
-||||||| base
-  date, target, consumed, meals, alerts, trend,
-  loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
-  protocolDay, lang, dayTypeBadge,
-=======
-  date, target, consumed, meals, preps, alerts, trend,
+  date, target, consumed, planningConsumed, meals, preps, alerts, trend,
   loggedDates, tdeeAdaptive, tdeeDataSource, bodyWeightKg,
   protocolDay, protocolDays, lang, dayTypeBadge,
   cycleSyncPhase, cycleSyncAdjustment, cycleDay,
   cycleState,
   cycleSyncEnabled = false,
->>>>>>> theirs
 }: Props) {
-<<<<<<< ours
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [tab, setTab] = useState<Tab>("aujourd_hui");
-  const [mealOpen, setMealOpen] = useState(
-    () => searchParams.get("addMeal") === "1",
-  );
-  const [meals, setMeals] = useState<NutritionMeal[]>(initialMeals);
-
-  useEffect(() => {
-    if (searchParams.get("addMeal") === "1") setMealOpen(true);
-  }, [searchParams]);
-
-  async function refetchMeals() {
-    try {
-      const res = await fetch(`/api/client/nutrition/meals?date=${date}`);
-      const json = await res.json();
-      if (json.data) setMeals(json.data);
-    } catch (err) {
-      console.error("refetch meals:", err);
-    }
-  }
-
-  function handleMealClose() {
-    setMealOpen(false);
-    if (searchParams.get("addMeal") === "1") {
-      router.replace("/client/nutrition");
-    }
-  }
-
-  const locale = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-GB";
-  const parsedDate = new Date(`${date}T00:00:00`);
-  const titleDate = Number.isNaN(parsedDate.getTime())
-    ? date
-    : parsedDate.toLocaleDateString(locale, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-||||||| base
-  const [tab, setTab] = useState<Tab>('aujourd_hui')
-=======
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('aujourd_hui')
   const [mealLogOpen, setMealLogOpen] = useState(false)
@@ -287,23 +146,13 @@ export default function NutritionClientPage({
       )}
     </div>
   )
->>>>>>> theirs
 
   return (
     <div className="min-h-screen bg-[#080808] font-sans pb-32">
-<<<<<<< ours
-      <ClientTopBar
-        section={ct(lang, "nutrition.section")}
-        title={titleDate}
-        right={dayTypeBadge}
-      />
-||||||| base
-      <ClientTopBar section={ct(lang, 'nutrition.section')} title={date} right={dayTypeBadge} />
-=======
       <ClientTopBar section={ct(lang, 'nutrition.section')} title={date} right={topBarRight} />
->>>>>>> theirs
 
       <main className="max-w-[480px] mx-auto px-4 pt-[88px] flex flex-col gap-3">
+
         {/* ── Tab bar ── */}
         <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">
           {TABS.map(({ id, labelKey }) => (
@@ -312,8 +161,8 @@ export default function NutritionClientPage({
               onClick={() => setTab(id)}
               className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all duration-200 ${
                 tab === id
-                  ? "bg-[#f2f2f2] text-[#080808] shadow-sm font-barlow-condensed font-bold uppercase tracking-wide"
-                  : "text-white/40 hover:text-white/70"
+                  ? 'bg-[#f2f2f2] text-[#080808] shadow-sm font-barlow-condensed font-bold uppercase tracking-wide'
+                  : 'text-white/40 hover:text-white/70'
               }`}
             >
               {ct(lang, labelKey)}
@@ -322,7 +171,7 @@ export default function NutritionClientPage({
         </div>
 
         {/* ══ AUJOURD'HUI ══ */}
-        {tab === "aujourd_hui" && (
+        {tab === 'aujourd_hui' && (
           <>
             {cycleSyncPhase && cycleSyncAdjustment && (
               <CycleSyncBanner
@@ -331,25 +180,8 @@ export default function NutritionClientPage({
                 cycleDay={cycleDay ?? undefined}
               />
             )}
-            <SmartNutritionHero date={date} consumed={consumed} target={target} onWaterClick={() => setWaterOpen(true)} />
+            <SmartNutritionHero date={date} consumed={planningConsumed} target={target} onWaterClick={() => setWaterOpen(true)} />
             <SmartAlertsFeed alerts={alerts} />
-<<<<<<< ours
-            <SmartNutritionHero
-              date={date}
-              consumed={consumed}
-              target={target}
-            />
-            <RemainingBreakdown consumed={consumed} target={target} />
-            <NutritionMealsList
-              initialMeals={meals}
-              date={date}
-              target={target}
-            />
-||||||| base
-            <SmartNutritionHero date={date} consumed={consumed} target={target} />
-            <RemainingBreakdown consumed={consumed} target={target} />
-            <NutritionMealsList initialMeals={meals} date={date} target={target} />
-=======
             <RemainingBreakdown
               consumed={consumed}
               target={target}
@@ -366,7 +198,6 @@ export default function NutritionClientPage({
               }}
             />
             <NutritionMealsList key={date} initialMeals={meals} date={date} target={target} onAddMeal={() => { setAddToMealId(null); setEditingPrep(null); setMealMethodOpen(true) }} onAddMore={handleAddMore} />
->>>>>>> theirs
             <VoiceEntryFab lang={lang} />
             <MealMethodSheet
               open={mealMethodOpen}
@@ -421,7 +252,7 @@ export default function NutritionClientPage({
         )}
 
         {/* ══ TENDANCES ══ */}
-        {tab === "tendances" && (
+        {tab === 'tendances' && (
           <>
             <MacroWeekGrid trend={trend} />
             <TdeeChart />
@@ -430,7 +261,7 @@ export default function NutritionClientPage({
         )}
 
         {/* ══ PROTOCOLE ══ */}
-        {tab === "protocole" && (
+        {tab === 'protocole' && (
           <ProtocolRationale
             protocolDays={protocolDays}
             tdee={tdeeAdaptive}
@@ -443,16 +274,8 @@ export default function NutritionClientPage({
             cycleSyncEnabled={cycleSyncEnabled}
           />
         )}
-      </main>
 
-      <MealLogSheet
-        open={mealOpen}
-        onClose={handleMealClose}
-        onSuccess={() => {
-          setMealOpen(false);
-          refetchMeals();
-        }}
-      />
+      </main>
     </div>
-  );
+  )
 }
