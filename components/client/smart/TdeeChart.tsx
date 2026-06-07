@@ -176,7 +176,7 @@ export default function TdeeChart() {
           {filtered.length > 1 && (
             <path
               d={bandPath}
-              fill="rgba(157,112,82,0.10)"
+              fill="rgba(255,224,30,0.07)"
               stroke="none"
             />
           )}
@@ -205,7 +205,7 @@ export default function TdeeChart() {
             <circle
               key={i}
               cx={x} cy={y} r={i === adaptivePts.length - 1 ? 3 : 1.5}
-              fill={i === adaptivePts.length - 1 ? '#f2f2f2' : 'rgba(157,112,82,0.65)'}
+              fill={i === adaptivePts.length - 1 ? '#f2f2f2' : 'rgba(255,224,30,0.6)'}
             />
           ))}
 
