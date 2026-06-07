@@ -128,11 +128,9 @@
   --c-text-emph:  #f2f2f2;   /* Emphasis / primary btn bg */
 
   /* ── Data colors (charts/SVG only — never in UI) ─────────── */
-  /* Macro semantics: copper=proteins, gold=carbs, petrol=fats, steel=water */
-  --data-copper:  #8c5230;  /* proteins — deep copper, reddish-brown */
-  --data-gold:    #9a8038;  /* carbs    — muted antique gold */
-  --data-petrol:  #2d7a62;  /* fats     — sober emerald petrol */
-  --data-steel:   #4d8090;  /* water    — blue-gray steel */
+  --data-copper:  #9d7052;
+  --data-gold:    #a89060;
+  --data-petrol:  #3d7070;
 }
 
 @layer base {

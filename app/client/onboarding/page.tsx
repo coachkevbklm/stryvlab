@@ -1,57 +1,3 @@
-<<<<<<< ours
-"use client";
-
-import { useEffect, useState, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  Eye,
-  EyeOff,
-  XCircle,
-  ArrowRight,
-  Weight,
-  Activity,
-  TrendingUp,
-  LayoutDashboard,
-  Target,
-  Timer,
-  CheckSquare,
-  BarChart2,
-  MessageSquare,
-  LineChart,
-  Utensils,
-  Camera,
-  ClipboardList,
-  Bell,
-  UserCircle,
-} from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { useClientT } from "@/components/client/ClientI18nProvider";
-import type { ClientLang } from "@/lib/i18n/clientTranslations";
-
-type Step = "exchanging" | "password" | "welcome" | "error";
-
-function FeatureRow({
-  icon: Icon,
-  text,
-}: {
-  icon: React.ElementType;
-  text: string;
-}) {
-||||||| base
-'use client'
-
-import { useEffect, useState, useRef, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, Eye, EyeOff, XCircle, ArrowRight, Dumbbell, Activity, TrendingUp, LayoutDashboard, Target, Timer, CheckSquare, BarChart2, MessageSquare, LineChart, Utensils, Camera, ClipboardList, Bell, UserCircle } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
-import { useClientT } from '@/components/client/ClientI18nProvider'
-import type { ClientLang } from '@/lib/i18n/clientTranslations'
-
-type Step = 'exchanging' | 'password' | 'welcome' | 'error'
-
-function FeatureRow({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
-=======
 'use client'
 
 import { useEffect, useState, useRef, Suspense } from 'react'
@@ -64,7 +10,6 @@ import type { ClientLang } from '@/lib/i18n/clientTranslations'
 type Step = 'exchanging' | 'password' | 'welcome' | 'error'
 
 function FeatureRow({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
->>>>>>> theirs
   return (
     <div className="flex items-center gap-3">
       <div className="w-8 h-8 rounded-xl bg-[#f2f2f2]/10 flex items-center justify-center shrink-0">
@@ -72,286 +17,229 @@ function FeatureRow({ icon: Icon, text }: { icon: React.ElementType; text: strin
       </div>
       <p className="text-[13px] text-white/70 leading-snug">{text}</p>
     </div>
-  );
+  )
 }
 
 type WelcomeScreen = {
-  icon: React.ElementType | null;
-  titleKey: string;
-  subtitleKey: string;
-  rows: { icon: React.ElementType; textKey: string }[] | null;
-};
+  icon: React.ElementType | null
+  titleKey: string
+  subtitleKey: string
+  rows: { icon: React.ElementType; textKey: string }[] | null
+}
 
 const WELCOME_SCREENS: WelcomeScreen[] = [
   {
     icon: null,
-    titleKey: "onboarding.screen0.title",
-    subtitleKey: "onboarding.screen0.subtitle",
+    titleKey: 'onboarding.screen0.title',
+    subtitleKey: 'onboarding.screen0.subtitle',
     rows: null,
   },
   {
-    icon: Weight,
-    titleKey: "onboarding.screen1.title",
-    subtitleKey: "onboarding.screen1.subtitle",
+    icon: Dumbbell,
+    titleKey: 'onboarding.screen1.title',
+    subtitleKey: 'onboarding.screen1.subtitle',
     rows: [
-      { icon: Target, textKey: "onboarding.screen1.row0" },
-      { icon: Activity, textKey: "onboarding.screen1.row1" },
-      { icon: UserCircle, textKey: "onboarding.screen1.row2" },
+      { icon: Target,      textKey: 'onboarding.screen1.row0' },
+      { icon: Activity,    textKey: 'onboarding.screen1.row1' },
+      { icon: UserCircle,  textKey: 'onboarding.screen1.row2' },
     ],
   },
   {
     icon: CheckSquare,
-    titleKey: "onboarding.screen2.title",
-    subtitleKey: "onboarding.screen2.subtitle",
+    titleKey: 'onboarding.screen2.title',
+    subtitleKey: 'onboarding.screen2.subtitle',
     rows: [
-      { icon: CheckSquare, textKey: "onboarding.screen2.row0" },
-      { icon: BarChart2, textKey: "onboarding.screen2.row1" },
-      { icon: MessageSquare, textKey: "onboarding.screen2.row2" },
+      { icon: CheckSquare,  textKey: 'onboarding.screen2.row0' },
+      { icon: BarChart2,    textKey: 'onboarding.screen2.row1' },
+      { icon: MessageSquare,textKey: 'onboarding.screen2.row2' },
     ],
   },
   {
     icon: Utensils,
-    titleKey: "onboarding.screen3.title",
-    subtitleKey: "onboarding.screen3.subtitle",
+    titleKey: 'onboarding.screen3.title',
+    subtitleKey: 'onboarding.screen3.subtitle',
     rows: [
-      { icon: Utensils, textKey: "onboarding.screen3.row0" },
-      { icon: Target, textKey: "onboarding.screen3.row1" },
-      { icon: Activity, textKey: "onboarding.screen3.row2" },
+      { icon: Utensils, textKey: 'onboarding.screen3.row0' },
+      { icon: Target,   textKey: 'onboarding.screen3.row1' },
+      { icon: Activity, textKey: 'onboarding.screen3.row2' },
     ],
   },
   {
-<<<<<<< ours
-    icon: LayoutDashboard,
-    titleKey: "onboarding.screen4.title",
-    subtitleKey: "onboarding.screen4.subtitle",
-||||||| base
-    icon: LayoutDashboard,
-    titleKey: 'onboarding.screen4.title',
-    subtitleKey: 'onboarding.screen4.subtitle',
-=======
     icon: MessageSquare,
     titleKey: 'onboarding.screen4.title',
     subtitleKey: 'onboarding.screen4.subtitle',
->>>>>>> theirs
     rows: [
-<<<<<<< ours
-      { icon: ClipboardList, textKey: "onboarding.screen4.row0" },
-      { icon: Bell, textKey: "onboarding.screen4.row1" },
-      { icon: UserCircle, textKey: "onboarding.screen4.row2" },
-||||||| base
-      { icon: ClipboardList, textKey: 'onboarding.screen4.row0' },
-      { icon: Bell,          textKey: 'onboarding.screen4.row1' },
-      { icon: UserCircle,    textKey: 'onboarding.screen4.row2' },
-=======
       { icon: Bell,          textKey: 'onboarding.screen4.row0' },
       { icon: MessageSquare, textKey: 'onboarding.screen4.row1' },
       { icon: LineChart,     textKey: 'onboarding.screen4.row2' },
->>>>>>> theirs
     ],
   },
-];
+]
 
 function OnboardingFlow() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { t, lang } = useClientT();
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { t, lang } = useClientT()
 
-  const [step, setStep] = useState<Step>("exchanging");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [welcomeIndex, setWelcomeIndex] = useState(0);
-  const [firstName, setFirstName] = useState("");
-  const [checkinsEnabled, setCheckinsEnabled] = useState(false);
+  const [step, setStep] = useState<Step>('exchanging')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [welcomeIndex, setWelcomeIndex] = useState(0)
+  const [firstName, setFirstName] = useState('')
+  const [checkinsEnabled, setCheckinsEnabled] = useState(false)
 
-  const resolved = useRef(false);
+  const resolved = useRef(false)
 
   function fail(msg: string) {
-    if (resolved.current) return;
-    resolved.current = true;
-    setErrorMsg(msg);
-    setStep("error");
+    if (resolved.current) return
+    resolved.current = true
+    setErrorMsg(msg)
+    setStep('error')
   }
 
   async function succeed() {
-    if (resolved.current) return;
-    resolved.current = true;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const name =
-      user?.user_metadata?.first_name ?? user?.email?.split("@")[0] ?? "";
-    setFirstName(name);
-    setStep("password");
+    if (resolved.current) return
+    resolved.current = true
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const name = user?.user_metadata?.first_name ?? user?.email?.split('@')[0] ?? ''
+    setFirstName(name)
+    setStep('password')
   }
 
   useEffect(() => {
-    const supabase = createClient();
+    const supabase = createClient()
 
-    const urlError =
-      searchParams.get("error_code") ??
-      searchParams.get("error") ??
-      searchParams.get("error_description");
+    const urlError = searchParams.get('error_code') ?? searchParams.get('error') ?? searchParams.get('error_description')
     if (urlError) {
-      fail(t("onboarding.error.linkExpired"));
-      return;
+      fail(t('onboarding.error.linkExpired'))
+      return
     }
 
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    const hash = typeof window !== 'undefined' ? window.location.hash : ''
 
-    if (hash.includes("error=") || hash.includes("error_code=")) {
-      fail(t("onboarding.error.linkUsed"));
-      return;
+    if (hash.includes('error=') || hash.includes('error_code=')) {
+      fail(t('onboarding.error.linkUsed'))
+      return
     }
 
-    if (hash.includes("access_token=")) {
-      const params = new URLSearchParams(hash.replace(/^#/, ""));
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
+    if (hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''))
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
 
       if (accessToken && refreshToken) {
-        supabase.auth
-          .setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
           .then(({ data, error }) => {
             if (error || !data.session) {
-              fail(t("onboarding.error.session"));
+              fail(t('onboarding.error.session'))
             } else {
-              succeed();
+              succeed()
             }
-          });
-        return;
+          })
+        return
       }
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        succeed();
+        succeed()
       } else {
-        fail(t("onboarding.error.noSession"));
+        fail(t('onboarding.error.noSession'))
       }
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setPasswordError("");
+    e.preventDefault()
+    setPasswordError('')
 
     if (password.length < 8) {
-      setPasswordError(t("onboarding.password.error.length"));
-      return;
+      setPasswordError(t('onboarding.password.error.length'))
+      return
     }
     if (password !== confirm) {
-      setPasswordError(t("onboarding.password.error.mismatch"));
-      return;
+      setPasswordError(t('onboarding.password.error.mismatch'))
+      return
     }
 
-    setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
+    setLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password })
     if (error) {
-      setPasswordError(t("onboarding.password.error.failed"));
-      setLoading(false);
-      return;
+      setPasswordError(t('onboarding.password.error.failed'))
+      setLoading(false)
+      return
     }
 
-    fetch("/api/client/welcome", { method: "POST" }).catch(() => {});
-    const checkinsRes = await fetch("/api/client/checkin/config").catch(
-      () => null,
-    );
+    fetch('/api/client/welcome', { method: 'POST' }).catch(() => {})
+    const checkinsRes = await fetch('/api/client/checkin/config').catch(() => null)
     if (checkinsRes?.ok) {
-      const checkinsData = await checkinsRes.json().catch(() => null);
-      setCheckinsEnabled(!!checkinsData?.active);
+      const checkinsData = await checkinsRes.json().catch(() => null)
+      setCheckinsEnabled(!!checkinsData?.active)
     }
-    setStep("welcome");
+    setStep('welcome')
   }
 
   // ─── Exchanging ───────────────────────────────────────────────────────────
-  if (step === "exchanging") {
+  if (step === 'exchanging') {
     return (
       <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6">
         <div className="text-center">
-          <Loader2
-            size={32}
-            className="animate-spin text-[#f2f2f2] mx-auto mb-4"
-          />
-          <p className="text-base font-semibold text-white mb-1">
-            {t("onboarding.verifying")}
-          </p>
-          <p className="text-sm text-white/50">
-            {t("onboarding.verifying.desc")}
-          </p>
+          <Loader2 size={32} className="animate-spin text-[#f2f2f2] mx-auto mb-4" />
+          <p className="text-base font-semibold text-white mb-1">{t('onboarding.verifying')}</p>
+          <p className="text-sm text-white/50">{t('onboarding.verifying.desc')}</p>
         </div>
       </div>
-    );
+    )
   }
 
   // ─── Error ─────────────────────────────────────────────────────────────────
-  if (step === "error") {
+  if (step === 'error') {
     return (
       <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6">
         <div className="bg-white/[0.02] rounded-xl p-8 max-w-sm w-full text-center">
           <XCircle size={44} className="text-red-400 mx-auto mb-4" />
-          <h2 className="text-base font-bold text-white mb-2">
-            {t("onboarding.error.title")}
-          </h2>
-          <p className="text-sm text-white/55 mb-6 leading-relaxed">
-            {errorMsg}
-          </p>
+          <h2 className="text-base font-bold text-white mb-2">{t('onboarding.error.title')}</h2>
+          <p className="text-sm text-white/55 mb-6 leading-relaxed">{errorMsg}</p>
           <a
             href="/client/login"
             className="block w-full py-2.5 px-4 bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white font-semibold rounded-xl transition-colors text-sm"
           >
-            {t("onboarding.error.goLogin")}
+            {t('onboarding.error.goLogin')}
           </a>
         </div>
       </div>
-    );
+    )
   }
 
   // ─── Password ──────────────────────────────────────────────────────────────
-  if (step === "password") {
+  if (step === 'password') {
     return (
       <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-6">
         <div className="mb-8 flex flex-col items-center gap-3">
-<<<<<<< ours
-          <img
-            src="/logo/Logo%20STRYVR.svg"
-            alt="STRYVR"
-            className="w-12 h-12 object-contain"
-          />
-||||||| base
-          <img src="/images/logo-stryvr.svg" alt="STRYVR" className="w-12 h-12 object-contain" />
-=======
           <img src="/logo/logo-stryvr-silver.png" alt="STRYVR" className="w-12 h-12 object-contain" />
->>>>>>> theirs
         </div>
 
         <div className="bg-white/[0.02] rounded-xl p-6 w-full max-w-sm">
-          <h2 className="text-base font-bold text-white mb-1">
-            {t("onboarding.password.title")}
-          </h2>
-          <p className="text-xs text-white/55 mb-5">
-            {t("onboarding.password.subtitle")}
-          </p>
+          <h2 className="text-base font-bold text-white mb-1">{t('onboarding.password.title')}</h2>
+          <p className="text-xs text-white/55 mb-5">{t('onboarding.password.subtitle')}</p>
 
           <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-white/55 block mb-1.5">
-                {t("onboarding.password.label")}
+                {t('onboarding.password.label')}
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("onboarding.password.placeholder")}
+                  placeholder={t('onboarding.password.placeholder')}
                   required
                   minLength={8}
                   autoFocus
@@ -369,13 +257,13 @@ function OnboardingFlow() {
 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-white/55 block mb-1.5">
-                {t("onboarding.password.confirm")}
+                {t('onboarding.password.confirm')}
               </label>
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder={t("onboarding.password.placeholder.confirm")}
+                placeholder={t('onboarding.password.placeholder.confirm')}
                 required
                 className="w-full h-11 px-4 bg-[#222222] rounded-xl text-sm text-white placeholder:text-white/20 outline-none  transition-colors"
               />
@@ -390,18 +278,10 @@ function OnboardingFlow() {
             <button
               type="submit"
               disabled={loading}
-<<<<<<< ours
-              className="mt-1 h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#e8e8e8] active:scale-[0.98] disabled:opacity-50 text-[#080808] font-bold rounded-xl transition-all"
-||||||| base
-              className="mt-1 h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] disabled:opacity-50 text-[#080808] font-bold rounded-xl transition-all"
-=======
               className="mt-1 h-11 flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#ffffff] active:scale-[0.98] disabled:opacity-50 text-[#080808] font-bold rounded-xl transition-all"
->>>>>>> theirs
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              {loading
-                ? t("onboarding.password.creating")
-                : t("onboarding.password.cta")}
+              {loading ? t('onboarding.password.creating') : t('onboarding.password.cta')}
             </button>
           </form>
         </div>
@@ -413,50 +293,39 @@ function OnboardingFlow() {
           {t('onboarding.password.alreadyAccount')}
         </a>
       </div>
-    );
+    )
   }
 
   // ─── Welcome (5-screen swipable tour) ─────────────────────────────────────
-  if (step === "welcome") {
-    const screen = WELCOME_SCREENS[welcomeIndex];
-    const isLast = welcomeIndex === WELCOME_SCREENS.length - 1;
-    const isFirst = welcomeIndex === 0;
-    const IconComponent = screen.icon;
+  if (step === 'welcome') {
+    const screen = WELCOME_SCREENS[welcomeIndex]
+    const isLast = welcomeIndex === WELCOME_SCREENS.length - 1
+    const isFirst = welcomeIndex === 0
+    const IconComponent = screen.icon
 
     // Title: screen0 interpolates firstName
-    const titleText =
-      welcomeIndex === 0
-        ? t("onboarding.screen0.title", { n: firstName })
-        : t(screen.titleKey as Parameters<typeof t>[0]);
+    const titleText = welcomeIndex === 0
+      ? t('onboarding.screen0.title', { n: firstName })
+      : t(screen.titleKey as Parameters<typeof t>[0])
 
     const goNext = () => {
       if (isLast) {
-        localStorage.setItem("onboarding_tour_done", "false");
+        localStorage.setItem('onboarding_tour_done', 'false')
         if (checkinsEnabled) {
-          router.push("/client/checkin/onboarding");
+          router.push('/client/checkin/onboarding')
         } else {
-          router.push("/client");
+          router.push('/client')
         }
       } else {
-        setWelcomeIndex((i) => i + 1);
+        setWelcomeIndex((i) => i + 1)
       }
-    };
+    }
 
     return (
       <div className="min-h-screen bg-[#080808] flex flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center pt-12 pb-6">
-<<<<<<< ours
-          <img
-            src="/logo/Logo%20STRYVR.svg"
-            alt="STRYVR"
-            className="w-8 h-8 object-contain"
-          />
-||||||| base
-          <img src="/images/logo-stryvr.svg" alt="STRYVR" className="w-8 h-8 object-contain" />
-=======
           <img src="/logo/logo-stryvr-silver.png" alt="STRYVR" className="w-8 h-8 object-contain" />
->>>>>>> theirs
         </div>
 
         {/* Content — centered vertically on screen 0, top-aligned on others */}
@@ -464,24 +333,12 @@ function OnboardingFlow() {
           {/* Icon (screens 1-4) */}
           {IconComponent && (
             <div className="w-14 h-14 rounded-xl bg-[#f2f2f2]/10 flex items-center justify-center mb-6">
-              <IconComponent
-                size={26}
-                className="text-[#f2f2f2]"
-                strokeWidth={1.75}
-              />
+              <IconComponent size={26} className="text-[#f2f2f2]" strokeWidth={1.75} />
             </div>
           )}
 
           {/* Title */}
-<<<<<<< ours
-          <h1
-            className={`font-black text-white mb-3 leading-tight ${isFirst ? "text-[28px]" : "text-[22px]"}`}
-          >
-||||||| base
-          <h1 className={`font-black text-white mb-3 leading-tight ${isFirst ? 'text-[28px]' : 'text-[22px]'}`}>
-=======
           <h1 className={`font-black text-white mb-3 leading-tight ${isFirst ? 'text-center text-[28px]' : 'text-[22px]'}`}>
->>>>>>> theirs
             {titleText}
           </h1>
 
@@ -494,11 +351,7 @@ function OnboardingFlow() {
           {screen.rows && (
             <div className="flex flex-col gap-4 mb-8">
               {screen.rows.map((row, i) => (
-                <FeatureRow
-                  key={i}
-                  icon={row.icon}
-                  text={t(row.textKey as Parameters<typeof t>[0])}
-                />
+                <FeatureRow key={i} icon={row.icon} text={t(row.textKey as Parameters<typeof t>[0])} />
               ))}
             </div>
           )}
@@ -513,8 +366,8 @@ function OnboardingFlow() {
                 key={i}
                 className={`rounded-full transition-all duration-300 ${
                   i === welcomeIndex
-                    ? "w-5 h-1.5 bg-[#f2f2f2]"
-                    : "w-1.5 h-1.5 bg-white/20"
+                    ? 'w-5 h-1.5 bg-[#f2f2f2]'
+                    : 'w-1.5 h-1.5 bg-white/20'
                 }`}
               />
             ))}
@@ -523,18 +376,10 @@ function OnboardingFlow() {
           {/* CTA button */}
           <button
             onClick={goNext}
-<<<<<<< ours
-            className="group w-full h-12 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#e8e8e8] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
-||||||| base
-            className="group w-full h-12 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffd000] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
-=======
             className="group w-full h-12 flex items-center justify-between bg-[#f2f2f2] hover:bg-[#ffffff] active:scale-[0.98] rounded-xl transition-all pl-5 pr-1.5"
->>>>>>> theirs
           >
             <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#080808]">
-              {isLast
-                ? t("onboarding.welcome.cta.last")
-                : t("onboarding.welcome.cta.next")}
+              {isLast ? t('onboarding.welcome.cta.last') : t('onboarding.welcome.cta.next')}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/[0.12]">
               <ArrowRight size={16} className="text-[#080808]" />
@@ -545,20 +390,20 @@ function OnboardingFlow() {
           {!isLast && !isFirst && (
             <button
               onClick={() => {
-                localStorage.setItem("onboarding_tour_done", "false");
-                router.push("/client");
+                localStorage.setItem('onboarding_tour_done', 'false')
+                router.push('/client')
               }}
               className="w-full mt-3 py-2 text-[11px] text-white/25 hover:text-white/45 transition-colors text-center"
             >
-              {t("onboarding.welcome.skip")}
+              {t('onboarding.welcome.skip')}
             </button>
           )}
         </div>
       </div>
-    );
+    )
   }
 
-  return null;
+  return null
 }
 
 export default function OnboardingPage() {
@@ -572,5 +417,5 @@ export default function OnboardingPage() {
     >
       <OnboardingFlow />
     </Suspense>
-  );
+  )
 }

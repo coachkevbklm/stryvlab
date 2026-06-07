@@ -241,7 +241,7 @@ export default function ProfileForm({ clientId, initial }: Props) {
         className={`w-full h-11 rounded-xl text-[12px] font-barlow-condensed font-bold uppercase tracking-[0.10em] transition-all flex items-center justify-center gap-2 ${
           saveState === 'saved'
             ? 'bg-[#f2f2f2] text-[#080808]'
-            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#e8e8e8] active:scale-[0.99] disabled:opacity-50'
+            : 'bg-[#f2f2f2] text-[#080808] hover:bg-[#ffd000] active:scale-[0.99] disabled:opacity-50'
         }`}
       >
         {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
