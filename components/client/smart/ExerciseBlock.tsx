@@ -149,7 +149,7 @@ export default function ExerciseBlock({
             <div
               key={key}
               ref={isActive ? activeSetRef : undefined}
-              style={isActive ? { borderRadius: '12px', boxShadow: '0 0 0 1px rgba(157,112,82,0.28)' } : undefined}
+              style={isActive ? { borderRadius: '12px', boxShadow: '0 0 0 1px rgba(255,224,30,0.2)' } : undefined}
             >
               <SetRow
                 set={s}

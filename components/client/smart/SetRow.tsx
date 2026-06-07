@@ -303,7 +303,7 @@ export default function SetRow({
       <div className="flex flex-col gap-1">
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer active:scale-[0.99] transition-transform"
-          style={{ backgroundColor: 'rgba(157,112,82,0.07)', borderColor: 'rgba(157,112,82,0.24)' }}
+          style={{ backgroundColor: 'rgba(255,224,30,0.06)', borderColor: 'rgba(255,224,30,0.20)' }}
           onClick={() => setShowConfirm(true)}
         >
           <CheckCircle2 size={14} className="text-[#f2f2f2] shrink-0" />

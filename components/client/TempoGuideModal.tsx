@@ -70,18 +70,14 @@ const WAVE_PATH_D = buildWavePath()
 
 // ─── Phase config ─────────────────────────────────────────────────────────────
 
-// Phase accent colors — vivid, read well on #080808
-const CON_COLOR = '#3b82f6'   // Concentric — electric blue
-const ECC_COLOR = '#d4920f'   // Eccentric  — vivid gold
-
 const PHASE_CONFIG = [
-  { label: 'CONTRACTER', color: CON_COLOR  },  // 0 CON
-  { label: 'TENIR',      color: '#ef4444'  },  // 1 ISO
-  { label: 'FREINER',    color: ECC_COLOR  },  // 2 ECC
-  { label: 'PAUSE',      color: '#ef4444'  },  // 3 PAUSE
+  { label: 'CONTRACTER', color: 'var(--data-petrol)' },  // 0 CON
+  { label: 'TENIR',      color: '#ef4444' },              // 1 ISO
+  { label: 'FREINER',    color: '#e0e0e0' },              // 2 ECC
+  { label: 'PAUSE',      color: '#ef4444' },              // 3 PAUSE
 ] as const
 
-const ACCENT_TEMPO = '#e0e0e0'   // UI text (countdown, GO, READY) — neutral
+const ACCENT_TEMPO = '#e0e0e0'
 const TRAIL_LEN = 6
 
 // 300ms avant la fin d'une phase statique (ISO/PAUSE) → balle change de couleur
@@ -341,16 +337,16 @@ function TempoGuideModalInner({
 
     if (phase === 0) {
       // CON — bleu toute la montée
-      ballColor = CON_COLOR
+      ballColor = '#3b82f6'
     } else if (phase === 1) {
-      // ISO (tenue sommet) — rouge, annonce ECC (gold) 300ms avant fin
-      ballColor = timeLeftMs <= PREVIEW_MS ? ECC_COLOR : '#ef4444'
+      // ISO (tenue sommet) — rouge, annonce ECC (jaune) 300ms avant fin
+      ballColor = timeLeftMs <= PREVIEW_MS ? ACCENT_TEMPO : '#ef4444'
     } else if (phase === 2) {
-      // ECC — gold toute la descente
-      ballColor = ECC_COLOR
+      // ECC — jaune toute la descente
+      ballColor = ACCENT_TEMPO
     } else {
       // PAUSE (tenue creux) — rouge, annonce CON (bleu) 300ms avant fin
-      ballColor = timeLeftMs <= PREVIEW_MS ? CON_COLOR : '#ef4444'
+      ballColor = timeLeftMs <= PREVIEW_MS ? '#3b82f6' : '#ef4444'
     }
 
     // Appliquer couleur balle si changée
@@ -468,7 +464,7 @@ function TempoGuideModalInner({
         const dPt = pathRef.current!.getPointAtLength(dPathPos)
         const el = diamonds[idx]
         if (!el) return
-        const dColor = frac === 0.5 ? ECC_COLOR : CON_COLOR
+        const dColor = frac === 0.5 ? ACCENT_TEMPO : '#3b82f6'
         el.setAttribute('fill', dColor)
         el.setAttribute('opacity', '0.6')
         el.setAttribute('transform', `translate(${dPt.x}, ${dPt.y})`)
@@ -656,7 +652,7 @@ function TempoGuideModalInner({
             style={{
               position: 'absolute',
               inset: 0,
-              background: `radial-gradient(ellipse 90% 65% at 50% 50%, ${phaseColor}55 0%, ${phaseColor}18 45%, transparent 80%)`,
+              background: `radial-gradient(ellipse 70% 40% at 50% 50%, ${phaseColor}18 0%, transparent 70%)`,
               transition: 'background 200ms ease-out',
               pointerEvents: 'none',
               opacity: (currentPhase === 1 || currentPhase === 3) ? undefined : 1,
