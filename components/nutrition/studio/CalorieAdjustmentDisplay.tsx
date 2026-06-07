@@ -1,10 +1,11 @@
 'use client'
 
 interface CalorieAdjustmentDisplayProps {
-  value: number           // -30 to +30
-  baseCalories: number | null  // calories after goal factor, before adjustment (slider base)
-  targetCalories: number | null // final calories (after goal + adjustment, from macroResult)
+  value: number           // -30 to +30 — % vs TDEE directly (0 = TDEE)
+  baseCalories: number | null  // TDEE reference
+  targetCalories: number | null // final effective calories
   onChange: (v: number) => void
+  readOnly?: boolean      // true when macro overrides are active — slider shows position but is non-interactive
 }
 
 function getAdjustmentColor(pct: number): string {
@@ -41,6 +42,7 @@ export default function CalorieAdjustmentDisplay({
   baseCalories,
   targetCalories,
   onChange,
+  readOnly = false,
 }: CalorieAdjustmentDisplayProps) {
   const color = getAdjustmentColor(value)
   const label = getAdjustmentLabel(value)
@@ -108,11 +110,12 @@ export default function CalorieAdjustmentDisplay({
           max="30"
           step="1"
           value={value}
-          onChange={e => onChange(parseInt(e.target.value))}
+          onChange={e => !readOnly && onChange(parseInt(e.target.value))}
           className="kcal-slider w-full h-1.5 rounded-full outline-none appearance-none cursor-pointer"
           style={{
             '--kcal-thumb-color': color,
             background: trackBg,
+            ...(readOnly ? { pointerEvents: 'none' as const, opacity: 0.55 } : {}),
           } as React.CSSProperties}
         />
 
@@ -136,6 +139,11 @@ export default function CalorieAdjustmentDisplay({
             )
           })}
         </div>
+        {readOnly && (
+          <p className="text-[9px] text-white/25 mt-1">
+            Macros manuels — ajustez via Reset auto pour reprendre le contrôle
+          </p>
+        )}
       </div>
     </div>
   )

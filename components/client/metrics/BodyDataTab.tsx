@@ -2,6 +2,7 @@
 
 import MetricCard from './MetricCard'
 import type { BodyDataResponse } from '@/app/api/client/body-data/route'
+import { useClientT } from '../ClientI18nProvider'
 
 interface Props {
   data: BodyDataResponse
@@ -22,6 +23,7 @@ function formatLeanDelta(series: { value: number }[]): { delta: string; deltaGoo
 }
 
 export default function BodyDataTab({ data }: Props) {
+  const { t } = useClientT()
   const hasExtraComposition =
     data.composition.muscle_mass_kg != null ||
     data.composition.skeletal_muscle_pct != null ||
@@ -35,7 +37,7 @@ export default function BodyDataTab({ data }: Props) {
   if (!hasAny) {
     return (
       <p className="text-[12px] text-[#5a5a5a] leading-relaxed py-4 text-center">
-        Aucune donnée corporelle enregistrée.{'\n'}Votre coach doit compléter un bilan.
+        {t('msg.no.bodydata')}{'\n'}{t('msg.no.bodydata.desc')}
       </p>
     )
   }
@@ -52,7 +54,7 @@ export default function BodyDataTab({ data }: Props) {
     <div className="space-y-3">
       {latest && (
         <MetricCard
-          label="Poids"
+          label={t('nutrition.weight')}
           value={`${latest.value} kg`}
           series={data.weightSeries}
           unit=" kg"

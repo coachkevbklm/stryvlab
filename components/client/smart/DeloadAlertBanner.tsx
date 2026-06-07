@@ -44,9 +44,9 @@ export default function DeloadAlertBanner({ clientId }: DeloadAlertBannerProps) 
   const prioritySignal = signals.find(s => s.severity === 'critical') || signals[0]
 
   const isCritical = prioritySignal.severity === 'critical'
-  const bgColor = isCritical ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'
-  const iconColor = isCritical ? 'text-red-400' : 'text-amber-400'
-  const titleColor = isCritical ? 'text-red-200' : 'text-amber-200'
+  const bgColor = 'bg-white/[0.04] border-white/[0.04]'
+  const iconColor = 'text-[#b0b0b0]'
+  const titleColor = 'text-[#e0e0e0]'
   const textColor = 'text-white/70'
 
   return (

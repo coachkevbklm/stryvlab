@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest) {
 
   const { data: proto } = await svc()
     .from('nutrition_protocols')
-    .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
+    .select('schedule_start_date, nutrition_protocol_days(position, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
     .eq('client_id', cc.id)
     .eq('status', 'shared')
     .order('created_at', { ascending: false })
@@ -87,5 +87,32 @@ export async function GET(_req: NextRequest) {
     hasLunchLog,
   })
 
-  return NextResponse.json({ alerts })
+  // Engine triggers — best-effort, never block daily alerts
+  let engineTriggers: import('@/lib/nutrition/engine/types').TriggerRecommendation[] = []
+  try {
+    const { computeTriggers } = await import('@/lib/nutrition/engine/triggers')
+    const { data: recentCheckins } = await svc()
+      .from('client_daily_checkins')
+      .select('flow_type, sleep_hours, energy_level, stress_level, hunger_level, muscle_soreness')
+      .eq('client_id', cc.id)
+      .gte('date', new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10))
+    const morning = (recentCheckins ?? []).filter(r => r.flow_type === 'morning')
+    const evening = (recentCheckins ?? []).filter(r => r.flow_type === 'evening')
+    const avgOf = (arr: (number | null)[]): number | null => {
+      const vals = arr.filter((v): v is number => v !== null)
+      return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+    }
+    engineTriggers = computeTriggers({
+      avgSleepH: avgOf(morning.map(r => r.sleep_hours !== null ? Number(r.sleep_hours) : null)),
+      avgEnergyLevel: avgOf(morning.map(r => r.energy_level)),
+      avgStressLevel: avgOf(morning.map(r => r.stress_level)),
+      avgHungerLevel: avgOf(evening.map(r => r.hunger_level)),
+      avgMuscleSoreness: avgOf(evening.map(r => r.muscle_soreness)),
+      isLowCarbDay: (td as { carb_cycle_type?: string } | null)?.carb_cycle_type === 'low',
+      rpeLastSession: null,
+      performanceTrend: null,
+    })
+  } catch { /* never block daily alerts */ }
+
+  return NextResponse.json({ alerts, triggers: engineTriggers })
 }

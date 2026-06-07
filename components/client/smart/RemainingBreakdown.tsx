@@ -1,8 +1,10 @@
-import Link from 'next/link'
+'use client'
+
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { computeNutritionBalance } from '@/lib/nutrition/balance'
-import { suggestFoodsFromBalance } from '@/lib/nutrition/recommendations'
+import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { useClientT } from '../ClientI18nProvider'
 
 type DeltaCard = {
   key: 'protein' | 'carbs' | 'fat' | 'water'
@@ -18,39 +20,65 @@ function formatValue(value: number, unit: 'g' | 'L'): string {
   return unit === 'L' ? `${value.toFixed(1)} ${unit}` : `${Math.round(value)}${unit}`
 }
 
-function buildHeadline(cards: DeltaCard[], remainingCaloriesNet: number): string {
+function buildHeadline(cards: DeltaCard[], remainingCaloriesNet: number, t: (key: any) => string): string {
   const activeRemaining = cards.filter(card => card.remaining > 0)
   const activeOverflow = cards.filter(card => card.overflow > 0)
 
   if (activeOverflow.length === 0 && activeRemaining.length === 0 && remainingCaloriesNet <= 0) {
-    return 'Objectifs atteints pour aujourd’hui.'
+    return t("nutrition.goals.reached")
   }
 
   if (activeOverflow.length > 0) {
-    const names = activeOverflow.map(card => card.shortLabel.toLowerCase()).join(', ')
-    return `On évite surtout d’ajouter ${names} maintenant.`
+    const names = activeOverflow.map(card => card.shortLabel.toLowerCase()).join(", ")
+    return t("nutrition.overflow.msg").replace("{names}", names)
   }
 
   const primary = activeRemaining.sort((a, b) => b.remaining - a.remaining)[0]
   if (!primary) {
     return remainingCaloriesNet > 0
-      ? `${Math.round(remainingCaloriesNet)} kcal encore disponibles.`
-      : 'La journée est bien calibrée.'
+      ? t("nutrition.calories.available").replace("{n}", String(Math.round(remainingCaloriesNet)))
+      : t("nutrition.day.calibrated")
   }
 
-  return `${primary.label} en priorité pour finir la journée proprement.`
+  return t("nutrition.macro.priority").replace("{macro}", primary.label)
 }
 
-export default function RemainingBreakdown({ consumed, target }: { consumed: NutritionMacros; target: NutritionMacros }) {
-  const balance = computeNutritionBalance(consumed, target)
-  const { remaining, overflow, remainingCaloriesNet, remainingCaloriesFromMacros } = balance
-  const suggestions = suggestFoodsFromBalance(balance)
-
+export default function RemainingBreakdown({
+  consumed,
+  target,
+  gender,
+  bodyWeightKg,
+}: {
+  consumed: NutritionMacros
+  target: NutritionMacros
+  gender?: string | null
+  bodyWeightKg?: number | null
+}) {
+  const { t } = useClientT()
+  const informativeBalance = computeNutritionBalance(consumed, target)
+  const actionable = computeActionableRemaining({
+    target,
+    consumed,
+    profile: { gender, weightKg: bodyWeightKg },
+  })
+  const { remainingCaloriesFromMacros } = informativeBalance
+  const remaining = {
+    protein_g: actionable.actionableRemaining.protein,
+    carbs_g: actionable.actionableRemaining.carbs,
+    fat_g: actionable.actionableRemaining.fat,
+    water_ml: Math.max(0, target.water_ml - consumed.water_ml),
+  }
+  const overflow = {
+    protein_g: actionable.overflow.protein_g,
+    carbs_g: actionable.overflow.carbs_g,
+    fat_g: actionable.overflow.fat_g,
+    water_ml: Math.max(0, consumed.water_ml - target.water_ml),
+  }
   const cards: DeltaCard[] = [
     {
       key: 'protein',
-      label: 'Protéines',
-      shortLabel: 'Protéines',
+      label: t('nutrition.protein'),
+      shortLabel: t('nutrition.protein'),
       remaining: remaining.protein_g,
       overflow: overflow.protein_g,
       unit: 'g',
@@ -58,8 +86,8 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
     },
     {
       key: 'carbs',
-      label: 'Glucides',
-      shortLabel: 'Glucides',
+      label: t('nutrition.carbs'),
+      shortLabel: t('nutrition.carbs'),
       remaining: remaining.carbs_g,
       overflow: overflow.carbs_g,
       unit: 'g',
@@ -67,8 +95,8 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
     },
     {
       key: 'fat',
-      label: 'Lipides',
-      shortLabel: 'Lipides',
+      label: t('nutrition.fat'),
+      shortLabel: t('nutrition.fat'),
       remaining: remaining.fat_g,
       overflow: overflow.fat_g,
       unit: 'g',
@@ -76,8 +104,8 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
     },
     {
       key: 'water',
-      label: 'Hydratation',
-      shortLabel: 'Eau',
+      label: t('nutrition.hydration'),
+      shortLabel: t('nutrition.hydration'),
       remaining: remaining.water_ml / 1000,
       overflow: overflow.water_ml / 1000,
       unit: 'L',
@@ -92,7 +120,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
   const overflowCards = activeCards
     .filter(card => card.overflow > 0)
     .sort((a, b) => b.overflow - a.overflow)
-  const headline = buildHeadline(cards, remainingCaloriesNet)
+  const headline = buildHeadline(cards, actionable.actionableRemaining.calories, t)
 
   return (
     <div className="bg-[#111111] rounded-2xl p-4">
@@ -107,7 +135,7 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
         </div>
         <div className="shrink-0 rounded-2xl bg-white/[0.04] px-3 py-2 text-right">
           <div className="text-[18px] font-black text-white tabular-nums">
-            {Math.round(remainingCaloriesNet)}
+            {Math.round(actionable.actionableRemaining.calories)}
           </div>
           <div className="text-[9px] uppercase tracking-[0.12em] text-white/35">
             kcal restantes
@@ -115,79 +143,37 @@ export default function RemainingBreakdown({ consumed, target }: { consumed: Nut
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {remainingCards.length > 0 ? (
-          remainingCards.map(card => (
-            <div key={card.key} className="rounded-2xl bg-white/[0.03] border border-white/[0.05] p-3">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-white/40 font-bold">{card.label}</div>
-              <div className="mt-1 text-[20px] font-black tabular-nums" style={{ color: card.accent }}>
-                {formatValue(card.remaining, card.unit)}
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {cards.map(card => {
+          const isOverflow = card.overflow >= (card.unit === 'L' ? 0.25 : 1)
+          const displayValue = isOverflow ? card.overflow : card.remaining
+          const isNegative = isOverflow
+          const textColor = isNegative ? '#ef4444' : card.accent
+          
+          return (
+            <div key={card.key} className="rounded-2xl bg-white/[0.03] p-3 text-center">
+              <div className="text-[9px] uppercase tracking-[0.1em] text-white/40 font-bold">
+                {card.shortLabel}
               </div>
-              <div className="text-[10px] text-white/35 mt-1">
-                encore utiles
+              <div className="mt-1.5 text-[16px] font-black tabular-nums" style={{ color: textColor }}>
+                {isNegative ? '+' : ''}{formatValue(displayValue, card.unit)}
               </div>
             </div>
-          ))
-        ) : (
-          <div className="col-span-2 rounded-2xl bg-[#0d1713] border border-[#1f8a65]/25 p-3">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-[#7dd3a7] font-bold">Bonne zone</div>
-            <div className="mt-1 text-[13px] text-white/75 leading-relaxed">
-              Aucun macro n’est réellement en retard pour le moment.
-            </div>
-          </div>
-        )}
+          )
+        })}
       </div>
-
-      {overflowCards.length > 0 && (
-        <div className="mt-3 rounded-2xl bg-[#1a1010] border border-[#ef4444]/20 p-3">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-[#ef4444] font-bold">À freiner</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {overflowCards.map(card => (
-              <div
-                key={card.key}
-                className="rounded-full bg-[#ef4444]/10 border border-[#ef4444]/20 px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#ff8b8b]"
-              >
-                {card.label} +{formatValue(card.overflow, card.unit)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {remainingCaloriesFromMacros > 0 && (
         <div className="mt-3 rounded-2xl bg-white/[0.025] px-3 py-2.5 flex items-center justify-between gap-3">
           <span className="text-[11px] uppercase tracking-[0.1em] text-white/35 font-bold">
-            Estimation macros
+            Protocole brut
           </span>
           <span className="text-[12px] text-white/60 tabular-nums">
-            {Math.round(remainingCaloriesFromMacros)} kcal via les macros restantes
+            {Math.round(remainingCaloriesFromMacros)} kcal avant compensation
           </span>
         </div>
       )}
 
-      {suggestions.length > 0 && (
-        <div className="mt-3 space-y-2">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-white/35 font-bold">
-            Idées simples maintenant
-          </div>
-          {suggestions.map(s => (
-            <Link
-              key={s.label}
-              href="/client/nutrition/log"
-              className="block bg-white/[0.02] border border-white/[0.05] rounded-2xl p-3 active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-[13px] font-semibold text-white">{s.label}</div>
-                  <div className="text-[10px] text-white/40 mt-0.5">{s.macros}</div>
-                </div>
-                <div className="text-[10px] text-white/25 shrink-0 mt-0.5">→</div>
-              </div>
-              <div className="text-[10px] text-white/32 mt-2 leading-relaxed">{s.rationale}</div>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

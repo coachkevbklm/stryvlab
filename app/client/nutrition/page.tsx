@@ -10,6 +10,10 @@ import { type ClientLang } from '@/lib/i18n/clientTranslations'
 import { computeMacroEnergy } from '@/lib/nutrition/energy'
 import { resolveProtocolDayByDate } from '@/lib/nutrition/protocol-schedule'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { detectCurrentPhase, getCycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
+import type { CyclePhase, CycleSyncAdjustment } from '@/lib/nutrition/engine/cycleSync'
+import { getCycleStateFromLogs } from '@/lib/cycle/cycleEngine'
+import type { CycleState, CycleLog } from '@/lib/cycle/cycleEngine'
 import NutritionClientPage from './NutritionClientPage'
 
 type SearchParams = { date?: string }
@@ -40,6 +44,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
 
   const client = await resolveClientFromUser(user.id, user.email, svc(), 'id, gender')
   if (!client) return null
+  const isFemale = (client as { gender?: string | null }).gender === 'female'
 
   const date = searchParams.date ?? computePhysiologicalDate(new Date())
   const dayStart = `${date}T00:00:00Z`
@@ -47,7 +52,7 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const clientId = client.id
 
   // ── Parallel fetches (all direct Supabase, no loopback HTTP) ──────────────
-  const [protoResult, mealsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult] = await Promise.allSettled([
+  const [protoResult, mealsResult, waterResult, weightResult, checkinWeightResult, trendResult, streakResult, prefsResult, cycleResult, cycleLogsResult] = await Promise.allSettled([
     svc()
       .from('nutrition_protocols')
       .select('tdee_adaptive, tdee_data_source, schedule_start_date, nutrition_protocol_days(position, name, calories, protein_g, carbs_g, fat_g, hydration_ml, carb_cycle_type, cycle_sync_phase, recommendations), nutrition_protocol_schedule_slots(week_index, dow, protocol_day_position)')
@@ -140,6 +145,28 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       .select('language')
       .eq('client_id', clientId)
       .maybeSingle(),
+
+    // Last period date for cycle sync (female only)
+    isFemale
+      ? svc()
+          .from('assessment_responses')
+          .select('value_text, numeric_value')
+          .eq('client_id', clientId)
+          .eq('field_key', 'menstrual_cycle')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+
+    // Cycle logs for gold-standard engine (female only)
+    isFemale
+      ? svc()
+          .from('menstrual_cycle_logs')
+          .select('period_start_date, period_end_date, computed_cycle_length_days')
+          .eq('client_id', clientId)
+          .order('period_start_date', { ascending: false })
+          .limit(7)
+      : Promise.resolve({ data: null, error: null }),
   ])
 
   // ── Body weight ───────────────────────────────────────────────────────────
@@ -159,6 +186,15 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   )
   const tdeeAdaptive = (protoData as any)?.tdee_adaptive ?? null
   const tdeeDataSource = (protoData as any)?.tdee_data_source ?? null
+  const protocolDays: Array<{ name: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; carb_cycle_type?: string | null }> =
+    ((protoData?.nutrition_protocol_days as any[]) ?? []).map((d: any) => ({
+      name:            String(d.name ?? ''),
+      kcal:            Number(d.calories ?? 0),
+      protein_g:       Number(d.protein_g ?? 0),
+      carbs_g:         Number(d.carbs_g ?? 0),
+      fat_g:           Number(d.fat_g ?? 0),
+      carb_cycle_type: d.carb_cycle_type ?? null,
+    }))
 
   const td = protocolDay
   const target: NutritionMacros = {
@@ -257,6 +293,45 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
   const rawLang = prefsResult.status === 'fulfilled' ? (prefsResult.value as any)?.data?.language : null
   const lang: ClientLang = ['fr', 'en', 'es'].includes(rawLang) ? (rawLang as ClientLang) : 'fr'
 
+  // ── Cycle Sync (female only) ──────────────────────────────────────────────
+  let cycleSyncPhase: CyclePhase | null = null
+  let cycleSyncAdjustment: CycleSyncAdjustment | null = null
+  let cycleDay: number | null = null
+
+  if (isFemale) {
+    const cycleRow = cycleResult.status === 'fulfilled' ? (cycleResult.value as any)?.data : null
+    if (cycleRow) {
+      // value_text may be ISO date (last period) or numeric day string
+      const raw = cycleRow.value_text ?? null
+      const numericDay = cycleRow.numeric_value ? Number(cycleRow.numeric_value) : null
+
+      if (numericDay && numericDay >= 1) {
+        cycleDay = numericDay
+      } else if (raw && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        // Compute cycle day from last period date
+        const lastPeriod = new Date(raw)
+        const todayDate = new Date(date)
+        const diffMs = todayDate.getTime() - lastPeriod.getTime()
+        const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
+        cycleDay = diffDays >= 0 ? (diffDays % 28) + 1 : null
+      }
+    }
+    if (cycleDay !== null) {
+      cycleSyncPhase = detectCurrentPhase(cycleDay)
+      cycleSyncAdjustment = getCycleSyncAdjustment(cycleSyncPhase)
+    }
+  }
+
+  // ── CycleState v2 (gold-standard engine) ─────────────────────────────────
+  let cycleState: CycleState | null = null
+  if (isFemale) {
+    const rawCycleLogs = cycleLogsResult.status === 'fulfilled' ? ((cycleLogsResult.value as any)?.data ?? []) : []
+    const cycleLogs: CycleLog[] = rawCycleLogs
+    const bilanRow = cycleResult.status === 'fulfilled' ? (cycleResult.value as any)?.data : null
+    const bilanValue: string | null = bilanRow?.value_text ?? null
+    cycleState = getCycleStateFromLogs(cycleLogs, bilanValue)
+  }
+
   // Day type badge for TopBar
   const isTrainingDay = inferTrainingDay((protocolDay as Record<string, unknown>) ?? null)
   const dayTypeLabel = String((protocolDay as Record<string, unknown> | null)?.name ?? 'Repos')
@@ -288,6 +363,11 @@ export default async function ClientNutritionPage({ searchParams }: { searchPara
       protocolDay={protocolDay}
       lang={lang}
       dayTypeBadge={dayTypeBadge}
+      cycleSyncPhase={cycleSyncPhase}
+      cycleSyncAdjustment={cycleSyncAdjustment}
+      cycleDay={cycleDay}
+      cycleState={cycleState}
+      protocolDays={protocolDays}
     />
   )
 }

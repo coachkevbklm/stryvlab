@@ -1,21 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import type { MacroOverrides } from "./MacroSliders";
 import {
   calculateMacros,
+  computeSmartPreset,
   type MacroGoal,
   type MacroGender,
   type MacroResult,
 } from "@/lib/formulas/macros";
-import {
-  calculateCarbCycling,
-  type CarbCyclingResult,
-  type CarbCycleProtocol,
-  type CarbCycleGoal,
-  type CarbCycleIntensity,
-  type CarbCyclePhase,
-  type CarbCycleInsulin,
-} from "@/lib/formulas/carbCycling";
 import {
   calculateHydration,
   type HydrationClimate,
@@ -28,6 +21,7 @@ import {
   dayDraftFromDb,
 } from "@/lib/nutrition/types";
 import type { BMRSource } from "@/lib/nutrition/calculators";
+import type { CycleState } from "@/lib/cycle/cycleEngine";
 import type { TrainingWeekSchedule } from "@/lib/nutrition/training-week-schedule";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,15 +62,6 @@ export interface BiometricsConfig {
   bmr_source: BMRSource;
 }
 
-export interface CarbCyclingConfig {
-  enabled: boolean;
-  protocol: CarbCycleProtocol;
-  goal: CarbCycleGoal;
-  phase: CarbCyclePhase;
-  intensity: CarbCycleIntensity;
-  insulin: CarbCycleInsulin;
-}
-
 const ACTIVITY_STEPS: Record<ActivityLevel, number> = {
   sedentary: 2000,
   light: 4000,
@@ -107,12 +92,6 @@ const CLIENT_GOAL_MAP: Record<string, MacroGoal> = {
   bulk: "surplus",
   maintenance: "maintenance",
   recomposition: "maintenance",
-};
-
-const MACRO_TO_CC_GOAL: Record<MacroGoal, CarbCycleGoal> = {
-  deficit: "moderate",
-  maintenance: "recomp",
-  surplus: "bulk",
 };
 
 function getActivityLevel(clientData: NutritionClientData): ActivityLevel {
@@ -160,6 +139,7 @@ export function useNutritionStudio(
   );
   const [goal, setGoal] = useState<MacroGoal>("surplus");
   const [calorieAdjustPct, setCalorieAdjustPct] = useState(0);
+
   const [proteinOverride, setProteinOverride] = useState<number | null>(null);
   const [trainingConfig, setTrainingConfig] = useState<TrainingConfig>({
     weeklyFrequency: 3,
@@ -187,14 +167,29 @@ export function useNutritionStudio(
     bmr_kcal_measured: null,
     bmr_source: "estimated",
   });
-  const [carbCycling, setCarbCycling] = useState<CarbCyclingConfig>({
-    enabled: false,
-    protocol: "3/1",
-    goal: "bulk",
-    phase: "hypertrophie",
-    intensity: "moderee",
-    insulin: "normale",
+
+  const setGoalWithPreset = useCallback(
+    (newGoal: MacroGoal) => {
+      setGoal(newGoal);
+      const bf =
+        biometricsConfig.body_fat_pct ?? clientData?.body_fat_pct ?? null;
+      setCalorieAdjustPct(
+        computeSmartPreset(newGoal, bf, trainingConfig.weeklyFrequency),
+      );
+    },
+    [
+      biometricsConfig.body_fat_pct,
+      clientData?.body_fat_pct,
+      trainingConfig.weeklyFrequency,
+    ],
+  );
+
+  const [macroOverrides, setMacroOverrides] = useState<MacroOverrides>({
+    protein_g: null,
+    fat_g: null,
+    carbs_g: null,
   });
+  const [cycleSyncEnabled, setCycleSyncEnabled] = useState<boolean>(false);
   const [hydrationClimate, setHydrationClimate] =
     useState<HydrationClimate>("temperate");
   const [hydrationPhase, setHydrationPhase] = useState(100); // 0–200, 100 = baseline
@@ -208,7 +203,6 @@ export function useNutritionStudio(
   const [macroResult, setMacroResult] = useState<MacroResult | null>(null);
   // Calories after goal factor but before calorieAdjustPct — used by the adjustment slider display
   const [goalCalories, setGoalCalories] = useState<number | null>(null);
-  const [ccResult, setCcResult] = useState<CarbCyclingResult | null>(null);
   const [hydrationLiters, setHydrationLiters] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -224,6 +218,9 @@ export function useNutritionStudio(
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null);
+  // Server-resolved submission ID — which bilan the server actually used.
+  // Separate from selectedSubmissionId so setting it doesn't re-trigger the fetch effect.
+  const [resolvedSubmissionId, setResolvedSubmissionId] = useState<string | null>(null);
   const [allSubmissions, setAllSubmissions] = useState<
     Array<{ id: string; date: string; status: string; submitted_at: string }>
   >([]);
@@ -239,6 +236,7 @@ export function useNutritionStudio(
     new Date().toISOString().slice(0, 10),
   );
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
+  const [cycleState, setCycleState] = useState<CycleState | null>(null);
 
   // ── Fetch client data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -259,7 +257,7 @@ export function useNutritionStudio(
           setAllSubmissions(d.allSubmissions);
         }
         if (d.selectedSubmissionId) {
-          setSelectedSubmissionId(d.selectedSubmissionId);
+          setResolvedSubmissionId(d.selectedSubmissionId);
         }
         if (d.dataSource) {
           setDataSource(d.dataSource);
@@ -276,10 +274,13 @@ export function useNutritionStudio(
           const mapped =
             CLIENT_GOAL_MAP[cd.training_goal.toLowerCase()] ?? "maintenance";
           setGoal(mapped);
-          setCarbCycling((prev) => ({
-            ...prev,
-            goal: MACRO_TO_CC_GOAL[mapped],
-          }));
+          setCalorieAdjustPct(
+            computeSmartPreset(
+              mapped,
+              cd.body_fat_pct ?? null,
+              cd.weekly_frequency ?? 0,
+            ),
+          );
         }
         setTrainingConfig({
           weeklyFrequency: cd.weekly_frequency ?? 3,
@@ -314,6 +315,11 @@ export function useNutritionStudio(
           .then(r => r.ok ? r.json() : [])
           .then(setTdeeHistory)
           .catch(() => {})
+        // Load cycle state (best-effort, non-blocking)
+        fetch(`/api/clients/${clientId}/cycle/status`)
+          .then(r => r.ok ? r.json() : { cycleState: null })
+          .then(d => setCycleState(d.cycleState ?? null))
+          .catch(() => {})
       })
       .catch(() => {})
       .finally(() => setClientLoading(false));
@@ -337,24 +343,22 @@ export function useNutritionStudio(
         })),
       );
     }
+    if (existingProtocol?.cycle_sync_enabled !== undefined) {
+      setCycleSyncEnabled(existingProtocol.cycle_sync_enabled);
+    }
   }, [existingProtocol]);
 
   // ── Debounced recalculation ────────────────────────────────────────────────
   useEffect(() => {
-    if (
-      !clientData ||
-      !clientData.weight_kg ||
-      !clientData.height_cm ||
-      !clientData.age
-    )
-      return;
+    if (!clientData) return;
 
-    const cd = clientData;
-    const weight = cd.weight_kg;
-    const height = cd.height_cm;
-    const age = cd.age;
+    // biometricsConfig overrides clientData — allows ParameterAdjustmentPanel edits to apply
+    const weight = biometricsConfig.weight_kg ?? clientData.weight_kg;
+    const height = biometricsConfig.height_cm ?? clientData.height_cm;
+    const age = clientData.age;
     if (weight == null || height == null || age == null) return;
 
+    const cd = clientData;
     const gender: MacroGender = cd.gender === "female" ? "female" : "male";
 
     const recalculate = () => {
@@ -364,10 +368,10 @@ export function useNutritionStudio(
         age,
         gender,
         goal,
-        bodyFat: cd.body_fat_pct ?? undefined,
-        muscleMassKg: cd.muscle_mass_kg ?? undefined,
-        bmrKcalMeasured: cd.bmr_kcal_measured ?? undefined,
-        visceralFatLevel: cd.visceral_fat_level ?? undefined,
+        bodyFat: biometricsConfig.body_fat_pct ?? cd.body_fat_pct ?? undefined,
+        muscleMassKg: biometricsConfig.muscle_mass_kg ?? cd.muscle_mass_kg ?? undefined,
+        bmrKcalMeasured: biometricsConfig.bmr_kcal_measured ?? cd.bmr_kcal_measured ?? undefined,
+        visceralFatLevel: biometricsConfig.visceral_fat_level ?? cd.visceral_fat_level ?? undefined,
         steps: trainingConfig.dailySteps || undefined,
         occupationMultiplier: cd.occupation_multiplier ?? undefined,
         workHoursPerWeek: lifestyleConfig.workHoursPerWeek ?? undefined,
@@ -385,50 +389,34 @@ export function useNutritionStudio(
       };
 
       const result = calculateMacros(input);
-      // Store calories after goal factor, before manual adjustment — used by slider display
-      const caloriesAfterGoal = result.calories;
-      setGoalCalories(caloriesAfterGoal);
-      if (calorieAdjustPct !== 0) {
-        const factor = 1 + calorieAdjustPct / 100;
-        result.calories = Math.round(result.calories * factor);
-        const pKcal =
-          proteinOverride != null
-            ? Math.round(proteinOverride * result.leanMass) * 4
-            : result.macros.p * 4;
-        const fKcal = result.macros.f * 9;
-        result.macros.c = Math.max(
-          0,
-          Math.round((result.calories - pKcal - fKcal) / 4),
-        );
-      }
-      if (proteinOverride != null) {
-        result.macros.p = Math.round(proteinOverride * result.leanMass);
-        const remaining =
-          result.calories - result.macros.p * 4 - result.macros.f * 9;
+      // TDEE is the reference — slider 0 = TDEE always
+      const tdee = result.tdee;
+      setGoalCalories(tdee);
+      const targetCal = Math.round(tdee * (1 + calorieAdjustPct / 100));
+      result.calories = targetCal;
+      // Carbs absorb delta when not manually overridden
+      if (!macroOverrides.carbs_g) {
+        const remaining = targetCal - result.macros.p * 4 - result.macros.f * 9;
         result.macros.c = Math.max(0, Math.round(remaining / 4));
+        // Recompute from actual rounded macros so MacroSliders and CalorieAdjustmentDisplay are always in sync
+        result.calories = result.macros.p * 4 + result.macros.f * 9 + result.macros.c * 4;
+      }
+      // Apply macro overrides — each overridden macro becomes source of truth
+      // Calories = P×4 + L×9 + G×4 (all effective values)
+      if (macroOverrides.protein_g !== null) result.macros.p = macroOverrides.protein_g;
+      if (macroOverrides.fat_g !== null) result.macros.f = macroOverrides.fat_g;
+      if (macroOverrides.carbs_g !== null) result.macros.c = macroOverrides.carbs_g;
+      if (macroOverrides.protein_g !== null || macroOverrides.fat_g !== null || macroOverrides.carbs_g !== null) {
+        result.calories = Math.round(result.macros.p * 4 + result.macros.f * 9 + result.macros.c * 4);
+      }
+      // Legacy proteinOverride (g/kg LBM) — applied only when no direct g override
+      if (proteinOverride != null && macroOverrides.protein_g === null) {
+        result.macros.p = Math.round(proteinOverride * result.leanMass);
+        const remaining = result.calories - result.macros.p * 4 - result.macros.f * 9;
+        result.macros.c = Math.max(0, Math.round(remaining / 4));
+        result.calories = Math.round(result.macros.p * 4 + result.macros.f * 9 + result.macros.c * 4);
       }
       setMacroResult(result);
-
-      if (carbCycling.enabled) {
-        const ccInput = {
-          gender: gender as "male" | "female",
-          age,
-          weight,
-          height,
-          bodyFat: cd.body_fat_pct ?? undefined,
-          occupation: "sedentaire" as const,
-          sessionsPerWeek: trainingConfig.weeklyFrequency,
-          sessionDuration: trainingConfig.sessionDurationMin,
-          intensity: carbCycling.intensity,
-          goal: carbCycling.goal,
-          phase: carbCycling.phase,
-          protocol: carbCycling.protocol,
-          insulin: carbCycling.insulin,
-        };
-        setCcResult(calculateCarbCycling(ccInput));
-      } else {
-        setCcResult(null);
-      }
 
       const actLevel = getActivityLevel(cd);
       const hydInput = {
@@ -452,12 +440,13 @@ export function useNutritionStudio(
     };
   }, [
     clientData,
+    biometricsConfig,
     goal,
     calorieAdjustPct,
     proteinOverride,
+    macroOverrides,
     trainingConfig,
     lifestyleConfig,
-    carbCycling,
     hydrationClimate,
   ]);
 
@@ -623,34 +612,6 @@ export function useNutritionStudio(
     [macroResult, updateDay],
   );
 
-  const injectCCHighToDay = useCallback(
-    (dayIndex: number) => {
-      if (!ccResult) return;
-      updateDay(dayIndex, {
-        calories: String(ccResult.high.kcal),
-        protein_g: String(ccResult.high.p),
-        carbs_g: String(ccResult.high.c),
-        fat_g: String(ccResult.high.f),
-        carb_cycle_type: "high",
-      });
-    },
-    [ccResult, updateDay],
-  );
-
-  const injectCCLowToDay = useCallback(
-    (dayIndex: number) => {
-      if (!ccResult) return;
-      updateDay(dayIndex, {
-        calories: String(ccResult.low.kcal),
-        protein_g: String(ccResult.low.p),
-        carbs_g: String(ccResult.low.c),
-        fat_g: String(ccResult.low.f),
-        carb_cycle_type: "low",
-      });
-    },
-    [ccResult, updateDay],
-  );
-
   const injectHydrationToDay = useCallback(
     (dayIndex: number) => {
       if (!hydrationLiters) return;
@@ -674,6 +635,7 @@ export function useNutritionStudio(
     () => ({
       name: protocolName,
       schedule_start_date: scheduleStartDate,
+      cycle_sync_enabled: cycleSyncEnabled,
       schedule_slots: scheduleSlots
         .filter((slot) => slot.protocol_day_position >= 0 && slot.protocol_day_position < days.length)
         .map((slot) => ({
@@ -694,7 +656,7 @@ export function useNutritionStudio(
         recommendations: d.recommendations || null,
       })),
     }),
-    [protocolName, scheduleStartDate, scheduleSlots, days],
+    [protocolName, scheduleStartDate, scheduleSlots, days, cycleSyncEnabled],
   );
 
   const save = useCallback(async (): Promise<string | null> => {
@@ -765,11 +727,13 @@ export function useNutritionStudio(
 
   return {
     clientData,
+    setClientData,
     clientLoading,
     protocolName,
     setProtocolName,
     goal,
     setGoal,
+    setGoalWithPreset,
     calorieAdjustPct,
     setCalorieAdjustPct,
     proteinOverride,
@@ -780,8 +744,10 @@ export function useNutritionStudio(
     setLifestyleConfig,
     biometricsConfig,
     setBiometricsConfig,
-    carbCycling,
-    setCarbCycling,
+    macroOverrides,
+    setMacroOverrides,
+    cycleSyncEnabled,
+    setCycleSyncEnabled,
     hydrationClimate,
     setHydrationClimate,
     hydrationPhase,
@@ -791,15 +757,12 @@ export function useNutritionStudio(
     setActiveDayIndex,
     macroResult,
     goalCalories,
-    ccResult,
     hydrationLiters,
     coherenceScore,
     updateDay,
     addDay,
     removeDay,
     injectMacrosToDay,
-    injectCCHighToDay,
-    injectCCLowToDay,
     injectHydrationToDay,
     injectAllToDay,
     saving,
@@ -810,6 +773,7 @@ export function useNutritionStudio(
     share,
     selectedSubmissionId,
     setSelectedSubmissionId,
+    resolvedSubmissionId,
     allSubmissions,
     missingDataAlerts,
     dataSource,
@@ -826,5 +790,6 @@ export function useNutritionStudio(
     setScheduleStartDate,
     scheduleSlots,
     setScheduleSlots,
+    cycleState,
   };
 }

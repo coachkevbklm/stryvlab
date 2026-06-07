@@ -15,6 +15,15 @@ export type FreeActivitySheetProps = {
 
 const TYPES: ActivityType[] = ['running', 'cycling', 'swimming', 'walking', 'team_sport', 'other']
 
+const formatDateTime = (iso: string) => {
+  const d = new Date(iso)
+  return (
+    d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) +
+    ' à ' +
+    d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  )
+}
+
 export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivitySheetProps) {
   const { t } = useClientT()
   const [type, setType] = useState<ActivityType>('running')
@@ -92,7 +101,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
                       key={tt}
                       onClick={() => setType(tt)}
                       className={`h-10 rounded-xl text-[11px] font-semibold transition-colors ${
-                        type === tt ? 'bg-[#f2f2f2] text-[#080808]' : 'bg-white/[0.04] text-white/60'
+                        type === tt ? 'bg-[#1a1a1a] text-white/90' : 'bg-white/[0.03] text-white/60'
                       }`}
                     >
                       {t(`smart.activity.type.${tt}` as any)}
@@ -116,12 +125,17 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{t('activity.when')}</label>
-                <input
-                  type="datetime-local"
-                  value={startedAt}
-                  onChange={e => setStartedAt(e.target.value)}
-                  className="w-full min-w-0 h-11 px-3 rounded-xl bg-[#080808] text-white text-[14px] outline-none"
-                />
+                <div className="relative w-full h-11">
+                  <div className="w-full h-full flex items-center px-3 rounded-xl bg-[#080808] text-white text-[14px] pointer-events-none select-none">
+                    {formatDateTime(startedAt)}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={startedAt}
+                    onChange={e => setStartedAt(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
               </div>
 
               <div>
@@ -149,7 +163,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
                   step={1}
                   value={intensity}
                   onChange={e => setIntensity(parseInt(e.target.value))}
-                  className="w-full h-2 appearance-none rounded-full cursor-pointer"
+                  className="w-full h-2 appearance-none rounded-full cursor-pointer slider-client"
                   style={{
                     background: `linear-gradient(to right, #f2f2f2 0%, #f2f2f2 ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`,
                   }}
@@ -172,7 +186,7 @@ export default function FreeActivitySheet({ open, onClose, onSaved }: FreeActivi
               <button
                 disabled={saving}
                 onClick={submit}
-                className="w-full h-12 rounded-xl bg-[#f2f2f2] text-[#080808] font-bold uppercase tracking-[0.1em] text-[12px] disabled:opacity-50 active:scale-[0.98] transition-transform"
+                className="w-full h-12 rounded-xl bg-white/[0.10] text-white font-bold uppercase tracking-[0.1em] text-[12px] disabled:opacity-50 active:scale-[0.98] transition-transform"
               >
                 {saving ? '...' : t('smart.activity.save')}
               </button>

@@ -750,3 +750,28 @@ export function calculateMacros(input: MacroInput): MacroResult {
     smartProtocol,
   };
 }
+
+/**
+ * Returns the default calorieAdjustPct (% vs TDEE) for a given goal.
+ * Mirrors BF-stratified deficit logic from calculateMacros.
+ * Used to auto-move the calorie slider when coach clicks a goal button.
+ */
+export function computeSmartPreset(
+  goal: MacroGoal,
+  bodyFat: number | null,
+  weeklyFrequency: number,
+): number {
+  if (goal === 'maintenance') return 0
+  const bf = bodyFat ?? 20
+  if (goal === 'deficit') {
+    let pct =
+      bf > 30 ? -30 :
+      bf > 25 ? -25 :
+      bf > 20 ? -20 :
+      bf > 15 ? -15 : -12
+    if (weeklyFrequency >= 5) pct = Math.min(-10, pct + 3)
+    return pct
+  }
+  // surplus — expressed as % (approximates fixed-kcal presets at typical TDEE)
+  return bf < 10 ? 10 : bf < 13 ? 8 : bf < 16 ? 7 : bf < 20 ? 5 : 4
+}

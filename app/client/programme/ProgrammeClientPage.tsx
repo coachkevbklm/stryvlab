@@ -1,8 +1,17 @@
 "use client";
 
+<<<<<<< ours
 import { useState, useMemo } from "react";
 import Link from "next/link";
+||||||| base
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
+=======
+import { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
+>>>>>>> theirs
 import {
+<<<<<<< ours
   Dumbbell,
   Clock,
   Layers,
@@ -21,6 +30,31 @@ import ExerciseListDisclosure from "@/components/client/ExerciseListDisclosure";
 import ClientTopBar from "@/components/client/ClientTopBar";
 import { useClientT } from "@/components/client/ClientI18nProvider";
 import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
+||||||| base
+  Dumbbell, Clock, Layers, Target, Timer, Coffee,
+  Flame, ChevronRight, Trophy, TrendingUp, Zap,
+} from 'lucide-react'
+import BodyMap from '@/components/client/BodyMap'
+import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
+import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
+import ClientTopBar from '@/components/client/ClientTopBar'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+=======
+  Dumbbell, Clock, Layers, Target, Timer, Coffee,
+  Flame, ChevronRight, Trophy, TrendingUp, Zap,
+} from 'lucide-react'
+import BodyMap from '@/components/client/BodyMap'
+import { computeMuscleIntensity } from '@/lib/client/muscleDetection'
+import ExerciseListDisclosure from '@/components/client/ExerciseListDisclosure'
+import ClientTopBar from '@/components/client/ClientTopBar'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+import { ct, type ClientLang } from '@/lib/i18n/clientTranslations'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
+import dynamic from 'next/dynamic'
+
+const CyclePhasePill = dynamic(() => import('@/components/client/cycle/CyclePhasePill'), { ssr: false })
+>>>>>>> theirs
 import type {
   HeatmapDay,
   PREntry,
@@ -125,6 +159,7 @@ export default function ProgrammeClientPage({
   volumeCoverage = { week_start: "", sessions_count: 0, groups: [] },
   smartRecentSessions = [],
 }: Props) {
+<<<<<<< ours
   const { t } = useClientT();
 
   const [tab, setTab] = useState<Tab>((initialTab as Tab) ?? "seance");
@@ -186,6 +221,103 @@ export default function ProgrammeClientPage({
   const rirAvg = todaySession ? avgRir(todayExercises) : null;
 
   const isViewingToday = selectedDow === todayDow;
+||||||| base
+  const { t } = useClientT()
+
+  const [tab, setTab] = useState<Tab>(initialTab as Tab ?? 'seance')
+  const [selectedDow, setSelectedDow] = useState(initialDow)
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+
+  const completedIdsSet = useMemo(() => new Set(completedTodayIds), [completedTodayIds])
+  const completedNamesSet = useMemo(() => new Set(completedTodayNames), [completedTodayNames])
+
+  const todaySession = useMemo(() =>
+    sessions.find((s: any) =>
+      (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(selectedDow)
+    ) ?? null,
+    [sessions, selectedDow]
+  )
+
+  const todayExercises = useMemo(() =>
+    todaySession
+      ? ((todaySession.program_exercises ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
+      : [],
+    [todaySession]
+  )
+
+  const muscleIntensityMap = useMemo(() =>
+    computeMuscleIntensity(todayExercises.map((e: any) => ({
+      name: e.name,
+      sets: e.sets ?? 3,
+      primary_muscles: e.primary_muscles ?? [],
+      secondary_muscles: e.secondary_muscles ?? [],
+      primary_muscle: e.primary_muscle ?? null,
+      primary_activation: e.primary_activation ?? null,
+      secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+      secondary_activations: e.secondary_activations ?? [],
+    }))),
+    [todayExercises]
+  )
+
+  const durationMin = todaySession ? estimateDuration(todayExercises) : null
+  const totalSets = todayExercises.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)
+  const restAvg = todaySession ? avgRest(todayExercises) : null
+  const rirAvg = todaySession ? avgRir(todayExercises) : null
+
+  const isViewingToday = selectedDow === todayDow
+=======
+  const { t } = useClientT()
+
+  const [tab, setTab] = useState<Tab>(initialTab as Tab ?? 'seance')
+  const [selectedDow, setSelectedDow] = useState(initialDow)
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [cycleState, setCycleState] = useState<CycleState | null>(null)
+
+  useEffect(() => {
+    fetch('/api/client/cycle/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.cycleState) setCycleState(data.cycleState) })
+      .catch(() => {})
+  }, [])
+
+  const completedIdsSet = useMemo(() => new Set(completedTodayIds), [completedTodayIds])
+  const completedNamesSet = useMemo(() => new Set(completedTodayNames), [completedTodayNames])
+
+  const todaySession = useMemo(() =>
+    sessions.find((s: any) =>
+      (s.days_of_week?.length ? s.days_of_week : [s.day_of_week]).includes(selectedDow)
+    ) ?? null,
+    [sessions, selectedDow]
+  )
+
+  const todayExercises = useMemo(() =>
+    todaySession
+      ? ((todaySession.program_exercises ?? []) as any[]).sort((a: any, b: any) => a.position - b.position)
+      : [],
+    [todaySession]
+  )
+
+  const muscleIntensityMap = useMemo(() =>
+    computeMuscleIntensity(todayExercises.map((e: any) => ({
+      name: e.name,
+      sets: e.sets ?? 3,
+      primary_muscles: e.primary_muscles ?? [],
+      secondary_muscles: e.secondary_muscles ?? [],
+      primary_muscle: e.primary_muscle ?? null,
+      primary_activation: e.primary_activation ?? null,
+      secondary_muscles_detail: e.secondary_muscles_detail ?? [],
+      secondary_activations: e.secondary_activations ?? [],
+    }))),
+    [todayExercises]
+  )
+
+  const durationMin = todaySession ? estimateDuration(todayExercises) : null
+  const totalSets = todayExercises.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)
+  const restAvg = todaySession ? avgRest(todayExercises) : null
+  const rirAvg = todaySession ? avgRir(todayExercises) : null
+
+  const isViewingToday = selectedDow === todayDow
+>>>>>>> theirs
 
   // Historique — 30 dernières séances
   const recentSessions = useMemo(
@@ -227,9 +359,19 @@ export default function ProgrammeClientPage({
         section={ct(lang, "programme.section")}
         title={program.name}
         right={
-          <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">
-            {program.weeks}sem · {sessions.length} séances
-          </p>
+          <div className="flex flex-col items-end gap-0.5">
+            <p className="text-[9px] text-white/30 uppercase tracking-[0.12em]">
+              {program.weeks}sem · {sessions.length} séances
+            </p>
+            {cycleState?.currentPhase && cycleState.currentCycleDay && (
+              <CyclePhasePill
+                phase={cycleState.currentPhase}
+                cycleDay={cycleState.currentCycleDay}
+                confidence={cycleState.confidence}
+                size="sm"
+              />
+            )}
+          </div>
         }
       />
 

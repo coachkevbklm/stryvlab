@@ -1,7 +1,7 @@
 // app/coach/clients/[clientId]/profil/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import ClientAccessToken from "@/components/clients/ClientAccessToken";
@@ -11,9 +11,19 @@ import DeleteClientModal from "@/components/clients/DeleteClientModal";
 import { useRouter } from "next/navigation";
 import {
   Mail, Phone, Calendar, Edit2, Save, Loader2, User,
-  Tag, Plus, X, Check, MapPin, User2, StickyNote, PhoneCall,
+  Tag, Plus, X, Check, MapPin, User2, StickyNote, PhoneCall, ChevronDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import TransformationScoreWidget from "@/components/coach/TransformationScoreWidget";
+import PhaseOptimizationWidget from "@/components/coach/PhaseOptimizationWidget";
+import AiCoachSettingsWidget from "@/components/coach/AiCoachSettingsWidget";
+import CheckinConfigWidget from "@/components/coach/CheckinConfigWidget";
+import {
+  TRANSFORMATION_PHASE_OPTIONS,
+  getTransformationPhaseLabel,
+  transformationPhaseToFamily,
+  transformationPhaseToMacroGoal,
+} from "@/lib/coach/transformationPhase";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -26,6 +36,11 @@ const TRAINING_GOALS = [
   { value: "maintenance", label: "Maintenance" },
   { value: "athletic", label: "Athlétique" },
 ];
+const TRANSFORMATION_PHASES = TRANSFORMATION_PHASE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+  description: option.description,
+}));
 const FITNESS_LEVELS = [
   { value: "beginner", label: "Débutant" },
   { value: "intermediate", label: "Intermédiaire" },
@@ -85,6 +100,39 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   );
 }
 
+// Collapsible section. Body stays mounted (hidden when closed) so edit state is
+// preserved; the header-right slot (edit/save controls) only shows when open to
+// avoid editing a collapsed section.
+function CollapsibleCard({
+  title,
+  defaultOpen = false,
+  headerRight,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">{title}</span>
+          <ChevronDown size={13} className={`text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && headerRight}
+      </div>
+      <div className={open ? "" : "hidden"}>{children}</div>
+    </Card>
+  );
+}
+
 const inputCls = "w-full rounded-xl bg-[#0a0a0a] border-[0.3px] border-white/[0.06] px-3 h-9 text-[12px] text-white outline-none placeholder:text-white/20";
 const selectCls = "w-full rounded-xl bg-[#0a0a0a] border-[0.3px] border-white/[0.06] px-3 h-9 text-[12px] text-white outline-none";
 
@@ -124,14 +172,39 @@ type TagObj = { id: string; name: string; color: string };
 
 export default function ProfilPage() {
   const { client, clientId, refetch } = useClient();
-  useClientTopBar("Profil");
   const router = useRouter();
+
+  // ── Access onboarding cue: new client (not yet active/suspended) needs an invite ──
+  const accessSectionRef = useRef<HTMLDivElement>(null);
+  const [accessStatus, setAccessStatus] = useState(client.status ?? "inactive");
+  useEffect(() => { setAccessStatus(client.status ?? "inactive"); }, [client.status]);
+  const needsInvite = accessStatus !== "active" && accessStatus !== "suspended";
+  const [phaseOpen, setPhaseOpen] = useState(false);
+  const scrollToAccess = useCallback(() => {
+    accessSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
+  useClientTopBar(
+    "Profil",
+    needsInvite ? (
+      <button
+        type="button"
+        onClick={scrollToAccess}
+        className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+      >
+        <Mail size={12} /> Envoyer l'accès
+      </button>
+    ) : undefined,
+  );
 
   // Sport profile editing
   const [editingSport, setEditingSport] = useState(false);
   const [savingSport, setSavingSport] = useState(false);
   const [saveErrorSport, setSaveErrorSport] = useState("");
+  const [savingPhase, setSavingPhase] = useState(false);
+  const [saveErrorPhase, setSaveErrorPhase] = useState("");
   const [sportDraft, setSportDraft] = useState({
+    transformation_phase: client.transformation_phase ?? "",
     training_goal: client.training_goal ?? "",
     fitness_level: client.fitness_level ?? "",
     sport_practice: client.sport_practice ?? "",
@@ -139,6 +212,26 @@ export default function ProfilPage() {
     equipment_category: client.equipment_category ?? "",
     notes: client.notes ?? "",
   });
+
+  useEffect(() => {
+    setSportDraft({
+      transformation_phase: client.transformation_phase ?? "",
+      training_goal: client.training_goal ?? "",
+      fitness_level: client.fitness_level ?? "",
+      sport_practice: client.sport_practice ?? "",
+      weekly_frequency: client.weekly_frequency?.toString() ?? "",
+      equipment_category: client.equipment_category ?? "",
+      notes: client.notes ?? "",
+    });
+  }, [
+    client.transformation_phase,
+    client.training_goal,
+    client.fitness_level,
+    client.sport_practice,
+    client.weekly_frequency,
+    client.equipment_category,
+    client.notes,
+  ]);
 
   // CRM editing
   const [editingCrm, setEditingCrm] = useState(false);
@@ -220,6 +313,29 @@ export default function ProfilPage() {
     }
   }
 
+  async function saveTransformationPhase() {
+    setSavingPhase(true);
+    setSaveErrorPhase("");
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transformation_phase: sportDraft.transformation_phase || null,
+        }),
+      });
+      if (!res.ok) {
+        setSaveErrorPhase("Erreur lors de la sauvegarde de la phase");
+        return;
+      }
+      await refetch();
+    } catch {
+      setSaveErrorPhase("Erreur réseau");
+    } finally {
+      setSavingPhase(false);
+    }
+  }
+
   // CRM save
   async function saveCrm() {
     setSavingCrm(true);
@@ -285,45 +401,179 @@ export default function ProfilPage() {
     { label: "Disponibilité", value: client.weekly_frequency ? `${client.weekly_frequency}j/sem.` : null },
     { label: "Catégorie", value: EQUIPMENT_CATEGORIES.find(e => e.value === client.equipment_category)?.label },
   ].filter(f => f.value);
+  const activePhaseMeta = TRANSFORMATION_PHASES.find(
+    (phase) => phase.value === sportDraft.transformation_phase,
+  );
+  const phaseDirty =
+    (sportDraft.transformation_phase || "") !==
+    (client.transformation_phase || "");
+  const phaseDirection = transformationPhaseToMacroGoal(
+    activePhaseMeta?.value,
+  );
+  const phaseFamily = transformationPhaseToFamily(activePhaseMeta?.value);
 
   const unassignedTags = allTags.filter(t => !clientTags.some(ct => ct.id === t.id));
 
   return (
     <main className="min-h-screen bg-[#121212]">
       <div className="px-6 pb-24">
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-2 items-start gap-4">
 
-          {/* ── COLONNE GAUCHE ── */}
+          {/* ── COLONNE GAUCHE : score + fiche client ── */}
           <div className="flex flex-col gap-4">
+            <TransformationScoreWidget clientId={clientId} />
 
-            {/* ── Informations ── */}
             <Card>
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Informations</SectionLabel>
-                {!editingCrm ? (
-                  <button
-                    onClick={() => { setCrmDraft({ ...crm }); setEditingCrm(true); }}
-                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors -mt-3"
-                  >
-                    <Edit2 size={11} /> Modifier
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 -mt-3">
-                    <button onClick={() => setEditingCrm(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setPhaseOpen((o) => !o)}
+                  className="flex items-center gap-2 flex-1 text-left"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">Phase actuelle</span>
+                  <ChevronDown size={13} className={`text-white/30 transition-transform ${phaseOpen ? "rotate-180" : ""}`} />
+                </button>
+                {phaseOpen && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setSportDraft((draft) => ({
+                          ...draft,
+                          transformation_phase: client.transformation_phase ?? "",
+                        }))
+                      }
+                      disabled={!phaseDirty || savingPhase}
+                      className="text-[11px] text-white/40 hover:text-white transition-colors disabled:opacity-30"
+                    >
                       Annuler
                     </button>
                     <button
-                      onClick={saveCrm}
-                      disabled={savingCrm}
+                      onClick={saveTransformationPhase}
+                      disabled={!phaseDirty || savingPhase}
                       className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
                     >
-                      {savingCrm ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                      {savingPhase ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : (
+                        <Save size={11} />
+                      )}
                       Enregistrer
                     </button>
                   </div>
                 )}
               </div>
 
+              {phaseOpen && (<>
+              {saveErrorPhase && (
+                <p className="text-[11px] text-red-400/80 mb-3">
+                  {saveErrorPhase}
+                </p>
+              )}
+
+              <p className="text-[12px] leading-relaxed text-white/60 mb-4">
+                Décision stratégique du coach pour la phase actuelle du client.
+                Elle aligne Nutrition Studio, Phase Optimization et la direction
+                des ajustements.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {TRANSFORMATION_PHASES.map((phase) => {
+                  const isActive = sportDraft.transformation_phase === phase.value;
+                  return (
+                    <button
+                      key={phase.value}
+                      onClick={() =>
+                        setSportDraft((draft) => ({
+                          ...draft,
+                          transformation_phase: phase.value,
+                        }))
+                      }
+                      className={`rounded-xl border px-3 py-3 text-left transition-all ${
+                        isActive
+                          ? "border-[#1f8a65]/35 bg-[#1f8a65]/12"
+                          : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <p
+                        className={`text-[12px] font-semibold ${
+                          isActive ? "text-[#7fe0b8]" : "text-white/85"
+                        }`}
+                      >
+                        {phase.label}
+                      </p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-white/42">
+                        {phase.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+              </>)}
+
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Phase active
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {activePhaseMeta?.label ?? "Non définie"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Direction nutrition
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {phaseDirection === "deficit"
+                      ? "Déficit"
+                      : phaseDirection === "surplus"
+                        ? "Surplus"
+                        : "Maintenance"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.02] px-3 py-2.5">
+                  <p className="text-[9px] text-white/35 uppercase tracking-wider font-medium mb-0.5">
+                    Famille de phase
+                  </p>
+                  <p className="text-[12px] text-white font-semibold">
+                    {phaseFamily === "cut"
+                      ? "Sèche"
+                      : phaseFamily === "bulk"
+                        ? "Prise de masse"
+                        : phaseFamily === "maintenance"
+                          ? "Maintenance"
+                          : "Recomposition"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* ── Informations ── */}
+            <CollapsibleCard
+              title="Informations"
+              headerRight={!editingCrm ? (
+                <button
+                  onClick={() => { setCrmDraft({ ...crm }); setEditingCrm(true); }}
+                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <Edit2 size={11} /> Modifier
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditingCrm(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
+                    Annuler
+                  </button>
+                  <button
+                    onClick={saveCrm}
+                    disabled={savingCrm}
+                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {savingCrm ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                    Enregistrer
+                  </button>
+                </div>
+              )}
+            >
               {/* Contact fields (always read-only) */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {client.email && <InfoCell icon={Mail} label="Email" value={client.email} />}
@@ -415,36 +665,34 @@ export default function ProfilPage() {
                   </div>
                 </div>
               )}
-            </Card>
+            </CollapsibleCard>
 
             {/* ── Profil sportif + équipement + restrictions ── */}
-            <Card>
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Profil sportif</SectionLabel>
-                {!editingSport ? (
-                  <button
-                    onClick={() => setEditingSport(true)}
-                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors -mt-3"
-                  >
-                    <Edit2 size={11} /> Modifier
+            <CollapsibleCard
+              title="Profil sportif"
+              headerRight={!editingSport ? (
+                <button
+                  onClick={() => setEditingSport(true)}
+                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                >
+                  <Edit2 size={11} /> Modifier
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditingSport(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
+                    Annuler
                   </button>
-                ) : (
-                  <div className="flex items-center gap-2 -mt-3">
-                    <button onClick={() => setEditingSport(false)} className="text-[11px] text-white/40 hover:text-white transition-colors">
-                      Annuler
-                    </button>
-                    <button
-                      onClick={saveSport}
-                      disabled={savingSport}
-                      className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                    >
-                      {savingSport ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                      Enregistrer
-                    </button>
-                  </div>
-                )}
-              </div>
-
+                  <button
+                    onClick={saveSport}
+                    disabled={savingSport}
+                    className="flex items-center gap-1.5 bg-[#1f8a65] hover:bg-[#217356] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {savingSport ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                    Enregistrer
+                  </button>
+                </div>
+              )}
+            >
               {saveErrorSport && <p className="text-[11px] text-red-400/80 mb-3">{saveErrorSport}</p>}
 
               {/* Restrictions — toujours visibles en haut */}
@@ -470,7 +718,7 @@ export default function ProfilPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">Objectif</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-1.5">Objectif entraînement</label>
                     <select value={sportDraft.training_goal} onChange={e => setSportDraft(d => ({ ...d, training_goal: e.target.value }))} className={selectCls}>
                       <option value="">—</option>
                       {TRAINING_GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -522,32 +770,43 @@ export default function ProfilPage() {
               <div className="mt-4 mb-1 h-px bg-white/[0.05]" />
               <SubSectionLabel>Équipement disponible</SubSectionLabel>
               <RestrictionsWidget clientId={clientId} section="equipment" />
-            </Card>
+            </CollapsibleCard>
 
-            {/* Zone dangereuse */}
-            <div className="bg-red-950/20 border-[0.3px] border-red-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400/60">Zone dangereuse</p>
-              <button
-                onClick={() => setShowDelete(true)}
-                className="text-[12px] text-red-400/60 hover:text-red-400 transition-colors font-medium"
-              >
-                Supprimer ou archiver →
-              </button>
-            </div>
+            {/* Paramètres IA Coach */}
+            <AiCoachSettingsWidget clientId={clientId} />
+
+            {/* Configuration check-in quotidien */}
+            <CheckinConfigWidget clientId={clientId} />
           </div>
 
-          {/* ── COLONNE DROITE ── */}
+          {/* ── COLONNE DROITE : phase + accès & billing ── */}
           <div className="flex flex-col gap-4">
+            <PhaseOptimizationWidget clientId={clientId} />
 
             {/* Accès client */}
-            <Card>
-              <SectionLabel>Accès client</SectionLabel>
-              <ClientAccessToken
-                clientId={clientId}
-                clientStatus={client.status ?? "inactive"}
-                clientEmail={client.email ?? null}
-              />
-            </Card>
+            <div
+              ref={accessSectionRef}
+              className={`rounded-2xl transition-[box-shadow,border-color] ${
+                needsInvite ? "ring-1 ring-[#1f8a65]/50 rounded-2xl" : ""
+              }`}
+            >
+              <Card>
+                <div className="flex items-center justify-between mb-1">
+                  <SectionLabel>Accès client</SectionLabel>
+                  {needsInvite && (
+                    <span className="flex items-center gap-1 rounded-full bg-[#1f8a65]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#7fe2bf]">
+                      Action requise
+                    </span>
+                  )}
+                </div>
+                <ClientAccessToken
+                  clientId={clientId}
+                  clientStatus={client.status ?? "inactive"}
+                  clientEmail={client.email ?? null}
+                  onStatusChange={setAccessStatus}
+                />
+              </Card>
+            </div>
 
             {/* Formules & abonnement */}
             <Card>
@@ -646,6 +905,17 @@ export default function ProfilPage() {
                 </div>
               )}
             </Card>
+
+            {/* Zone dangereuse — toujours tout en bas de la colonne droite */}
+            <div className="bg-red-950/20 border-[0.3px] border-red-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400/60">Zone dangereuse</p>
+              <button
+                onClick={() => setShowDelete(true)}
+                className="text-[12px] text-red-400/60 hover:text-red-400 transition-colors font-medium"
+              >
+                Supprimer ou archiver →
+              </button>
+            </div>
           </div>
         </div>
       </div>

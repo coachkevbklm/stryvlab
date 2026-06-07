@@ -38,8 +38,13 @@ function checkRateLimit(clientId: string): boolean {
 const bodySchema = z.object({
   transcript: z.string().min(3).max(1000),
   physiological_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+<<<<<<< ours
   lang: z.enum(["fr", "en", "es"]).default("fr"),
   client_hour: z.number().int().min(0).max(23).optional(),
+||||||| base
+  lang: z.enum(["fr", "en", "es"]).default("fr"),
+=======
+>>>>>>> theirs
 })
 
 export async function POST(req: NextRequest) {
@@ -57,7 +62,13 @@ export async function POST(req: NextRequest) {
   const body = bodySchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error }, { status: 400 })
 
+<<<<<<< ours
   const { transcript, lang, client_hour } = body.data
+||||||| base
+  const { transcript, lang } = body.data
+=======
+  const { transcript } = body.data
+>>>>>>> theirs
   const db = service()
 
   // ── Fetch top-20 food items this client uses most ─────────────────────────
@@ -117,11 +128,26 @@ Format JSON :
 
 Autres règles :
 - Identifie chaque aliment distinct mentionné
+<<<<<<< ours
 - Si quantité non précisée, estime une portion standard
 - confidence: "high" si quantité ET aliment explicites, "medium" si estimés, "low" si très incertain
 - meal_type : breakfast | lunch | dinner | snack — selon contexte ou heure (${currentHour}h)
 - Valeurs nutritionnelles = pour la quantité indiquée (pas pour 100g)
 - Ne retourne QUE le JSON
+||||||| base
+- Si la quantité n'est pas précisée, estime une portion standard
+- confidence: "high" si quantité explicite, "medium" si estimée, "low" si très incertain
+- meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
+- Ne retourne QUE le JSON, aucun texte autour
+- Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
+=======
+- Si la quantité n'est pas précisée, estime une portion standard
+- confidence: "high" si quantité explicite, "medium" si estimée, "low" si très incertain
+- meal_type déduit du contexte ou de l'heure (${currentHour}h) parmi : breakfast, lunch, dinner, snack
+- Ne retourne QUE le JSON, aucun texte autour
+- Les valeurs nutritionnelles doivent être pour la quantité indiquée (pas pour 100g)
+- Le texte provient de la reconnaissance vocale automatique : il peut contenir des homophones erronés. Interprète toujours dans un contexte alimentaire/nutritionnel (ex: "port" → "porc", "ver" → "verre", "vert" → contexte légume ou couleur, "tain" → "thym", "sel" → "sel", "eau" → "eau", etc.)
+>>>>>>> theirs
 
 ${catalogHint}`
 

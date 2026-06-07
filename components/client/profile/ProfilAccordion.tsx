@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< ours
 import { useState } from "react";
 import AccordionSection from "./AccordionSection";
 import ProfilePhotoUpload from "./ProfilePhotoUpload";
@@ -12,8 +13,43 @@ import ClientRestrictionsSection from "@/components/client/ClientRestrictionsSec
 import ClientLogoutButton from "@/app/client/profil/LogoutButton";
 import Link from "next/link";
 import { useClientT } from "@/components/client/ClientI18nProvider";
+||||||| base
+import { useState } from 'react'
+import AccordionSection from './AccordionSection'
+import ProfilePhotoUpload from './ProfilePhotoUpload'
+import ProfileForm from './ProfileForm'
+import PreferencesForm from './PreferencesForm'
+import NotificationsPanel from './NotificationsPanel'
+import PasswordResetButton from './PasswordResetButton'
+import PortionScalingForm from './PortionScalingForm'
+import BodyDataSection from './BodyDataSection'
+import ClientRestrictionsSection from '@/components/client/ClientRestrictionsSection'
+import ClientLogoutButton from '@/app/client/profil/LogoutButton'
+import Link from 'next/link'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+=======
+import { useState } from 'react'
+import type { CycleState } from '@/lib/cycle/cycleEngine'
+import dynamic from 'next/dynamic'
+import CyclePhasePill from '@/components/client/cycle/CyclePhasePill'
+import AccordionSection from './AccordionSection'
+
+const LogPeriodSheet = dynamic(() => import('@/components/client/cycle/LogPeriodSheet'), { ssr: false })
+import ProfilePhotoUpload from './ProfilePhotoUpload'
+import ProfileForm from './ProfileForm'
+import PreferencesForm from './PreferencesForm'
+import NotificationsPanel from './NotificationsPanel'
+import PasswordResetButton from './PasswordResetButton'
+import PortionScalingForm from './PortionScalingForm'
+import BodyDataSection from './BodyDataSection'
+import ClientRestrictionsSection from '@/components/client/ClientRestrictionsSection'
+import ClientLogoutButton from '@/app/client/profil/LogoutButton'
+import Link from 'next/link'
+import { useClientT } from '@/components/client/ClientI18nProvider'
+>>>>>>> theirs
 
 type SectionId =
+<<<<<<< ours
   | "info"
   | "body"
   | "restrictions"
@@ -22,6 +58,26 @@ type SectionId =
   | "notif"
   | "prefs"
   | "security";
+||||||| base
+  | 'info'
+  | 'body'
+  | 'restrictions'
+  | 'portions'
+  | 'progress'
+  | 'notif'
+  | 'prefs'
+  | 'security'
+=======
+  | 'info'
+  | 'body'
+  | 'restrictions'
+  | 'portions'
+  | 'progress'
+  | 'notif'
+  | 'prefs'
+  | 'security'
+  | 'cycle'
+>>>>>>> theirs
 
 interface Props {
   clientId: string;
@@ -62,11 +118,26 @@ interface Props {
   };
   unreadCount: number;
   streak: {
+<<<<<<< ours
     current_streak: number;
     longest_streak: number;
     total_points: number;
     level: string;
   } | null;
+||||||| base
+    current_streak: number
+    longest_streak: number
+    total_points: number
+    level: string
+  } | null
+=======
+    current_streak: number
+    longest_streak: number
+    total_points: number
+    level: string
+  } | null
+  cycleState?: CycleState | null
+>>>>>>> theirs
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -90,9 +161,21 @@ export default function ProfilAccordion({
   notifPrefs,
   unreadCount,
   streak,
+  cycleState: initialCycleState,
 }: Props) {
+<<<<<<< ours
   const { t } = useClientT();
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
+||||||| base
+  const { t } = useClientT()
+  const [openSection, setOpenSection] = useState<SectionId | null>(null)
+=======
+  const { t } = useClientT()
+  const [openSection, setOpenSection] = useState<SectionId | null>(null)
+  const [localCycleState, setLocalCycleState] = useState<CycleState | null>(initialCycleState ?? null)
+  const [showLogPeriod, setShowLogPeriod] = useState(false)
+  const isFemale = profileInitial.gender === 'female'
+>>>>>>> theirs
 
   function toggle(id: string) {
     setOpenSection((prev) => (prev === id ? null : (id as SectionId)));
@@ -225,6 +308,72 @@ export default function ProfilAccordion({
       >
         <PasswordResetButton email={email} />
       </AccordionSection>
+
+      {/* ── Section Cycle (female only) ── */}
+      {isFemale && (
+        <>
+          <AccordionSection
+            id="cycle"
+            title="Mon Cycle"
+            icon="🩸"
+            isOpen={openSection === 'cycle'}
+            onToggle={toggle}
+          >
+            {!localCycleState?.hasActiveCycle ? (
+              <div className="space-y-1">
+                <p className="text-[12px] font-barlow text-[#a0a0a0]">Cycle sync désactivé</p>
+                <p className="text-[11px] font-barlow text-[#5a5a5a]">Ménopause / aménorrhée renseignée dans ton bilan.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {localCycleState?.currentPhase && localCycleState.currentCycleDay ? (
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-[#5a5a5a]">Phase actuelle</p>
+                    <CyclePhasePill
+                      phase={localCycleState.currentPhase}
+                      cycleDay={localCycleState.currentCycleDay}
+                      confidence={localCycleState.confidence}
+                      size="md"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-[12px] font-barlow text-[#5a5a5a]">Aucune donnée de cycle encore. Log ton premier cycle depuis le bouton +.</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-white/[0.04] p-3">
+                    <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-[#5a5a5a] mb-1">Cycle moyen</p>
+                    <p className="text-[15px] font-barlow font-bold text-[#e0e0e0]">{localCycleState?.avgCycleLengthDays ?? 28}j</p>
+                  </div>
+                  <div className="rounded-xl bg-white/[0.04] p-3">
+                    <p className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.16em] text-[#5a5a5a] mb-1">Précision</p>
+                    <p className="text-[12px] font-barlow font-semibold text-[#e0e0e0]">
+                      {localCycleState?.confidence === 'calibrated' ? '● Calibré' : localCycleState?.confidence === 'learning' ? '◑ Apprentissage' : '◐ Estimé'}
+                    </p>
+                    <p className="text-[10px] font-barlow text-[#5a5a5a] mt-0.5">
+                      {localCycleState?.logsCount ?? 0} cycle{(localCycleState?.logsCount ?? 0) !== 1 ? 's' : ''} loggé{(localCycleState?.logsCount ?? 0) !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowLogPeriod(true)}
+                  className="w-full h-[44px] rounded-xl bg-white/[0.04] text-[#e0e0e0] text-[13px] font-barlow active:bg-white/[0.08]"
+                >
+                  Indiquer début de règles
+                </button>
+              </div>
+            )}
+          </AccordionSection>
+
+          <LogPeriodSheet
+            open={showLogPeriod}
+            cycleState={localCycleState}
+            onClose={() => setShowLogPeriod(false)}
+            onUpdated={(newState) => { setLocalCycleState(newState); setShowLogPeriod(false); }}
+          />
+        </>
+      )}
 
       {/* ── Déconnexion + mention ── */}
       <div className="pt-2 flex flex-col gap-3">

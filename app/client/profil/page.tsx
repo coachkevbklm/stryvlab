@@ -5,6 +5,8 @@ import { resolveClientFromUser } from "@/lib/client/resolve-client";
 import ClientTopBar from "@/components/client/ClientTopBar";
 import ProfilAccordion from "@/components/client/profile/ProfilAccordion";
 import { ct, type ClientLang } from "@/lib/i18n/clientTranslations";
+import { getCycleStateFromLogs } from "@/lib/cycle/cycleEngine";
+import type { CycleState, CycleLog } from "@/lib/cycle/cycleEngine";
 
 export const metadata = { title: "Mon profil" };
 
@@ -27,7 +29,9 @@ export default async function ClientProfilPage() {
     "id, first_name, last_name, email, phone, goal, date_of_birth, gender, training_goal, fitness_level, sport_practice, weekly_frequency, status, profile_photo_url, created_at",
   )) as any;
 
-  const [{ data: prefs }, { data: notifData }, { data: streakData }] =
+  const isFemale = (client as any)?.gender === "female";
+
+  const [{ data: prefs }, { data: notifData }, { data: streakData }, cycleLogsResult, cycleBilanResult] =
     await Promise.all([
       client
         ? service
@@ -47,6 +51,25 @@ export default async function ClientProfilPage() {
             .from("client_streaks")
             .select("current_streak, longest_streak, total_points, level")
             .eq("client_id", client.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      client && isFemale
+        ? service
+            .from("menstrual_cycle_logs")
+            .select("period_start_date, period_end_date, computed_cycle_length_days")
+            .eq("client_id", client.id)
+            .order("period_start_date", { ascending: false })
+            .limit(7)
+        : Promise.resolve({ data: null }),
+      client && isFemale
+        ? service
+            .from("assessment_responses")
+            .select("value_text")
+            .eq("client_id", client.id)
+            .eq("field_key", "menstrual_cycle")
+            .not("value_text", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
@@ -77,6 +100,13 @@ export default async function ClientProfilPage() {
 
   const notifications = notifData ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  let cycleState: CycleState | null = null;
+  if (isFemale && client) {
+    const cycleLogs: CycleLog[] = (cycleLogsResult as any)?.data ?? [];
+    const bilanValue: string | null = (cycleBilanResult as any)?.data?.value_text ?? null;
+    cycleState = getCycleStateFromLogs(cycleLogs, bilanValue);
+  }
 
   const memberSince = new Date(
     client?.created_at ?? Date.now(),
@@ -139,6 +169,7 @@ export default async function ClientProfilPage() {
           }}
           unreadCount={unreadCount}
           streak={streakData ?? null}
+          cycleState={cycleState}
         />
       </main>
     </div>

@@ -227,7 +227,7 @@ export default function NutritionWidget({
 
       {/* ── 3 barres macro ── */}
       <div className="space-y-4">
-        <MacroRow label="Protéines" value={protein} target={targetProt} color={COLORS.prot} showRemaining={showRemaining} />
+        <MacroRow label={t('nutrition.protein')} value={protein} target={targetProt} color={COLORS.prot} showRemaining={showRemaining} />
         <MacroRow label="Glucides"  value={carbs}   target={targetCarb} color={COLORS.carb} showRemaining={showRemaining} />
         <MacroRow label="Lipides"   value={fat}      target={targetFat}  color={COLORS.fat}  showRemaining={showRemaining} />
       </div>

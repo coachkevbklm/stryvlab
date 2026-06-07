@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { Gear } from '@phosphor-icons/react'
 import BodyDataTab from './metrics/BodyDataTab'
 import MesurationsTab from './metrics/MesurationsTab'
 import VitalityTab from './metrics/VitalityTab'
+import dynamic from 'next/dynamic'
 import type { BodyDataResponse } from '@/app/api/client/body-data/route'
 import type { VitalityResponse } from '@/app/api/client/vitality/route'
+
+const MeasurementsEntrySheet = dynamic(
+  () => import('./metrics/MeasurementsEntrySheet'),
+  { ssr: false }
+)
 
 type Tab = 'corps' | 'mensurations' | 'vitalite'
 
@@ -31,6 +38,7 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
   const [bodyData, setBodyData] = useState<BodyDataResponse | null>(null)
   const [vitalityData, setVitalityData] = useState<VitalityResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [entryOpen, setEntryOpen] = useState(false)
 
   async function refreshBodyData() {
     const body = await fetch('/api/client/body-data').then(r => r.ok ? r.json() : null)
@@ -125,11 +133,29 @@ export default function MetricsClientPage({ clientName, clientEmail, avatarIniti
         ) : (
           <>
             {tab === 'corps'        && bodyData     && <BodyDataTab    data={bodyData} />}
-            {tab === 'mensurations' && bodyData     && <MesurationsTab data={bodyData} onSaved={refreshBodyData} />}
+            {tab === 'mensurations' && bodyData     && <MesurationsTab data={bodyData} />}
             {tab === 'vitalite'     && vitalityData && <VitalityTab    data={vitalityData} />}
           </>
         )}
       </div>
+
+      {/* FAB — visible uniquement sur l'onglet Mensurations */}
+      {tab === 'mensurations' && (
+        <button
+          onClick={() => setEntryOpen(true)}
+          className="fixed z-50 flex items-center justify-center h-12 w-12 rounded-2xl transition-all active:scale-[0.93]"
+          style={{ bottom: '88px', right: '16px', background: '#f2f2f2', color: '#080808' }}
+          aria-label={t('ui.add.measurements')}
+        >
+          <Plus size={22} strokeWidth={2.5} />
+        </button>
+      )}
+
+      <MeasurementsEntrySheet
+        open={entryOpen}
+        onClose={() => setEntryOpen(false)}
+        onSaved={async () => { await refreshBodyData() }}
+      />
     </div>
   )
 }

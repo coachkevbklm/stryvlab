@@ -2,21 +2,46 @@
 
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { shiftIsoDate } from '@/lib/utils/date'
 import { getNutritionProgressMeta, type NutritionProgressState } from '@/lib/nutrition/progress'
+import { computeNutritionBalance } from '@/lib/nutrition/balance'
+import { getRemainingNutritionTargets } from '@/lib/nutrition/remaining-targets'
+import { computeActionableRemaining } from '@/lib/nutrition/actionable-remaining'
 import type { NutritionMacros } from './SmartNutritionWidget'
 import { NUTRITION_UI_COLORS } from '@/lib/nutrition/ui-colors'
+import { useClientT } from '../ClientI18nProvider'
 
 type Props = {
   date: string
   consumed: NutritionMacros
   target: NutritionMacros
+  onWaterClick?: () => void
+  simulationMode?: boolean
+  gender?: string | null
+  bodyWeightKg?: number | null
+  compact?: boolean
+  micro?: boolean
+  showSimulationBadge?: boolean
 }
 
-function shiftDate(iso: string, delta: number): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  const date = new Date(Date.UTC(y, m - 1, d + delta))
-  return date.toISOString().slice(0, 10)
-}
+// ── Arc geometry — 240° gauge ─────────────────────────────────────────────────
+// Center (110,110), r=76, gap 120° at bottom, clockwise
+// Start (bottom-left): (44.2, 148) — End (bottom-right): (175.8, 148)
+// Arc length: 2π × 76 × (240/360) ≈ 319
+// Equator (y=110) sits at (110−15)/145 = 65.5 % from top of viewBox "20 15 180 145"
+const ARC_R   = 76
+const ARC_D   = `M 44.2,148 A ${ARC_R},${ARC_R} 0 1,1 175.8,148`
+const ARC_LEN = 2 * Math.PI * ARC_R * (240 / 360)  // ≈ 319
+
+const MACRO_KEYS = [
+  { key: 'protein_g' as const, iKey: 'nutrition.protein' as const, color: NUTRITION_UI_COLORS.protein },
+  { key: 'carbs_g'   as const, iKey: 'nutrition.carbs' as const,   color: NUTRITION_UI_COLORS.carbs   },
+  { key: 'fat_g'     as const, iKey: 'nutrition.fat' as const,     color: NUTRITION_UI_COLORS.fat     },
+]
+
+const SIMULATION_COLOR = '#818cf8'
+
+const shiftDate = shiftIsoDate
 
 function formatNav(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
@@ -26,143 +51,258 @@ function formatNav(iso: string): string {
 
 function formatOverflow(value: number, unit: 'g' | 'L'): string | null {
   if (value <= 0) return null
-  return unit === 'L'
-    ? `+${value.toFixed(1)} ${unit} au-dessus`
-    : `+${Math.round(value)}${unit} au-dessus`
+  return unit === 'L' ? `+${value.toFixed(1)} L au-dessus` : `+${Math.round(value)}g au-dessus`
 }
 
-export default function SmartNutritionHero({ date, consumed, target }: Props) {
-  const effectiveWaterMl = consumed.water_ml
-  const kcalMeta = getNutritionProgressMeta(consumed.kcal, target.kcal)
-  const pct = Math.min(kcalMeta.ratio, 1)
-  const total = 251.2
-  const offset = total * (1 - pct)
+function getStateColor(state: NutritionProgressState, base: string): string {
+  if (state === 'over')       return '#ef4444'
+  if (state === 'near_limit') return '#f59e0b'
+  return base
+}
+
+function formatRemainingLabel(value: number, unit: 'g' | 'L'): string {
+  if (value <= 0) return 'objectif atteint'
+  if (unit === 'L') return `${value.toFixed(1)} L restants`
+  return `${Math.round(value)}g restants`
+}
+
+export default function SmartNutritionHero({
+  date,
+  consumed,
+  target,
+  onWaterClick,
+  simulationMode = false,
+  gender,
+  bodyWeightKg,
+  compact = false,
+  micro = false,
+  showSimulationBadge = true,
+}: Props) {
+  const { t } = useClientT()
   const prev = shiftDate(date, -1)
   const next = shiftDate(date, 1)
-  const waterMeta = getNutritionProgressMeta(effectiveWaterMl, target.water_ml)
-  const waterOverflowLabel = formatOverflow((effectiveWaterMl - target.water_ml) / 1000, 'L')
+  const balance = computeNutritionBalance(consumed, target)
+  const MACROS = MACRO_KEYS.map(m => ({ ...m, label: t(m.iKey as any) }))
+  const rawRemaining = getRemainingNutritionTargets({
+    dailyTargets: target,
+    consumedToday: consumed,
+  })
+  const actionableRemaining = computeActionableRemaining({
+    target,
+    consumed,
+    profile: { gender, weightKg: bodyWeightKg },
+  })
 
-  function getStateColor(state: NutritionProgressState, baseColor: string): string {
-    switch (state) {
-      case 'over':
-        return '#ef4444'
-      case 'near_limit':
-        return '#f59e0b'
-      case 'in_target':
-        return baseColor
-      default:
-        return 'rgba(255,255,255,0.55)'
-    }
-  }
+  const kcalMeta   = getNutritionProgressMeta(consumed.kcal, target.kcal)
+  const pct        = Math.min(kcalMeta.ratio, 1)
+  const arcOffset  = ARC_LEN * (1 - pct)
+  const kcalColor  = getStateColor(kcalMeta.state, NUTRITION_UI_COLORS.calories)
+  const kcalStroke = simulationMode ? SIMULATION_COLOR : kcalColor
+  const remaining  = Math.round(balance.remainingCaloriesNet)
 
-  const kcalStroke = getStateColor(kcalMeta.state, '#f2f2f2')
-  const kcalBadge =
-    kcalMeta.state === 'over'
-      ? 'Dépassement'
-      : kcalMeta.state === 'near_limit'
-        ? 'Proche de la limite'
-        : kcalMeta.state === 'in_target'
-          ? 'Dans la cible'
-          : 'En progression'
+  const waterMeta          = getNutritionProgressMeta(consumed.water_ml, target.water_ml)
+  const waterOverflowLabel = formatOverflow((consumed.water_ml - target.water_ml) / 1000, 'L')
+  const cardPadding = micro ? '8px' : compact ? '12px' : '18px'
+  const arcHeight = micro ? 72 : compact ? 112 : 145
+  const consumedTextSize = micro ? 'text-[18px]' : compact ? 'text-[22px]' : 'text-[28px]'
+  const sideTextSize = micro ? 'text-[15px]' : compact ? 'text-[17px]' : 'text-[20px]'
+  const macroGapClass = micro ? 'gap-1.5 mt-0' : compact ? 'gap-2 mt-0.5' : 'gap-3 mt-2'
+  const showMacroHelpers = !micro
 
   return (
-    <>
-      <div className="bg-[#111111] rounded-2xl p-[18px]">
-        <div className="flex items-center justify-between mb-3">
-          <Link href={`/client/nutrition?date=${prev}`} className="flex items-center gap-1 text-white/60 text-[11px]">
-            <ChevronLeft size={14} /> {formatNav(prev)}
-          </Link>
-          <span className="text-[18px] font-black tracking-[-0.02em] text-white">{formatNav(date)}</span>
-          <Link href={`/client/nutrition?date=${next}`} className="flex items-center gap-1 text-white/60 text-[11px]">
-            {formatNav(next)} <ChevronRight size={14} />
-          </Link>
-        </div>
+    <div
+      className="bg-[#111111] rounded-2xl"
+      style={simulationMode ? {
+        padding: cardPadding,
+        backgroundImage: 'radial-gradient(circle, rgba(129,140,248,0.07) 1px, transparent 1px)',
+        backgroundSize: '18px 18px',
+        backgroundColor: '#111111',
+      } : { padding: cardPadding }}
+    >
 
-        <div className="relative h-[180px]">
-          <svg viewBox="0 0 200 110" className="w-full h-full">
-            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round" />
-            <path
-              d="M 20 100 A 80 80 0 0 1 180 100"
-              fill="none"
-              stroke={kcalStroke}
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeDasharray={total}
-              strokeDashoffset={offset}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
-            <div className="text-[32px] font-black leading-none text-white tabular-nums">{Math.round(consumed.kcal)}</div>
-            <div className="text-[10px] uppercase tracking-[0.12em] text-white/35 mt-1">Calories consommées</div>
-            <div className="text-[11px] text-white/50 mt-1 tabular-nums">/ {target.kcal} kcal</div>
-            <div
-              className="mt-2 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em]"
-              style={{
-                color: kcalStroke,
-                background: kcalMeta.state === 'under' ? 'rgba(255,255,255,0.06)' : `${kcalStroke}1A`,
-              }}
-            >
-              {kcalBadge}
-            </div>
+      {/* ── Simulation badge ── */}
+      {simulationMode && showSimulationBadge && (
+        <div className={`flex items-center ${micro ? 'mb-1' : compact ? 'mb-1.5' : 'mb-3'}`}>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#818cf8]/10">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] animate-pulse" />
+            <span className="text-[9px] font-barlow-condensed font-bold uppercase tracking-[0.18em] text-[#818cf8]">Simulation</span>
           </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          {([
-            { key: 'protein_g', label: 'Protéines', color: NUTRITION_UI_COLORS.protein },
-            { key: 'carbs_g',   label: 'Glucides',  color: NUTRITION_UI_COLORS.carbs },
-            { key: 'fat_g',     label: 'Lipides',   color: NUTRITION_UI_COLORS.fat },
-          ] as const).map(m => {
-            const c = (consumed as any)[m.key] ?? 0
-            const tg = (target as any)[m.key] ?? 0
-            const meta = getNutritionProgressMeta(c, tg)
-            const fillColor = getStateColor(meta.state, m.color)
-            const overflowLabel = formatOverflow(c - tg, 'g')
-            return (
-              <div key={m.key}>
-                <div className="text-[20px] font-black tabular-nums" style={{ color: meta.state === 'under' ? 'white' : fillColor }}>
-                  {Math.round(c)}<span className="text-[12px] text-white/40">/{tg}g</span>
-                </div>
-                <div className="text-[8px] text-white/55 uppercase font-bold tracking-[0.08em] mt-1">{m.label}</div>
-                <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mt-1.5">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${meta.clampedPercent}%`, background: fillColor }}
-                  />
-                </div>
-                <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: meta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
-                  {overflowLabel ?? '\u00A0'}
-                </div>
-              </div>
-            )
-          })}
+      {/* ── Date nav — hidden in simulation ── */}
+      {!simulationMode && (
+        <div className="flex items-center justify-between mb-1">
+          <Link href={`/client/nutrition?date=${prev}`} className="flex items-center gap-1 text-white/50 text-[11px]">
+            <ChevronLeft size={14} />{formatNav(prev)}
+          </Link>
+          <span className="text-[17px] font-black tracking-[-0.02em] text-white">{formatNav(date)}</span>
+          <Link href={`/client/nutrition?date=${next}`} className="flex items-center gap-1 text-white/50 text-[11px]">
+            {formatNav(next)}<ChevronRight size={14} />
+          </Link>
         </div>
+      )}
 
-        {/* Hydratation bar */}
-        <div className="flex items-center gap-3 mt-4 pt-3">
-          <span className="text-[13px]">💧</span>
-          <div className="flex-1">
-            <div className="flex justify-between text-[10px] mb-1.5">
-              <span className="text-white/50 font-semibold uppercase tracking-[0.08em]">Hydratation</span>
-              <span className="text-white font-bold tabular-nums">
-                {(effectiveWaterMl / 1000).toFixed(1)} / {(target.water_ml / 1000).toFixed(1)} L
-              </span>
+      {/* ── Arc + values overlay ──────────────────────────────────────────── */}
+      {/* viewBox "20 15 180 145" — equator y=110 sits at 65.5 % from top   */}
+      <div className="relative" style={{ height: arcHeight }}>
+        <svg
+          viewBox="20 15 180 145"
+          className="w-full h-full"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Track */}
+          <path d={ARC_D} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" strokeLinecap="round" />
+          {/* Progress */}
+          <path
+            d={ARC_D}
+            fill="none"
+            stroke={kcalStroke}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={ARC_LEN}
+            strokeDashoffset={arcOffset}
+            style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.3s ease' }}
+          />
+        </svg>
+
+        {/* Values — floating at equator (65.5 % from top) */}
+        <div
+          className="absolute left-0 right-0 grid grid-cols-3 items-center px-1"
+          style={{ top: '65.5%', transform: 'translateY(-50%)' }}
+        >
+          {/* Restant */}
+          <div className="text-left">
+            <div className={`${sideTextSize} font-bold text-white tabular-nums leading-none`}>
+              {remaining}
             </div>
-            <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${waterMeta.clampedPercent}%`,
-                  background: getStateColor(waterMeta.state, NUTRITION_UI_COLORS.water),
-                }}
-              />
+            <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+              Restant
             </div>
-            <div className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums" style={{ color: waterMeta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}>
-              {waterOverflowLabel ?? '\u00A0'}
+          </div>
+
+          {/* Consommé — larger, colored */}
+          <div className="text-center">
+            <div
+              className={`${consumedTextSize} font-black tabular-nums leading-none`}
+              style={{ color: kcalStroke }}
+            >
+              {Math.round(consumed.kcal)}
+            </div>
+            <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+              {simulationMode ? 'Simulé' : 'Consommé'}
+            </div>
+          </div>
+
+          {/* Objectif */}
+          <div className="text-right">
+            <div className={`${sideTextSize} font-bold text-white/50 tabular-nums leading-none`}>
+              {target.kcal}
+            </div>
+            <div className={`uppercase tracking-[0.14em] text-white/35 ${micro ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+              Objectif
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      {/* ── Macros: label → bar → Xg/Xg ── */}
+      <div className={`grid grid-cols-3 ${macroGapClass}`}>
+        {MACROS.map(m => {
+          const consumedValue = consumed[m.key] ?? 0
+          const rawTarget = target[m.key] ?? 0
+          const balanceKey = m.key as 'protein_g' | 'carbs_g' | 'fat_g'
+          const rawDelta =
+            simulationMode
+              ? balanceKey === 'protein_g'
+                ? actionableRemaining.actionableRemaining.protein
+                : balanceKey === 'carbs_g'
+                  ? actionableRemaining.actionableRemaining.carbs
+                  : actionableRemaining.actionableRemaining.fat
+              : balanceKey === 'protein_g'
+                ? rawRemaining.protein
+                : balanceKey === 'carbs_g'
+                  ? rawRemaining.carbs
+                  : rawRemaining.fat
+          const overflowValue = Math.max(0, -rawDelta)
+          const remainingValue = Math.max(0, rawDelta)
+          const displayTarget = rawTarget
+          const meta = getNutritionProgressMeta(consumedValue, Math.max(displayTarget, 0))
+          const fillColor = simulationMode
+            ? overflowValue > 0
+              ? '#ef4444'
+              : 'rgba(129,140,248,0.65)'
+            : getStateColor(
+                overflowValue > 0 ? 'over' : meta.state,
+                m.color,
+              )
+          const helperLabel =
+            overflowValue > 0
+              ? 'à freiner'
+              : formatRemainingLabel(remainingValue, 'g')
+          const overflow = formatOverflow(overflowValue, 'g')
+          return (
+            <div key={m.key}>
+              <div className={`text-white/40 uppercase font-bold tracking-[0.08em] ${micro ? 'text-[8px] mb-1' : 'text-[9px] mb-1.5'}`}>
+                {m.label}
+              </div>
+              <div className={`${micro ? 'h-1' : 'h-1.5'} bg-white/[0.06] rounded-full overflow-hidden`}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${meta.clampedPercent}%`, background: fillColor }}
+                />
+              </div>
+              <div
+                className={`${micro ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'} font-bold tabular-nums`}
+                style={{ color: fillColor }}
+              >
+                {Math.round(consumedValue)}<span className="text-white/25 text-[9px] font-normal">/{Math.round(displayTarget)}g</span>
+              </div>
+              {showMacroHelpers && (
+                <div
+                  className="text-[8px] font-bold mt-0.5 min-h-[12px]"
+                  style={{ color: overflow ? '#ef4444' : 'rgba(255,255,255,0.32)' }}
+                >
+                  {overflow ?? helperLabel}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {!simulationMode && (
+        <button
+          onClick={onWaterClick}
+          className={`${compact ? 'mt-3 pt-2.5' : 'mt-4 pt-3'} w-full text-left group`}
+          disabled={!onWaterClick}
+        >
+          <div className="flex justify-between text-[10px] mb-1.5">
+            <span className={`font-semibold uppercase tracking-[0.08em] transition-colors ${onWaterClick ? 'text-white/40 group-hover:text-white/60' : 'text-white/40'}`}>
+              Hydratation
+            </span>
+            <span className="text-white font-bold tabular-nums">
+              {(consumed.water_ml / 1000).toFixed(1)} / {(target.water_ml / 1000).toFixed(1)} L
+            </span>
+          </div>
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${waterMeta.clampedPercent}%`,
+                background: getStateColor(waterMeta.state, NUTRITION_UI_COLORS.water),
+              }}
+            />
+          </div>
+          <div
+            className="mt-1 min-h-[14px] text-[9px] font-bold tabular-nums"
+            style={{ color: waterMeta.state === 'over' ? '#ef4444' : 'rgba(255,255,255,0.28)' }}
+          >
+            {waterOverflowLabel ?? ' '}
+          </div>
+        </button>
+      )}
+
+    </div>
   )
 }
