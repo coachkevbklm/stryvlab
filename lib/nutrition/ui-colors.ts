@@ -1,4 +1,5 @@
 export const NUTRITION_UI_COLORS = {
+  calories: '#5C8DFF',
   protein: '#2F6FA3',
   carbs: '#A67C52',
   fat: '#8A6A47',
@@ -8,4 +9,3 @@ export const NUTRITION_UI_COLORS = {
   restDay: '#B0B0B0',
   restDayBg: '#222222',
 } as const
-
