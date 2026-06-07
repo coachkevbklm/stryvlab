@@ -29,7 +29,6 @@ const patchBodySchema = z.object({
   completed: z.boolean().optional(),
   duration_min: z.number().int().nonnegative().optional(),
   notes: z.string().nullable().optional(),
-  exercise_notes: z.record(z.string(), z.string()).optional(),
   set_logs: z.array(setLogUpdateSchema).optional(),
 })
 
@@ -51,14 +50,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues }, { status: 400 })
   }
-  const { completed, duration_min, notes, exercise_notes, set_logs } = parsed.data
+  const { completed, duration_min, notes, set_logs } = parsed.data
 
   const db = service()
 
   // Mettre à jour le session log
   const patch: Record<string, unknown> = {}
   if (notes !== undefined) patch.notes = notes
-  if (exercise_notes !== undefined) patch.exercise_notes = exercise_notes
   if (duration_min !== undefined) patch.duration_min = duration_min
   if (completed) patch.completed_at = new Date().toISOString()
 

@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         program_exercises (
           id, name, sets, reps, rest_sec, rir, notes, position, image_url,
           movement_pattern, equipment_required, primary_muscles, secondary_muscles,
-          group_id, is_compound, target_rir, weight_increment_kg, tempo,
+          group_id, is_compound, target_rir, weight_increment_kg,
           plane, mechanic, unilateral, primary_muscle, primary_activation,
           secondary_muscles_detail, secondary_activations, stabilizers,
           joint_stress_spine, joint_stress_knee, joint_stress_shoulder,

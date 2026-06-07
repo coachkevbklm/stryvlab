@@ -43,7 +43,7 @@ export async function POST(
         program_exercises (
           name, sets, reps, rest_sec, rir, notes, position, image_url,
           movement_pattern, equipment_required, primary_muscles, secondary_muscles,
-          group_id, is_compound, tempo
+          group_id, is_compound
         )
       )
     `)
@@ -128,7 +128,6 @@ export async function POST(
           secondary_muscles: e.secondary_muscles ?? [],
           group_id: e.group_id ?? null,
           is_compound: e.is_compound ?? undefined,
-          tempo: e.tempo ?? null,
         }))
       )
       if (exErr) {

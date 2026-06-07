@@ -207,7 +207,7 @@ export default async function ViewProgramTemplatePage({
               {(template as any).weeks} semaines
             </span>
             <span className="flex items-center gap-1.5 text-[#1f8a65]">
-              <Weight size={14} />
+              <Dumbbell size={14} />
               {sessions.length} séances
             </span>
             <span className="flex items-center gap-1.5 text-[#1f8a65]">
@@ -315,7 +315,7 @@ export default async function ViewProgramTemplatePage({
                         </div>
                       ) : (
                         <div className="w-16 h-16 rounded-lg bg-[#0a0a0a] flex-shrink-0 flex items-center justify-center">
-                          <Weight size={20} className="text-white/30" />
+                          <Dumbbell size={20} className="text-white/30" />
                         </div>
                       )}
 
