@@ -205,6 +205,257 @@ interface PerformancePayload {
   };
 }
 
+function toNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toNullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function toStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function normalizePerformancePayload(payload: unknown): PerformancePayload | null {
+  if (!payload || typeof payload !== "object") return null;
+  const raw = payload as Record<string, unknown>;
+
+  const timeline = Array.isArray(raw.timeline)
+    ? raw.timeline.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          date: typeof entry.date === "string" ? entry.date : "",
+          volume: toNumber(entry.volume),
+          reps: toNumber(entry.reps),
+          sets: toNumber(entry.sets),
+          sessions: toNumber(entry.sessions),
+        };
+      }).filter((item) => item.date)
+    : [];
+
+  const exercises = Array.isArray(raw.exercises)
+    ? raw.exercises.map((item) => {
+        const entry = item as Record<string, unknown>;
+        const sessions = Array.isArray(entry.sessions)
+          ? entry.sessions.map((session) => {
+              const current = session as Record<string, unknown>;
+              return {
+                date: typeof current.date === "string" ? current.date : "",
+                maxWeight: toNumber(current.maxWeight),
+                totalVolume: toNumber(current.totalVolume),
+                totalReps: toNumber(current.totalReps),
+                sets: toNumber(current.sets),
+              };
+            }).filter((session) => session.date)
+          : [];
+
+        return {
+          name: typeof entry.name === "string" ? entry.name : "Exercice",
+          sessions,
+        };
+      })
+    : [];
+
+  const muscleGroups = Array.isArray(raw.muscleGroups)
+    ? raw.muscleGroups.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          name: typeof entry.name === "string" ? entry.name : "Autre",
+          volume: toNumber(entry.volume),
+          sets: toNumber(entry.sets),
+          reps: toNumber(entry.reps),
+        };
+      })
+    : [];
+
+  const movementPatterns = Array.isArray(raw.movementPatterns)
+    ? raw.movementPatterns.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          name: typeof entry.name === "string" ? entry.name : "Pattern",
+          volume: toNumber(entry.volume),
+          sets: toNumber(entry.sets),
+          reps: toNumber(entry.reps),
+        };
+      })
+    : [];
+
+  const keyExercises = Array.isArray(raw.keyExercises)
+    ? raw.keyExercises.map((item) => {
+        const entry = item as Record<string, unknown>;
+        const sessions = Array.isArray(entry.sessions)
+          ? entry.sessions.map((session) => {
+              const current = session as Record<string, unknown>;
+              return {
+                date: typeof current.date === "string" ? current.date : "",
+                maxWeight: toNumber(current.maxWeight),
+                totalVolume: toNumber(current.totalVolume),
+                totalReps: toNumber(current.totalReps),
+                sets: toNumber(current.sets),
+                oneRM: toNumber(current.oneRM),
+                actualRestSec: toNullableNumber(current.actualRestSec),
+                actualRir: toNullableNumber(current.actualRir),
+              };
+            }).filter((session) => session.date)
+          : [];
+
+        return {
+          id: typeof entry.id === "string" ? entry.id : typeof entry.name === "string" ? entry.name : crypto.randomUUID(),
+          name: typeof entry.name === "string" ? entry.name : "Exercice",
+          movementPattern: typeof entry.movementPattern === "string" ? entry.movementPattern : null,
+          primaryMuscles: toStringArray(entry.primaryMuscles),
+          secondaryMuscles: toStringArray(entry.secondaryMuscles),
+          currentWeightKg: toNullableNumber(entry.currentWeightKg),
+          weightIncrementKg: toNullableNumber(entry.weightIncrementKg),
+          targetRir: toNullableNumber(entry.targetRir),
+          actualRirAvg: toNullableNumber(entry.actualRirAvg),
+          plannedRestSec: toNullableNumber(entry.plannedRestSec),
+          actualRestSec: toNullableNumber(entry.actualRestSec),
+          plannedSets: toNumber(entry.plannedSets),
+          performedSets: toNumber(entry.performedSets),
+          performedReps: toNumber(entry.performedReps),
+          performedVolume: toNumber(entry.performedVolume),
+          exposureCount: toNumber(entry.exposureCount),
+          estimated1RM: toNullableNumber(entry.estimated1RM),
+          sessions,
+          hasEnoughHistory: Boolean(entry.hasEnoughHistory),
+        };
+      })
+    : [];
+
+  const rpeTrend = Array.isArray(raw.rpeTrend)
+    ? raw.rpeTrend.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          date: typeof entry.date === "string" ? entry.date : "",
+          avgRpe: toNumber(entry.avgRpe),
+        };
+      }).filter((item) => item.date)
+    : [];
+
+  const durationBuckets = Array.isArray(raw.durationBuckets)
+    ? raw.durationBuckets.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          id: typeof entry.id === "string" ? entry.id : typeof entry.date === "string" ? entry.date : crypto.randomUUID(),
+          date: typeof entry.date === "string" ? entry.date : "",
+          durationMin: toNumber(entry.durationMin),
+          isCompleted: Boolean(entry.isCompleted),
+        };
+      }).filter((item) => item.date)
+    : [];
+
+  const rirDistribution = Array.isArray(raw.rirDistribution)
+    ? raw.rirDistribution.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          label: typeof entry.label === "string" ? entry.label : "RIR",
+          count: toNumber(entry.count),
+        };
+      })
+    : [];
+
+  const rawKpis = (raw.kpis as Record<string, unknown> | undefined) ?? {};
+  const rawAdherence = (raw.adherence as Record<string, unknown> | undefined) ?? {};
+  const rawPrescriptionDrift = (raw.prescriptionDrift as Record<string, unknown> | undefined) ?? {};
+  const rawWeeklyComparisons = (raw.weeklyComparisons as Record<string, unknown> | undefined) ?? {};
+  const rawQuality = (raw.quality as Record<string, unknown> | undefined) ?? {};
+  const rawDataQuality = (raw.dataQuality as Record<string, unknown> | undefined) ?? {};
+  const rawLatestSession = raw.latestSession && typeof raw.latestSession === "object"
+    ? (raw.latestSession as Record<string, unknown>)
+    : null;
+  const rawProgramContext = raw.programContext && typeof raw.programContext === "object"
+    ? (raw.programContext as Record<string, unknown>)
+    : null;
+
+  return {
+    kpis: {
+      totalSessions: toNumber(rawKpis.totalSessions),
+      completedSessions: toNumber(rawKpis.completedSessions),
+      totalSets: toNumber(rawKpis.totalSets),
+      totalReps: toNumber(rawKpis.totalReps),
+      totalVolume: toNumber(rawKpis.totalVolume),
+      avgDuration: toNumber(rawKpis.avgDuration),
+    },
+    timeline,
+    exercises,
+    muscleGroups,
+    movementPatterns,
+    keyExercises,
+    rpeTrend,
+    draftSessions: toNumber(raw.draftSessions),
+    completionRate: toNumber(raw.completionRate),
+    avgRestSec: toNullableNumber(raw.avgRestSec),
+    durationBuckets,
+    adherence: {
+      plannedSessions: toNumber(rawAdherence.plannedSessions),
+      loggedSessions: toNumber(rawAdherence.loggedSessions),
+      completedPlannedSessions: toNumber(rawAdherence.completedPlannedSessions),
+      sessionAdherenceRate: toNullableNumber(rawAdherence.sessionAdherenceRate),
+      plannedExercises: toNumber(rawAdherence.plannedExercises),
+      performedExercises: toNumber(rawAdherence.performedExercises),
+      exerciseCoverageRate: toNullableNumber(rawAdherence.exerciseCoverageRate),
+    },
+    prescriptionDrift: {
+      plannedSets: toNumber(rawPrescriptionDrift.plannedSets),
+      effectiveSets: toNumber(rawPrescriptionDrift.effectiveSets),
+      setCompletionRate: toNullableNumber(rawPrescriptionDrift.setCompletionRate),
+      avgPlannedRestSec: toNullableNumber(rawPrescriptionDrift.avgPlannedRestSec),
+      avgActualRestSec: toNullableNumber(rawPrescriptionDrift.avgActualRestSec),
+      restDeltaSec: toNullableNumber(rawPrescriptionDrift.restDeltaSec),
+      avgTargetRir: toNullableNumber(rawPrescriptionDrift.avgTargetRir),
+      avgActualRir: toNullableNumber(rawPrescriptionDrift.avgActualRir),
+      rirDelta: toNullableNumber(rawPrescriptionDrift.rirDelta),
+    },
+    weeklyComparisons: {
+      currentWeekVolume: toNumber(rawWeeklyComparisons.currentWeekVolume),
+      previousWeekVolume: toNumber(rawWeeklyComparisons.previousWeekVolume),
+      currentWeekSets: toNumber(rawWeeklyComparisons.currentWeekSets),
+      previousWeekSets: toNumber(rawWeeklyComparisons.previousWeekSets),
+      currentWeekSessions: toNumber(rawWeeklyComparisons.currentWeekSessions),
+      previousWeekSessions: toNumber(rawWeeklyComparisons.previousWeekSessions),
+    },
+    quality: {
+      hasDrafts: Boolean(rawQuality.hasDrafts),
+      hasPartialData: Boolean(rawQuality.hasPartialData),
+      missingDurationRate: toNumber(rawQuality.missingDurationRate),
+      missingRirRate: toNumber(rawQuality.missingRirRate),
+      missingRestRate: toNumber(rawQuality.missingRestRate),
+      exerciseHistoryCoverage: toNumber(rawQuality.exerciseHistoryCoverage),
+      confidenceScore: toNumber(rawQuality.confidenceScore),
+    },
+    rirDistribution,
+    programContext: rawProgramContext
+      ? {
+          programId: typeof rawProgramContext.programId === "string" ? rawProgramContext.programId : "",
+          programName: typeof rawProgramContext.programName === "string" ? rawProgramContext.programName : "Programme",
+          goal: typeof rawProgramContext.goal === "string" ? rawProgramContext.goal : null,
+          level: typeof rawProgramContext.level === "string" ? rawProgramContext.level : null,
+          weeks: toNullableNumber(rawProgramContext.weeks),
+          frequency: toNullableNumber(rawProgramContext.frequency),
+          sessionMode: typeof rawProgramContext.sessionMode === "string" ? rawProgramContext.sessionMode : null,
+        }
+      : null,
+    latestSession: rawLatestSession
+      ? {
+          id: typeof rawLatestSession.id === "string" ? rawLatestSession.id : "",
+          sessionName:
+            typeof rawLatestSession.sessionName === "string" ? rawLatestSession.sessionName : "Séance récente",
+          date: typeof rawLatestSession.date === "string" ? rawLatestSession.date : "",
+          durationMin: toNullableNumber(rawLatestSession.durationMin),
+          volume: toNumber(rawLatestSession.volume),
+          avgRpe: toNullableNumber(rawLatestSession.avgRpe),
+          isCompleted: Boolean(rawLatestSession.isCompleted),
+        }
+      : null,
+    dataQuality: {
+      hasPartialData: Boolean(rawDataQuality.hasPartialData),
+      hasDrafts: Boolean(rawDataQuality.hasDrafts),
+    },
+  };
+}
+
 const PERIOD_LABELS: Record<Period, string> = {
   7: "7 j",
   30: "30 j",
@@ -390,9 +641,9 @@ export default function StudioPerformancePanel({
         if (!res.ok) throw new Error(`Erreur ${res.status}`);
         return res.json();
       })
-      .then((json: PerformancePayload) => {
+      .then((json: unknown) => {
         if (!alive) return;
-        setData(json);
+        setData(normalizePerformancePayload(json));
       })
       .catch((e) => {
         if (!alive) return;
@@ -456,6 +707,19 @@ export default function StudioPerformancePanel({
     return prioritized.slice(0, mode === "analyst" ? 6 : 4);
   }, [data, anchorExerciseNames, mode]);
 
+  const hasRenderableData = data
+    ? data.kpis.totalSessions > 0 ||
+      data.timeline.length > 0 ||
+      data.exercises.length > 0 ||
+      data.keyExercises.length > 0 ||
+      data.muscleGroups.length > 0 ||
+      data.movementPatterns.length > 0 ||
+      data.rpeTrend.length > 0 ||
+      data.durationBuckets.length > 0 ||
+      data.rirDistribution.length > 0 ||
+      data.latestSession != null
+    : false;
+
   if (!clientId) {
     return (
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
@@ -488,6 +752,17 @@ export default function StudioPerformancePanel({
         <p className="text-sm font-semibold text-white">Performance indisponible</p>
         <p className="mt-1 text-[12px] text-red-200/75">
           {error ?? "Impossible de charger les données."}
+        </p>
+      </div>
+    );
+  }
+
+  if (!hasRenderableData) {
+    return (
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <p className="text-sm font-semibold text-white">Performance indisponible</p>
+        <p className="mt-1 text-[12px] text-white/45">
+          Données performance insuffisantes pour générer une analyse fiable.
         </p>
       </div>
     );
