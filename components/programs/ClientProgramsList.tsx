@@ -158,7 +158,7 @@ function Sparkline({
   color: string;
 }) {
   if (points.length === 0) {
-    return <div className="h-12 rounded-xl bg-white/[0.03]" />;
+    return <div className="h-10 rounded-xl bg-white/[0.025]" />;
   }
 
   const width = 180;
@@ -175,7 +175,7 @@ function Sparkline({
     .join(" ");
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-12 w-full">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-10 w-full">
       <path
         d={path}
         fill="none"
@@ -279,19 +279,22 @@ export default function ClientProgramsList({ clientId, onSelectProgram, onProgra
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-2xl border-[0.3px] border-white/[0.06] bg-white/[0.02] p-4">
-            <Skeleton className="h-5 w-28" />
-            <Skeleton className="mt-3 h-7 w-3/4" />
-            <Skeleton className="mt-2 h-4 w-1/2" />
+          <div key={i} className="rounded-[22px] border-[0.3px] border-white/[0.06] bg-white/[0.02] p-4">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="mt-3 h-8 w-2/3" />
+            <Skeleton className="mt-2 h-4 w-1/3" />
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Skeleton className="h-14 rounded-xl" />
-              <Skeleton className="h-14 rounded-xl" />
-              <Skeleton className="h-14 rounded-xl" />
-              <Skeleton className="h-14 rounded-xl" />
+              <Skeleton className="h-16 rounded-2xl" />
+              <Skeleton className="h-16 rounded-2xl" />
+              <Skeleton className="h-16 rounded-2xl" />
+              <Skeleton className="h-16 rounded-2xl" />
             </div>
-            <Skeleton className="mt-4 h-12 rounded-xl" />
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </div>
           </div>
         ))}
       </div>
@@ -392,7 +395,7 @@ export default function ClientProgramsList({ clientId, onSelectProgram, onProgra
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
             {activePrograms.map((program) => (
               <ProgramCard
                 key={program.id}
@@ -415,7 +418,7 @@ export default function ClientProgramsList({ clientId, onSelectProgram, onProgra
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">
               Archivés
             </p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 opacity-60">
+            <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3 opacity-60">
               {archivedPrograms.map((program) => (
                 <ProgramCard
                   key={program.id}
@@ -496,42 +499,47 @@ function ProgramCard({
     },
   ];
 
+  const quickNote =
+    program.muscle_tags && program.muscle_tags.length > 0
+      ? program.muscle_tags.slice(0, 3).join(" · ")
+      : "Programme structuré pour ce client";
+
   return (
-    <div className="group rounded-[24px] border-[0.3px] border-white/[0.06] bg-gradient-to-br from-white/[0.045] via-white/[0.025] to-white/[0.015] p-4 transition-colors hover:bg-white/[0.045]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <div className="group rounded-[22px] border-[0.3px] border-white/[0.06] bg-[#161616] p-4 transition-colors hover:bg-[#191919]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/48">
+            <span className="rounded-full border border-white/[0.08] bg-white/[0.025] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/44">
               {typeLabel}
             </span>
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
                 program.is_client_visible
-                  ? "bg-[#1f8a65]/12 text-[#8ce7c4]"
-                  : "bg-white/[0.05] text-white/35"
+                  ? "bg-[#1f8a65]/10 text-[#8ce7c4]"
+                  : "bg-white/[0.04] text-white/32"
               }`}
             >
               {program.is_client_visible ? "Actif app" : "Hors app"}
             </span>
           </div>
-          <h3 className="mt-3 truncate text-[18px] font-semibold text-white">{program.name}</h3>
+          <h3 className="mt-3 truncate text-[22px] font-semibold tracking-[-0.02em] text-white">{program.name}</h3>
           <p className="mt-1 text-[12px] text-white/42">
             Créé le {formatDate(program.created_at)}
-            {stats?.latest_completed_at ? ` · activité ${formatShortDate(stats.latest_completed_at)}` : ""}
+            {stats?.latest_completed_at ? ` · actif ${formatShortDate(stats.latest_completed_at)}` : ""}
           </p>
           {program.description ? (
-            <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-white/50">{program.description}</p>
+            <p className="mt-2 line-clamp-2 max-w-[42rem] text-[13px] leading-relaxed text-white/48">{program.description}</p>
           ) : null}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 self-start">
           <button
             onClick={onToggle}
             disabled={isToggling}
             title={program.is_client_visible ? "Visible sur l'app client — cliquer pour masquer" : "Masqué sur l'app client — cliquer pour activer"}
             className={`h-8 rounded-xl px-2.5 text-[10px] font-bold transition-colors ${
               program.is_client_visible
-                ? "bg-[#1f8a65]/12 text-[#8ce7c4] hover:bg-[#1f8a65]/18"
+                ? "bg-[#1f8a65]/10 text-[#8ce7c4] hover:bg-[#1f8a65]/16"
                 : "bg-white/[0.04] text-white/35 hover:bg-white/[0.08] hover:text-white/55"
             }`}
           >
@@ -563,26 +571,31 @@ function ProgramCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {statTiles.map(({ label, value, detail, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-white/[0.05] bg-black/15 px-3 py-3">
+          <div key={label} className="rounded-2xl border border-white/[0.04] bg-white/[0.02] px-3 py-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/32">{label}</p>
-              <Icon size={12} className="text-white/35" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/30">{label}</p>
+              <Icon size={12} className="text-white/28" />
             </div>
-            <p className="mt-2 text-[16px] font-semibold text-white">{value}</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-white/42">{detail}</p>
+            <p className="mt-2 text-[18px] font-semibold text-white">{value}</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-white/40">{detail}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border border-white/[0.05] bg-black/15 px-3 py-3">
+      <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        <div className="rounded-2xl border border-white/[0.04] bg-white/[0.018] px-3 py-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/32">Volume réel</p>
-            <BarChart3 size={12} className="text-white/35" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/30">Volume réel</p>
+            <BarChart3 size={12} className="text-white/28" />
           </div>
-          <p className="mt-2 text-[16px] font-semibold text-white">{formatVolume(stats?.total_volume_kg)}</p>
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <p className="text-[18px] font-semibold text-white">{formatVolume(stats?.total_volume_kg)}</p>
+            <p className="text-[11px] text-white/38">
+              {stats?.total_reps ? `${stats.total_reps} reps` : "Pas de charge"}
+            </p>
+          </div>
           <p className="mt-1 text-[11px] text-white/42">
             {stats?.total_reps ? `${stats.total_reps} reps cumulées` : "Aucune charge enregistrée"}
           </p>
@@ -591,14 +604,19 @@ function ProgramCard({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/[0.05] bg-black/15 px-3 py-3">
+        <div className="rounded-2xl border border-white/[0.04] bg-white/[0.018] px-3 py-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/32">Répétition récente</p>
-            <Activity size={12} className="text-white/35" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/30">Répétition récente</p>
+            <Activity size={12} className="text-white/28" />
           </div>
-          <p className="mt-2 text-[16px] font-semibold text-white">
-            {stats?.completed_session_count ?? 0} séance{(stats?.completed_session_count ?? 0) > 1 ? "s" : ""}
-          </p>
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <p className="text-[18px] font-semibold text-white">
+              {stats?.completed_session_count ?? 0} séance{(stats?.completed_session_count ?? 0) > 1 ? "s" : ""}
+            </p>
+            <p className="text-[11px] text-white/38">
+              {stats?.avg_duration_min ? `${stats.avg_duration_min} min` : "—"}
+            </p>
+          </div>
           <p className="mt-1 text-[11px] text-white/42">
             {stats?.latest_completed_at ? `Dernière le ${formatShortDate(stats.latest_completed_at)}` : "Aucune séance loggée"}
           </p>
@@ -608,15 +626,11 @@ function ProgramCard({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="text-[11px] text-white/42">
-          {program.muscle_tags && program.muscle_tags.length > 0
-            ? program.muscle_tags.slice(0, 3).join(" · ")
-            : "Programme structuré pour ce client"}
-        </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-4">
+        <div className="text-[11px] text-white/42">{quickNote}</div>
         <button
           onClick={onSelect}
-          className="inline-flex items-center gap-2 rounded-xl bg-white/[0.05] px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-white/[0.1]"
+          className="inline-flex items-center gap-2 rounded-xl bg-white/[0.06] px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-white/[0.1]"
           title="Ouvrir le programme"
         >
           Ouvrir
