@@ -541,6 +541,50 @@ export async function sendReactivationEmail(
   });
 }
 
+export interface SendCoachAlertEmailParams {
+  to: string;
+  coachFirstName: string;
+  clientFirstName: string;
+  category: string;
+  messageExcerpt: string;
+  inboxUrl: string;
+}
+
+export async function sendCoachAlertEmail(
+  params: SendCoachAlertEmailParams,
+) {
+  const { to, coachFirstName, clientFirstName, category, messageExcerpt, inboxUrl } = params;
+
+  const categoryLabel =
+    category === "safety"
+      ? "Alerte sécurité"
+      : category === "out_of_scope"
+        ? "Question hors périmètre"
+        : "Alerte coach";
+
+  await sendMail({
+    from: FROM,
+    to,
+    subject: `${categoryLabel} — ${clientFirstName}`,
+    html: emailTemplate({
+      body: `
+        ${greeting(coachFirstName || "Coach")}
+        ${bodyText(`Un message de <strong style="color:${DS.white};">${clientFirstName}</strong> nécessite votre attention.`)}
+        ${infoTable([
+          { label: "Type", value: categoryLabel, accent: true },
+          { label: "Client", value: clientFirstName },
+        ])}
+        <div style="background:${DS.surface};border-radius:10px;padding:18px;margin-bottom:24px;">
+          <p style="font-size:13px;color:${DS.textVeryMuted};margin:0 0 8px;">Extrait du message</p>
+          <p style="font-size:14px;color:${DS.white};margin:0;line-height:1.65;">${messageExcerpt || "Aucun extrait disponible."}</p>
+        </div>
+        ${ctaButton(inboxUrl, "Ouvrir l'espace coach")}
+        ${directLink(inboxUrl)}
+      `,
+    }),
+  });
+}
+
 // ─── 10. Confirmation inscription liste bêta ──────────────────────────────────
 
 export interface SendBetaWaitlistEmailParams {

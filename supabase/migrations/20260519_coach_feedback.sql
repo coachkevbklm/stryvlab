@@ -34,6 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_feedback_reactions_feedback
 -- 3. RLS for coach_feedback
 ALTER TABLE coach_feedback ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "coach_manage_feedback" ON coach_feedback;
 CREATE POLICY "coach_manage_feedback"
   ON coach_feedback FOR ALL TO authenticated
   USING (
@@ -45,6 +46,7 @@ CREATE POLICY "coach_manage_feedback"
     client_id IN (SELECT id FROM coach_clients WHERE coach_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "client_read_feedback" ON coach_feedback;
 CREATE POLICY "client_read_feedback"
   ON coach_feedback FOR SELECT TO authenticated
   USING (
@@ -54,6 +56,7 @@ CREATE POLICY "client_read_feedback"
 -- 4. RLS for coach_feedback_reactions
 ALTER TABLE coach_feedback_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "coach_manage_reactions" ON coach_feedback_reactions;
 CREATE POLICY "coach_manage_reactions"
   ON coach_feedback_reactions FOR ALL TO authenticated
   USING (
@@ -69,6 +72,7 @@ CREATE POLICY "coach_manage_reactions"
     )
   );
 
+DROP POLICY IF EXISTS "client_manage_reactions" ON coach_feedback_reactions;
 CREATE POLICY "client_manage_reactions"
   ON coach_feedback_reactions FOR ALL TO authenticated
   USING (

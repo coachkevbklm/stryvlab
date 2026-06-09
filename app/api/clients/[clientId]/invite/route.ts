@@ -50,31 +50,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const existingUser = await findAuthUserByEmail(db, client.email)
 
   if (existingUser) {
-<<<<<<< ours
-    // Unban regardless of current status (safe no-op if not banned)
-    await db.auth.admin.updateUserById(existingUser.id, { ban_duration: 'none' })
-    await db
-      .from('coach_clients')
-      .update({ status: 'active', user_id: existingUser.id })
-      .eq('id', params.clientId)
-||||||| base
-    // A suspended client has already set their password — they know their credentials.
-    // Just unban and send the reactivation email (no new invite link needed).
-    // We use coach_clients.status rather than last_sign_in_at because last_sign_in_at
-    // is set by OTP verification even when the user never completed set-password.
-    const isSuspended = client.status === 'suspended'
-
-    if (isSuspended) {
-      // User has previously logged in: they know their password.
-      // Just unban + send "accès restauré" email with login link.
-      const { error: unbanError } = await db.auth.admin.updateUserById(existingUser.id, {
-        ban_duration: 'none',
-      })
-      if (unbanError) {
-        console.error('unban error:', unbanError)
-        return NextResponse.json({ error: 'Impossible de réactiver le compte' }, { status: 500 })
-      }
-=======
     // Client exists in auth. Check: has password been set?
     const isSuspended = client.status === 'suspended'
     const hasCompletedPassword = client.password_set === true
@@ -88,14 +63,12 @@ export async function POST(req: NextRequest, { params }: Params) {
         console.error('unban error:', unbanError)
         return NextResponse.json({ error: 'Impossible de réactiver le compte' }, { status: 500 })
       }
->>>>>>> theirs
 
-    // Client has already set their password if last_sign_in_at is set.
-    // In that case just send the login link — no new recovery link needed.
-    // (Deleted PWA, lost access, coach resending invite = reconnection scenario)
-    const hasSetPassword = !!existingUser.last_sign_in_at
+      await db
+        .from('coach_clients')
+        .update({ status: 'active', user_id: existingUser.id })
+        .eq('id', params.clientId)
 
-    if (hasSetPassword) {
       try {
         await sendReactivationEmail({
           to: client.email,
@@ -105,19 +78,12 @@ export async function POST(req: NextRequest, { params }: Params) {
         })
       } catch (emailError) {
         console.error('Reactivation email failed:', emailError)
+        // Non-bloquant — le compte est réactivé même si l'email échoue
       }
+
       return NextResponse.json({ success: true, mode: 'reactivated' })
     }
 
-<<<<<<< ours
-    // User exists but never completed set-password: fall through to generate
-    // a fresh recovery link so they can finish the onboarding flow.
-||||||| base
-    // User exists but is NOT suspended (status = 'inactive' or 'active'): they may
-    // never have completed set-password, or were manually deactivated. Unban +
-    // generate a fresh recovery link so they can complete the flow.
-    await db.auth.admin.updateUserById(existingUser.id, { ban_duration: 'none' })
-=======
     // User exists but is NOT suspended — check if password has been set
     await db.auth.admin.updateUserById(existingUser.id, { ban_duration: 'none' })
 
@@ -139,7 +105,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         return NextResponse.json({ error: 'Impossible de générer le lien de connexion' }, { status: 500 })
       }
 
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1h
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
       try {
         await sendAccessLinkEmail({
           to: client.email,
@@ -155,7 +121,6 @@ export async function POST(req: NextRequest, { params }: Params) {
 
       return NextResponse.json({ success: true, mode: 'access_link' })
     }
->>>>>>> theirs
   }
 
   // New user OR existing user who never completed onboarding (never signed in):
@@ -168,7 +133,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { data: created, error: createError } = await db.auth.admin.createUser({
       email: client.email,
       email_confirm: true,
-      password: crypto.randomUUID(), // placeholder — overwritten when client sets their password
+      password: crypto.randomUUID(),
     })
 
     if (createError || !created?.user) {
