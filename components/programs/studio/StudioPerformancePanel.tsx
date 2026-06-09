@@ -333,11 +333,13 @@ function SectionCard({
 
 export default function StudioPerformancePanel({
   clientId,
+  programId: _programId,
   period: initialPeriod = 30,
   anchorExerciseNames = [],
   onExerciseSelect,
 }: {
   clientId?: string;
+  programId?: string;
   period?: Period;
   anchorExerciseNames?: string[];
   onExerciseSelect?: (exerciseName: string) => void;

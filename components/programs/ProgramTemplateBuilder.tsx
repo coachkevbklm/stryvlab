@@ -1036,6 +1036,8 @@ export default function ProgramTemplateBuilder({ initial, templateId, programId,
           <IntelligencePanelShell
             result={intelligenceResult}
             meta={meta}
+            clientId={clientId}
+            programId={programId}
             onAlertClick={handleAlertClick}
             morphoConnected={morphoConnected}
             morphoDate={morphoDate}
