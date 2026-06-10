@@ -2,14 +2,17 @@
 
 import { useRef, useMemo, useState, useCallback, useEffect } from "react";
 import { detectCurrentPhase } from "@/lib/nutrition/engine/cycleSync";
-import { Eye, Save, Send, Loader2 } from "lucide-react";
+import { Eye, Save, Send } from "lucide-react";
 import { useNutritionStudio } from "./useNutritionStudio";
 import ClientIntelligencePanel from "./ClientIntelligencePanel";
 import CalculationEngine from "./CalculationEngine";
-import ProtocolCanvas from "./ProtocolCanvas";
+import NutritionStudioRightPanel, {
+  type NutritionStudioRightTab,
+} from "./NutritionStudioRightPanel";
 import ClientPreviewModal from "./ClientPreviewModal";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import type { NutritionProtocol } from "@/lib/nutrition/types";
+import { useNutritionReality } from "./useNutritionReality";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -20,6 +23,10 @@ interface Props {
 export default function NutritionStudio({ clientId, existingProtocol }: Props) {
   const router = useRouter();
   const studio = useNutritionStudio(clientId, existingProtocol);
+  const [rightTab, setRightTab] =
+    useState<NutritionStudioRightTab>("smartnutrition");
+  const [analysisWindow, setAnalysisWindow] = useState<3 | 7>(7);
+  const nutritionReality = useNutritionReality(clientId, analysisWindow);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -70,7 +77,6 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
     };
   }, []);
 
-  const clientName = studio.clientData?.name ?? "Client";
   const isFemale = studio.clientData?.gender === "female";
   const leanMass =
     studio.clientData?.lean_mass_kg ?? studio.macroResult?.leanMass ?? null;
@@ -235,29 +241,42 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
           className="w-1 flex-none bg-white/[0.06] hover:bg-[#1f8a65]/50 cursor-col-resize transition-colors active:bg-[#1f8a65]"
         />
 
-        {/* Col 3 — Protocol Canvas */}
+        {/* Col 3 — Smart Nutrition / Analyse */}
         <div style={{ flexGrow: col3Width, flexShrink: 1, flexBasis: 0, minWidth: 240, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <ProtocolCanvas
-            loading={studio.clientLoading}
-            protocolName={studio.protocolName}
-            onProtocolNameChange={studio.setProtocolName}
-            days={studio.days}
-            activeDayIndex={studio.activeDayIndex}
-            onActiveDayChange={studio.setActiveDayIndex}
-            onUpdateDay={studio.updateDay}
-            onAddDay={studio.addDay}
-            onRemoveDay={studio.removeDay}
-            onInjectMacros={studio.injectMacrosToDay}
-            onInjectHydration={studio.injectHydrationToDay}
-            onInjectAll={studio.injectAllToDay}
-            hasMacroResult={studio.macroResult !== null}
-            hasHydration={studio.hydrationLiters !== null}
-            coherenceScore={studio.coherenceScore}
-            trainingWeekSchedule={studio.trainingWeekSchedule}
-            selectedScheduleDow={studio.selectedScheduleDow}
-            onSelectScheduleDow={studio.setSelectedScheduleDow}
-            scheduleSlots={studio.scheduleSlots}
-            onScheduleSlotsChange={studio.setScheduleSlots}
+          <NutritionStudioRightPanel
+            activeTab={rightTab}
+            onTabChange={setRightTab}
+            analysis={{
+              loading: nutritionReality.loading,
+              error: nutritionReality.error,
+              activeWindow: analysisWindow,
+              onWindowChange: setAnalysisWindow,
+              onOpenHub: () =>
+                router.push(`/coach/clients/${clientId}/data/nutrition`),
+              view: nutritionReality.view,
+            }}
+            protocol={{
+              loading: studio.clientLoading,
+              protocolName: studio.protocolName,
+              onProtocolNameChange: studio.setProtocolName,
+              days: studio.days,
+              activeDayIndex: studio.activeDayIndex,
+              onActiveDayChange: studio.setActiveDayIndex,
+              onUpdateDay: studio.updateDay,
+              onAddDay: studio.addDay,
+              onRemoveDay: studio.removeDay,
+              onInjectMacros: studio.injectMacrosToDay,
+              onInjectHydration: studio.injectHydrationToDay,
+              onInjectAll: studio.injectAllToDay,
+              hasMacroResult: studio.macroResult !== null,
+              hasHydration: studio.hydrationLiters !== null,
+              coherenceScore: studio.coherenceScore,
+              trainingWeekSchedule: studio.trainingWeekSchedule,
+              selectedScheduleDow: studio.selectedScheduleDow,
+              onSelectScheduleDow: studio.setSelectedScheduleDow,
+              scheduleSlots: studio.scheduleSlots,
+              onScheduleSlotsChange: studio.setScheduleSlots,
+            }}
           />
         </div>
       </div>
@@ -265,7 +284,7 @@ export default function NutritionStudio({ clientId, existingProtocol }: Props) {
       {/* Client preview modal */}
       {studio.showPreview && (
         <ClientPreviewModal
-          clientName={clientName}
+          clientName={studio.clientData?.name ?? "Client"}
           protocolName={studio.protocolName}
           days={studio.days}
           onClose={() => studio.setShowPreview(false)}
