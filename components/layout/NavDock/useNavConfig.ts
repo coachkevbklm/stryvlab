@@ -58,6 +58,7 @@ export function useNavConfig(): NavConfig {
           { id: "checkins", label: "Check-ins", href: `/coach/clients/${clientId}/data/checkins` },
           { id: "bilans", label: "Bilans", href: `/coach/clients/${clientId}/data/bilans` },
           { id: "performances", label: "Performances", href: `/coach/clients/${clientId}/data/performances` },
+          { id: "nutrition", label: "Nutrition", href: `/coach/clients/${clientId}/data/nutrition` },
           { id: "morphopro", label: "MorphoPro", href: `/coach/clients/${clientId}/data/morphopro` },
         ],
       },
@@ -65,8 +66,8 @@ export function useNavConfig(): NavConfig {
         id: "protocoles",
         label: "Protocoles",
         dropdown: [
-          { id: "nutrition", label: "Nutrition", href: `/coach/clients/${clientId}/protocoles/nutrition` },
-          { id: "entrainement", label: "Entraînement", href: `/coach/clients/${clientId}/protocoles/entrainement` },
+          { id: "nutrition", label: "Nutrition Studio", href: `/coach/clients/${clientId}/protocoles/nutrition` },
+          { id: "entrainement", label: "Workout Studio", href: `/coach/clients/${clientId}/protocoles/entrainement` },
           { id: "cardio", label: "Cardio", href: `/coach/clients/${clientId}/protocoles/cardio` },
           { id: "composition", label: "Composition", href: `/coach/clients/${clientId}/protocoles/composition` },
         ],
