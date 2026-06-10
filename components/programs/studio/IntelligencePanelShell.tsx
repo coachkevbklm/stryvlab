@@ -4,13 +4,17 @@ import { useState } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 import { Minus, Maximize2, Move, PanelRight, Zap } from 'lucide-react'
 import ProgramIntelligencePanel from '@/components/programs/ProgramIntelligencePanel'
+import StudioPerformancePanel from '@/components/programs/studio/StudioPerformancePanel'
 import type { IntelligenceResult, SRAHeatmapWeek, TemplateMeta } from '@/lib/programs/intelligence'
 
 type PanelMode = 'docked' | 'floating' | 'minimized'
+type PanelTab = 'smart-fit' | 'performance'
 
 interface Props {
   result: IntelligenceResult
   meta: TemplateMeta
+  clientId?: string
+  programId?: string
   onAlertClick: (si: number, ei: number) => void
   morphoConnected?: boolean
   morphoDate?: string
@@ -22,12 +26,62 @@ interface Props {
 }
 
 export default function IntelligencePanelShell({
-  result, meta, onAlertClick,
+  result, meta, clientId, programId, onAlertClick,
   morphoConnected, morphoDate, sraHeatmap, labOverrides, presentPatterns,
   onOverrideChange, onOverrideReset,
 }: Props) {
   const [mode, setMode] = useState<PanelMode>('docked')
+  const [activeTab, setActiveTab] = useState<PanelTab>('smart-fit')
   const dragControls = useDragControls()
+
+  const tabs = (
+    <div className="flex items-center gap-1 rounded-lg border-[0.3px] border-white/[0.06] bg-white/[0.03] p-1">
+      <button
+        onClick={() => setActiveTab('smart-fit')}
+        className={`rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors ${
+          activeTab === 'smart-fit'
+            ? 'bg-white/[0.08] text-white'
+            : 'text-white/45 hover:text-white/70'
+        }`}
+      >
+        Smart Fit
+      </button>
+      <button
+        onClick={() => setActiveTab('performance')}
+        className={`rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors ${
+          activeTab === 'performance'
+            ? 'bg-white/[0.08] text-white'
+            : 'text-white/45 hover:text-white/70'
+        }`}
+      >
+        Performance
+      </button>
+    </div>
+  )
+
+  const panelContent =
+    activeTab === 'smart-fit' ? (
+      <ProgramIntelligencePanel
+        result={result}
+        meta={meta}
+        onAlertClick={onAlertClick}
+        morphoConnected={morphoConnected}
+        morphoDate={morphoDate}
+        sraHeatmap={sraHeatmap}
+        labOverrides={labOverrides}
+        presentPatterns={presentPatterns}
+        onOverrideChange={onOverrideChange}
+        onOverrideReset={onOverrideReset}
+      />
+    ) : clientId && programId ? (
+      <StudioPerformancePanel clientId={clientId} programId={programId} />
+    ) : (
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <p className="text-[12px] text-white/45">
+          Performance disponible uniquement dans le contexte client programme.
+        </p>
+      </div>
+    )
 
   // Minimized: compact score bar
   if (mode === 'minimized') {
@@ -79,9 +133,12 @@ export default function IntelligencePanelShell({
           onPointerDown={e => dragControls.start(e)}
           className="flex items-center justify-between px-4 py-2.5 border-b-[0.3px] border-white/[0.06] cursor-grab active:cursor-grabbing select-none"
         >
-          <div className="flex items-center gap-2">
-            <Move size={12} className="text-white/25" />
-            <span className="text-[11px] font-semibold text-white/60">SMART FIT</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Move size={12} className="text-white/25" />
+              <span className="text-[11px] font-semibold text-white/60">STUDIO</span>
+            </div>
+            {tabs}
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -99,18 +156,7 @@ export default function IntelligencePanelShell({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-contain">
-          <ProgramIntelligencePanel
-            result={result}
-            meta={meta}
-            onAlertClick={onAlertClick}
-            morphoConnected={morphoConnected}
-            morphoDate={morphoDate}
-            sraHeatmap={sraHeatmap}
-            labOverrides={labOverrides}
-            presentPatterns={presentPatterns}
-            onOverrideChange={onOverrideChange}
-            onOverrideReset={onOverrideReset}
-          />
+          {panelContent}
         </div>
       </motion.div>
     )
@@ -121,9 +167,12 @@ export default function IntelligencePanelShell({
     <div className="h-full flex flex-col overflow-hidden">
       {/* Panel header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b-[0.3px] border-white/[0.06] shrink-0">
-        <div className="flex items-center gap-2">
-          <Zap size={12} className="text-[#1f8a65]" />
-          <span className="text-[11px] font-semibold text-white/70">SMART FIT</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Zap size={12} className="text-[#1f8a65]" />
+            <span className="text-[11px] font-semibold text-white/70">STUDIO</span>
+          </div>
+          {tabs}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -143,18 +192,7 @@ export default function IntelligencePanelShell({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        <ProgramIntelligencePanel
-          result={result}
-          meta={meta}
-          onAlertClick={onAlertClick}
-          morphoConnected={morphoConnected}
-          morphoDate={morphoDate}
-          sraHeatmap={sraHeatmap}
-          labOverrides={labOverrides}
-          presentPatterns={presentPatterns}
-          onOverrideChange={onOverrideChange}
-          onOverrideReset={onOverrideReset}
-        />
+        {panelContent}
       </div>
     </div>
   )

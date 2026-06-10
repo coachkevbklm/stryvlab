@@ -10,6 +10,19 @@ function service() {
   )
 }
 
+function toDayKey(value: string | null | undefined) {
+  return value ? value.slice(0, 10) : null
+}
+
+function normalizeSessionName(value: string | null | undefined) {
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
 // GET /api/programs?client_id=xxx
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
@@ -19,7 +32,9 @@ export async function GET(req: NextRequest) {
   const clientId = req.nextUrl.searchParams.get('client_id')
   if (!clientId) return NextResponse.json({ error: 'client_id requis' }, { status: 400 })
 
-  const { data, error } = await service()
+  const db = service()
+
+  const { data, error } = await db
     .from('programs')
     .select(`
       id, name, description, goal, level, frequency, weeks, muscle_tags,
@@ -42,7 +57,149 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ programs: data })
+
+  const programs = data ?? []
+  const sessionToProgram = new Map<string, string>()
+  const sessionNameToProgram = new Map<string, string | null>()
+
+  for (const program of programs as any[]) {
+    for (const session of (program.program_sessions ?? [])) {
+      if (session?.id) {
+        sessionToProgram.set(session.id, program.id)
+      }
+
+      const normalizedName = normalizeSessionName(session?.name)
+      if (!normalizedName) continue
+
+      const existingProgramId = sessionNameToProgram.get(normalizedName)
+      if (existingProgramId === undefined) {
+        sessionNameToProgram.set(normalizedName, program.id)
+      } else if (existingProgramId !== program.id) {
+        sessionNameToProgram.set(normalizedName, null)
+      }
+    }
+  }
+
+  const { data: logRows, error: logsError } = await db
+    .from('client_session_logs')
+    .select(`
+      id, completed_at, duration_min, program_session_id, session_name,
+      client_set_logs (
+        actual_reps, actual_weight_kg, completed
+      )
+    `)
+    .eq('client_id', clientId)
+    .not('completed_at', 'is', null)
+    .order('completed_at', { ascending: false })
+
+  if (logsError) return NextResponse.json({ error: logsError.message }, { status: 500 })
+
+  const statsByProgram = new Map<string, {
+    completedSessions: number
+    durationSamples: number[]
+    totalVolumeKg: number
+    totalReps: number
+    latestCompletedAt: string | null
+    dayVolume: Map<string, number>
+    recentSessionDates: string[]
+  }>()
+
+  for (const program of programs as any[]) {
+    statsByProgram.set(program.id, {
+      completedSessions: 0,
+      durationSamples: [],
+      totalVolumeKg: 0,
+      totalReps: 0,
+      latestCompletedAt: null,
+      dayVolume: new Map<string, number>(),
+      recentSessionDates: [],
+    })
+  }
+
+  for (const log of logRows ?? []) {
+    let programId = log.program_session_id
+      ? sessionToProgram.get(log.program_session_id) ?? null
+      : null
+
+    if (!programId) {
+      const sessionNameMatch = sessionNameToProgram.get(normalizeSessionName(log.session_name))
+      if (sessionNameMatch) {
+        programId = sessionNameMatch
+      }
+    }
+
+    if (!programId) continue
+
+    const stats = statsByProgram.get(programId)
+    if (!stats) continue
+
+    stats.completedSessions += 1
+    if (typeof log.duration_min === 'number' && Number.isFinite(log.duration_min)) {
+      stats.durationSamples.push(log.duration_min)
+    }
+    if (!stats.latestCompletedAt || log.completed_at > stats.latestCompletedAt) {
+      stats.latestCompletedAt = log.completed_at
+    }
+    if (typeof log.completed_at === 'string') {
+      stats.recentSessionDates.push(log.completed_at)
+    }
+
+    let sessionVolume = 0
+    let sessionReps = 0
+    for (const set of (log.client_set_logs ?? [])) {
+      if (!set?.completed && set?.actual_reps == null) continue
+      const reps = Number(set.actual_reps) || 0
+      const weight = Number(set.actual_weight_kg) || 0
+      sessionReps += reps
+      sessionVolume += reps * weight
+    }
+
+    stats.totalReps += sessionReps
+    stats.totalVolumeKg += sessionVolume
+
+    const dayKey = toDayKey(log.completed_at)
+    if (dayKey) {
+      stats.dayVolume.set(dayKey, (stats.dayVolume.get(dayKey) ?? 0) + sessionVolume)
+    }
+  }
+
+  const enrichedPrograms = programs.map((program: any) => {
+    const sessions = (program.program_sessions ?? []) as any[]
+    const exercises = sessions.flatMap((session) => session.program_exercises ?? [])
+    const plannedSets = exercises.reduce((sum, exercise) => sum + (Number(exercise.sets) || 0), 0)
+    const stats = statsByProgram.get(program.id)
+    const avgDuration = stats && stats.durationSamples.length > 0
+      ? Math.round(stats.durationSamples.reduce((sum, value) => sum + value, 0) / stats.durationSamples.length)
+      : null
+
+    const volumeSeries = Array.from(stats?.dayVolume.entries() ?? [])
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-8)
+      .map(([date, volume]) => ({ date, value: Math.round(volume) }))
+
+    const recentSessionDates = (stats?.recentSessionDates ?? [])
+      .slice()
+      .sort((a, b) => b.localeCompare(a))
+      .slice(0, 12)
+
+    return {
+      ...program,
+      program_stats: {
+        session_count: sessions.length,
+        exercise_count: exercises.length,
+        planned_set_count: plannedSets,
+        completed_session_count: stats?.completedSessions ?? 0,
+        avg_duration_min: avgDuration,
+        total_volume_kg: Math.round(stats?.totalVolumeKg ?? 0),
+        total_reps: stats?.totalReps ?? 0,
+        latest_completed_at: stats?.latestCompletedAt ?? null,
+        volume_series: volumeSeries,
+        recent_session_dates: recentSessionDates,
+      },
+    }
+  })
+
+  return NextResponse.json({ programs: enrichedPrograms })
 }
 
 // POST /api/programs — créer un programme

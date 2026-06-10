@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Library, Plus } from "lucide-react";
+import { ArrowLeft, Library, Plus } from "lucide-react";
 import { useClient } from "@/lib/client-context";
 import { useClientTopBar } from "@/components/clients/useClientTopBar";
 import ClientTopBarLeft from "@/components/clients/ClientTopBarLeft";
@@ -29,7 +28,6 @@ interface Program {
 }
 
 export default function EntrainementPage() {
-  const router = useRouter();
   const { client, clientId } = useClient();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -106,13 +104,24 @@ export default function EntrainementPage() {
 
   // Builder left node — stable, only changes when client data changes
   const builderTopBarLeft = useMemo(
-    () => <ClientTopBarLeft pageLabel="Entraînement" client={client} />,
+    () => (
+      <div className="flex min-w-0 items-center gap-4">
+        <button
+          onClick={() => setSelectedProgram(null)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-[0.3px] border-white/[0.08] bg-white/[0.03] text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white"
+          title="Retour aux programmes"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <ClientTopBarLeft pageLabel="Workout Studio" client={client} />
+      </div>
+    ),
     [client],
   );
 
   // Show list TopBar when no program selected; Builder owns TopBar when editing
   useClientTopBar(
-    selectedProgram ? "" : "Entraînement",
+    selectedProgram ? "" : "Workout Studio",
     selectedProgram ? undefined : listTopBarRight,
   );
 
@@ -120,7 +129,7 @@ export default function EntrainementPage() {
     <main
       className={
         selectedProgram
-          ? "h-[calc(100vh-88px)] overflow-hidden bg-[#121212] flex flex-col"
+          ? "h-[calc(100vh-88px)] overflow-hidden bg-[#121212] flex flex-col pt-4"
           : "min-h-screen bg-[#121212]"
       }
     >
@@ -149,6 +158,7 @@ export default function EntrainementPage() {
               key={refreshKey}
               clientId={clientId}
               onSelectProgram={(p) => setSelectedProgram(p as Program)}
+              onProgramDuplicated={(p) => setSelectedProgram(p as Program)}
             />
           </>
         )}
